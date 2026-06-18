@@ -1,0 +1,688 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  SCHOOL_OWNER
+  PRINCIPAL
+  TEACHER
+  PARENT
+  BUS_SUPERVISOR
+  ACCOUNTANT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum ChildStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+  WITHDRAWN
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  PARTIALLY_PAID
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  ONLINE_STRIPE
+  CHEQUE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  ANNOUNCEMENT
+}
+
+enum NotificationType {
+  ATTENDANCE
+  DAILY_REPORT
+  INVOICE
+  MESSAGE
+  ANNOUNCEMENT
+  INCIDENT
+  EVENT
+}
+
+// ============================================
+// CORE MODELS
+// ============================================
+
+model Tenant {
+  id                 String   @id @default(uuid())
+  name               String
+  nameAr             String?  @map("name_ar")
+  subdomain          String   @unique
+  logoUrl            String?  @map("logo_url")
+  contactEmail       String   @map("contact_email")
+  contactPhone       String   @map("contact_phone")
+  address            String?
+  city               String?
+  country            String   @default("SA")
+  vatNumber          String?  @map("vat_number")
+  commercialRegister String?  @map("commercial_register")
+  subscriptionPlan   String   @default("basic") @map("subscription_plan")
+  subscriptionStatus String   @default("active") @map("subscription_status")
+  settings           Json?    @default("{}")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  tenantUsers      TenantUser[]
+  children         Child[]
+  classes          Class[]
+  attendances      Attendance[]
+  dailyReports     DailyReport[]
+  observations     Observation[]
+  invoices         Invoice[]
+  payments         Payment[]
+  staffRecords     StaffRecord[]
+  leaveRequests    LeaveRequest[]
+  busRoutes        BusRoute[]
+  events           Event[]
+  announcements    Announcement[]
+  messages         Message[]
+  notifications    Notification[]
+  feeStructures    FeeStructure[]
+  academicYears    AcademicYear[]
+  emergencyContacts EmergencyContact[]
+  loyaltyPrograms  LoyaltyProgram[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  firstNameAr  String?  @map("first_name_ar")
+  lastNameAr   String?  @map("last_name_ar")
+  phone        String?
+  avatarUrl    String?  @map("avatar_url")
+  isActive     Boolean  @default(true) @map("is_active")
+  language     String   @default("ar")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenantUsers       TenantUser[]
+  parentChildren    ParentChild[]
+  attendancesIn     Attendance[]     @relation("CheckedInBy")
+  attendancesOut    Attendance[]     @relation("CheckedOutBy")
+  dailyReports      DailyReport[]
+  observations      Observation[]
+  sentMessages      Message[]        @relation("SentMessages")
+  receivedMessages  Message[]        @relation("ReceivedMessages")
+  notifications     Notification[]
+  staffRecord       StaffRecord?
+  leaveRequests     LeaveRequest[]
+
+  @@map("users")
+}
+
+model TenantUser {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  role      UserRole
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, role])
+  @@map("tenant_users")
+}
+
+// ============================================
+// CHILD MANAGEMENT
+// ============================================
+
+model Child {
+  id             String      @id @default(uuid())
+  tenantId       String      @map("tenant_id")
+  firstName      String      @map("first_name")
+  lastName       String      @map("last_name")
+  firstNameAr    String?     @map("first_name_ar")
+  lastNameAr     String?     @map("last_name_ar")
+  dateOfBirth    DateTime    @map("date_of_birth") @db.Date
+  gender         Gender
+  enrollmentDate DateTime    @map("enrollment_date") @db.Date
+  status         ChildStatus @default(ACTIVE)
+  photoUrl       String?     @map("photo_url")
+  medicalNotes   String?     @map("medical_notes")
+  allergies      String?
+  bloodType      String?     @map("blood_type")
+  nationality    String?
+  nationalId     String?     @map("national_id")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parentChildren    ParentChild[]
+  classAssignments  ClassAssignment[]
+  attendances       Attendance[]
+  dailyReports      DailyReport[]
+  observations      Observation[]
+  invoices          Invoice[]
+  emergencyContacts EmergencyContact[]
+  busAssignments    BusChildAssignment[]
+
+  @@map("children")
+}
+
+model ParentChild {
+  id           String @id @default(uuid())
+  tenantId     String @map("tenant_id")
+  parentId     String @map("parent_id")
+  childId      String @map("child_id")
+  relationship String
+
+  parent User  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  child  Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, childId])
+  @@map("parent_children")
+}
+
+model EmergencyContact {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  childId  String @map("child_id")
+  name     String
+  phone    String
+  relationship String
+  isAuthorizedPickup Boolean @default(false) @map("is_authorized_pickup")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  child  Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+}
+
+// ============================================
+// CLASSES & ACADEMIC
+// ============================================
+
+model Class {
+  id        String @id @default(uuid())
+  tenantId  String @map("tenant_id")
+  name      String
+  nameAr    String? @map("name_ar")
+  ageGroup  String  @map("age_group")
+  capacity  Int
+  teacherId String? @map("teacher_id")
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments ClassAssignment[]
+
+  @@map("classes")
+}
+
+model ClassAssignment {
+  id           String @id @default(uuid())
+  tenantId     String @map("tenant_id")
+  classId      String @map("class_id")
+  childId      String @map("child_id")
+  academicYear String @map("academic_year")
+
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  child Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, childId, academicYear])
+  @@map("class_assignments")
+}
+
+model AcademicYear {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  isCurrent Boolean  @default(false) @map("is_current")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("academic_years")
+}
+
+// ============================================
+// ATTENDANCE
+// ============================================
+
+model Attendance {
+  id           String           @id @default(uuid())
+  tenantId     String           @map("tenant_id")
+  childId      String           @map("child_id")
+  date         DateTime         @db.Date
+  status       AttendanceStatus
+  checkInTime  DateTime?        @map("check_in_time")
+  checkOutTime DateTime?        @map("check_out_time")
+  checkedInBy  String?          @map("checked_in_by")
+  checkedOutBy String?          @map("checked_out_by")
+  qrCode       String?          @map("qr_code")
+  notes        String?
+
+  tenant       Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  child        Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  checkedInUser  User?  @relation("CheckedInBy", fields: [checkedInBy], references: [id])
+  checkedOutUser User?  @relation("CheckedOutBy", fields: [checkedOutBy], references: [id])
+
+  @@unique([childId, date])
+  @@map("attendances")
+}
+
+// ============================================
+// DAILY REPORTS
+// ============================================
+
+model DailyReport {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  childId      String   @map("child_id")
+  teacherId    String   @map("teacher_id")
+  date         DateTime @db.Date
+  meals        Json?    @default("[]")
+  sleep        Json?    @default("{}")
+  toileting    Json?    @default("{}")
+  activities   String?
+  mood         String?
+  teacherNotes String?  @map("teacher_notes")
+  photos       Json?    @default("[]")
+  isPublished  Boolean  @default(false) @map("is_published")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  teacher User   @relation(fields: [teacherId], references: [id])
+
+  @@unique([childId, date])
+  @@map("daily_reports")
+}
+
+// ============================================
+// EYFS OBSERVATIONS & ASSESSMENTS
+// ============================================
+
+model Observation {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  childId     String   @map("child_id")
+  teacherId   String   @map("teacher_id")
+  date        DateTime @db.Date
+  title       String?
+  description String
+  eyfsArea    String?  @map("eyfs_area")
+  eyfsStrand  String?  @map("eyfs_strand")
+  ageRange    String?  @map("age_range")
+  mediaUrls   Json?    @default("[]") @map("media_urls")
+  isSharedWithParent Boolean @default(false) @map("is_shared_with_parent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  teacher User   @relation(fields: [teacherId], references: [id])
+
+  @@map("observations")
+}
+
+// ============================================
+// FINANCE & BILLING
+// ============================================
+
+model FeeStructure {
+  id          String  @id @default(uuid())
+  tenantId    String  @map("tenant_id")
+  name        String
+  nameAr      String? @map("name_ar")
+  amount      Decimal @db.Decimal(10, 2)
+  frequency   String  // MONTHLY, QUARTERLY, ANNUALLY, ONE_TIME
+  description String?
+  isActive    Boolean @default(true) @map("is_active")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("fee_structures")
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  tenantId      String        @map("tenant_id")
+  parentId      String        @map("parent_id")
+  childId       String        @map("child_id")
+  invoiceNumber String        @map("invoice_number")
+  description   String?
+  subtotal      Decimal       @db.Decimal(10, 2)
+  vatRate       Decimal       @default(0.15) @map("vat_rate") @db.Decimal(5, 4)
+  vatAmount     Decimal       @map("vat_amount") @db.Decimal(10, 2)
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  issueDate     DateTime      @map("issue_date") @db.Date
+  dueDate       DateTime      @map("due_date") @db.Date
+  status        InvoiceStatus @default(PENDING)
+  items         Json?         @default("[]")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  child    Child     @relation(fields: [childId], references: [id])
+  payments Payment[]
+
+  @@unique([tenantId, invoiceNumber])
+  @@map("invoices")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  tenantId      String        @map("tenant_id")
+  invoiceId     String        @map("invoice_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentDate   DateTime      @map("payment_date")
+  paymentMethod PaymentMethod @map("payment_method")
+  transactionId String?       @map("transaction_id")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// ============================================
+// HR MODULE
+// ============================================
+
+model StaffRecord {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  userId          String   @unique @map("user_id")
+  employeeId      String?  @map("employee_id")
+  department      String?
+  position        String?
+  hireDate        DateTime @map("hire_date") @db.Date
+  contractEndDate DateTime? @map("contract_end_date") @db.Date
+  salary          Decimal? @db.Decimal(10, 2)
+  iqamaNumber     String?  @map("iqama_number")
+  bankName        String?  @map("bank_name")
+  bankAccount     String?  @map("bank_account")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("staff_records")
+}
+
+model LeaveRequest {
+  id          String      @id @default(uuid())
+  tenantId    String      @map("tenant_id")
+  userId      String      @map("user_id")
+  leaveType   String      @map("leave_type")
+  startDate   DateTime    @map("start_date") @db.Date
+  endDate     DateTime    @map("end_date") @db.Date
+  reason      String?
+  status      LeaveStatus @default(PENDING)
+  approvedBy  String?     @map("approved_by")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("leave_requests")
+}
+
+// ============================================
+// TRANSPORTATION
+// ============================================
+
+model BusRoute {
+  id         String @id @default(uuid())
+  tenantId   String @map("tenant_id")
+  name       String
+  driverName String @map("driver_name")
+  driverPhone String @map("driver_phone")
+  busNumber  String @map("bus_number")
+  capacity   Int
+  isActive   Boolean @default(true) @map("is_active")
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments BusChildAssignment[]
+
+  @@map("bus_routes")
+}
+
+model BusChildAssignment {
+  id         String @id @default(uuid())
+  busRouteId String @map("bus_route_id")
+  childId    String @map("child_id")
+  pickupAddress String? @map("pickup_address")
+  dropoffAddress String? @map("dropoff_address")
+  pickupTime String? @map("pickup_time")
+
+  busRoute BusRoute @relation(fields: [busRouteId], references: [id], onDelete: Cascade)
+  child    Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([busRouteId, childId])
+  @@map("bus_child_assignments")
+}
+
+// ============================================
+// COMMUNICATION
+// ============================================
+
+model Announcement {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  title     String
+  titleAr   String?  @map("title_ar")
+  content   String
+  contentAr String?  @map("content_ar")
+  authorId  String   @map("author_id")
+  targetRole UserRole? @map("target_role")
+  isPublished Boolean @default(true) @map("is_published")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("announcements")
+}
+
+model Message {
+  id         String      @id @default(uuid())
+  tenantId   String      @map("tenant_id")
+  senderId   String      @map("sender_id")
+  receiverId String      @map("receiver_id")
+  content    String
+  type       MessageType @default(TEXT)
+  isRead     Boolean     @default(false) @map("is_read")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sender   User   @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User   @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@map("messages")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  tenantId  String           @map("tenant_id")
+  userId    String           @map("user_id")
+  title     String
+  titleAr   String?          @map("title_ar")
+  body      String
+  bodyAr    String?          @map("body_ar")
+  type      NotificationType
+  data      Json?            @default("{}")
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  title       String
+  titleAr     String?  @map("title_ar")
+  description String?
+  descriptionAr String? @map("description_ar")
+  startDate   DateTime @map("start_date")
+  endDate     DateTime? @map("end_date")
+  location    String?
+  isAllDay    Boolean  @default(false) @map("is_all_day")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("events")
+}
+
+// ============================================
+// LOYALTY PROGRAM
+// ============================================
+
+enum LoyaltyTransactionType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  ADJUSTED
+}
+
+model LoyaltyProgram {
+  id          String  @id @default(uuid())
+  tenantId    String  @map("tenant_id")
+  name        String
+  nameAr      String? @map("name_ar")
+  pointsPerSar Decimal @default(1) @map("points_per_sar") @db.Decimal(5, 2)
+  isActive    Boolean @default(true) @map("is_active")
+  description String?
+  descriptionAr String? @map("description_ar")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rewards LoyaltyReward[]
+
+  @@map("loyalty_programs")
+}
+
+model LoyaltyReward {
+  id          String  @id @default(uuid())
+  programId   String  @map("program_id")
+  name        String
+  nameAr      String? @map("name_ar")
+  pointsCost  Int     @map("points_cost")
+  description String?
+  descriptionAr String? @map("description_ar")
+  isActive    Boolean @default(true) @map("is_active")
+
+  program LoyaltyProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@map("loyalty_rewards")
+}
+
+model LoyaltyBalance {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  parentId String @map("parent_id")
+  points   Int    @default(0)
+
+  @@unique([tenantId, parentId])
+  @@map("loyalty_balances")
+}
+
+model LoyaltyTransaction {
+  id          String                 @id @default(uuid())
+  tenantId    String                 @map("tenant_id")
+  parentId    String                 @map("parent_id")
+  type        LoyaltyTransactionType
+  points      Int
+  description String?
+  referenceId String?                @map("reference_id")
+  createdAt   DateTime               @default(now()) @map("created_at")
+
+  @@map("loyalty_transactions")
+}
+
+// ============================================
+// PERMISSION FORMS
+// ============================================
+
+model PermissionForm {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  title       String
+  titleAr     String?  @map("title_ar")
+  description String?
+  descriptionAr String? @map("description_ar")
+  dueDate     DateTime? @map("due_date")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  responses PermissionResponse[]
+
+  @@map("permission_forms")
+}
+
+model PermissionResponse {
+  id        String   @id @default(uuid())
+  formId    String   @map("form_id")
+  parentId  String   @map("parent_id")
+  childId   String   @map("child_id")
+  approved  Boolean
+  signature String?
+  respondedAt DateTime @default(now()) @map("responded_at")
+
+  form PermissionForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, childId])
+  @@map("permission_responses")
+}
