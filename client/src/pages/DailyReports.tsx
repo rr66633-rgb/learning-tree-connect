@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -16,7 +16,7 @@ const moodLabels: Record<string, string> = { happy: "سعيد", calm: "هادئ"
 const moodColors: Record<string, string> = { happy: "bg-green-100 text-green-700", calm: "bg-blue-100 text-blue-700", tired: "bg-amber-100 text-amber-700", upset: "bg-red-100 text-red-700", excited: "bg-purple-100 text-purple-700" };
 
 export default function DailyReports() {
-  const { data: reports, isLoading } = trpc.dailyReports.list.useQuery();
+  const { data: reports, isLoading: reportsLoading } = trpc.dailyReports.list.useQuery();
   const { data: children } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
@@ -56,14 +56,13 @@ export default function DailyReports() {
     return child ? `${child.firstName} ${child.lastName}` : "غير معروف";
   };
 
-  if (isLoading) {
-    return <div className="space-y-6"><h1 className="text-2xl font-bold">التقارير اليومية</h1><Skeleton className="h-64 w-full" /></div>;
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">التقارير اليومية</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          التقارير اليومية
+          {reportsLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+        </h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 ml-2" />تقرير جديد</Button>
@@ -114,34 +113,54 @@ export default function DailyReports() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {reports?.map(report => (
-          <Card key={report.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{getChildName(report.childId)}</CardTitle>
-                <Badge className={moodColors[report.mood ?? "happy"]}>{moodLabels[report.mood ?? "happy"]}</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">{new Date(report.date).toLocaleDateString('ar-SA')}</p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {report.activities && <p className="text-sm"><span className="font-medium">الأنشطة:</span> {report.activities}</p>}
-              {report.teacherNotes && <p className="text-sm"><span className="font-medium">ملاحظات:</span> {report.teacherNotes}</p>}
-              <div className="flex items-center gap-2 pt-2">
-                <Badge variant={report.isPublished ? "default" : "secondary"}>{report.isPublished ? "منشور" : "مسودة"}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {(!reports || reports.length === 0) && (
-          <Card className="col-span-full">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FileText className="h-12 w-12 mb-4" />
-              <p>لا توجد تقارير يومية بعد</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {reportsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+                <Skeleton className="h-4 w-24 mt-1" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {reports?.map(report => (
+            <Card key={report.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">{getChildName(report.childId)}</CardTitle>
+                  <Badge className={moodColors[report.mood ?? "happy"]}>{moodLabels[report.mood ?? "happy"]}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{new Date(report.date).toLocaleDateString('ar-SA')}</p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {report.activities && <p className="text-sm"><span className="font-medium">الأنشطة:</span> {report.activities}</p>}
+                {report.teacherNotes && <p className="text-sm"><span className="font-medium">ملاحظات:</span> {report.teacherNotes}</p>}
+                <div className="flex items-center gap-2 pt-2">
+                  <Badge variant={report.isPublished ? "default" : "secondary"}>{report.isPublished ? "منشور" : "مسودة"}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(!reports || reports.length === 0) && (
+            <Card className="col-span-full">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <FileText className="h-12 w-12 mb-4" />
+                <p>لا توجد تقارير يومية بعد</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

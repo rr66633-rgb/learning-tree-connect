@@ -202,6 +202,12 @@ export async function getConversations(userId: number) {
     .orderBy(desc(conversations.lastMessageAt));
 }
 
+export async function getAllConversations() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(conversations).orderBy(desc(conversations.lastMessageAt));
+}
+
 export async function getMessages(conversationId: number) {
   const db = await getDb();
   if (!db) return [];

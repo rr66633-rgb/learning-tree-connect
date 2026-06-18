@@ -157,6 +157,10 @@ export const appRouter = router({
 
   messages: router({
     conversations: protectedProcedure.query(async ({ ctx }) => {
+      // Admin sees all conversations, others see only their own
+      if (ctx.user?.role === 'admin') {
+        return db.getAllConversations();
+      }
       return db.getConversations(ctx.user!.id);
     }),
     list: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input }) => {

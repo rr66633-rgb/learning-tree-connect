@@ -50,7 +50,7 @@ export default function Messages() {
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-18rem)]">
               {conversations && conversations.length > 0 ? (
-                conversations.map(conv => (
+                conversations.map((conv: any) => (
                   <button
                     key={conv.id}
                     onClick={() => setSelectedConversation(conv.id)}
