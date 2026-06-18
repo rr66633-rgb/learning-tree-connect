@@ -24,7 +24,7 @@
 ## Daily Reports
 - [x] Meals, sleep, activities tracking
 - [x] Teacher notes
-- [ ] Photo upload support (future enhancement - requires S3 integration)
+- [x] Photo upload support (S3 integration complete)
 
 ## Messaging
 - [x] Parent-teacher conversations
@@ -70,7 +70,7 @@
 - [x] Create attendance records for demo
 - [x] Create invoices and payment records for demo
 - [x] Create loyalty points and transactions for demo
-- [ ] Implement photo upload in daily reports (future enhancement)
+- [x] Implement photo upload in daily reports
 - [x] Test login flow
 - [x] Test dashboard statistics
 - [x] Test child management CRUD

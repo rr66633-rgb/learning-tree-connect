@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, FileText, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Plus, FileText, Loader2, Camera, X, Image as ImageIcon } from "lucide-react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 
 const moodLabels: Record<string, string> = { happy: "سعيد", calm: "هادئ", tired: "متعب", upset: "منزعج", excited: "متحمس" };
@@ -20,9 +20,12 @@ export default function DailyReports() {
   const { data: children } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
+  const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createReport = trpc.dailyReports.create.useMutation({
-    onSuccess: () => { utils.dailyReports.list.invalidate(); toast.success("تم إنشاء التقرير بنجاح"); setOpen(false); },
+    onSuccess: () => { utils.dailyReports.list.invalidate(); toast.success("تم إنشاء التقرير بنجاح"); setOpen(false); setPhotos([]); },
     onError: () => toast.error("حدث خطأ"),
   });
 
@@ -36,24 +39,92 @@ export default function DailyReports() {
     sleep: { from: "", to: "", quality: "good" },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (photos.length + files.length > 5) {
+      toast.error("الحد الأقصى 5 صور لكل تقرير");
+      return;
+    }
+    const newPhotos = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setPhotos(prev => [...prev, ...newPhotos]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const uploadPhoto = async (file: File): Promise<string> => {
+    const reader = new FileReader();
+    return new Promise((resolve, reject) => {
+      reader.onload = async () => {
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              data: base64,
+              fileName: `report-${Date.now()}-${file.name}`,
+              contentType: file.type,
+            }),
+          });
+          if (!response.ok) throw new Error('Upload failed');
+          const { url } = await response.json();
+          resolve(url);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.childId) { toast.error("يرجى اختيار الطفل"); return; }
-    createReport.mutate({
-      childId: form.childId,
-      date: form.date,
-      mood: form.mood,
-      activities: form.activities,
-      teacherNotes: form.teacherNotes,
-      meals: form.meals,
-      sleep: form.sleep,
-      isPublished: true,
-    });
+
+    setUploading(true);
+    try {
+      let photoUrls: string[] = [];
+      if (photos.length > 0) {
+        photoUrls = await Promise.all(photos.map(p => uploadPhoto(p.file)));
+      }
+
+      createReport.mutate({
+        childId: form.childId,
+        date: form.date,
+        mood: form.mood,
+        activities: form.activities,
+        teacherNotes: form.teacherNotes,
+        meals: form.meals,
+        sleep: form.sleep,
+        photos: photoUrls.length > 0 ? photoUrls : undefined,
+        isPublished: true,
+      });
+    } catch {
+      toast.error("فشل رفع الصور");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const getChildName = (childId: number) => {
     const child = children?.find(c => c.id === childId);
     return child ? `${child.firstName} ${child.lastName}` : "غير معروف";
+  };
+
+  const getReportPhotos = (report: any): string[] => {
+    if (!report.photos) return [];
+    if (Array.isArray(report.photos)) return report.photos;
+    return [];
   };
 
   return (
@@ -105,8 +176,54 @@ export default function DailyReports() {
               </div>
               <div><Label>الأنشطة</Label><Textarea value={form.activities} onChange={e => setForm(f => ({ ...f, activities: e.target.value }))} placeholder="وصف الأنشطة التي قام بها الطفل اليوم" /></div>
               <div><Label>ملاحظات المعلمة</Label><Textarea value={form.teacherNotes} onChange={e => setForm(f => ({ ...f, teacherNotes: e.target.value }))} placeholder="ملاحظات إضافية لولي الأمر" /></div>
-              <Button type="submit" className="w-full" disabled={createReport.isPending}>
-                {createReport.isPending ? "جارٍ الإنشاء..." : "إنشاء التقرير"}
+
+              {/* Photo Upload Section */}
+              <div className="space-y-2">
+                <Label className="font-semibold flex items-center gap-2">
+                  <Camera className="h-4 w-4" />
+                  صور الأنشطة
+                  <span className="text-xs text-muted-foreground font-normal">(اختياري - حد أقصى 5 صور)</span>
+                </Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {photos.map((photo, index) => (
+                      <div key={index} className="relative group rounded-lg overflow-hidden border">
+                        <img src={photo.preview} alt="" className="w-full h-20 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute top-1 left-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {photos.length < 5 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-dashed"
+                  >
+                    <Camera className="h-4 w-4 ml-2" />
+                    إضافة صور
+                  </Button>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full" disabled={createReport.isPending || uploading}>
+                {uploading ? "جارٍ رفع الصور..." : createReport.isPending ? "جارٍ الإنشاء..." : "إنشاء التقرير"}
               </Button>
             </form>
           </DialogContent>
@@ -133,24 +250,45 @@ export default function DailyReports() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {reports?.map(report => (
-            <Card key={report.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{getChildName(report.childId)}</CardTitle>
-                  <Badge className={moodColors[report.mood ?? "happy"]}>{moodLabels[report.mood ?? "happy"]}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{new Date(report.date).toLocaleDateString('ar-SA')}</p>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {report.activities && <p className="text-sm"><span className="font-medium">الأنشطة:</span> {report.activities}</p>}
-                {report.teacherNotes && <p className="text-sm"><span className="font-medium">ملاحظات:</span> {report.teacherNotes}</p>}
-                <div className="flex items-center gap-2 pt-2">
-                  <Badge variant={report.isPublished ? "default" : "secondary"}>{report.isPublished ? "منشور" : "مسودة"}</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {reports?.map(report => {
+            const reportPhotos = getReportPhotos(report);
+            return (
+              <Card key={report.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">{getChildName(report.childId)}</CardTitle>
+                    <Badge className={moodColors[report.mood ?? "happy"]}>{moodLabels[report.mood ?? "happy"]}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{new Date(report.date).toLocaleDateString('ar-SA')}</p>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {reportPhotos.length > 0 && (
+                    <div className="grid grid-cols-3 gap-1 rounded-lg overflow-hidden">
+                      {reportPhotos.slice(0, 3).map((url: string, i: number) => (
+                        <img key={i} src={url} alt="" className="w-full h-16 object-cover" />
+                      ))}
+                      {reportPhotos.length > 3 && (
+                        <div className="flex items-center justify-center bg-muted text-muted-foreground text-xs">
+                          +{reportPhotos.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {report.activities && <p className="text-sm"><span className="font-medium">الأنشطة:</span> {report.activities}</p>}
+                  {report.teacherNotes && <p className="text-sm"><span className="font-medium">ملاحظات:</span> {report.teacherNotes}</p>}
+                  <div className="flex items-center gap-2 pt-2">
+                    <Badge variant={report.isPublished ? "default" : "secondary"}>{report.isPublished ? "منشور" : "مسودة"}</Badge>
+                    {reportPhotos.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        <ImageIcon className="h-3 w-3 ml-1" />
+                        {reportPhotos.length} صور
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
           {(!reports || reports.length === 0) && (
             <Card className="col-span-full">
               <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">

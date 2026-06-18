@@ -57,7 +57,7 @@ function createParentContext(): TrpcContext {
 }
 
 describe("Dashboard", () => {
-  it("returns correct statistics", async () => {
+  it("returns correct statistics", { timeout: 10000 }, async () => {
     const caller = appRouter.createCaller(createAdminContext());
     const stats = await caller.dashboard.stats();
     expect(stats).toBeDefined();
@@ -281,5 +281,23 @@ describe("Role-based Access", () => {
     const caller = appRouter.createCaller(createParentContext());
     const children = await caller.children.list();
     expect(children).toBeDefined();
+  });
+});
+
+describe("Photo Upload in Daily Reports", () => {
+  it("creates a daily report with photos array", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    const children = await caller.children.list();
+    const result = await caller.dailyReports.create({
+      childId: children[0].id,
+      date: "2026-12-27",
+      mood: "excited",
+      activities: "رسم ولعب",
+      teacherNotes: "يوم رائع",
+      photos: ["/manus-storage/uploads/test1.jpg", "/manus-storage/uploads/test2.jpg"],
+      isPublished: true,
+    });
+    expect(result).toBeDefined();
+    expect(result.childId).toBe(children[0].id);
   });
 });

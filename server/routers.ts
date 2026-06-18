@@ -135,6 +135,7 @@ export const appRouter = router({
       activities: z.string().optional(),
       mood: z.enum(["happy", "calm", "tired", "upset", "excited"]).optional(),
       teacherNotes: z.string().optional(),
+      photos: z.array(z.string()).optional(),
       isPublished: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
       return db.createDailyReport({ ...input, date: new Date(input.date), teacherId: ctx.user!.id });
