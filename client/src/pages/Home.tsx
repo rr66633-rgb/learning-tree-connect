@@ -6,19 +6,6 @@ import { Users, CalendarCheck, CreditCard, TrendingUp } from "lucide-react";
 export default function Home() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold">لوحة التحكم</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i}><CardContent className="p-6"><Skeleton className="h-16 w-full" /></CardContent></Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   const statCards = [
     { title: "إجمالي الأطفال", value: stats?.totalChildren ?? 0, icon: Users, color: "text-primary" },
     { title: "الحضور اليوم", value: stats?.presentToday ?? 0, icon: CalendarCheck, color: "text-green-600" },
@@ -43,7 +30,11 @@ export default function Home() {
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-20" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -58,17 +49,23 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <span className="text-sm">نسبة الحضور</span>
-                <span className="font-semibold text-primary">
-                  {stats?.totalChildren ? Math.round((stats.presentToday / stats.totalChildren) * 100) : 0}%
-                </span>
+                {isLoading ? <Skeleton className="h-5 w-12" /> : (
+                  <span className="font-semibold text-primary">
+                    {stats?.totalChildren ? Math.round((stats.presentToday / stats.totalChildren) * 100) : 0}%
+                  </span>
+                )}
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <span className="text-sm">الأطفال النشطون</span>
-                <span className="font-semibold">{stats?.totalChildren ?? 0}</span>
+                {isLoading ? <Skeleton className="h-5 w-12" /> : (
+                  <span className="font-semibold">{stats?.totalChildren ?? 0}</span>
+                )}
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <span className="text-sm">المعلمون</span>
-                <span className="font-semibold">{stats?.totalStaff ?? 0}</span>
+                {isLoading ? <Skeleton className="h-5 w-12" /> : (
+                  <span className="font-semibold">{stats?.totalStaff ?? 0}</span>
+                )}
               </div>
             </div>
           </CardContent>
@@ -82,7 +79,9 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <span className="text-sm text-green-700">الإيرادات المحصلة</span>
-                <span className="font-semibold text-green-700">{(stats?.totalRevenue ?? 0).toLocaleString()} ر.س</span>
+                {isLoading ? <Skeleton className="h-5 w-20" /> : (
+                  <span className="font-semibold text-green-700">{(stats?.totalRevenue ?? 0).toLocaleString()} ر.س</span>
+                )}
               </div>
               <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
                 <span className="text-sm text-amber-700">مستحقات قادمة</span>

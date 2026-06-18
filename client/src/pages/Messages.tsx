@@ -36,10 +36,6 @@ export default function Messages() {
     sendMessage.mutate({ conversationId: selectedConversation, content: newMessage });
   };
 
-  if (isLoading) {
-    return <div className="space-y-6"><h1 className="text-2xl font-bold">الرسائل</h1><Skeleton className="h-96 w-full" /></div>;
-  }
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">الرسائل</h1>
@@ -49,7 +45,11 @@ export default function Messages() {
           <CardHeader className="pb-3"><CardTitle className="text-base">المحادثات</CardTitle></CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-18rem)]">
-              {conversations && conversations.length > 0 ? (
+              {isLoading ? (
+                <div className="space-y-3 p-4">
+                  {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
+                </div>
+              ) : conversations && conversations.length > 0 ? (
                 conversations.map((conv: any) => (
                   <button
                     key={conv.id}

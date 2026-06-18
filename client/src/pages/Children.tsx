@@ -64,9 +64,6 @@ export default function Children() {
 
   const openDetail = (child: any) => { setSelectedChild(child); setDetailOpen(true); };
 
-  if (isLoading) {
-    return <div className="space-y-6"><h1 className="text-2xl font-bold">إدارة الأطفال</h1><Skeleton className="h-64 w-full" /></div>;
-  }
 
   return (
     <div className="space-y-6">
@@ -229,7 +226,12 @@ export default function Children() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 && (
+              {isLoading && (
+                <>{[1,2,3,4,5].map(i => (
+                  <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+                ))}</>
+              )}
+              {!isLoading && filtered.length === 0 && (
                 <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا يوجد أطفال مسجلين</TableCell></TableRow>
               )}
             </TableBody>

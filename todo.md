@@ -56,7 +56,7 @@
 ## Arabic RTL Support
 - [x] RTL layout with IBM Plex Sans Arabic
 - [x] Arabic UI labels and navigation
-- [ ] OAuth portal title (controlled by platform settings)
+- [x] OAuth portal title (controlled by platform settings - set via VITE_APP_TITLE)
 
 ## Design
 - [x] Premium modern UI with educational colors
@@ -80,3 +80,11 @@
 - [x] Test loyalty program
 - [x] Test finance/invoices
 - [x] Take screenshots of all modules
+
+## Branding Update
+- [x] Upload Learning Tree logo and use it on login page and dashboard
+- [x] Replace all placeholder branding with Learning Tree branding
+- [x] Apply Learning Tree brand colors consistently (Navy Blue, Forest Green, Sky Blue)
+- [x] Verify all pages work with real data
+- [x] Take screenshots of all modules (Login, Dashboard, Children, Attendance, Daily Reports, Messaging, Loyalty, Finance)
+- [x] Fix all remaining bugs

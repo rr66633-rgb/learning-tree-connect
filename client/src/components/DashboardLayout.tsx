@@ -64,14 +64,19 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd]">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644
+            <img
+              src="/manus-storage/learning-tree-logo-256_58b252d9.png"
+              alt="Learning Tree Kids Center"
+              className="w-32 h-32 object-contain"
+            />
+            <h1 className="text-2xl font-bold tracking-tight text-center text-[#1a3a5c]">
+              Learning Tree Kids Center
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              \u064A\u0631\u062C\u0649 \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644 \u0644\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0644\u0648\u062D\u0629 \u0627\u0644\u062A\u062D\u0643\u0645
+              \u064A\u0631\u062C\u0649 \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644 \u0644\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0645\u0646\u0635\u0629 \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u062D\u0636\u0627\u0646\u0629
             </p>
           </div>
           <Button
@@ -79,7 +84,7 @@ export default function DashboardLayout({
               window.location.href = getLoginUrl();
             }}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full shadow-lg hover:shadow-xl transition-all bg-[#1a3a5c] hover:bg-[#0f2a45] text-white"
           >
             \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644
           </Button>
@@ -176,11 +181,14 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate text-primary">
-                    شجرة التعلم
+                  <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
+                  <span className="font-semibold tracking-tight truncate text-[#1a3a5c]">
+                    Learning Tree
                   </span>
                 </div>
-              ) : null}
+              ) : (
+                <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
+              )}
             </div>
           </SidebarHeader>
 

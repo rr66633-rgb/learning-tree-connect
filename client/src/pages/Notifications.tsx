@@ -22,9 +22,7 @@ export default function Notifications() {
     onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); toast.success("تم تحديد الكل كمقروء"); },
   });
 
-  if (isLoading) {
-    return <div className="space-y-6"><h1 className="text-2xl font-bold">الإشعارات</h1><Skeleton className="h-64 w-full" /></div>;
-  }
+
 
   return (
     <div className="space-y-6">
@@ -43,7 +41,11 @@ export default function Notifications() {
       <Card>
         <CardContent className="p-0">
           <ScrollArea className="h-[calc(100vh-14rem)]">
-            {notifications && notifications.length > 0 ? (
+            {isLoading ? (
+              <div className="space-y-3 p-4">
+                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+              </div>
+            ) : notifications && notifications.length > 0 ? (
               notifications.map(notif => {
                 const Icon = typeIcons[notif.type] || Bell;
                 const color = typeColors[notif.type] || "text-muted-foreground";

@@ -38,9 +38,7 @@ export default function Finance() {
     createInvoice.mutate({ ...form, childId: form.childId, parentId: form.parentId });
   };
 
-  if (isLoading) {
-    return <div className="space-y-6"><h1 className="text-2xl font-bold">المالية والفواتير</h1><Skeleton className="h-64 w-full" /></div>;
-  }
+
 
   return (
     <div className="space-y-6">
@@ -102,21 +100,24 @@ export default function Finance() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices?.map(inv => (
-                <TableRow key={inv.id}>
-                  <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
-                  <TableCell>{inv.description || "-"}</TableCell>
-                  <TableCell>{Number(inv.subtotal).toLocaleString()} ر.س</TableCell>
-                  <TableCell>{Number(inv.vatAmount).toLocaleString()} ر.س</TableCell>
-                  <TableCell className="font-bold">{Number(inv.total).toLocaleString()} ر.س</TableCell>
-                  <TableCell><Badge variant={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge></TableCell>
-                  <TableCell>{new Date(inv.dueDate).toLocaleDateString('ar-SA')}</TableCell>
-                  <TableCell>
-                    {inv.status === 'pending' && <Button size="sm" variant="default" onClick={() => markPaid.mutate({ id: inv.id })}>تأكيد الدفع</Button>}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {(!invoices || invoices.length === 0) && (
+              {isLoading ? (
+                [1,2,3,4,5].map(i => <TableRow key={i}><TableCell colSpan={8}><Skeleton className="h-8 w-full" /></TableCell></TableRow>)
+              ) : invoices && invoices.length > 0 ? (
+                invoices.map(inv => (
+                  <TableRow key={inv.id}>
+                    <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
+                    <TableCell>{inv.description || "-"}</TableCell>
+                    <TableCell>{Number(inv.subtotal).toLocaleString()} ر.س</TableCell>
+                    <TableCell>{Number(inv.vatAmount).toLocaleString()} ر.س</TableCell>
+                    <TableCell className="font-bold">{Number(inv.total).toLocaleString()} ر.س</TableCell>
+                    <TableCell><Badge variant={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge></TableCell>
+                    <TableCell>{new Date(inv.dueDate).toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>
+                      {inv.status === 'pending' && <Button size="sm" variant="default" onClick={() => markPaid.mutate({ id: inv.id })}>تأكيد الدفع</Button>}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد فواتير</TableCell></TableRow>
               )}
             </TableBody>

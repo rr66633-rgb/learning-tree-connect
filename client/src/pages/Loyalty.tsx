@@ -40,10 +40,6 @@ export default function Loyalty() {
     createReward.mutate({ name: form.name, nameAr: form.name, description: form.description, pointsCost: Number(form.pointsCost) });
   };
 
-  if (isLoading) {
-    return <div className="space-y-6"><h1 className="text-2xl font-bold">برنامج الولاء</h1><Skeleton className="h-64 w-full" /></div>;
-  }
-
   const currentPoints = balance?.points ?? 0;
 
   return (
