@@ -28,14 +28,14 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "\u0644\u0648\u062D\u0629 \u0627\u0644\u062A\u062D\u0643\u0645", path: "/" },
-  { icon: Users, label: "\u0627\u0644\u0623\u0637\u0641\u0627\u0644", path: "/children" },
-  { icon: CalendarCheck, label: "\u0627\u0644\u062D\u0636\u0648\u0631", path: "/attendance" },
-  { icon: FileText, label: "\u0627\u0644\u062A\u0642\u0627\u0631\u064A\u0631 \u0627\u0644\u064A\u0648\u0645\u064A\u0629", path: "/daily-reports" },
-  { icon: MessageCircle, label: "\u0627\u0644\u0631\u0633\u0627\u0626\u0644", path: "/messages" },
-  { icon: CreditCard, label: "\u0627\u0644\u0645\u0627\u0644\u064A\u0629", path: "/finance" },
-  { icon: Gift, label: "\u0628\u0631\u0646\u0627\u0645\u062C \u0627\u0644\u0648\u0644\u0627\u0621", path: "/loyalty" },
-  { icon: Bell, label: "\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062A", path: "/notifications" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/" },
+  { icon: Users, label: "الأطفال", path: "/children" },
+  { icon: CalendarCheck, label: "الحضور", path: "/attendance" },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
+  { icon: CreditCard, label: "المالية", path: "/finance" },
+  { icon: Gift, label: "برنامج الولاء", path: "/loyalty" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -76,7 +76,7 @@ export default function DashboardLayout({
               Learning Tree Kids Center
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              \u064A\u0631\u062C\u0649 \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644 \u0644\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0645\u0646\u0635\u0629 \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u062D\u0636\u0627\u0646\u0629
+              يرجى تسجيل الدخول للوصول إلى منصة إدارة الحضانة
             </p>
           </div>
           <Button
@@ -86,7 +86,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all bg-[#1a3a5c] hover:bg-[#0f2a45] text-white"
           >
-            \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644
+            تسجيل الدخول
           </Button>
         </div>
       </div>
@@ -240,7 +240,7 @@ function DashboardLayoutContent({
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <LogOut className="ml-2 h-4 w-4" />
-                  <span>\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062E\u0631\u0648\u062C</span>
+                  <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
