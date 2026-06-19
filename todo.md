@@ -177,7 +177,7 @@
 - [x] Invoice management with automatic billing
 - [x] Financial reports
 - [x] Attendance reports
-- [ ] EYFS assessment tracking
+- [x] EYFS assessment tracking
 - [x] Document management
 - [x] Internal messaging
 - [x] Notification center
@@ -194,16 +194,16 @@
 - [x] Photos & videos gallery
 - [x] Meal/Snack/Nap/Diaper/Toilet/Water reports
 - [x] Medication reports
-- [ ] Learning observations
-- [ ] EYFS assessments view
+- [x] Learning observations
+- [x] EYFS assessments view
 - [x] Monthly reports
 - [x] School calendar view
 - [x] Events & trips
 - [x] Announcements
 - [x] Messaging with teachers & admin
-- [ ] Push notifications
+- [x] Push notifications (in-app notification system with real-time polling)
 - [x] Invoice viewing
-- [ ] Download receipts
+- [x] Download receipts (PDF invoice download)
 - [x] Digital signature for forms
 - [x] Emergency contacts management
 - [x] Medical information
@@ -220,7 +220,7 @@
 - [x] Role-based access control for all new roles
 - [x] Teachers access only assigned classes
 - [x] Parents access only their own children
-- [ ] Audit logs for sensitive operations - middleware needed
+- [x] Audit logs for sensitive operations - admin audit log page + middleware logging
 
 ### Mobile & PWA
 - [x] Mobile-first responsive design

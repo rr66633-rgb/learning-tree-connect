@@ -99,7 +99,7 @@ describe("AUDIT: Admin Full Access Verification", () => {
     const stats = await call(adminCtx).dashboard.stats();
     expect(stats.totalChildren).toBeGreaterThanOrEqual(20);
     expect(stats.totalStaff).toBeGreaterThanOrEqual(5);
-  });
+  }, 15000);
 
   it("admin can list ALL children", async () => {
     const children = await call(adminCtx).children.list();

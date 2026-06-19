@@ -25,7 +25,7 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText,
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
-  Camera, User, UserCheck, MapPin
+  Camera, User, UserCheck, MapPin, BookOpen, Shield
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -51,6 +51,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: FileArchive, label: "المستندات", path: "/documents" },
   { icon: Heart, label: "المعلومات الطبية", path: "/medical" },
   { icon: MapPin, label: "طلب الاستلام", path: "/pickup" },
+  { icon: BookOpen, label: "الملاحظات والتقييمات", path: "/observations" },
   { icon: Calendar, label: "التقويم", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
 ];
@@ -70,6 +71,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: MessageCircle, label: "الرسائل", path: "/messages" },
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: MapPin, label: "الاستلام", path: "/pickup" },
+  { icon: BookOpen, label: "التقييمات", path: "/assessments" },
   { icon: Calendar, label: "التقويم", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
 ];
@@ -97,7 +99,9 @@ const adminMenuItems: MenuItem[] = [
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
   { icon: MapPin, label: "الاستلام", path: "/pickup" },
+  { icon: BookOpen, label: "التقييمات", path: "/assessments" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
+  { icon: Shield, label: "سجل المراجعة", path: "/audit-log" },
   { icon: Settings, label: "الإعدادات", path: "/settings" },
 ];
 
@@ -121,6 +125,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: FileArchive, label: "المستندات", path: "/documents" },
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
+  { icon: BookOpen, label: "التقييمات", path: "/assessments" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
 ];
 

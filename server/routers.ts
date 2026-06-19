@@ -458,8 +458,9 @@ export const appRouter = router({
       if (data.dateOfBirth) updateData.dateOfBirth = new Date(data.dateOfBirth);
       return db.updateChild(id, updateData);
     }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.deleteChild(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_child', resource: 'children', resourceId: input.id, details: `Deleted child #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
     archive: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
@@ -864,6 +865,7 @@ export const appRouter = router({
         type: 'payment',
         metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
       });
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'create_invoice', resource: 'invoices', resourceId: invoice.id, details: `Created invoice ${invoice.invoiceNumber} for ${total.toFixed(2)} SAR`, ipAddress: '' });
       return invoice;
     }),
     updateInvoice: adminProcedure.input(z.object({
@@ -888,10 +890,11 @@ export const appRouter = router({
       await db.updateInvoice(input.id, updateData);
       return { success: true };
     }),
-    markPaid: adminProcedure.input(z.object({ id: z.number(), paymentMethod: z.enum(['cash', 'bank_transfer', 'card', 'apple_pay', 'mada', 'stc_pay']) })).mutation(async ({ input }) => {
+    markPaid: adminProcedure.input(z.object({ id: z.number(), paymentMethod: z.enum(['cash', 'bank_transfer', 'card', 'apple_pay', 'mada', 'stc_pay']) })).mutation(async ({ input, ctx }) => {
       const invoice = await db.getInvoiceById(input.id);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
       await db.updateInvoice(input.id, { status: 'paid', paidAt: new Date(), paymentMethod: input.paymentMethod, paidAmount: invoice.total });
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'mark_paid', resource: 'invoices', resourceId: input.id, details: `Marked invoice ${invoice.invoiceNumber} as paid via ${input.paymentMethod}`, ipAddress: '' });
       // Create a manual payment record
       await db.createPayment({
         invoiceId: input.id,
@@ -1217,6 +1220,7 @@ export const appRouter = router({
         metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
       });
       
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'create_refund', resource: 'refunds', resourceId: input.invoiceId, details: `Refund ${input.amount} SAR for invoice #${input.invoiceId}: ${input.reason}`, ipAddress: '' });
       return refund;
     }),
     list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
@@ -1965,9 +1969,49 @@ export const appRouter = router({
     }),
   }),
 
+  observations: router({
+    list: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getLearningObservations(input.childId);
+    }),
+    create: teacherProcedure.input(z.object({
+      childId: z.number(),
+      area: z.string(),
+      title: z.string(),
+      description: z.string(),
+      evidence: z.string().optional(),
+      nextSteps: z.string().optional(),
+      linkedAssessmentId: z.number().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createLearningObservation({ ...input, observedBy: ctx.user!.id, observedAt: new Date() });
+    }),
+    byArea: protectedProcedure.input(z.object({ childId: z.number(), area: z.string() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getLearningObservationsByArea(input.childId, input.area);
+    }),
+  }),
+
   auditLog: router({
     list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
       return db.getAuditLogs(input?.limit);
+    }),
+    create: protectedProcedure.input(z.object({
+      action: z.string(),
+      resource: z.string(),
+      resourceId: z.number().optional(),
+      details: z.any().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createAuditLog({ ...input, userId: ctx.user!.id, ipAddress: '' });
     }),
   }),
 
@@ -1985,7 +2029,7 @@ export const appRouter = router({
       role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist']),
       nationalId: z.string().optional(),
       password: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       // Generate a unique openId for manually created users
       const openId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const { password, ...userData } = input;
@@ -1996,6 +2040,7 @@ export const appRouter = router({
         const hashedPassword = await bcrypt.hash(password, 10);
         await db.updateUser(user.id, { password: hashedPassword } as any);
       }
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'create_user', resource: 'users', resourceId: user?.id, details: `Created user ${input.name} (${input.role})`, ipAddress: '' });
       return user;
     }),
     update: adminProcedure.input(z.object({
@@ -2006,11 +2051,14 @@ export const appRouter = router({
       role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist', 'user']).optional(),
       nationalId: z.string().optional(),
       isActive: z.boolean().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
-      return db.updateUser(id, data);
+      const result = await db.updateUser(id, data);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'update_user', resource: 'users', resourceId: id, details: `Updated user #${id}: ${JSON.stringify(data)}`, ipAddress: '' });
+      return result;
     }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_user', resource: 'users', resourceId: input.id, details: `Deleted user #${input.id}`, ipAddress: '' });
       return db.deleteUser(input.id);
     }),
     linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input }) => {
@@ -2039,13 +2087,15 @@ export const appRouter = router({
       return db.getPendingParents();
     }),
     // Approve a pending parent (set isActive=true)
-    approveAsParent: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    approveAsParent: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.approveParent(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'approve_parent', resource: 'users', resourceId: input.id, details: `Approved parent #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
     // Reject a pending parent
-    reject: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    reject: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.rejectParent(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'reject_parent', resource: 'users', resourceId: input.id, details: `Rejected parent #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
   }),

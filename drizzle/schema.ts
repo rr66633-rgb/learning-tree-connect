@@ -639,3 +639,18 @@ export const pickupRequests = mysqlTable("pickup_requests", {
 });
 export type PickupRequest = typeof pickupRequests.$inferSelect;
 export type InsertPickupRequest = typeof pickupRequests.$inferInsert;
+
+// ============ LEARNING OBSERVATIONS ============
+export const learningObservations = mysqlTable("learning_observations", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  observedBy: int("observedBy").notNull(),
+  area: varchar("area", { length: 200 }).notNull(), // EYFS area
+  title: varchar("title", { length: 300 }).notNull(),
+  description: text("description").notNull(),
+  evidence: text("evidence"), // photo/video URL
+  nextSteps: text("nextSteps"),
+  linkedAssessmentId: int("linkedAssessmentId"),
+  observedAt: timestamp("observedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
