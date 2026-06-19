@@ -42,18 +42,38 @@ export type InsertClass = typeof classes.$inferInsert;
 // ============ CHILDREN ============
 export const children = mysqlTable("children", {
   id: int("id").autoincrement().primaryKey(),
+  // Personal Information
   firstName: varchar("firstName", { length: 100 }).notNull(),
   lastName: varchar("lastName", { length: 100 }).notNull(),
   arabicName: varchar("arabicName", { length: 200 }),
   dateOfBirth: timestamp("dateOfBirth").notNull(),
   gender: mysqlEnum("gender", ["male", "female"]).notNull(),
+  nationality: varchar("nationality", { length: 100 }),
+  childNationalId: varchar("childNationalId", { length: 20 }),
   classId: int("classId"),
-  parentId: int("parentId"),
-  photo: text("photo"),
-  medicalNotes: text("medicalNotes"),
-  allergies: text("allergies"),
-  bloodType: varchar("bloodType", { length: 10 }),
   enrollmentDate: timestamp("enrollmentDate").defaultNow().notNull(),
+  photo: text("photo"),
+  // Parent Information
+  parentId: int("parentId"),
+  fatherName: varchar("fatherName", { length: 200 }),
+  motherName: varchar("motherName", { length: 200 }),
+  parentEmail: varchar("parentEmail", { length: 320 }),
+  parentMobile: varchar("parentMobile", { length: 20 }),
+  altPhone: varchar("altPhone", { length: 20 }),
+  homeAddress: text("homeAddress"),
+  // Medical Information
+  allergies: text("allergies"),
+  medicalConditions: text("medicalConditions"),
+  medications: text("medications"),
+  specialNeeds: text("specialNeeds"),
+  doctorName: varchar("doctorName", { length: 200 }),
+  bloodType: varchar("bloodType", { length: 10 }),
+  medicalNotes: text("medicalNotes"),
+  // Nursery Information
+  pickupAuthorization: text("pickupAuthorization"),
+  busRequired: boolean("busRequired").default(false).notNull(),
+  notes: text("notes"),
+  // Status & Metadata
   status: mysqlEnum("status", ["active", "inactive", "graduated", "waitlist"]).default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
