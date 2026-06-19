@@ -223,7 +223,7 @@ describe("Finance & Invoices", () => {
     const invoices = await caller.finance.invoices();
     const pendingInvoice = invoices.find(i => i.status === "pending");
     if (pendingInvoice) {
-      const result = await caller.finance.markPaid({ id: pendingInvoice.id });
+      const result = await caller.finance.markPaid({ id: pendingInvoice.id, paymentMethod: 'cash' });
       expect(result).toBeDefined();
     }
   });

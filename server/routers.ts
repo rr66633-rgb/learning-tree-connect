@@ -404,11 +404,19 @@ export const appRouter = router({
 
   finance: router({
     invoices: protectedProcedure.input(z.object({ parentId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
-      // Parents can only see their own invoices
       if (ctx.user?.role === 'parent') {
         return db.getInvoices(ctx.user.id);
       }
       return db.getInvoices(input?.parentId);
+    }),
+    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+      const invoice = await db.getInvoiceById(input.id);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      // Parents can only see their own invoices
+      if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      }
+      return invoice;
     }),
     createInvoice: adminProcedure.input(z.object({
       childId: z.number(),
@@ -429,12 +437,53 @@ export const appRouter = router({
         dueDate: new Date(input.dueDate),
       });
     }),
-    markPaid: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      await db.updateInvoiceStatus(input.id, "paid", new Date());
+    updateInvoice: adminProcedure.input(z.object({
+      id: z.number(),
+      description: z.string().optional(),
+      subtotal: z.string().optional(),
+      dueDate: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const updateData: any = {};
+      if (input.description) updateData.description = input.description;
+      if (input.dueDate) updateData.dueDate = new Date(input.dueDate);
+      if (input.subtotal) {
+        const subtotal = parseFloat(input.subtotal);
+        const vatAmount = subtotal * 0.15;
+        const total = subtotal + vatAmount;
+        updateData.subtotal = input.subtotal;
+        updateData.vatAmount = vatAmount.toFixed(2);
+        updateData.total = total.toFixed(2);
+      }
+      await db.updateInvoice(input.id, updateData);
+      return { success: true };
+    }),
+    markPaid: adminProcedure.input(z.object({ id: z.number(), paymentMethod: z.enum(['cash', 'bank_transfer', 'card']) })).mutation(async ({ input }) => {
+      await db.updateInvoice(input.id, { status: 'paid', paidAt: new Date(), paymentMethod: input.paymentMethod });
+      return { success: true };
+    }),
+    markPending: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.updateInvoice(input.id, { status: 'pending', paidAt: null, paymentMethod: undefined as any });
+      return { success: true };
+    }),
+    deleteInvoice: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.deleteInvoice(input.id);
+      return { success: true };
+    }),
+    sendToParent: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      const invoice = await db.getInvoiceById(input.id);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      await db.createNotification({
+        userId: invoice.parentId,
+        title: 'فاتورة جديدة',
+        titleAr: 'فاتورة جديدة',
+        body: `تم إرسال فاتورة بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description || 'بدون وصف'}`,
+        bodyAr: `تم إرسال فاتورة بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description || 'بدون وصف'}`,
+        type: 'payment',
+        metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+      });
       return { success: true };
     }),
     summary: protectedProcedure.query(async ({ ctx }) => {
-      // Only admin/teacher can see financial summary
       if (ctx.user?.role === 'parent') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }

@@ -113,7 +113,7 @@ export default function Finance() {
                     <TableCell><Badge variant={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge></TableCell>
                     <TableCell>{new Date(inv.dueDate).toLocaleDateString('ar-SA')}</TableCell>
                     <TableCell>
-                      {inv.status === 'pending' && <Button size="sm" variant="default" onClick={() => markPaid.mutate({ id: inv.id })}>تأكيد الدفع</Button>}
+                      {inv.status === 'pending' && <Button size="sm" variant="default" onClick={() => markPaid.mutate({ id: inv.id, paymentMethod: 'cash' })}>تأكيد الدفع</Button>}
                     </TableCell>
                   </TableRow>
                 ))

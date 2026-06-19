@@ -305,6 +305,7 @@ export const invoices = mysqlTable("invoices", {
   status: mysqlEnum("status", ["pending", "paid", "overdue", "cancelled"]).default("pending").notNull(),
   dueDate: timestamp("dueDate").notNull(),
   paidAt: timestamp("paidAt"),
+  paymentMethod: mysqlEnum("paymentMethod", ["cash", "bank_transfer", "card"]),
   receiptUrl: text("receiptUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

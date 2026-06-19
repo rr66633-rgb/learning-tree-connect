@@ -310,26 +310,42 @@ export async function getUnreadMessageCount(userId: number) {
 export async function getInvoices(parentId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const selectFields = {
+    id: invoices.id,
+    childId: invoices.childId,
+    parentId: invoices.parentId,
+    invoiceNumber: invoices.invoiceNumber,
+    description: invoices.description,
+    subtotal: invoices.subtotal,
+    vatRate: invoices.vatRate,
+    vatAmount: invoices.vatAmount,
+    total: invoices.total,
+    status: invoices.status,
+    dueDate: invoices.dueDate,
+    paidAt: invoices.paidAt,
+    paymentMethod: invoices.paymentMethod,
+    createdAt: invoices.createdAt,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    parentName: users.name,
+  };
   if (parentId) {
-    const results = await db.select({
-      id: invoices.id,
-      childId: invoices.childId,
-      parentId: invoices.parentId,
-      invoiceNumber: invoices.invoiceNumber,
-      description: invoices.description,
-      subtotal: invoices.subtotal,
-      vatRate: invoices.vatRate,
-      vatAmount: invoices.vatAmount,
-      total: invoices.total,
-      status: invoices.status,
-      dueDate: invoices.dueDate,
-      paidAt: invoices.paidAt,
-      createdAt: invoices.createdAt,
-      childFirstName: children.firstName,
-      childLastName: children.lastName,
-    }).from(invoices).leftJoin(children, eq(invoices.childId, children.id)).where(eq(invoices.parentId, parentId)).orderBy(desc(invoices.createdAt));
+    const results = await db.select(selectFields).from(invoices)
+      .leftJoin(children, eq(invoices.childId, children.id))
+      .leftJoin(users, eq(invoices.parentId, users.id))
+      .where(eq(invoices.parentId, parentId)).orderBy(desc(invoices.createdAt));
     return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
   }
+  const results = await db.select(selectFields).from(invoices)
+    .leftJoin(children, eq(invoices.childId, children.id))
+    .leftJoin(users, eq(invoices.parentId, users.id))
+    .orderBy(desc(invoices.createdAt));
+  return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
+}
+
+export async function getInvoiceById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
   const results = await db.select({
     id: invoices.id,
     childId: invoices.childId,
@@ -343,11 +359,33 @@ export async function getInvoices(parentId?: number) {
     status: invoices.status,
     dueDate: invoices.dueDate,
     paidAt: invoices.paidAt,
+    paymentMethod: invoices.paymentMethod,
+    receiptUrl: invoices.receiptUrl,
     createdAt: invoices.createdAt,
     childFirstName: children.firstName,
     childLastName: children.lastName,
-  }).from(invoices).leftJoin(children, eq(invoices.childId, children.id)).orderBy(desc(invoices.createdAt));
-  return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
+    parentName: users.name,
+    parentEmail: users.email,
+    parentPhone: users.phone,
+  }).from(invoices)
+    .leftJoin(children, eq(invoices.childId, children.id))
+    .leftJoin(users, eq(invoices.parentId, users.id))
+    .where(eq(invoices.id, id));
+  if (!results.length) return null;
+  const r = results[0];
+  return { ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() };
+}
+
+export async function updateInvoice(id: number, data: Partial<{ description: string; subtotal: string; vatAmount: string; total: string; dueDate: Date; status: string; paymentMethod: string; paidAt: Date | null }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(invoices).set(data as any).where(eq(invoices.id, id));
+}
+
+export async function deleteInvoice(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(invoices).where(eq(invoices.id, id));
 }
 
 export async function createInvoice(data: InsertInvoice) {

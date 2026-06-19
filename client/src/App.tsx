@@ -26,6 +26,7 @@ const StaffDocuments = lazy(() => import("./pages/staff/Documents"));
 const StaffNotifications = lazy(() => import("./pages/staff/Notifications"));
 const StaffUsers = lazy(() => import("./pages/staff/Users"));
 const StaffSettings = lazy(() => import("./pages/staff/Settings"));
+const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
 
 // Parent Pages
 const ParentDashboard = lazy(() => import("./pages/parent/Dashboard"));
@@ -63,6 +64,7 @@ function StaffRouter() {
         <Route path="/staff/daily-reports" component={StaffDailyReports} />
         <Route path="/staff/messages" component={StaffMessages} />
         <Route path="/staff/finance" component={StaffFinance} />
+        <Route path="/staff/invoice/:id" component={InvoiceDetail} />
         <Route path="/staff/enrollment" component={StaffEnrollment} />
         <Route path="/staff/calendar" component={StaffCalendar} />
         <Route path="/staff/announcements" component={StaffAnnouncements} />
@@ -88,6 +90,7 @@ function ParentRouter() {
         <Route path="/parent/calendar" component={ParentCalendar} />
         <Route path="/parent/messages" component={ParentMessages} />
         <Route path="/parent/finance" component={ParentFinance} />
+        <Route path="/parent/invoice/:id" component={InvoiceDetail} />
         <Route path="/parent/documents" component={ParentDocuments} />
         <Route path="/parent/notifications" component={ParentNotifications} />
         <Route path="/parent/announcements" component={ParentAnnouncements} />
@@ -113,13 +116,13 @@ function RoleRouter() {
         <Route path="/">
           <Redirect to={basePath} />
         </Route>
-        <Route path="/staff/:rest*">
+        <Route path="/staff/**">
           {isParent ? <Redirect to="/parent" /> : <StaffRouter />}
         </Route>
         <Route path="/staff">
           {isParent ? <Redirect to="/parent" /> : <StaffRouter />}
         </Route>
-        <Route path="/parent/:rest*">
+        <Route path="/parent/**">
           {!isParent && user ? <Redirect to="/staff" /> : <ParentRouter />}
         </Route>
         <Route path="/parent">

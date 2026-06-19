@@ -1,0 +1,1 @@
+ALTER TABLE `invoices` ADD `paymentMethod` enum('cash','bank_transfer','card');

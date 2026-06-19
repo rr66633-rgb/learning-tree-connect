@@ -271,3 +271,15 @@
 - [x] Fix invoice amounts not displayed correctly (use total field instead of amount)
 - [x] Make invoices table fully responsive on mobile (horizontal scroll + responsive cards)
 - [x] Ensure all columns visible on mobile with clear status badges
+
+## Finance Module Major Improvements
+- [x] Make invoice cards clickable to open detail page
+- [x] Add invoice status management (Pending/Paid toggle with payment method)
+- [x] Add payment method field (Cash, Bank Transfer, Card) to schema
+- [x] Create full invoice details page with all info
+- [x] Add action buttons: Mark Paid/Pending, Edit, Delete, Download PDF, Print, Send to Parent
+- [x] Print invoice via browser print (professional layout with Learning Tree branding)
+- [x] Generate professional PDF invoices with jsPDF (Learning Tree branding, table, VAT)
+- [x] Fix mobile responsiveness for invoice cards and buttons
+- [x] Add search and filtering (by child, status, date)
+- [x] Fix routing for multi-segment paths (/staff/invoice/:id)
