@@ -299,3 +299,14 @@
 - [x] Parent portal: parents can upload documents for their children
 - [x] Added /api/upload-document endpoint for FormData file uploads (PDF, images, docs)
 - [x] Added /api/upload-photo endpoint for FormData photo uploads
+
+## Critical: Role-Based Access System Fix
+- [ ] Fix role-based routing: parent users must see Parent Portal
+- [ ] Fix DashboardLayout sidebar to show correct navigation per role
+- [ ] Add role-based redirect after OAuth login (parent→/parent, staff→/staff, admin→/staff)
+- [ ] Handle "user" role (default) - redirect to appropriate portal or show role selection
+- [ ] Ensure route protection: /parent/* only for parents, /staff/* only for staff/admin
+- [ ] Parent Portal sidebar: My Children, Attendance, Daily Reports, Photos & Activities, Messages, Notifications, Invoices & Payments, Documents, Profile Settings
+- [ ] Staff Portal sidebar: Dashboard, Children, Classes, Attendance, Reports, Activities, Messages
+- [ ] Admin Portal sidebar: Full system access including all staff items + User management + Settings
+- [ ] Verify all 158 tests still pass after changes

@@ -1097,7 +1097,7 @@ export const appRouter = router({
       name: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().optional(),
-      role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist']).optional(),
+      role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist', 'user']).optional(),
       nationalId: z.string().optional(),
       isActive: z.boolean().optional(),
     })).mutation(async ({ input }) => {

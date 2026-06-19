@@ -52,6 +52,26 @@ function PageLoader() {
   );
 }
 
+/** Determine if a role is a "parent" type role */
+function isParentRole(role?: string): boolean {
+  return role === "parent";
+}
+
+/** Determine if a role is a "staff" type role (any non-parent authenticated role) */
+function isStaffRole(role?: string): boolean {
+  const staffRoles = ["admin", "super_admin", "principal", "teacher", "assistant", "accountant", "receptionist"];
+  return staffRoles.includes(role || "");
+}
+
+/** Get the base path for a given role */
+function getBasePathForRole(role?: string): string {
+  if (isParentRole(role)) return "/parent";
+  if (isStaffRole(role)) return "/staff";
+  // Default: 'user' role or unknown - show a pending state
+  // We'll redirect them to a waiting page or parent portal by default
+  return "/pending";
+}
+
 function StaffRouter() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -103,33 +123,85 @@ function ParentRouter() {
   );
 }
 
+/** Page shown to users with unassigned role ('user') */
+function PendingRolePage() {
+  const { user, logout } = useAuth();
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd]">
+      <div className="flex flex-col items-center gap-6 p-8 max-w-md w-full text-center">
+        <img
+          src="/manus-storage/learning-tree-logo-256_58b252d9.png"
+          alt="Learning Tree Kids Center"
+          className="w-24 h-24 object-contain"
+        />
+        <h1 className="text-xl font-bold text-[#1a3a5c]">
+          مرحباً {user?.name}
+        </h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <p className="text-sm text-amber-800">
+            حسابك قيد المراجعة. يرجى التواصل مع إدارة الحضانة لتفعيل حسابك وتحديد صلاحياتك.
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          سيتم تحديد نوع حسابك (ولي أمر / موظف) من قبل الإدارة.
+        </p>
+        <button
+          onClick={logout}
+          className="text-sm text-destructive hover:underline mt-4"
+        >
+          تسجيل الخروج
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RoleRouter() {
   const { user, loading } = useAuth();
 
   if (loading) return <PageLoader />;
 
-  // Redirect root to appropriate app based on role
-  const isParent = user?.role === "parent";
-  const basePath = isParent ? "/parent" : "/staff";
+  // Not logged in - DashboardLayout handles the login page
+  if (!user) {
+    return (
+      <DashboardLayout basePath="/staff">
+        <StaffRouter />
+      </DashboardLayout>
+    );
+  }
+
+  const userRole = user.role;
+  const basePath = getBasePathForRole(userRole);
+
+  // Users with unassigned role ('user') see a pending page
+  if (basePath === "/pending") {
+    return <PendingRolePage />;
+  }
 
   return (
     <DashboardLayout basePath={basePath}>
       <Switch>
+        {/* Root redirect based on role */}
         <Route path="/">
           <Redirect to={basePath} />
         </Route>
+
+        {/* Staff routes - protected for staff roles only */}
         <Route path="/staff/**">
-          {isParent ? <Redirect to="/parent" /> : <StaffRouter />}
+          {isStaffRole(userRole) ? <StaffRouter /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/staff">
-          {isParent ? <Redirect to="/parent" /> : <StaffRouter />}
+          {isStaffRole(userRole) ? <StaffRouter /> : <Redirect to={basePath} />}
         </Route>
+
+        {/* Parent routes - protected for parent role only */}
         <Route path="/parent/**">
-          {!isParent && user ? <Redirect to="/staff" /> : <ParentRouter />}
+          {isParentRole(userRole) ? <ParentRouter /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/parent">
-          {!isParent && user ? <Redirect to="/staff" /> : <ParentRouter />}
+          {isParentRole(userRole) ? <ParentRouter /> : <Redirect to={basePath} />}
         </Route>
+
         {/* Legacy routes redirect */}
         <Route path="/children">
           <Redirect to={`${basePath}/children`} />
@@ -146,6 +218,7 @@ function RoleRouter() {
         <Route path="/notifications">
           <Redirect to={`${basePath}/notifications`} />
         </Route>
+
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

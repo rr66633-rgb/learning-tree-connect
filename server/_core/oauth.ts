@@ -9,6 +9,25 @@ function getQueryParam(req: Request, key: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+/** Get the redirect path based on user role */
+function getRedirectPathForRole(role: string): string {
+  switch (role) {
+    case "parent":
+      return "/parent";
+    case "admin":
+    case "super_admin":
+    case "principal":
+    case "teacher":
+    case "assistant":
+    case "accountant":
+    case "receptionist":
+      return "/staff";
+    default:
+      // 'user' or unknown role - redirect to root, frontend handles pending state
+      return "/";
+  }
+}
+
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
@@ -28,13 +47,43 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      await db.upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-        lastSignedIn: new Date(),
-      });
+      // Check if user already exists by openId
+      let existingUser = await db.getUserByOpenId(userInfo.openId);
+
+      // If not found by openId, check by email (handles manually-created users)
+      if (!existingUser && userInfo.email) {
+        const emailUser = await db.getUserByEmail(userInfo.email);
+        if (emailUser && emailUser.openId.startsWith('manual_')) {
+          // Link the OAuth openId to the existing manually-created user
+          // Update the openId to the real OAuth openId via db helper
+          await db.updateUserOpenId(emailUser.id, userInfo.openId);
+          existingUser = { ...emailUser, openId: userInfo.openId };
+        }
+      }
+
+      if (!existingUser) {
+        // New user - create with default role
+        await db.upsertUser({
+          openId: userInfo.openId,
+          name: userInfo.name || null,
+          email: userInfo.email ?? null,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          lastSignedIn: new Date(),
+        });
+      } else {
+        // Existing user - just update lastSignedIn
+        await db.upsertUser({
+          openId: userInfo.openId,
+          name: userInfo.name || null,
+          email: userInfo.email ?? null,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          lastSignedIn: new Date(),
+        });
+      }
+
+      // Get the user from DB to determine their role for redirect
+      const user = await db.getUserByOpenId(userInfo.openId);
+      const redirectPath = getRedirectPathForRole(user?.role || "user");
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
@@ -44,7 +93,7 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, "/");
+      res.redirect(302, redirectPath);
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });

@@ -23,55 +23,165 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText,
-  MessageCircle, CreditCard, Gift, Bell, Settings, UserCog, GraduationCap,
-  Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar
+  MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
+  Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
+  Camera, User
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-type MenuItem = { icon: any; label: string; path: string; roles: string[] };
+type MenuItem = { icon: any; label: string; path: string };
 
-const staffMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", roles: ["admin", "teacher", "assistant", "principal", "accountant", "receptionist"] },
-  { icon: Users, label: "الأطفال", path: "/children", roles: ["admin", "teacher", "assistant", "principal"] },
-  { icon: GraduationCap, label: "الفصول", path: "/classes", roles: ["admin", "principal", "teacher"] },
-  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance", roles: ["admin", "teacher", "assistant", "principal"] },
-  { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance", roles: ["admin", "principal"] },
-  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", roles: ["admin", "teacher", "assistant"] },
-  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", roles: ["admin", "teacher", "principal"] },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages", roles: ["admin", "teacher", "assistant", "principal"] },
-  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["admin", "accountant", "principal"] },
-  { icon: UserPlus, label: "التسجيل", path: "/enrollment", roles: ["admin", "receptionist", "principal"] },
-  { icon: Calendar, label: "التقويم", path: "/calendar", roles: ["admin", "teacher", "principal"] },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements", roles: ["admin", "principal"] },
-  { icon: FileArchive, label: "المستندات", path: "/documents", roles: ["admin", "principal", "receptionist"] },
-  { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["admin", "teacher", "assistant", "principal"] },
-  { icon: UserCog, label: "إدارة المستخدمين", path: "/users", roles: ["admin", "principal"] },
-  { icon: Settings, label: "الإعدادات", path: "/settings", roles: ["admin"] },
-];
-
+/**
+ * Parent Portal Navigation Items
+ * Includes: My Children, Attendance, Daily Reports, Photos & Activities,
+ * Messages, Notifications, Invoices & Payments, Documents, Medical, Profile Settings
+ */
 const parentMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "الرئيسية", path: "", roles: ["parent"] },
-  { icon: Users, label: "أطفالي", path: "/children", roles: ["parent"] },
-  { icon: ClipboardList, label: "التقرير اليومي", path: "/timeline", roles: ["parent"] },
-  { icon: CalendarCheck, label: "الحضور", path: "/attendance", roles: ["parent"] },
-  { icon: Calendar, label: "التقويم", path: "/calendar", roles: ["parent"] },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages", roles: ["parent"] },
-  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["parent"] },
-  { icon: Heart, label: "المعلومات الطبية", path: "/medical", roles: ["parent"] },
-  { icon: FileArchive, label: "المستندات", path: "/documents", roles: ["parent"] },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements", roles: ["parent"] },
-  { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["parent"] },
-  { icon: Gift, label: "برنامج الولاء", path: "/loyalty", roles: ["parent"] },
+  { icon: LayoutDashboard, label: "الرئيسية", path: "" },
+  { icon: Users, label: "أطفالي", path: "/children" },
+  { icon: CalendarCheck, label: "الحضور", path: "/attendance" },
+  { icon: ClipboardList, label: "التقرير اليومي", path: "/timeline" },
+  { icon: Camera, label: "الصور والأنشطة", path: "/reports" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications" },
+  { icon: CreditCard, label: "الفواتير والمدفوعات", path: "/finance" },
+  { icon: FileArchive, label: "المستندات", path: "/documents" },
+  { icon: Heart, label: "المعلومات الطبية", path: "/medical" },
+  { icon: Calendar, label: "التقويم", path: "/calendar" },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
 ];
 
-function getMenuItems(role?: string, basePath?: string): MenuItem[] {
-  const userRole = role || "parent";
-  const isParent = userRole === "parent";
-  const items = isParent ? parentMenuItems : staffMenuItems;
-  return items.filter(item => item.roles.includes(userRole));
+/**
+ * Staff Portal Navigation Items (for teacher, assistant roles)
+ * Includes: Dashboard, Children, Classes, Attendance, Reports, Activities, Messages
+ */
+const staffMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
+  { icon: Users, label: "الأطفال", path: "/children" },
+  { icon: GraduationCap, label: "الفصول", path: "/classes" },
+  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance" },
+  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log" },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications" },
+  { icon: Calendar, label: "التقويم", path: "/calendar" },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
+];
+
+/**
+ * Admin Portal Navigation Items (full system access)
+ * Includes all staff items + User management, Staff attendance, Finance, 
+ * Enrollment, Documents, Settings
+ */
+const adminMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
+  { icon: Users, label: "الأطفال", path: "/children" },
+  { icon: GraduationCap, label: "الفصول", path: "/classes" },
+  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance" },
+  { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance" },
+  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log" },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
+  { icon: CreditCard, label: "المالية", path: "/finance" },
+  { icon: UserPlus, label: "التسجيل", path: "/enrollment" },
+  { icon: Calendar, label: "التقويم", path: "/calendar" },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
+  { icon: FileArchive, label: "المستندات", path: "/documents" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications" },
+  { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
+  { icon: Settings, label: "الإعدادات", path: "/settings" },
+];
+
+/**
+ * Principal role - similar to admin but without system settings
+ */
+const principalMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
+  { icon: Users, label: "الأطفال", path: "/children" },
+  { icon: GraduationCap, label: "الفصول", path: "/classes" },
+  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance" },
+  { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance" },
+  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log" },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
+  { icon: CreditCard, label: "المالية", path: "/finance" },
+  { icon: UserPlus, label: "التسجيل", path: "/enrollment" },
+  { icon: Calendar, label: "التقويم", path: "/calendar" },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
+  { icon: FileArchive, label: "المستندات", path: "/documents" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications" },
+  { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
+];
+
+/**
+ * Accountant role - finance focused
+ */
+const accountantMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
+  { icon: CreditCard, label: "المالية", path: "/finance" },
+  { icon: Users, label: "الأطفال", path: "/children" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
+];
+
+/**
+ * Receptionist role - enrollment and basic access
+ */
+const receptionistMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
+  { icon: UserPlus, label: "التسجيل", path: "/enrollment" },
+  { icon: Users, label: "الأطفال", path: "/children" },
+  { icon: FileArchive, label: "المستندات", path: "/documents" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
+];
+
+function getMenuItems(role?: string): MenuItem[] {
+  switch (role) {
+    case "admin":
+    case "super_admin":
+      return adminMenuItems;
+    case "principal":
+      return principalMenuItems;
+    case "teacher":
+    case "assistant":
+      return staffMenuItems;
+    case "accountant":
+      return accountantMenuItems;
+    case "receptionist":
+      return receptionistMenuItems;
+    case "parent":
+      return parentMenuItems;
+    default:
+      // Fallback for 'user' or unknown roles - should not reach here
+      // as App.tsx handles this case with PendingRolePage
+      return parentMenuItems;
+  }
+}
+
+function getRoleDisplayName(role?: string): string {
+  switch (role) {
+    case "admin":
+    case "super_admin":
+      return "مدير النظام";
+    case "principal":
+      return "مدير/ة";
+    case "teacher":
+      return "معلم/ة";
+    case "assistant":
+      return "مساعد/ة";
+    case "accountant":
+      return "محاسب/ة";
+    case "receptionist":
+      return "موظف/ة استقبال";
+    case "parent":
+      return "ولي أمر";
+    default:
+      return "مستخدم";
+  }
 }
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -166,7 +276,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const menuItems = getMenuItems(user?.role, basePath);
+  const menuItems = getMenuItems(user?.role);
   const isMobile = useIsMobile();
 
   // Determine active item by matching location against basePath + item.path
@@ -275,7 +385,7 @@ function DashboardLayoutContent({
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.role === "parent" ? "ولي أمر" : user?.role === "admin" ? "مدير" : user?.role === "teacher" ? "معلمة" : user?.role || "-"}
+                      {getRoleDisplayName(user?.role)}
                     </p>
                   </div>
                 </button>
@@ -302,7 +412,7 @@ function DashboardLayoutContent({
         />
       </div>
 
-      <SidebarInset>
+      <SidebarInset className="overflow-y-auto">
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">

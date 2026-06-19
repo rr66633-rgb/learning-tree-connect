@@ -14,7 +14,8 @@ import * as XLSX from "xlsx";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
-type UserForm = { name: string; email: string; phone: string; role: "teacher" | "parent" };
+type UserRole = "teacher" | "parent" | "assistant" | "accountant" | "receptionist";
+type UserForm = { name: string; email: string; phone: string; role: UserRole };
 const emptyForm: UserForm = { name: "", email: "", phone: "", role: "teacher" };
 
 export default function UsersPage() {
@@ -102,20 +103,29 @@ export default function UsersPage() {
     };
   }, [users]);
 
-  const getRoleBadge = (role: string) => {
+    const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'admin': return <Badge className="bg-red-100 text-red-800 border-red-200">مدير</Badge>;
-      case 'teacher': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">معلمة</Badge>;
+      case 'admin': case 'super_admin': return <Badge className="bg-red-100 text-red-800 border-red-200">مدير</Badge>;
+      case 'principal': return <Badge className="bg-purple-100 text-purple-800 border-purple-200">مدير/ة</Badge>;
+      case 'teacher': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">معلم/ة</Badge>;
+      case 'assistant': return <Badge className="bg-cyan-100 text-cyan-800 border-cyan-200">مساعد/ة</Badge>;
       case 'parent': return <Badge className="bg-green-100 text-green-800 border-green-200">ولي أمر</Badge>;
+      case 'accountant': return <Badge className="bg-amber-100 text-amber-800 border-amber-200">محاسب/ة</Badge>;
+      case 'receptionist': return <Badge className="bg-teal-100 text-teal-800 border-teal-200">استقبال</Badge>;
+      case 'user': return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">بانتظار التعيين</Badge>;
       default: return <Badge variant="outline">مستخدم</Badge>;
     }
   };
-
   const getRoleText = (role: string) => {
     switch (role) {
-      case 'admin': return 'مدير';
-      case 'teacher': return 'معلمة';
+      case 'admin': case 'super_admin': return 'مدير';
+      case 'principal': return 'مدير/ة';
+      case 'teacher': return 'معلم/ة';
+      case 'assistant': return 'مساعد/ة';
       case 'parent': return 'ولي أمر';
+      case 'accountant': return 'محاسب/ة';
+      case 'receptionist': return 'استقبال';
+      case 'user': return 'بانتظار التعيين';
       default: return 'مستخدم';
     }
   };
@@ -243,9 +253,13 @@ export default function UsersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الأدوار</SelectItem>
-                <SelectItem value="teacher">المعلمات</SelectItem>
-                <SelectItem value="parent">أولياء الأمور</SelectItem>
                 <SelectItem value="admin">المديرون</SelectItem>
+                <SelectItem value="teacher">المعلمات</SelectItem>
+                <SelectItem value="assistant">المساعدات</SelectItem>
+                <SelectItem value="parent">أولياء الأمور</SelectItem>
+                <SelectItem value="accountant">المحاسبين</SelectItem>
+                <SelectItem value="receptionist">الاستقبال</SelectItem>
+                <SelectItem value="user">بانتظار التعيين</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -341,13 +355,16 @@ export default function UsersPage() {
             </div>
             <div className="space-y-2">
               <Label>الدور</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as "teacher" | "parent" })}>
+              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as UserRole })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="teacher">معلمة</SelectItem>
+                  <SelectItem value="teacher">معلم/ة</SelectItem>
+                  <SelectItem value="assistant">مساعد/ة</SelectItem>
                   <SelectItem value="parent">ولي أمر</SelectItem>
+                  <SelectItem value="accountant">محاسب/ة</SelectItem>
+                  <SelectItem value="receptionist">موظف/ة استقبال</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -383,13 +400,16 @@ export default function UsersPage() {
             {selectedUser?.role !== 'admin' && (
               <div className="space-y-2">
                 <Label>الدور</Label>
-                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as "teacher" | "parent" })}>
+                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as UserRole })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="teacher">معلمة</SelectItem>
+                    <SelectItem value="teacher">معلم/ة</SelectItem>
+                    <SelectItem value="assistant">مساعد/ة</SelectItem>
                     <SelectItem value="parent">ولي أمر</SelectItem>
+                    <SelectItem value="accountant">محاسب/ة</SelectItem>
+                    <SelectItem value="receptionist">موظف/ة استقبال</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
