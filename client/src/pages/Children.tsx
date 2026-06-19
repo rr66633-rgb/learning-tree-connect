@@ -40,7 +40,7 @@ export default function Children() {
   const [editForm, setEditForm] = useState<ChildForm>(emptyForm);
 
   const filtered = children?.filter(c =>
-    `${c.firstName} ${c.lastName}`.includes(search) || c.className?.includes(search)
+    `${c.firstName} ${c.lastName}`.includes(search)
   ) ?? [];
 
   const handleCreate = (e: React.FormEvent) => { e.preventDefault(); createChild.mutate(form); };
@@ -55,7 +55,7 @@ export default function Children() {
     setEditForm({
       firstName: child.firstName, lastName: child.lastName,
       dateOfBirth: child.dateOfBirth ? new Date(child.dateOfBirth).toISOString().split('T')[0] : "",
-      gender: child.gender, className: child.className || "",
+      gender: child.gender, className: "",
       emergencyContact: child.emergencyContact || "", emergencyPhone: child.emergencyPhone || "",
       allergies: child.allergies || "", medicalNotes: child.medicalNotes || "",
     });
@@ -210,7 +210,7 @@ export default function Children() {
               {filtered.map(child => (
                 <TableRow key={child.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetail(child)}>
                   <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
-                  <TableCell>{child.className || "-"}</TableCell>
+                  <TableCell>{child.classId ? `فصل ${child.classId}` : "-"}</TableCell>
                   <TableCell>{child.gender === "male" ? "ذكر" : "أنثى"}</TableCell>
                   <TableCell>
                     <Badge variant={child.status === "active" ? "default" : "secondary"}>

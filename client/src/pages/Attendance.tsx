@@ -122,7 +122,7 @@ export default function Attendance() {
                   return (
                     <TableRow key={child.id}>
                       <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
-                      <TableCell>{child.className || "-"}</TableCell>
+                      <TableCell>{child.classId ? `فصل ${child.classId}` : "-"}</TableCell>
                       <TableCell>
                         {record ? (
                           <Badge variant={record.status === 'present' || record.status === 'late' ? 'default' : 'destructive'}>

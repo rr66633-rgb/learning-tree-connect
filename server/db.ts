@@ -1,6 +1,6 @@
-import { eq, desc, and, sql, gte, lte, inArray, like, or } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -482,4 +482,352 @@ export async function getUnlinkedChildren() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(children).where(sql`${children.parentId} IS NULL`).orderBy(children.firstName);
+}
+
+// ============ CLASSES ============
+export async function getClasses() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(classes).orderBy(classes.name);
+}
+
+export async function getClassById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(classes).where(eq(classes.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createClass(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(classes).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function updateClass(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(classes).set(data).where(eq(classes.id, id));
+  return getClassById(id);
+}
+
+export async function deleteClass(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(classes).where(eq(classes.id, id));
+  return { success: true };
+}
+
+export async function getChildrenByClass(classId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(children).where(eq(children.classId, classId)).orderBy(children.firstName);
+}
+
+// ============ STAFF ATTENDANCE (GPS) ============
+export async function getStaffAttendanceByDate(date: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
+  return db.select().from(staffAttendance).where(and(gte(staffAttendance.date, startOfDay), lte(staffAttendance.date, endOfDay)));
+}
+
+export async function getStaffAttendanceByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(staffAttendance).where(eq(staffAttendance.userId, userId)).orderBy(desc(staffAttendance.date));
+}
+
+export async function getTodayStaffAttendance(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+  const result = await db.select().from(staffAttendance).where(and(
+    eq(staffAttendance.userId, userId),
+    gte(staffAttendance.date, today),
+    lte(staffAttendance.date, todayEnd)
+  )).limit(1);
+  return result[0];
+}
+
+export async function staffCheckIn(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(staffAttendance).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function staffCheckOut(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(staffAttendance).set({ ...data, status: "checked_out" as const }).where(eq(staffAttendance.id, id));
+}
+
+// ============ CENTER SETTINGS ============
+export async function getCenterSettings() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(centerSettings).limit(1);
+  return result[0];
+}
+
+export async function updateCenterSettings(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getCenterSettings();
+  if (existing) {
+    await db.update(centerSettings).set(data).where(eq(centerSettings.id, existing.id));
+  } else {
+    await db.insert(centerSettings).values(data);
+  }
+  return getCenterSettings();
+}
+
+// ============ DAILY ACTIVITIES ============
+export async function getDailyActivities(childId: number, date?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  if (date) {
+    const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
+    return db.select().from(dailyActivities).where(and(
+      eq(dailyActivities.childId, childId),
+      gte(dailyActivities.recordedAt, startOfDay),
+      lte(dailyActivities.recordedAt, endOfDay)
+    )).orderBy(desc(dailyActivities.recordedAt));
+  }
+  return db.select().from(dailyActivities).where(eq(dailyActivities.childId, childId)).orderBy(desc(dailyActivities.recordedAt));
+}
+
+export async function getDailyActivitiesByClass(classId: number, date: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
+  return db.select().from(dailyActivities).where(and(
+    eq(dailyActivities.classId, classId),
+    gte(dailyActivities.recordedAt, startOfDay),
+    lte(dailyActivities.recordedAt, endOfDay)
+  )).orderBy(desc(dailyActivities.recordedAt));
+}
+
+export async function createDailyActivity(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(dailyActivities).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+// ============ CALENDAR EVENTS ============
+export async function getCalendarEvents(classId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  if (classId) {
+    return db.select().from(calendarEvents).where(
+      or(eq(calendarEvents.classId, classId), isNull(calendarEvents.classId))
+    ).orderBy(calendarEvents.startDate);
+  }
+  return db.select().from(calendarEvents).orderBy(calendarEvents.startDate);
+}
+
+export async function createCalendarEvent(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(calendarEvents).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function deleteCalendarEvent(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+  return { success: true };
+}
+
+// ============ ANNOUNCEMENTS ============
+export async function getAnnouncements(audience?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  if (audience) {
+    return db.select().from(announcements).where(
+      or(eq(announcements.audience, audience as any), eq(announcements.audience, "all"))
+    ).orderBy(desc(announcements.createdAt));
+  }
+  return db.select().from(announcements).orderBy(desc(announcements.createdAt));
+}
+
+export async function createAnnouncement(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(announcements).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function deleteAnnouncement(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(announcements).where(eq(announcements.id, id));
+  return { success: true };
+}
+
+// ============ DOCUMENTS ============
+export async function getDocuments(audience?: string, childId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (audience) conditions.push(or(eq(documents.audience, audience as any), eq(documents.audience, "all")));
+  if (childId) conditions.push(or(eq(documents.childId, childId), isNull(documents.childId)));
+  if (conditions.length > 0) {
+    return db.select().from(documents).where(and(...conditions)).orderBy(desc(documents.createdAt));
+  }
+  return db.select().from(documents).orderBy(desc(documents.createdAt));
+}
+
+export async function createDocument(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(documents).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function deleteDocument(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(documents).where(eq(documents.id, id));
+  return { success: true };
+}
+
+// ============ SIGNATURES ============
+export async function getSignaturesForDocument(documentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(signatures).where(eq(signatures.documentId, documentId));
+}
+
+export async function createSignature(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(signatures).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+// ============ MEDICAL INFO ============
+export async function getMedicalInfo(childId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(medicalInfo).where(eq(medicalInfo.childId, childId)).limit(1);
+  return result[0];
+}
+
+export async function upsertMedicalInfo(childId: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getMedicalInfo(childId);
+  if (existing) {
+    await db.update(medicalInfo).set(data).where(eq(medicalInfo.childId, childId));
+  } else {
+    await db.insert(medicalInfo).values({ childId, ...data });
+  }
+  return getMedicalInfo(childId);
+}
+
+// ============ EMERGENCY CONTACTS ============
+export async function getEmergencyContacts(childId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(emergencyContacts).where(eq(emergencyContacts.childId, childId));
+}
+
+export async function createEmergencyContact(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(emergencyContacts).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function deleteEmergencyContact(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(emergencyContacts).where(eq(emergencyContacts.id, id));
+  return { success: true };
+}
+
+// ============ ENROLLMENT ============
+export async function getEnrollments(status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  if (status) {
+    return db.select().from(enrollment).where(eq(enrollment.status, status as any)).orderBy(desc(enrollment.createdAt));
+  }
+  return db.select().from(enrollment).orderBy(desc(enrollment.createdAt));
+}
+
+export async function createEnrollment(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(enrollment).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function updateEnrollment(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(enrollment).set(data).where(eq(enrollment.id, id));
+}
+
+// ============ WAITING LIST ============
+export async function getWaitingList() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(waitingList).orderBy(waitingList.priority, desc(waitingList.createdAt));
+}
+
+export async function createWaitingListEntry(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(waitingList).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function updateWaitingListEntry(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(waitingList).set(data).where(eq(waitingList.id, id));
+}
+
+export async function deleteWaitingListEntry(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(waitingList).where(eq(waitingList.id, id));
+  return { success: true };
+}
+
+// ============ EYFS ASSESSMENTS ============
+export async function getEyfsAssessments(childId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(eyfsAssessments).where(eq(eyfsAssessments.childId, childId)).orderBy(desc(eyfsAssessments.assessedAt));
+}
+
+export async function createEyfsAssessment(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(eyfsAssessments).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+// ============ AUDIT LOG ============
+export async function createAuditLog(data: any) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(auditLog).values(data);
+}
+
+export async function getAuditLogs(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit);
 }

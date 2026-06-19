@@ -21,6 +21,17 @@ const parentProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+// Haversine formula for GPS distance calculation
+function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export const appRouter = router({
   system: systemRouter,
   
@@ -326,6 +337,363 @@ export const appRouter = router({
     markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
       await db.markAllNotificationsRead(ctx.user!.id);
       return { success: true };
+    }),
+  }),
+
+  classes: router({
+    list: protectedProcedure.query(async () => {
+      return db.getClasses();
+    }),
+    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+      return db.getClassById(input.id);
+    }),
+    children: protectedProcedure.input(z.object({ classId: z.number() })).query(async ({ input }) => {
+      return db.getChildrenByClass(input.classId);
+    }),
+    create: adminProcedure.input(z.object({
+      name: z.string().min(1),
+      nameAr: z.string().optional(),
+      ageGroup: z.string().optional(),
+      capacity: z.number().optional(),
+      teacherId: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      return db.createClass(input);
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      nameAr: z.string().optional(),
+      ageGroup: z.string().optional(),
+      capacity: z.number().optional(),
+      teacherId: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      return db.updateClass(id, data);
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteClass(input.id);
+    }),
+  }),
+
+  staffAttendance: router({
+    today: protectedProcedure.query(async ({ ctx }) => {
+      return db.getTodayStaffAttendance(ctx.user!.id);
+    }),
+    byDate: adminProcedure.input(z.object({ date: z.string() })).query(async ({ input }) => {
+      return db.getStaffAttendanceByDate(input.date);
+    }),
+    myHistory: protectedProcedure.query(async ({ ctx }) => {
+      return db.getStaffAttendanceByUser(ctx.user!.id);
+    }),
+    checkIn: protectedProcedure.input(z.object({
+      gpsLat: z.number(),
+      gpsLng: z.number(),
+      device: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      // Verify GPS is within center radius
+      const settings = await db.getCenterSettings();
+      if (settings && settings.latitude && settings.longitude && settings.allowedRadius) {
+        const distance = getDistanceKm(input.gpsLat, input.gpsLng, Number(settings.latitude), Number(settings.longitude));
+        const radiusKm = Number(settings.allowedRadius) / 1000;
+        if (distance > radiusKm) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'أنت خارج نطاق المركز. يرجى التواجد داخل المركز لتسجيل الحضور.' });
+        }
+      }
+      return db.staffCheckIn({
+        userId: ctx.user!.id,
+        date: new Date(),
+        checkInTime: new Date(),
+        gpsLatIn: input.gpsLat.toString(),
+        gpsLngIn: input.gpsLng.toString(),
+        device: input.device,
+        status: 'checked_in',
+      });
+    }),
+    checkOut: protectedProcedure.input(z.object({
+      id: z.number(),
+      gpsLat: z.number(),
+      gpsLng: z.number(),
+    })).mutation(async ({ input }) => {
+      await db.staffCheckOut(input.id, {
+        checkOutTime: new Date(),
+        gpsLatOut: input.gpsLat.toString(),
+        gpsLngOut: input.gpsLng.toString(),
+      });
+      return { success: true };
+    }),
+  }),
+
+  centerSettings: router({
+    get: adminProcedure.query(async () => {
+      return db.getCenterSettings();
+    }),
+    update: adminProcedure.input(z.object({
+      name: z.string().optional(),
+      nameAr: z.string().optional(),
+      gpsLat: z.string().optional(),
+      gpsLng: z.string().optional(),
+      gpsRadius: z.number().optional(),
+      workingHoursStart: z.string().optional(),
+      workingHoursEnd: z.string().optional(),
+      timezone: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      return db.updateCenterSettings(input);
+    }),
+  }),
+
+  dailyActivities: router({
+    byChild: protectedProcedure.input(z.object({ childId: z.number(), date: z.string().optional() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getDailyActivities(input.childId, input.date);
+    }),
+    byClass: teacherProcedure.input(z.object({ classId: z.number(), date: z.string() })).query(async ({ input }) => {
+      return db.getDailyActivitiesByClass(input.classId, input.date);
+    }),
+    create: teacherProcedure.input(z.object({
+      childId: z.number(),
+      classId: z.number().optional(),
+      type: z.enum(['meal', 'nap', 'diaper', 'activity', 'milestone', 'note', 'medication']),
+      title: z.string().optional(),
+      description: z.string().optional(),
+      metadata: z.any().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createDailyActivity({ ...input, recordedBy: ctx.user!.id, recordedAt: new Date() });
+    }),
+  }),
+
+  calendar: router({
+    events: protectedProcedure.input(z.object({ classId: z.number().optional() }).optional()).query(async ({ input }) => {
+      return db.getCalendarEvents(input?.classId);
+    }),
+    create: adminProcedure.input(z.object({
+      title: z.string().min(1),
+      titleAr: z.string().optional(),
+      description: z.string().optional(),
+      startDate: z.string(),
+      endDate: z.string().optional(),
+      type: z.enum(['holiday', 'event', 'meeting', 'deadline', 'other']),
+      classId: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      return db.createCalendarEvent({
+        ...input,
+        startDate: new Date(input.startDate),
+        endDate: input.endDate ? new Date(input.endDate) : null,
+      });
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteCalendarEvent(input.id);
+    }),
+  }),
+
+  announcements: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        return db.getAnnouncements('parents');
+      }
+      if (ctx.user?.role === 'teacher') {
+        return db.getAnnouncements('staff');
+      }
+      return db.getAnnouncements();
+    }),
+    create: adminProcedure.input(z.object({
+      title: z.string().min(1),
+      titleAr: z.string().optional(),
+      content: z.string().min(1),
+      contentAr: z.string().optional(),
+      audience: z.enum(['all', 'parents', 'staff']),
+      priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createAnnouncement({ ...input, createdBy: ctx.user!.id });
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteAnnouncement(input.id);
+    }),
+  }),
+
+  documents: router({
+    list: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (input?.childId && !childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+        return db.getDocuments('parents', input?.childId);
+      }
+      return db.getDocuments(undefined, input?.childId);
+    }),
+    create: adminProcedure.input(z.object({
+      name: z.string().min(1),
+      nameAr: z.string().optional(),
+      type: z.enum(['policy', 'form', 'report', 'certificate', 'other']),
+      url: z.string(),
+      childId: z.number().optional(),
+      audience: z.enum(['all', 'parents', 'staff']).optional(),
+      requiresSignature: z.boolean().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createDocument({ ...input, uploadedBy: ctx.user!.id });
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteDocument(input.id);
+    }),
+    sign: protectedProcedure.input(z.object({ documentId: z.number() })).mutation(async ({ input, ctx }) => {
+      return db.createSignature({ documentId: input.documentId, parentId: ctx.user!.id, signedAt: new Date() });
+    }),
+    signatures: protectedProcedure.input(z.object({ documentId: z.number() })).query(async ({ input }) => {
+      return db.getSignaturesForDocument(input.documentId);
+    }),
+  }),
+
+  medicalInfo: router({
+    get: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getMedicalInfo(input.childId);
+    }),
+    upsert: teacherProcedure.input(z.object({
+      childId: z.number(),
+      bloodType: z.string().optional(),
+      conditions: z.string().optional(),
+      medications: z.string().optional(),
+      allergies: z.string().optional(),
+      doctorName: z.string().optional(),
+      doctorPhone: z.string().optional(),
+      insuranceProvider: z.string().optional(),
+      insuranceNumber: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { childId, ...data } = input;
+      return db.upsertMedicalInfo(childId, data);
+    }),
+  }),
+
+  emergencyContacts: router({
+    list: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getEmergencyContacts(input.childId);
+    }),
+    create: protectedProcedure.input(z.object({
+      childId: z.number(),
+      name: z.string().min(1),
+      phone: z.string().min(1),
+      relationship: z.string().min(1),
+      isAuthorizedPickup: z.boolean().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.createEmergencyContact(input);
+    }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteEmergencyContact(input.id);
+    }),
+  }),
+
+  enrollment: router({
+    list: adminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ input }) => {
+      return db.getEnrollments(input?.status);
+    }),
+    create: adminProcedure.input(z.object({
+      childId: z.number(),
+      classId: z.number().optional(),
+      startDate: z.string(),
+      endDate: z.string().optional(),
+      status: z.enum(['active', 'pending', 'withdrawn', 'graduated']).optional(),
+    })).mutation(async ({ input }) => {
+      return db.createEnrollment({
+        ...input,
+        startDate: new Date(input.startDate),
+        endDate: input.endDate ? new Date(input.endDate) : null,
+      });
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      status: z.enum(['active', 'pending', 'withdrawn', 'graduated']).optional(),
+      classId: z.number().optional(),
+      endDate: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      const updateData: any = { ...data };
+      if (data.endDate) updateData.endDate = new Date(data.endDate);
+      await db.updateEnrollment(id, updateData);
+      return { success: true };
+    }),
+  }),
+
+  waitingList: router({
+    list: adminProcedure.query(async () => {
+      return db.getWaitingList();
+    }),
+    create: adminProcedure.input(z.object({
+      childName: z.string().min(1),
+      parentName: z.string().min(1),
+      parentPhone: z.string().min(1),
+      parentEmail: z.string().optional(),
+      dateOfBirth: z.string().optional(),
+      preferredClass: z.string().optional(),
+      notes: z.string().optional(),
+      priority: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      return db.createWaitingListEntry({
+        ...input,
+        dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
+      });
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      status: z.enum(['waiting', 'contacted', 'enrolled', 'declined']).optional(),
+      notes: z.string().optional(),
+      priority: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateWaitingListEntry(id, data);
+      return { success: true };
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteWaitingListEntry(input.id);
+    }),
+  }),
+
+  eyfs: router({
+    assessments: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getEyfsAssessments(input.childId);
+    }),
+    create: teacherProcedure.input(z.object({
+      childId: z.number(),
+      area: z.string(),
+      subArea: z.string().optional(),
+      level: z.enum(['emerging', 'developing', 'secure', 'exceeding']),
+      notes: z.string().optional(),
+      evidence: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createEyfsAssessment({ ...input, assessedBy: ctx.user!.id, assessedAt: new Date() });
+    }),
+  }),
+
+  auditLog: router({
+    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
+      return db.getAuditLogs(input?.limit);
     }),
   }),
 

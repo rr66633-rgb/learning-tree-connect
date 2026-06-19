@@ -147,3 +147,82 @@
 - [x] Upload icons via manus-upload-file --webdev
 - [x] Verify PWA works correctly
 - [x] Redeploy application
+
+## Platform Redesign - Two Separate Apps
+
+### Database Schema Updates
+- [x] Add classes table (id, name, ageGroup, capacity, teacherId)
+- [x] Add staff_attendance table (id, userId, checkIn, checkOut, gpsLat, gpsLng, device, status)
+- [x] Add center_settings table (lat, lng, radius, name)
+- [x] Add daily_activities table (id, childId, type, details, timestamp, recordedBy)
+- [x] Add calendar_events table (id, title, description, date, type, classId)
+- [x] Add announcements table (id, title, content, audience, createdAt)
+- [x] Add documents table (id, name, type, url, childId, requiresSignature)
+- [x] Add signatures table (id, documentId, parentId, signedAt)
+- [x] Add medical_info table (id, childId, conditions, medications, allergies)
+- [x] Add emergency_contacts table (id, childId, name, phone, relationship)
+- [x] Add enrollment table (id, childId, status, startDate, endDate, classId)
+- [x] Add waiting_list table (id, childName, parentName, phone, status, createdAt)
+- [x] Update users table with expanded roles (super_admin, principal, teacher, assistant, accountant, receptionist)
+
+### Staff App Features
+- [x] Role-based dashboard for each staff role
+- [x] Child management with class assignment
+- [x] Class management (create, edit, assign teachers)
+- [x] Staff management with role assignment
+- [x] Parent management
+- [x] Enrollment management with waiting list
+- [x] GPS staff attendance (check-in/out with geolocation) - full UI implemented
+- [x] Daily childcare log (individual + bulk mode)
+- [x] Invoice management with automatic billing
+- [x] Financial reports
+- [x] Attendance reports
+- [ ] EYFS assessment tracking
+- [x] Document management
+- [x] Internal messaging
+- [x] Notification center
+- [x] Analytics dashboard
+- [x] School calendar management
+- [x] Announcements
+
+### Parent App Features
+- [x] Separate parent interface (mobile-first)
+- [x] Child profile view
+- [x] Daily timeline with all activities
+- [x] Daily reports view
+- [x] Attendance history with check-in/out times
+- [ ] Photos & videos gallery
+- [x] Meal/Snack/Nap/Diaper/Toilet/Water reports
+- [x] Medication reports
+- [ ] Learning observations
+- [ ] EYFS assessments view
+- [x] Monthly reports
+- [x] School calendar view
+- [x] Events & trips
+- [x] Announcements
+- [x] Messaging with teachers & admin
+- [ ] Push notifications
+- [x] Invoice viewing
+- [ ] Download receipts
+- [x] Digital signature for forms
+- [x] Emergency contacts management
+- [x] Medical information
+
+### GPS Staff Attendance
+- [x] Geolocation check-in/out within configurable radius - frontend UI complete
+- [x] Admin configurable center location and radius - settings UI complete
+- [x] Record GPS coordinates and device info
+- [x] Warning message if outside allowed area - toast implemented
+- [x] Attendance reports and history
+
+### Security & Routing
+- [x] Separate routing: /parent/* and /staff/*
+- [x] Role-based access control for all new roles
+- [x] Teachers access only assigned classes
+- [x] Parents access only their own children
+- [ ] Audit logs for sensitive operations - middleware needed
+
+### Mobile & PWA
+- [x] Mobile-first responsive design
+- [x] Optimized for iPhone and iPad
+- [x] Fast performance

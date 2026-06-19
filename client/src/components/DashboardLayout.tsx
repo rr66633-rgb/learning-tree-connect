@@ -21,7 +21,11 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText, MessageCircle, CreditCard, Gift, Bell, Settings, UserCog } from "lucide-react";
+import {
+  LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText,
+  MessageCircle, CreditCard, Gift, Bell, Settings, UserCog, GraduationCap,
+  Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -29,21 +33,45 @@ import { Button } from "./ui/button";
 
 type MenuItem = { icon: any; label: string; path: string; roles: string[] };
 
-const allMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/", roles: ["admin", "teacher", "parent"] },
-  { icon: Users, label: "الأطفال", path: "/children", roles: ["admin", "teacher", "parent"] },
-  { icon: CalendarCheck, label: "الحضور", path: "/attendance", roles: ["admin", "teacher", "parent"] },
-  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", roles: ["admin", "teacher", "parent"] },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages", roles: ["admin", "teacher", "parent"] },
-  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["admin", "parent"] },
-  { icon: Gift, label: "برنامج الولاء", path: "/loyalty", roles: ["admin", "parent"] },
-  { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["admin", "teacher", "parent"] },
-  { icon: UserCog, label: "إدارة المستخدمين", path: "/users", roles: ["admin"] },
+const staffMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", roles: ["admin", "teacher", "assistant", "principal", "accountant", "receptionist"] },
+  { icon: Users, label: "الأطفال", path: "/children", roles: ["admin", "teacher", "assistant", "principal"] },
+  { icon: GraduationCap, label: "الفصول", path: "/classes", roles: ["admin", "principal", "teacher"] },
+  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance", roles: ["admin", "teacher", "assistant", "principal"] },
+  { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance", roles: ["admin", "principal"] },
+  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", roles: ["admin", "teacher", "assistant"] },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", roles: ["admin", "teacher", "principal"] },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages", roles: ["admin", "teacher", "assistant", "principal"] },
+  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["admin", "accountant", "principal"] },
+  { icon: UserPlus, label: "التسجيل", path: "/enrollment", roles: ["admin", "receptionist", "principal"] },
+  { icon: Calendar, label: "التقويم", path: "/calendar", roles: ["admin", "teacher", "principal"] },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements", roles: ["admin", "principal"] },
+  { icon: FileArchive, label: "المستندات", path: "/documents", roles: ["admin", "principal", "receptionist"] },
+  { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["admin", "teacher", "assistant", "principal"] },
+  { icon: UserCog, label: "إدارة المستخدمين", path: "/users", roles: ["admin", "principal"] },
+  { icon: Settings, label: "الإعدادات", path: "/settings", roles: ["admin"] },
 ];
 
-function getMenuItemsForRole(role?: string): MenuItem[] {
-  const userRole = role || 'parent';
-  return allMenuItems.filter(item => item.roles.includes(userRole));
+const parentMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "الرئيسية", path: "", roles: ["parent"] },
+  { icon: Users, label: "أطفالي", path: "/children", roles: ["parent"] },
+  { icon: ClipboardList, label: "التقرير اليومي", path: "/timeline", roles: ["parent"] },
+  { icon: CalendarCheck, label: "الحضور", path: "/attendance", roles: ["parent"] },
+  { icon: Calendar, label: "التقويم", path: "/calendar", roles: ["parent"] },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages", roles: ["parent"] },
+  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["parent"] },
+  { icon: Heart, label: "المعلومات الطبية", path: "/medical", roles: ["parent"] },
+  { icon: FileArchive, label: "المستندات", path: "/documents", roles: ["parent"] },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements", roles: ["parent"] },
+  { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["parent"] },
+  { icon: Gift, label: "برنامج الولاء", path: "/loyalty", roles: ["parent"] },
+];
+
+function getMenuItems(role?: string, basePath?: string): MenuItem[] {
+  const userRole = role || "parent";
+  const isParent = userRole === "parent";
+  const items = isParent ? parentMenuItems : staffMenuItems;
+  return items.filter(item => item.roles.includes(userRole));
 }
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -53,8 +81,10 @@ const MAX_WIDTH = 480;
 
 export default function DashboardLayout({
   children,
+  basePath = "",
 }: {
   children: React.ReactNode;
+  basePath?: string;
 }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
@@ -109,7 +139,7 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} basePath={basePath}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -119,11 +149,13 @@ export default function DashboardLayout({
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
+  basePath: string;
 };
 
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
+  basePath,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
@@ -131,9 +163,14 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const menuItems = getMenuItemsForRole(user?.role);
-  const activeMenuItem = menuItems.find((item: MenuItem) => item.path === location);
+  const menuItems = getMenuItems(user?.role, basePath);
   const isMobile = useIsMobile();
+
+  // Determine active item by matching location against basePath + item.path
+  const activeMenuItem = menuItems.find((item: MenuItem) => {
+    const fullPath = basePath + item.path;
+    return location === fullPath || (item.path === "" && location === basePath);
+  });
 
   useEffect(() => {
     if (isCollapsed) {
@@ -144,25 +181,21 @@ function DashboardLayoutContent({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
-
       const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
       const newWidth = e.clientX - sidebarLeft;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
         setSidebarWidth(newWidth);
       }
     };
-
     const handleMouseUp = () => {
       setIsResizing(false);
     };
-
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
     }
-
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
@@ -204,14 +237,15 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map((item: MenuItem) => {
-                const isActive = location === item.path;
+                const fullPath = basePath + item.path;
+                const isActive = location === fullPath || (item.path === "" && location === basePath);
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => setLocation(fullPath)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
+                      className="h-10 transition-all font-normal"
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -238,7 +272,7 @@ function DashboardLayoutContent({
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
+                      {user?.role === "parent" ? "ولي أمر" : user?.role === "admin" ? "مدير" : user?.role === "teacher" ? "معلمة" : user?.role || "-"}
                     </p>
                   </div>
                 </button>

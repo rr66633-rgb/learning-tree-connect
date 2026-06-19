@@ -74,7 +74,7 @@ describe("Children Management", () => {
     expect(children).toHaveLength(20);
     expect(children[0]).toHaveProperty("firstName");
     expect(children[0]).toHaveProperty("lastName");
-    expect(children[0]).toHaveProperty("className");
+    expect(children[0]).toHaveProperty("classId");
   });
 
   it("gets child by id", async () => {
