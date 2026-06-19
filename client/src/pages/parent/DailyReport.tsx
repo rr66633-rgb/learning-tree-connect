@@ -22,7 +22,7 @@ export default function ParentDailyReport() {
       <h1 className="text-2xl font-bold">التقرير اليومي</h1>
       <Select value={selectedChild} onValueChange={setSelectedChild}>
         <SelectTrigger className="max-w-xs"><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
-        <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}</SelectContent>
+        <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>)}</SelectContent>
       </Select>
 
       {selectedChild && (

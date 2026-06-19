@@ -139,7 +139,7 @@ export default function StaffEnrollment() {
                     <Label>الطفل</Label>
                     <Select value={enrollChildId} onValueChange={setEnrollChildId}>
                       <SelectTrigger><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
-                      <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div>

@@ -241,3 +241,16 @@
 - [x] Add departure database schema and API
 - [x] Display departure information in parent portal
 - [x] Run full testing on Daily Care module (150 tests passing)
+
+## Critical Fix: Child Dropdowns & Check-In/Check-Out System
+- [ ] Fix empty child dropdown in Daily Care and Daily Reports pages
+- [ ] Ensure children.list returns children for teacher's assigned class
+- [ ] Display child names correctly in all dropdown menus
+- [ ] Build complete Child Check-In system (arrival time, dropped off by, notes)
+- [ ] Build complete Child Check-Out system (departure time, picked up by, relationship, digital signature, notes)
+- [ ] Parents receive instant notification on child arrival/departure
+- [ ] Display today's arrival/departure times on parent app
+- [ ] Show real-time list of children currently in the center
+- [ ] Teachers and admins can view all check-in/check-out records
+- [ ] Generate attendance reports with arrival and departure times
+- [ ] End-to-end testing of the entire feature

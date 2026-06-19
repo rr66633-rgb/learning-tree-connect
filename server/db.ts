@@ -542,7 +542,7 @@ export async function getStaffAttendanceByUser(userId: number) {
 
 export async function getTodayStaffAttendance(userId: number) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
   const result = await db.select().from(staffAttendance).where(and(
@@ -550,7 +550,7 @@ export async function getTodayStaffAttendance(userId: number) {
     gte(staffAttendance.date, today),
     lte(staffAttendance.date, todayEnd)
   )).limit(1);
-  return result[0];
+  return result[0] ?? null;
 }
 
 export async function staffCheckIn(data: any) {

@@ -138,19 +138,68 @@ export const appRouter = router({
     checkIn: teacherProcedure.input(z.object({
       childId: z.number(),
       date: z.string(),
+      droppedOffBy: z.string().optional(),
+      droppedOffRelationship: z.enum(["mother", "father", "driver", "grandparent", "other"]).optional(),
       notes: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createAttendance({
+      const result = await db.createAttendance({
         childId: input.childId,
         date: new Date(input.date),
         status: "present",
         checkInTime: new Date(),
         checkedInBy: ctx.user!.id,
+        droppedOffBy: input.droppedOffBy,
+        droppedOffRelationship: input.droppedOffRelationship,
         notes: input.notes,
       });
+      // Notify parent about child arrival
+      const child = await db.getChildById(input.childId);
+      if (child?.parentId) {
+        await db.createNotification({
+          userId: child.parentId,
+          title: 'Child Arrival',
+          titleAr: '\u0648\u0635\u0648\u0644 \u0627\u0644\u0637\u0641\u0644',
+          body: `${child.firstName} has arrived at the center`,
+          bodyAr: `\u0648\u0635\u0644 ${child.firstName} ${child.lastName} \u0625\u0644\u0649 \u0627\u0644\u0645\u0631\u0643\u0632`,
+          type: 'attendance',
+          metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkin' },
+        });
+      }
+      return result;
     }),
-    checkOut: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    checkOut: teacherProcedure.input(z.object({
+      id: z.number(),
+      childId: z.number(),
+      pickedUpBy: z.string().min(1),
+      relationship: z.enum(["mother", "father", "driver", "grandparent", "guardian", "other"]),
+      signatureData: z.string().optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
       await db.updateAttendance(input.id, { checkOutTime: new Date(), checkedOutBy: ctx.user!.id });
+      // Create departure record
+      await db.createDeparture({
+        childId: input.childId,
+        attendanceId: input.id,
+        departureTime: new Date(),
+        pickedUpBy: input.pickedUpBy,
+        relationship: input.relationship,
+        signatureData: input.signatureData,
+        notes: input.notes,
+        recordedBy: ctx.user!.id,
+      });
+      // Notify parent about child departure
+      const child = await db.getChildById(input.childId);
+      if (child?.parentId) {
+        await db.createNotification({
+          userId: child.parentId,
+          title: 'Child Departure',
+          titleAr: '\u0645\u063a\u0627\u062f\u0631\u0629 \u0627\u0644\u0637\u0641\u0644',
+          body: `${child.firstName} has left the center`,
+          bodyAr: `\u063a\u0627\u062f\u0631 ${child.firstName} ${child.lastName} \u0627\u0644\u0645\u0631\u0643\u0632`,
+          type: 'attendance',
+          metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkout', pickedUpBy: input.pickedUpBy },
+        });
+      }
       return { success: true };
     }),
     markAbsent: teacherProcedure.input(z.object({

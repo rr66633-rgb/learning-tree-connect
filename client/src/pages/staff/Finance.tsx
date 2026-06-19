@@ -38,7 +38,7 @@ export default function StaffFinance() {
             <div className="space-y-4">
               <div><Label>الطفل</Label>
                 <Select value={childId} onValueChange={setChildId}><SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label>المبلغ (ر.س)</Label><Input type="number" value={amount} onChange={e => setAmount(e.target.value)} /></div>

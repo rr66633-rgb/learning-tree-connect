@@ -41,7 +41,7 @@ export default function ParentChildren() {
                 <Baby className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <CardTitle>{child.name}</CardTitle>
+                <CardTitle>{child.firstName} {child.lastName}</CardTitle>
                 <p className="text-sm text-muted-foreground">{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString('ar-SA') : ""}</p>
               </div>
             </div>

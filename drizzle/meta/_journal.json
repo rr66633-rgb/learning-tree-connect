@@ -29,6 +29,13 @@
       "when": 1781864826865,
       "tag": "0003_tough_ben_urich",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1781866459200,
+      "tag": "0004_bright_tomas",
+      "breakpoints": true
     }
   ]
 }
