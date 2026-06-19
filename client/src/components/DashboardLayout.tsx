@@ -113,6 +113,9 @@ export default function DashboardLayout({
             <h1 className="text-2xl font-bold tracking-tight text-center text-[#1a3a5c]">
               Learning Tree Kids Center
             </h1>
+            <h2 className="text-lg font-semibold text-center text-[#2c5f7c]">
+              Nursery Management System
+            </h2>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
               يرجى تسجيل الدخول للوصول إلى منصة إدارة الحضانة
             </p>
