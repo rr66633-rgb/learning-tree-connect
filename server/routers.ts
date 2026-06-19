@@ -457,12 +457,48 @@ export const appRouter = router({
     create: teacherProcedure.input(z.object({
       childId: z.number(),
       classId: z.number().optional(),
-      type: z.enum(['meal', 'nap', 'diaper', 'activity', 'milestone', 'note', 'medication']),
+      type: z.enum(['arrival', 'breakfast', 'morning_snack', 'lunch', 'afternoon_snack', 'nap_start', 'nap_end', 'diaper', 'toilet', 'medication', 'mood', 'learning_activity', 'outdoor_play', 'departure', 'meal', 'snack', 'water', 'indoor_play', 'temperature', 'photo', 'note', 'observation']),
       title: z.string().optional(),
       description: z.string().optional(),
+      notes: z.string().optional(),
       metadata: z.any().optional(),
     })).mutation(async ({ input, ctx }) => {
       return db.createDailyActivity({ ...input, recordedBy: ctx.user!.id, recordedAt: new Date() });
+    }),
+  }),
+
+  departures: router({
+    byDate: protectedProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        return db.getDeparturesByDateForChildren(input.date, childIds);
+      }
+      return db.getDeparturesByDate(input.date);
+    }),
+    byChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getDeparturesByChild(input.childId);
+    }),
+    create: teacherProcedure.input(z.object({
+      childId: z.number(),
+      attendanceId: z.number().optional(),
+      departureTime: z.string(),
+      pickedUpBy: z.string().min(1),
+      relationship: z.enum(['parent', 'driver', 'guardian', 'other']),
+      pickedUpById: z.number().optional(),
+      notes: z.string().optional(),
+      status: z.enum(['completed', 'pending', 'late']).optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createDeparture({
+        ...input,
+        departureTime: new Date(input.departureTime),
+        recordedBy: ctx.user!.id,
+      });
     }),
   }),
 

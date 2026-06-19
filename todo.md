@@ -232,3 +232,12 @@
 - [x] Implement automatic daily database backup system
 - [x] Fix Children Management page (/staff/children) showing "No children registered" despite data existing
 - [x] Create daily backup Heartbeat cron job after deployment (task_uid: JtL44VYLLGeyeP4qpvVVjX, runs daily at 3:00 AM UTC)
+
+## Daily Care Record Fixes
+- [x] Fix empty child dropdown in Daily Care Record page (uses firstName + lastName)
+- [x] Add search functionality inside the child dropdown
+- [x] Add all 14 daily care activity types (Arrival, Breakfast, Morning Snack, Lunch, Afternoon Snack, Nap Start, Nap End, Diaper Change, Toilet Visit, Medication, Mood, Learning Activity, Outdoor Play, Departure)
+- [x] Add Child Check-out/Departure module (departure time, picked up by, relationship, notes, status)
+- [x] Add departure database schema and API
+- [x] Display departure information in parent portal
+- [x] Run full testing on Daily Care module (150 tests passing)

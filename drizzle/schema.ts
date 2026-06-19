@@ -141,9 +141,10 @@ export const dailyActivities = mysqlTable("daily_activities", {
   childId: int("childId").notNull(),
   classId: int("classId"),
   type: mysqlEnum("type", [
-    "meal", "snack", "nap_start", "nap_end", "diaper", "toilet",
-    "water", "medication", "outdoor_play", "indoor_play",
-    "mood", "temperature", "photo", "note", "observation"
+    "arrival", "breakfast", "morning_snack", "lunch", "afternoon_snack",
+    "nap_start", "nap_end", "diaper", "toilet", "medication",
+    "mood", "learning_activity", "outdoor_play", "departure",
+    "meal", "snack", "water", "indoor_play", "temperature", "photo", "note", "observation"
   ]).notNull(),
   details: json("details"),
   notes: text("notes"),
@@ -356,6 +357,24 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// ============ CHILD DEPARTURES ============
+export const childDepartures = mysqlTable("child_departures", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  attendanceId: int("attendanceId"),
+  departureTime: timestamp("departureTime").notNull(),
+  pickedUpBy: varchar("pickedUpBy", { length: 200 }).notNull(),
+  relationship: mysqlEnum("relationship", ["parent", "driver", "guardian", "other"]).notNull(),
+  pickedUpById: int("pickedUpById"),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["completed", "pending", "late"]).default("completed").notNull(),
+  recordedBy: int("recordedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChildDeparture = typeof childDepartures.$inferSelect;
+export type InsertChildDeparture = typeof childDepartures.$inferInsert;
 
 // ============ AUDIT LOG ============
 export const auditLog = mysqlTable("audit_log", {

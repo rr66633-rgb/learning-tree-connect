@@ -1,6 +1,6 @@
 import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -830,4 +830,42 @@ export async function getAuditLogs(limit = 100) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit);
+}
+
+// ============ CHILD DEPARTURES ============
+export async function getDeparturesByDate(date: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
+  return db.select().from(childDepartures).where(and(
+    gte(childDepartures.departureTime, startOfDay),
+    lte(childDepartures.departureTime, endOfDay)
+  )).orderBy(desc(childDepartures.departureTime));
+}
+
+export async function getDeparturesByDateForChildren(date: string, childIds: number[]) {
+  const db = await getDb();
+  if (!db) return [];
+  if (childIds.length === 0) return [];
+  const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
+  return db.select().from(childDepartures).where(and(
+    inArray(childDepartures.childId, childIds),
+    gte(childDepartures.departureTime, startOfDay),
+    lte(childDepartures.departureTime, endOfDay)
+  )).orderBy(desc(childDepartures.departureTime));
+}
+
+export async function getDeparturesByChild(childId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(childDepartures).where(eq(childDepartures.childId, childId)).orderBy(desc(childDepartures.departureTime)).limit(30);
+}
+
+export async function createDeparture(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(childDepartures).values(data);
+  return { id: result[0].insertId, ...data };
 }
