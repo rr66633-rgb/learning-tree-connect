@@ -1,7 +1,7 @@
 import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments } from "../drizzle/schema";
-import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans } from "../drizzle/schema";
+import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan } from "../drizzle/schema";
 import { parentChildren, media, mediaChildren } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -338,7 +338,10 @@ export async function getInvoices(parentId?: number) {
     vatRate: invoices.vatRate,
     vatAmount: invoices.vatAmount,
     total: invoices.total,
+    paidAmount: invoices.paidAmount,
     status: invoices.status,
+    invoiceType: invoices.invoiceType,
+    isRecurring: invoices.isRecurring,
     dueDate: invoices.dueDate,
     paidAt: invoices.paidAt,
     paymentMethod: invoices.paymentMethod,
@@ -374,7 +377,10 @@ export async function getInvoiceById(id: number) {
     vatRate: invoices.vatRate,
     vatAmount: invoices.vatAmount,
     total: invoices.total,
+    paidAmount: invoices.paidAmount,
     status: invoices.status,
+    invoiceType: invoices.invoiceType,
+    isRecurring: invoices.isRecurring,
     dueDate: invoices.dueDate,
     paidAt: invoices.paidAt,
     paymentMethod: invoices.paymentMethod,
@@ -394,7 +400,7 @@ export async function getInvoiceById(id: number) {
   return { ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() };
 }
 
-export async function updateInvoice(id: number, data: Partial<{ description: string; subtotal: string; vatAmount: string; total: string; dueDate: Date; status: string; paymentMethod: string; paidAt: Date | null }>) {
+export async function updateInvoice(id: number, data: Partial<{ description: string; subtotal: string; vatAmount: string; total: string; dueDate: Date; status: string; paymentMethod: string; paidAt: Date | null; paidAmount: string; invoiceType: string }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(invoices).set(data as any).where(eq(invoices.id, id));
@@ -1191,4 +1197,360 @@ export async function updateMediaApproval(id: number, isApproved: boolean) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(media).set({ isApproved }).where(eq(media.id, id));
+}
+
+// ============ PAYMENTS & TRANSACTIONS ============
+
+export async function createPayment(data: InsertPayment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(payments).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function getPaymentById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getPaymentByMoyasarId(moyasarPaymentId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(payments).where(eq(payments.moyasarPaymentId, moyasarPaymentId)).limit(1);
+  return result[0];
+}
+
+export async function updatePayment(id: number, data: Partial<{ status: string; paidAt: Date; moyasarPaymentId: string; moyasarPaymentUrl: string; metadata: any }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(payments).set(data as any).where(eq(payments.id, id));
+}
+
+export async function getPaymentsByInvoice(invoiceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(payments).where(eq(payments.invoiceId, invoiceId)).orderBy(desc(payments.createdAt));
+}
+
+export async function getPaymentsByParent(parentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: payments.id,
+    invoiceId: payments.invoiceId,
+    amount: payments.amount,
+    currency: payments.currency,
+    method: payments.method,
+    status: payments.status,
+    moyasarPaymentId: payments.moyasarPaymentId,
+    paidAt: payments.paidAt,
+    createdAt: payments.createdAt,
+    invoiceNumber: invoices.invoiceNumber,
+    invoiceDescription: invoices.description,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+  }).from(payments)
+    .leftJoin(invoices, eq(payments.invoiceId, invoices.id))
+    .leftJoin(children, eq(invoices.childId, children.id))
+    .where(eq(payments.parentId, parentId))
+    .orderBy(desc(payments.createdAt));
+}
+
+// ============ TRANSACTIONS ============
+
+export async function createTransaction(data: InsertTransaction) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(transactions).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function getTransactionsByInvoice(invoiceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(transactions).where(eq(transactions.invoiceId, invoiceId)).orderBy(desc(transactions.createdAt));
+}
+
+export async function getTransactionsByParent(parentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(transactions).where(eq(transactions.parentId, parentId)).orderBy(desc(transactions.createdAt));
+}
+
+export async function getAllTransactions(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: transactions.id,
+    paymentId: transactions.paymentId,
+    invoiceId: transactions.invoiceId,
+    parentId: transactions.parentId,
+    moyasarTransactionId: transactions.moyasarTransactionId,
+    type: transactions.type,
+    amount: transactions.amount,
+    currency: transactions.currency,
+    status: transactions.status,
+    method: transactions.method,
+    cardBrand: transactions.cardBrand,
+    cardLast4: transactions.cardLast4,
+    description: transactions.description,
+    createdAt: transactions.createdAt,
+    invoiceNumber: invoices.invoiceNumber,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    parentName: users.name,
+  }).from(transactions)
+    .leftJoin(invoices, eq(transactions.invoiceId, invoices.id))
+    .leftJoin(children, eq(invoices.childId, children.id))
+    .leftJoin(users, eq(transactions.parentId, users.id))
+    .orderBy(desc(transactions.createdAt))
+    .limit(limit);
+}
+
+export async function updateTransaction(id: number, data: Partial<{ status: string; moyasarTransactionId: string; metadata: any }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(transactions).set(data as any).where(eq(transactions.id, id));
+}
+
+// ============ REFUNDS ============
+
+export async function createRefund(data: InsertRefund) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(refunds).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function getRefundsByInvoice(invoiceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(refunds).where(eq(refunds.invoiceId, invoiceId)).orderBy(desc(refunds.createdAt));
+}
+
+export async function getAllRefunds(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: refunds.id,
+    transactionId: refunds.transactionId,
+    invoiceId: refunds.invoiceId,
+    parentId: refunds.parentId,
+    amount: refunds.amount,
+    currency: refunds.currency,
+    reason: refunds.reason,
+    status: refunds.status,
+    moyasarRefundId: refunds.moyasarRefundId,
+    processedBy: refunds.processedBy,
+    processedAt: refunds.processedAt,
+    createdAt: refunds.createdAt,
+    invoiceNumber: invoices.invoiceNumber,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    parentName: users.name,
+  }).from(refunds)
+    .leftJoin(invoices, eq(refunds.invoiceId, invoices.id))
+    .leftJoin(children, eq(invoices.childId, children.id))
+    .leftJoin(users, eq(refunds.parentId, users.id))
+    .orderBy(desc(refunds.createdAt))
+    .limit(limit);
+}
+
+export async function updateRefund(id: number, data: Partial<{ status: string; moyasarRefundId: string; processedBy: number; processedAt: Date }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(refunds).set(data as any).where(eq(refunds.id, id));
+}
+
+// ============ TUITION PLANS ============
+
+export async function createTuitionPlan(data: InsertTuitionPlan) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(tuitionPlans).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function getTuitionPlans() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: tuitionPlans.id,
+    childId: tuitionPlans.childId,
+    parentId: tuitionPlans.parentId,
+    name: tuitionPlans.name,
+    amount: tuitionPlans.amount,
+    frequency: tuitionPlans.frequency,
+    description: tuitionPlans.description,
+    startDate: tuitionPlans.startDate,
+    endDate: tuitionPlans.endDate,
+    nextBillingDate: tuitionPlans.nextBillingDate,
+    isActive: tuitionPlans.isActive,
+    createdAt: tuitionPlans.createdAt,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    parentName: users.name,
+  }).from(tuitionPlans)
+    .leftJoin(children, eq(tuitionPlans.childId, children.id))
+    .leftJoin(users, eq(tuitionPlans.parentId, users.id))
+    .orderBy(desc(tuitionPlans.createdAt));
+}
+
+export async function getTuitionPlanById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(tuitionPlans).where(eq(tuitionPlans.id, id)).limit(1);
+  return result[0];
+}
+
+export async function updateTuitionPlan(id: number, data: Partial<{ name: string; amount: string; frequency: string; description: string; nextBillingDate: Date; isActive: boolean; endDate: Date }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(tuitionPlans).set(data as any).where(eq(tuitionPlans.id, id));
+}
+
+export async function getActiveTuitionPlans() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tuitionPlans).where(eq(tuitionPlans.isActive, true));
+}
+
+export async function generateInvoicesFromPlans() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const now = new Date();
+  const activePlans = await db.select().from(tuitionPlans)
+    .where(and(
+      eq(tuitionPlans.isActive, true),
+      lte(tuitionPlans.nextBillingDate, now)
+    ));
+  
+  const generatedInvoices: any[] = [];
+  
+  for (const plan of activePlans) {
+    if (!plan.nextBillingDate) continue;
+    
+    const subtotal = Number(plan.amount);
+    const vatRate = 15;
+    const vatAmount = subtotal * (vatRate / 100);
+    const total = subtotal + vatAmount;
+    
+    // Calculate due date (15 days from billing date)
+    const dueDate = new Date(plan.nextBillingDate);
+    dueDate.setDate(dueDate.getDate() + 15);
+    
+    // Generate invoice number
+    const invoiceNumber = `INV-${Date.now()}-${plan.childId}`;
+    
+    const invoiceData: InsertInvoice = {
+      childId: plan.childId,
+      parentId: plan.parentId,
+      invoiceNumber,
+      description: plan.description || plan.name,
+      subtotal: subtotal.toFixed(2),
+      vatRate: vatRate.toFixed(2),
+      vatAmount: vatAmount.toFixed(2),
+      total: total.toFixed(2),
+      status: 'pending',
+      dueDate,
+      invoiceType: 'tuition',
+      isRecurring: true,
+      tuitionPlanId: plan.id,
+      paidAmount: '0.00',
+    };
+    
+    const invoice = await db.insert(invoices).values(invoiceData);
+    generatedInvoices.push({ id: invoice[0].insertId, ...invoiceData });
+    
+    // Calculate next billing date based on frequency
+    const nextDate = new Date(plan.nextBillingDate);
+    switch (plan.frequency) {
+      case 'monthly': nextDate.setMonth(nextDate.getMonth() + 1); break;
+      case 'quarterly': nextDate.setMonth(nextDate.getMonth() + 3); break;
+      case 'semi_annual': nextDate.setMonth(nextDate.getMonth() + 6); break;
+      case 'annual': nextDate.setFullYear(nextDate.getFullYear() + 1); break;
+    }
+    
+    // Update next billing date
+    await db.update(tuitionPlans).set({ nextBillingDate: nextDate }).where(eq(tuitionPlans.id, plan.id));
+    
+    // Check if plan has ended
+    if (plan.endDate && nextDate > plan.endDate) {
+      await db.update(tuitionPlans).set({ isActive: false }).where(eq(tuitionPlans.id, plan.id));
+    }
+  }
+  
+  return generatedInvoices;
+}
+
+// ============ FINANCE ENHANCED ============
+
+export async function getFinanceExportData(filters?: { startDate?: Date; endDate?: Date; status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const conditions: any[] = [];
+  if (filters?.startDate) conditions.push(gte(invoices.createdAt, filters.startDate));
+  if (filters?.endDate) conditions.push(lte(invoices.createdAt, filters.endDate));
+  if (filters?.status) conditions.push(eq(invoices.status, filters.status as any));
+  
+  const query = db.select({
+    id: invoices.id,
+    invoiceNumber: invoices.invoiceNumber,
+    description: invoices.description,
+    subtotal: invoices.subtotal,
+    vatAmount: invoices.vatAmount,
+    total: invoices.total,
+    paidAmount: invoices.paidAmount,
+    status: invoices.status,
+    invoiceType: invoices.invoiceType,
+    dueDate: invoices.dueDate,
+    paidAt: invoices.paidAt,
+    paymentMethod: invoices.paymentMethod,
+    createdAt: invoices.createdAt,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    parentName: users.name,
+    parentEmail: users.email,
+  }).from(invoices)
+    .leftJoin(children, eq(invoices.childId, children.id))
+    .leftJoin(users, eq(invoices.parentId, users.id));
+  
+  if (conditions.length > 0) {
+    return query.where(and(...conditions)).orderBy(desc(invoices.createdAt));
+  }
+  return query.orderBy(desc(invoices.createdAt));
+}
+
+export async function getEnhancedFinanceSummary() {
+  const db = await getDb();
+  if (!db) return { totalRevenue: 0, pendingAmount: 0, overdueAmount: 0, partiallyPaidAmount: 0, totalInvoices: 0, paidInvoices: 0, pendingInvoices: 0, overdueInvoices: 0, thisMonthRevenue: 0 };
+  
+  const allInvoices = await db.select().from(invoices);
+  
+  const totalRevenue = allInvoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + Number(i.total), 0);
+  const pendingAmount = allInvoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + Number(i.total), 0);
+  const overdueAmount = allInvoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + Number(i.total), 0);
+  const partiallyPaidAmount = allInvoices.filter(i => i.status === 'partially_paid').reduce((sum, i) => sum + (Number(i.total) - Number(i.paidAmount)), 0);
+  
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthRevenue = allInvoices
+    .filter(i => i.status === 'paid' && i.paidAt && new Date(i.paidAt) >= startOfMonth)
+    .reduce((sum, i) => sum + Number(i.total), 0);
+  
+  return {
+    totalRevenue,
+    pendingAmount,
+    overdueAmount,
+    partiallyPaidAmount,
+    totalInvoices: allInvoices.length,
+    paidInvoices: allInvoices.filter(i => i.status === 'paid').length,
+    pendingInvoices: allInvoices.filter(i => i.status === 'pending').length,
+    overdueInvoices: allInvoices.filter(i => i.status === 'overdue').length,
+    thisMonthRevenue,
+  };
 }

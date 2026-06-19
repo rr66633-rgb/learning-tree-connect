@@ -517,7 +517,7 @@ export const appRouter = router({
   }),
 
   finance: router({
-    invoices: protectedProcedure.input(z.object({ parentId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+    invoices: protectedProcedure.input(z.object({ parentId: z.number().optional(), status: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         return db.getInvoices(ctx.user.id);
       }
@@ -526,7 +526,6 @@ export const appRouter = router({
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       const invoice = await db.getInvoiceById(input.id);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
-      // Parents can only see their own invoices
       if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
@@ -538,28 +537,50 @@ export const appRouter = router({
       description: z.string(),
       subtotal: z.string(),
       dueDate: z.string(),
-    })).mutation(async ({ input }) => {
+      invoiceType: z.enum(['tuition', 'activity', 'trip', 'uniform', 'registration', 'other']).optional(),
+      isRecurring: z.boolean().optional(),
+    })).mutation(async ({ input, ctx }) => {
       const subtotal = parseFloat(input.subtotal);
       const vatAmount = subtotal * 0.15;
       const total = subtotal + vatAmount;
-      return db.createInvoice({
-        ...input,
+      const invoice = await db.createInvoice({
+        childId: input.childId,
+        parentId: input.parentId,
+        description: input.description,
+        subtotal: input.subtotal,
         invoiceNumber: `INV-${Date.now()}`,
         vatRate: "15.00",
         vatAmount: vatAmount.toFixed(2),
         total: total.toFixed(2),
         dueDate: new Date(input.dueDate),
+        invoiceType: input.invoiceType || 'tuition',
+        isRecurring: input.isRecurring || false,
+        paidAmount: '0.00',
+        createdBy: ctx.user!.id,
       });
+      // Notify parent about new invoice
+      await db.createNotification({
+        userId: input.parentId,
+        title: 'فاتورة جديدة',
+        titleAr: 'فاتورة جديدة',
+        body: `تم إنشاء فاتورة جديدة بمبلغ ${total.toLocaleString('ar-SA')} ر.س - ${input.description}`,
+        bodyAr: `تم إنشاء فاتورة جديدة بمبلغ ${total.toLocaleString('ar-SA')} ر.س - ${input.description}`,
+        type: 'payment',
+        metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+      });
+      return invoice;
     }),
     updateInvoice: adminProcedure.input(z.object({
       id: z.number(),
       description: z.string().optional(),
       subtotal: z.string().optional(),
       dueDate: z.string().optional(),
+      invoiceType: z.enum(['tuition', 'activity', 'trip', 'uniform', 'registration', 'other']).optional(),
     })).mutation(async ({ input }) => {
       const updateData: any = {};
       if (input.description) updateData.description = input.description;
       if (input.dueDate) updateData.dueDate = new Date(input.dueDate);
+      if (input.invoiceType) updateData.invoiceType = input.invoiceType;
       if (input.subtotal) {
         const subtotal = parseFloat(input.subtotal);
         const vatAmount = subtotal * 0.15;
@@ -571,27 +592,61 @@ export const appRouter = router({
       await db.updateInvoice(input.id, updateData);
       return { success: true };
     }),
-    markPaid: adminProcedure.input(z.object({ id: z.number(), paymentMethod: z.enum(['cash', 'bank_transfer', 'card']) })).mutation(async ({ input }) => {
-      await db.updateInvoice(input.id, { status: 'paid', paidAt: new Date(), paymentMethod: input.paymentMethod });
+    markPaid: adminProcedure.input(z.object({ id: z.number(), paymentMethod: z.enum(['cash', 'bank_transfer', 'card', 'apple_pay', 'mada', 'stc_pay']) })).mutation(async ({ input }) => {
+      const invoice = await db.getInvoiceById(input.id);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      await db.updateInvoice(input.id, { status: 'paid', paidAt: new Date(), paymentMethod: input.paymentMethod, paidAmount: invoice.total });
+      // Create a manual payment record
+      await db.createPayment({
+        invoiceId: input.id,
+        parentId: invoice.parentId,
+        amount: invoice.total,
+        currency: 'SAR',
+        method: input.paymentMethod as any,
+        status: 'paid',
+        paidAt: new Date(),
+      });
+      // Create transaction record
+      await db.createTransaction({
+        paymentId: 0, // Will be updated
+        invoiceId: input.id,
+        parentId: invoice.parentId,
+        type: 'payment',
+        amount: invoice.total,
+        currency: 'SAR',
+        status: 'completed',
+        method: input.paymentMethod,
+        description: `دفع يدوي - ${invoice.description || invoice.invoiceNumber}`,
+      });
+      // Notify parent
+      await db.createNotification({
+        userId: invoice.parentId,
+        title: 'تأكيد الدفع',
+        titleAr: 'تأكيد الدفع',
+        body: `تم تسجيل دفع الفاتورة ${invoice.invoiceNumber} بنجاح`,
+        bodyAr: `تم تسجيل دفع الفاتورة ${invoice.invoiceNumber} بنجاح`,
+        type: 'payment',
+        metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+      });
       return { success: true };
     }),
     markPending: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      await db.updateInvoice(input.id, { status: 'pending', paidAt: null, paymentMethod: undefined as any });
+      await db.updateInvoice(input.id, { status: 'pending', paidAt: null, paymentMethod: undefined as any, paidAmount: '0.00' });
       return { success: true };
     }),
     deleteInvoice: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await db.deleteInvoice(input.id);
       return { success: true };
     }),
-    sendToParent: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    sendReminder: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       const invoice = await db.getInvoiceById(input.id);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
       await db.createNotification({
         userId: invoice.parentId,
-        title: 'فاتورة جديدة',
-        titleAr: 'فاتورة جديدة',
-        body: `تم إرسال فاتورة بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description || 'بدون وصف'}`,
-        bodyAr: `تم إرسال فاتورة بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description || 'بدون وصف'}`,
+        title: 'تذكير بالدفع',
+        titleAr: 'تذكير بالدفع',
+        body: `تذكير: لديك فاتورة مستحقة بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description || invoice.invoiceNumber}. تاريخ الاستحقاق: ${new Date(invoice.dueDate).toLocaleDateString('ar-SA')}`,
+        bodyAr: `تذكير: لديك فاتورة مستحقة بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description || invoice.invoiceNumber}. تاريخ الاستحقاق: ${new Date(invoice.dueDate).toLocaleDateString('ar-SA')}`,
         type: 'payment',
         metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
       });
@@ -599,9 +654,340 @@ export const appRouter = router({
     }),
     summary: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user?.role === 'parent') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
-      return db.getFinanceSummary();
+      return db.getEnhancedFinanceSummary();
+    }),
+    export: adminProcedure.input(z.object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      status: z.string().optional(),
+    }).optional()).query(async ({ input }) => {
+      return db.getFinanceExportData({
+        startDate: input?.startDate ? new Date(input.startDate) : undefined,
+        endDate: input?.endDate ? new Date(input.endDate) : undefined,
+        status: input?.status,
+      });
+    }),
+  }),
+
+  payments: router({
+    initiate: parentProcedure.input(z.object({
+      invoiceId: z.number(),
+      method: z.enum(['apple_pay', 'mada', 'visa', 'mastercard', 'stc_pay']),
+      callbackUrl: z.string(),
+    })).mutation(async ({ input, ctx }) => {
+      const invoice = await db.getInvoiceById(input.invoiceId);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      if (invoice.parentId !== ctx.user!.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+      if (invoice.status === 'paid') throw new TRPCError({ code: 'BAD_REQUEST', message: 'الفاتورة مدفوعة بالفعل' });
+      
+      const { isMoyasarConfigured, createMoyasarPayment } = await import('./_core/moyasar');
+      const amountInHalalas = Math.round(Number(invoice.total) * 100);
+      
+      // Determine source type based on payment method
+      let sourceType: 'creditcard' | 'applepay' | 'stcpay' = 'creditcard';
+      if (input.method === 'apple_pay') sourceType = 'applepay';
+      if (input.method === 'stc_pay') sourceType = 'stcpay';
+      
+      const moyasarResponse = await createMoyasarPayment({
+        amount: amountInHalalas,
+        currency: 'SAR',
+        description: `فاتورة ${invoice.invoiceNumber} - ${invoice.description || ''}`,
+        callbackUrl: input.callbackUrl,
+        source: { type: sourceType },
+        metadata: {
+          invoiceId: String(invoice.id),
+          invoiceNumber: invoice.invoiceNumber,
+          parentId: String(ctx.user!.id),
+        },
+      });
+      
+      // Create payment record
+      const payment = await db.createPayment({
+        invoiceId: input.invoiceId,
+        parentId: ctx.user!.id,
+        amount: invoice.total,
+        currency: 'SAR',
+        method: input.method,
+        status: 'initiated',
+        moyasarPaymentId: moyasarResponse.id,
+        moyasarPaymentUrl: moyasarResponse.source?.transaction_url || '',
+        callbackUrl: input.callbackUrl,
+        metadata: moyasarResponse as any,
+      });
+      
+      return {
+        paymentId: payment.id,
+        moyasarPaymentId: moyasarResponse.id,
+        transactionUrl: moyasarResponse.source?.transaction_url || '',
+        status: moyasarResponse.status,
+        isConfigured: isMoyasarConfigured(),
+      };
+    }),
+    verify: protectedProcedure.input(z.object({
+      paymentId: z.number().optional(),
+      moyasarPaymentId: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { fetchMoyasarPayment, isMoyasarConfigured } = await import('./_core/moyasar');
+      
+      let payment;
+      if (input.paymentId) {
+        payment = await db.getPaymentById(input.paymentId);
+      } else if (input.moyasarPaymentId) {
+        payment = await db.getPaymentByMoyasarId(input.moyasarPaymentId);
+      }
+      
+      if (!payment) throw new TRPCError({ code: 'NOT_FOUND', message: 'الدفعة غير موجودة' });
+      
+      if (!isMoyasarConfigured()) {
+        // Mock mode - simulate successful payment
+        return { status: 'not_configured', message: 'بوابة الدفع غير مفعلة حالياً' };
+      }
+      
+      // Verify with Moyasar
+      const moyasarPayment = await fetchMoyasarPayment(payment.moyasarPaymentId!);
+      
+      if (moyasarPayment.status === 'paid') {
+        await db.updatePayment(payment.id, { status: 'paid', paidAt: new Date() });
+        
+        // Update invoice
+        const invoice = await db.getInvoiceById(payment.invoiceId);
+        if (invoice) {
+          const newPaidAmount = Number(invoice.paidAmount || 0) + Number(payment.amount);
+          const totalAmount = Number(invoice.total);
+          const newStatus = newPaidAmount >= totalAmount ? 'paid' : 'partially_paid';
+          await db.updateInvoice(payment.invoiceId, {
+            status: newStatus,
+            paidAt: newStatus === 'paid' ? new Date() : undefined,
+            paymentMethod: payment.method,
+            paidAmount: newPaidAmount.toFixed(2),
+          });
+          
+          // Create transaction record
+          await db.createTransaction({
+            paymentId: payment.id,
+            invoiceId: payment.invoiceId,
+            parentId: payment.parentId,
+            moyasarTransactionId: moyasarPayment.id,
+            type: 'payment',
+            amount: payment.amount,
+            currency: 'SAR',
+            status: 'completed',
+            method: payment.method,
+            cardBrand: moyasarPayment.source?.company || null,
+            cardLast4: moyasarPayment.source?.number?.slice(-4) || null,
+            description: `دفع فاتورة ${invoice.invoiceNumber}`,
+          });
+          
+          // Notify parent of successful payment
+          await db.createNotification({
+            userId: payment.parentId,
+            title: 'تم الدفع بنجاح',
+            titleAr: 'تم الدفع بنجاح',
+            body: `تم دفع الفاتورة ${invoice.invoiceNumber} بنجاح. المبلغ: ${Number(payment.amount).toLocaleString('ar-SA')} ر.س`,
+            bodyAr: `تم دفع الفاتورة ${invoice.invoiceNumber} بنجاح. المبلغ: ${Number(payment.amount).toLocaleString('ar-SA')} ر.س`,
+            type: 'payment',
+            metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+          });
+        }
+        
+        return { status: 'paid', message: 'تم الدفع بنجاح' };
+      } else if (moyasarPayment.status === 'failed') {
+        await db.updatePayment(payment.id, { status: 'failed' });
+        
+        // Notify parent of failed payment
+        const invoice = await db.getInvoiceById(payment.invoiceId);
+        if (invoice) {
+          await db.createNotification({
+            userId: payment.parentId,
+            title: 'فشل الدفع',
+            titleAr: 'فشل الدفع',
+            body: `فشلت عملية دفع الفاتورة ${invoice.invoiceNumber}. يرجى المحاولة مرة أخرى.`,
+            bodyAr: `فشلت عملية دفع الفاتورة ${invoice.invoiceNumber}. يرجى المحاولة مرة أخرى.`,
+            type: 'payment',
+            metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+          });
+        }
+        
+        return { status: 'failed', message: 'فشلت عملية الدفع' };
+      }
+      
+      return { status: moyasarPayment.status, message: 'جاري المعالجة' };
+    }),
+    history: parentProcedure.query(async ({ ctx }) => {
+      return db.getPaymentsByParent(ctx.user!.id);
+    }),
+    byInvoice: protectedProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
+      const invoice = await db.getInvoiceById(input.invoiceId);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      return db.getPaymentsByInvoice(input.invoiceId);
+    }),
+    gatewayStatus: publicProcedure.query(async () => {
+      const { isMoyasarConfigured, getMoyasarPublishableKey } = await import('./_core/moyasar');
+      return {
+        isConfigured: isMoyasarConfigured(),
+        publishableKey: getMoyasarPublishableKey(),
+      };
+    }),
+  }),
+
+  transactions: router({
+    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
+      return db.getAllTransactions(input?.limit || 100);
+    }),
+    byInvoice: protectedProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
+      const invoice = await db.getInvoiceById(input.invoiceId);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      return db.getTransactionsByInvoice(input.invoiceId);
+    }),
+    byParent: parentProcedure.query(async ({ ctx }) => {
+      return db.getTransactionsByParent(ctx.user!.id);
+    }),
+  }),
+
+  refunds: router({
+    create: adminProcedure.input(z.object({
+      invoiceId: z.number(),
+      transactionId: z.number(),
+      amount: z.string(),
+      reason: z.string(),
+    })).mutation(async ({ input, ctx }) => {
+      const invoice = await db.getInvoiceById(input.invoiceId);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      
+      const { isMoyasarConfigured, createMoyasarRefund } = await import('./_core/moyasar');
+      
+      let moyasarRefundId: string | undefined;
+      
+      // Try to refund via Moyasar if configured
+      if (isMoyasarConfigured()) {
+        const payment = (await db.getPaymentsByInvoice(input.invoiceId)).find(p => p.status === 'paid');
+        if (payment?.moyasarPaymentId) {
+          const amountInHalalas = Math.round(parseFloat(input.amount) * 100);
+          const refundResponse = await createMoyasarRefund(payment.moyasarPaymentId, amountInHalalas);
+          moyasarRefundId = refundResponse.id;
+        }
+      }
+      
+      const refund = await db.createRefund({
+        transactionId: input.transactionId,
+        invoiceId: input.invoiceId,
+        parentId: invoice.parentId,
+        amount: input.amount,
+        currency: 'SAR',
+        reason: input.reason,
+        status: moyasarRefundId ? 'completed' : 'pending',
+        moyasarRefundId: moyasarRefundId || null,
+        processedBy: ctx.user!.id,
+        processedAt: new Date(),
+      });
+      
+      // Update invoice paid amount
+      const newPaidAmount = Math.max(0, Number(invoice.paidAmount || 0) - parseFloat(input.amount));
+      await db.updateInvoice(input.invoiceId, {
+        paidAmount: newPaidAmount.toFixed(2),
+        status: newPaidAmount <= 0 ? 'pending' : 'partially_paid',
+      });
+      
+      // Create refund transaction
+      await db.createTransaction({
+        paymentId: 0,
+        invoiceId: input.invoiceId,
+        parentId: invoice.parentId,
+        moyasarTransactionId: moyasarRefundId || null,
+        type: 'refund',
+        amount: input.amount,
+        currency: 'SAR',
+        status: 'completed',
+        method: 'refund',
+        description: `استرداد - ${input.reason}`,
+      });
+      
+      // Notify parent
+      await db.createNotification({
+        userId: invoice.parentId,
+        title: 'تم الاسترداد',
+        titleAr: 'تم الاسترداد',
+        body: `تم استرداد مبلغ ${parseFloat(input.amount).toLocaleString('ar-SA')} ر.س من الفاتورة ${invoice.invoiceNumber}`,
+        bodyAr: `تم استرداد مبلغ ${parseFloat(input.amount).toLocaleString('ar-SA')} ر.س من الفاتورة ${invoice.invoiceNumber}`,
+        type: 'payment',
+        metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+      });
+      
+      return refund;
+    }),
+    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
+      return db.getAllRefunds(input?.limit || 100);
+    }),
+  }),
+
+  tuitionPlans: router({
+    list: adminProcedure.query(async () => {
+      return db.getTuitionPlans();
+    }),
+    create: adminProcedure.input(z.object({
+      childId: z.number(),
+      parentId: z.number(),
+      name: z.string(),
+      amount: z.string(),
+      frequency: z.enum(['monthly', 'quarterly', 'semi_annual', 'annual']),
+      description: z.string().optional(),
+      startDate: z.string(),
+      endDate: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      // Calculate next billing date based on start date
+      const startDate = new Date(input.startDate);
+      return db.createTuitionPlan({
+        childId: input.childId,
+        parentId: input.parentId,
+        name: input.name,
+        amount: input.amount,
+        frequency: input.frequency,
+        description: input.description || '',
+        startDate,
+        endDate: input.endDate ? new Date(input.endDate) : null,
+        nextBillingDate: startDate,
+        isActive: true,
+        createdBy: ctx.user!.id,
+      });
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      amount: z.string().optional(),
+      frequency: z.enum(['monthly', 'quarterly', 'semi_annual', 'annual']).optional(),
+      description: z.string().optional(),
+      isActive: z.boolean().optional(),
+      endDate: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      const updateData: any = { ...data };
+      if (data.endDate) updateData.endDate = new Date(data.endDate);
+      await db.updateTuitionPlan(id, updateData);
+      return { success: true };
+    }),
+    generateInvoices: adminProcedure.mutation(async () => {
+      const generated = await db.generateInvoicesFromPlans();
+      // Notify parents for each generated invoice
+      for (const invoice of generated) {
+        await db.createNotification({
+          userId: invoice.parentId,
+          title: 'فاتورة شهرية جديدة',
+          titleAr: 'فاتورة شهرية جديدة',
+          body: `تم إنشاء فاتورة شهرية بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description}`,
+          bodyAr: `تم إنشاء فاتورة شهرية بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description}`,
+          type: 'payment',
+          metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+        });
+      }
+      return { generated: generated.length, invoices: generated };
     }),
   }),
 

@@ -340,3 +340,64 @@
 - [x] Add AI child face recognition/suggestion to assist tagging children
 - [x] Update teacher media upload UI with AI suggestion buttons
 - [x] Add loading states for AI processing
+
+## Moyasar Payment System Integration
+
+### Database Schema
+- [x] Create invoices table (invoiceNumber, childId, parentId, date, dueDate, description, amount, vat, totalAmount, status, type, recurring)
+- [x] Create payments table (invoiceId, amount, method, transactionId, status, paidAt, moyasarPaymentId)
+- [x] Create transactions table (paymentId, moyasarId, type, amount, currency, status, metadata)
+- [x] Create refunds table (transactionId, amount, reason, status, refundedAt, moyasarRefundId)
+- [x] Create tuition_plans table (childId, amount, frequency, description, startDate, nextBillingDate)
+
+### Backend - Moyasar Service
+- [x] Create server/_core/moyasar.ts with createPayment, verifyPayment, createRefund functions
+- [x] Support Apple Pay, Mada, Visa, Mastercard, STC Pay payment methods
+- [x] Implement placeholder/mock mode when MOYASAR_API_KEY is not set
+- [x] Add Moyasar webhook handler for payment status updates
+
+### Backend - tRPC Procedures
+- [x] invoices.list (parent: their children's invoices; admin: all invoices)
+- [x] invoices.create (admin - manual invoice creation)
+- [x] invoices.createRecurring (admin - set up recurring monthly invoices)
+- [x] invoices.update (admin - edit invoice details)
+- [x] invoices.markPaid (admin - manual payment marking)
+- [x] invoices.sendReminder (admin - notify parent of unpaid invoice)
+- [x] payments.initiate (parent - start Moyasar payment flow)
+- [x] payments.verify (verify payment after Moyasar callback)
+- [x] payments.history (parent - view payment history)
+- [x] refunds.create (admin - issue refund)
+- [x] refunds.list (admin - view all refunds)
+- [x] finance.summary (admin - financial overview/reports)
+- [x] finance.export (admin - export financial data)
+- [x] tuitionPlans.create (admin - create tuition plan for child)
+- [x] tuitionPlans.list (admin - list all tuition plans)
+- [x] tuitionPlans.generateInvoices (admin - generate invoices from plans)
+
+### Frontend - Admin Finance Portal
+- [x] Invoice creation form (manual + recurring + one-time)
+- [x] Invoice list with search, filter by status/child/date
+- [x] Invoice detail page with actions (mark paid, edit, delete, send reminder)
+- [x] Transaction list with all payments
+- [x] Refund management (issue refund, view refund history)
+- [x] Tuition plans management (create, edit, generate invoices)
+- [x] Financial reports dashboard (revenue, outstanding, overdue)
+- [x] Export financial reports (CSV/Excel)
+
+### Frontend - Parent Payment Portal
+- [x] Invoice list with tabs (All/Unpaid/Paid/Overdue)
+- [x] Invoice detail with pay button (Moyasar checkout or placeholder)
+- [x] Payment method selection (Apple Pay, Mada, Visa, MC, STC Pay)
+- [x] Payment confirmation page
+- [x] Payment history view
+- [x] Download invoice PDF
+
+### Notifications
+- [x] Auto-notify parent when new invoice is created
+- [x] Auto-notify parent when payment is successful
+- [x] Auto-notify parent when invoice becomes overdue
+- [x] Auto-notify parent when payment fails
+
+### Sidebar & Navigation
+- [x] Add finance/payments links in admin sidebar
+- [x] Add invoices/payments links in parent sidebar

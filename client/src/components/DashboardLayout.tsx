@@ -87,7 +87,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
   { icon: Camera, label: "الصور والفيديو", path: "/media" },
   { icon: MessageCircle, label: "الرسائل", path: "/messages" },
-  { icon: CreditCard, label: "المالية", path: "/finance" },
+  { icon: CreditCard, label: "المالية والمدفوعات", path: "/finance" },
   { icon: UserPlus, label: "التسجيل", path: "/enrollment" },
   { icon: Calendar, label: "التقويم", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
@@ -111,7 +111,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
   { icon: Camera, label: "الصور والفيديو", path: "/media" },
   { icon: MessageCircle, label: "الرسائل", path: "/messages" },
-  { icon: CreditCard, label: "المالية", path: "/finance" },
+  { icon: CreditCard, label: "المالية والمدفوعات", path: "/finance" },
   { icon: UserPlus, label: "التسجيل", path: "/enrollment" },
   { icon: Calendar, label: "التقويم", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
@@ -126,7 +126,7 @@ const principalMenuItems: MenuItem[] = [
  */
 const accountantMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
-  { icon: CreditCard, label: "المالية", path: "/finance" },
+  { icon: CreditCard, label: "المالية والمدفوعات", path: "/finance" },
   { icon: Users, label: "الأطفال", path: "/children" },
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: MessageCircle, label: "الرسائل", path: "/messages" },

@@ -325,17 +325,105 @@ export const invoices = mysqlTable("invoices", {
   vatRate: decimal("vatRate", { precision: 5, scale: 2 }).default("15.00").notNull(),
   vatAmount: decimal("vatAmount", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  status: mysqlEnum("status", ["pending", "paid", "overdue", "cancelled"]).default("pending").notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "overdue", "cancelled", "partially_paid"]).default("pending").notNull(),
   dueDate: timestamp("dueDate").notNull(),
   paidAt: timestamp("paidAt"),
-  paymentMethod: mysqlEnum("paymentMethod", ["cash", "bank_transfer", "card"]),
+  paymentMethod: mysqlEnum("paymentMethod", ["cash", "bank_transfer", "card", "apple_pay", "mada", "stc_pay"]),
   receiptUrl: text("receiptUrl"),
+  invoiceType: mysqlEnum("invoiceType", ["tuition", "activity", "trip", "uniform", "registration", "other"]).default("tuition").notNull(),
+  isRecurring: boolean("isRecurring").default(false).notNull(),
+  tuitionPlanId: int("tuitionPlanId"),
+  paidAmount: decimal("paidAmount", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  createdBy: int("createdBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
+
+// ============ PAYMENTS ============
+export const payments = mysqlTable("payments", {
+  id: int("id").autoincrement().primaryKey(),
+  invoiceId: int("invoiceId").notNull(),
+  parentId: int("parentId").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
+  method: mysqlEnum("method", ["apple_pay", "mada", "visa", "mastercard", "stc_pay", "cash", "bank_transfer"]).notNull(),
+  status: mysqlEnum("status", ["initiated", "paid", "failed", "expired", "refunded"]).default("initiated").notNull(),
+  moyasarPaymentId: varchar("moyasarPaymentId", { length: 100 }),
+  moyasarPaymentUrl: text("moyasarPaymentUrl"),
+  callbackUrl: text("callbackUrl"),
+  metadata: json("metadata"),
+  paidAt: timestamp("paidAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+
+// ============ TRANSACTIONS ============
+export const transactions = mysqlTable("transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  paymentId: int("paymentId").notNull(),
+  invoiceId: int("invoiceId").notNull(),
+  parentId: int("parentId").notNull(),
+  moyasarTransactionId: varchar("moyasarTransactionId", { length: 100 }),
+  type: mysqlEnum("type", ["payment", "refund", "partial_refund"]).default("payment").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
+  status: mysqlEnum("status", ["completed", "pending", "failed", "refunded"]).default("pending").notNull(),
+  method: varchar("method", { length: 50 }),
+  cardBrand: varchar("cardBrand", { length: 50 }),
+  cardLast4: varchar("cardLast4", { length: 4 }),
+  description: text("description"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = typeof transactions.$inferInsert;
+
+// ============ REFUNDS ============
+export const refunds = mysqlTable("refunds", {
+  id: int("id").autoincrement().primaryKey(),
+  transactionId: int("transactionId").notNull(),
+  invoiceId: int("invoiceId").notNull(),
+  parentId: int("parentId").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
+  reason: text("reason"),
+  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+  moyasarRefundId: varchar("moyasarRefundId", { length: 100 }),
+  processedBy: int("processedBy"),
+  processedAt: timestamp("processedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Refund = typeof refunds.$inferSelect;
+export type InsertRefund = typeof refunds.$inferInsert;
+
+// ============ TUITION PLANS ============
+export const tuitionPlans = mysqlTable("tuition_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  parentId: int("parentId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  frequency: mysqlEnum("frequency", ["monthly", "quarterly", "semi_annual", "annual"]).default("monthly").notNull(),
+  description: text("description"),
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate"),
+  nextBillingDate: timestamp("nextBillingDate"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TuitionPlan = typeof tuitionPlans.$inferSelect;
+export type InsertTuitionPlan = typeof tuitionPlans.$inferInsert;
 
 // ============ LOYALTY ============
 export const loyaltyPoints = mysqlTable("loyalty_points", {

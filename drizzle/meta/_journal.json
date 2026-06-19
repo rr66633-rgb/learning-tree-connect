@@ -71,6 +71,13 @@
       "when": 1781901240091,
       "tag": "0009_medical_juggernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1781906506090,
+      "tag": "0010_opposite_nico_minoru",
+      "breakpoints": true
     }
   ]
 }

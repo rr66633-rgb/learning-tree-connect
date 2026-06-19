@@ -2,8 +2,22 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Check } from "lucide-react";
+import { Bell, Check, CreditCard, AlertTriangle, CheckCircle2, XCircle, FileText, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+
+const notificationIcons: Record<string, any> = {
+  payment: CreditCard,
+  invoice: FileText,
+  overdue: AlertTriangle,
+  message: MessageCircle,
+};
+
+const notificationColors: Record<string, string> = {
+  payment: "text-green-600",
+  invoice: "text-blue-600",
+  overdue: "text-red-600",
+  message: "text-primary",
+};
 
 export default function ParentNotifications() {
   const { data: notifications } = trpc.notifications.list.useQuery();
@@ -12,27 +26,49 @@ export default function ParentNotifications() {
   const markRead = trpc.notifications.markRead.useMutation({ onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); } });
   const markAllRead = trpc.notifications.markAllRead.useMutation({ onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); toast.success("تم تحديد الكل كمقروء"); } });
 
+  const getIcon = (notification: any) => {
+    const type = notification.type || '';
+    const title = (notification.title || '').toLowerCase();
+    
+    if (type === 'payment' || title.includes('دفع') || title.includes('فاتورة')) {
+      if (title.includes('فشل')) return <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />;
+      if (title.includes('تذكير') || title.includes('متأخر')) return <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />;
+      if (title.includes('جديدة')) return <FileText className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />;
+      if (title.includes('استرداد')) return <CreditCard className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />;
+      return <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />;
+    }
+    
+    const Icon = notificationIcons[type] || Bell;
+    const color = notificationColors[type] || "text-muted-foreground";
+    return <Icon className={`h-5 w-5 ${color} shrink-0 mt-0.5`} />;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2"><h1 className="text-2xl font-bold">الإشعارات</h1>{(unreadCount ?? 0) > 0 && <Badge>{unreadCount}</Badge>}</div>
-        <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()}>تحديد الكل كمقروء</Button>
+        <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={!unreadCount}>تحديد الكل كمقروء</Button>
       </div>
       <div className="space-y-2">
         {notifications?.map((n: any) => (
-          <Card key={n.id} className={!n.read ? "border-primary/30 bg-primary/5" : ""}>
+          <Card key={n.id} className={`transition-all ${!n.isRead ? "border-primary/30 bg-primary/5" : ""}`}>
             <CardContent className="p-4 flex items-start gap-3">
-              <Bell className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              {getIcon(n)}
               <div className="flex-1">
-                <p className="font-medium text-sm">{n.title}</p>
-                <p className="text-sm text-muted-foreground">{n.content}</p>
-                <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleDateString('ar-SA')}</p>
+                <p className="font-medium text-sm">{n.titleAr || n.title}</p>
+                <p className="text-sm text-muted-foreground">{n.bodyAr || n.body || n.content}</p>
+                <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
               </div>
-              {!n.read && <Button size="sm" variant="ghost" onClick={() => markRead.mutate({ id: n.id })}><Check className="h-4 w-4" /></Button>}
+              {!n.isRead && <Button size="sm" variant="ghost" onClick={() => markRead.mutate({ id: n.id })}><Check className="h-4 w-4" /></Button>}
             </CardContent>
           </Card>
         ))}
-        {(!notifications || notifications.length === 0) && <p className="text-center text-muted-foreground py-8">لا توجد إشعارات</p>}
+        {(!notifications || notifications.length === 0) && (
+          <div className="text-center py-12">
+            <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <p className="text-muted-foreground">لا توجد إشعارات</p>
+          </div>
+        )}
       </div>
     </div>
   );

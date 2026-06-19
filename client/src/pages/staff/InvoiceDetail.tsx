@@ -60,9 +60,9 @@ export default function InvoiceDetail() {
     onError: (e) => toast.error(e.message),
   });
 
-  const sendToParent = trpc.finance.sendToParent.useMutation({
+  const sendToParent = trpc.finance.sendReminder.useMutation({
     onSuccess: () => toast.success("تم إرسال الفاتورة لولي الأمر"),
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const handlePrint = () => {
