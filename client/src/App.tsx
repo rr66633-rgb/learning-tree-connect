@@ -31,6 +31,7 @@ const StaffPendingApprovals = lazy(() => import("./pages/staff/PendingApprovals"
 const StaffMediaUpload = lazy(() => import("./pages/staff/MediaUpload"));
 const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
 const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
+const StaffPickup = lazy(() => import("./pages/staff/Pickup"));
 
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -52,6 +53,7 @@ const ParentNotifications = lazy(() => import("./pages/parent/Notifications"));
 const ParentAnnouncements = lazy(() => import("./pages/parent/Announcements"));
 const ParentMedical = lazy(() => import("./pages/parent/Medical"));
 const ParentPhotos = lazy(() => import("./pages/parent/Photos"));
+const ParentPickup = lazy(() => import("./pages/parent/Pickup"));
 
 function PageLoader() {
   return (
@@ -106,6 +108,7 @@ function StaffRouter() {
         <Route path="/staff/users" component={StaffUsers} />
         <Route path="/staff/pending-approvals" component={StaffPendingApprovals} />
         <Route path="/staff/settings" component={StaffSettings} />
+        <Route path="/staff/pickup" component={StaffPickup} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -130,6 +133,7 @@ function ParentRouter() {
         <Route path="/parent/announcements" component={ParentAnnouncements} />
         <Route path="/parent/photos" component={ParentPhotos} />
         <Route path="/parent/medical" component={ParentMedical} />
+        <Route path="/parent/pickup" component={ParentPickup} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

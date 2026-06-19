@@ -485,3 +485,32 @@
 ### Pickup Security
 - [x] Photo verification display during pickup/dismissal
 - [x] Large photo view for staff to verify child identity before release
+
+## Pickup Request System
+
+### Database
+- [x] Create pickup_requests table (childId, parentId, status, requestedAt, calledAt, readyAt, pickedUpAt, pickedUpBy, notes)
+
+### Backend
+- [x] pickupRequests.create - parent sends pickup request
+- [x] pickupRequests.updateStatus - staff updates status (waiting → called → ready → picked_up)
+- [x] pickupRequests.listActive - staff sees active pickup requests
+- [x] pickupRequests.history - view pickup history
+- [x] Real-time notification to staff when parent requests pickup
+- [x] Notification to parent when child status changes
+
+### Frontend - Parent
+- [x] "أنا هنا" (I'm Here) button on parent pickup page
+- [x] Pickup request status tracking (waiting, called, ready, picked up)
+- [x] Cancel pickup request option
+- [x] Pickup history view
+
+### Frontend - Staff
+- [x] Active pickup requests dashboard with child photos (real-time polling 10s)
+- [x] Status update buttons (Called → Ready → Picked Up)
+- [x] Pickup person verification with child photo display
+- [x] Record who picked up the child
+- [x] Pickup history log
+
+### Child Photo in Add Child Form
+- [x] Photo upload section added to Add/Edit Child form with camera capture support

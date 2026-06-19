@@ -621,3 +621,21 @@ export const loginAttempts = mysqlTable("login_attempts", {
 
 export type LoginAttempt = typeof loginAttempts.$inferSelect;
 export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;
+
+// ============ PICKUP REQUESTS ============
+export const pickupRequests = mysqlTable("pickup_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  parentId: int("parentId").notNull(),
+  status: mysqlEnum("status", ["waiting", "called", "ready", "picked_up", "cancelled"]).default("waiting").notNull(),
+  requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+  calledAt: timestamp("calledAt"),
+  readyAt: timestamp("readyAt"),
+  pickedUpAt: timestamp("pickedUpAt"),
+  pickedUpBy: varchar("pickedUpBy", { length: 255 }),
+  handledBy: int("handledBy"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PickupRequest = typeof pickupRequests.$inferSelect;
+export type InsertPickupRequest = typeof pickupRequests.$inferInsert;

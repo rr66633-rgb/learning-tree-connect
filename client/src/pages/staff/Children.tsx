@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle } from "lucide-react";
+import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera } from "lucide-react";
 import { useLocation } from "wouter";
+
 
 const initialFormState = {
   firstName: "",
@@ -40,6 +41,7 @@ const initialFormState = {
   pickupAuthorization: "",
   busRequired: false,
   notes: "",
+  photo: "",
 };
 
 export default function StaffChildren() {
@@ -123,6 +125,7 @@ export default function StaffChildren() {
       pickupAuthorization: child.pickupAuthorization || "",
       busRequired: child.busRequired || false,
       notes: child.notes || "",
+      photo: child.photo || "",
     });
     setShowEditDialog(true);
   };
@@ -136,16 +139,68 @@ export default function StaffChildren() {
     });
   };
 
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('يرجى اختيار صورة'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error('حجم الصورة يجب أن يكون أقل من 10 ميغابايت'); return; }
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload-photo', { method: 'POST', body: formData, credentials: 'include' });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setForm(prev => ({ ...prev, photo: data.url }));
+      toast.success('تم رفع الصورة بنجاح');
+    } catch (err) {
+      toast.error('فشل رفع الصورة');
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
   const renderForm = () => (
     <Tabs defaultValue="personal" className="w-full" dir="rtl">
       <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="personal">{"\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0634\u062E\u0635\u064A\u0629"}</TabsTrigger>
-        <TabsTrigger value="parent">{"\u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631"}</TabsTrigger>
-        <TabsTrigger value="medical">{"\u0627\u0644\u0645\u0639\u0644\u0648\u0645\u0627\u062A \u0627\u0644\u0637\u0628\u064A\u0629"}</TabsTrigger>
-        <TabsTrigger value="nursery">{"\u0627\u0644\u062D\u0636\u0627\u0646\u0629"}</TabsTrigger>
+        <TabsTrigger value="personal">{"البيانات الشخصية"}</TabsTrigger>
+        <TabsTrigger value="parent">{"ولي الأمر"}</TabsTrigger>
+        <TabsTrigger value="medical">{"المعلومات الطبية"}</TabsTrigger>
+        <TabsTrigger value="nursery">{"الحضانة"}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="personal" className="space-y-4 mt-4">
+        {/* Child Photo Upload */}
+        <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+          <div className="relative cursor-pointer" onClick={() => photoInputRef.current?.click()}>
+            {form.photo ? (
+              <img src={form.photo} alt="" className="h-20 w-20 rounded-full object-cover border-2 border-primary/20" />
+            ) : (
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center border-2 border-dashed border-primary/30">
+                <Camera className="h-8 w-8 text-primary/50" />
+              </div>
+            )}
+            <div className="absolute -bottom-1 -left-1 bg-primary text-white rounded-full p-1">
+              <Camera className="h-3 w-3" />
+            </div>
+          </div>
+          <div>
+            <p className="font-medium text-sm">{form.photo ? 'تغيير الصورة' : 'إضافة صورة الطفل'}</p>
+            <p className="text-xs text-muted-foreground">{uploadingPhoto ? 'جارٍ الرفع...' : 'اضغط لرفع صورة أو التقاطها من الكاميرا'}</p>
+          </div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handlePhotoUpload}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>{"\u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0623\u0648\u0644 *"}</Label>

@@ -25,7 +25,7 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText,
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
-  Camera, User, UserCheck
+  Camera, User, UserCheck, MapPin
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -50,6 +50,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: CreditCard, label: "الفواتير والمدفوعات", path: "/finance" },
   { icon: FileArchive, label: "المستندات", path: "/documents" },
   { icon: Heart, label: "المعلومات الطبية", path: "/medical" },
+  { icon: MapPin, label: "طلب الاستلام", path: "/pickup" },
   { icon: Calendar, label: "التقويم", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
 ];
@@ -68,6 +69,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: Camera, label: "الصور والفيديو", path: "/media" },
   { icon: MessageCircle, label: "الرسائل", path: "/messages" },
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
+  { icon: MapPin, label: "الاستلام", path: "/pickup" },
   { icon: Calendar, label: "التقويم", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
 ];
@@ -94,6 +96,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: FileArchive, label: "المستندات", path: "/documents" },
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
+  { icon: MapPin, label: "الاستلام", path: "/pickup" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
   { icon: Settings, label: "الإعدادات", path: "/settings" },
 ];

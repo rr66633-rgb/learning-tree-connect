@@ -2049,6 +2049,107 @@ export const appRouter = router({
       return { success: true };
     }),
   }),
+
+  // ============ PICKUP REQUESTS ============
+  pickup: router({
+    // Parent creates a pickup request
+    request: parentProcedure.input(z.object({
+      childId: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      // Check if there's already an active request for this child
+      const existing = await db.getActivePickupForChild(input.childId);
+      if (existing) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'يوجد طلب استلام نشط لهذا الطفل بالفعل' });
+      }
+      const id = await db.createPickupRequest({
+        childId: input.childId,
+        parentId: ctx.user!.id,
+        status: 'waiting',
+      });
+      // Notify all staff about the pickup request
+      const child = await db.getChildById(input.childId);
+      const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
+      try {
+        await db.createNotification({
+          userId: 0, // Will be sent to all staff
+          title: 'طلب استلام جديد',
+          body: `ولي أمر ${childName} وصل لاستلامه`,
+          type: 'general',
+          metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId }),
+        });
+      } catch (e) { /* notification failure shouldn't block */ }
+      return { id, status: 'waiting' };
+    }),
+
+    // Parent cancels their pickup request
+    cancel: parentProcedure.input(z.object({
+      id: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      await db.updatePickupRequestStatus(input.id, 'cancelled');
+      return { success: true };
+    }),
+
+    // Parent views their pickup requests
+    myRequests: parentProcedure.query(async ({ ctx }) => {
+      return db.getPickupRequestsByParent(ctx.user!.id);
+    }),
+
+    // Parent checks active pickup for a child
+    activeForChild: parentProcedure.input(z.object({
+      childId: z.number(),
+    })).query(async ({ input }) => {
+      return db.getActivePickupForChild(input.childId);
+    }),
+
+    // Staff views all active pickup requests
+    active: protectedProcedure.query(async () => {
+      return db.getActivePickupRequests();
+    }),
+
+    // Staff updates pickup status
+    updateStatus: protectedProcedure.input(z.object({
+      id: z.number(),
+      status: z.enum(['called', 'ready', 'picked_up', 'cancelled']),
+      pickedUpBy: z.string().optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const extra: Record<string, any> = {};
+      if (input.pickedUpBy) extra.pickedUpBy = input.pickedUpBy;
+      if (input.notes) extra.notes = input.notes;
+      extra.handledBy = ctx.user!.id;
+      await db.updatePickupRequestStatus(input.id, input.status, extra);
+
+      // Send notification to parent about status change
+      const statusMessages: Record<string, string> = {
+        called: 'تم استدعاء طفلك، يرجى الانتظار',
+        ready: 'طفلك جاهز للاستلام',
+        picked_up: 'تم تسليم طفلك بنجاح',
+        cancelled: 'تم إلغاء طلب الاستلام',
+      };
+      try {
+        // Get the pickup request to find parentId
+        const requests = await db.getActivePickupRequests();
+        const req = requests.find((r: any) => r.id === input.id);
+        if (req) {
+          await db.createNotification({
+            userId: req.parentId,
+            title: 'تحديث طلب الاستلام',
+            body: statusMessages[input.status] || 'تم تحديث حالة طلب الاستلام',
+            type: 'general',
+            metadata: JSON.stringify({ pickupRequestId: input.id, status: input.status }),
+          });
+        }
+      } catch (e) { /* notification failure shouldn't block */ }
+      return { success: true };
+    }),
+
+    // Staff views pickup history
+    history: protectedProcedure.input(z.object({
+      limit: z.number().min(1).max(500).default(100),
+    }).optional()).query(async ({ input }) => {
+      return db.getPickupHistory(input?.limit || 100);
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

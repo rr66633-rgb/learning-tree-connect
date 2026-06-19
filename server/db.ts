@@ -1,7 +1,7 @@
 import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans } from "../drizzle/schema";
-import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests } from "../drizzle/schema";
+import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
 import { parentChildren, media, mediaChildren } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1603,3 +1603,117 @@ export async function activateUser(userId: number) {
   await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
 }
 
+
+// ============ PICKUP REQUESTS ============
+export async function createPickupRequest(data: InsertPickupRequest) {
+  const db = await getDb();
+  const result = await db!.insert(pickupRequests).values(data);
+  return result[0].insertId;
+}
+
+export async function getActivePickupRequests() {
+  const db = await getDb();
+  return db!.select({
+    id: pickupRequests.id,
+    childId: pickupRequests.childId,
+    parentId: pickupRequests.parentId,
+    status: pickupRequests.status,
+    requestedAt: pickupRequests.requestedAt,
+    calledAt: pickupRequests.calledAt,
+    readyAt: pickupRequests.readyAt,
+    pickedUpAt: pickupRequests.pickedUpAt,
+    pickedUpBy: pickupRequests.pickedUpBy,
+    handledBy: pickupRequests.handledBy,
+    notes: pickupRequests.notes,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    childPhoto: children.photo,
+    childClassId: children.classId,
+    parentName: users.name,
+    parentPhone: users.phone,
+  })
+  .from(pickupRequests)
+  .leftJoin(children, eq(pickupRequests.childId, children.id))
+  .leftJoin(users, eq(pickupRequests.parentId, users.id))
+  .where(
+    and(
+      inArray(pickupRequests.status, ["waiting", "called", "ready"]),
+      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
+    )
+  )
+  .orderBy(desc(pickupRequests.requestedAt));
+}
+
+export async function getPickupRequestsByParent(parentId: number) {
+  const db = await getDb();
+  return db!.select({
+    id: pickupRequests.id,
+    childId: pickupRequests.childId,
+    status: pickupRequests.status,
+    requestedAt: pickupRequests.requestedAt,
+    calledAt: pickupRequests.calledAt,
+    readyAt: pickupRequests.readyAt,
+    pickedUpAt: pickupRequests.pickedUpAt,
+    pickedUpBy: pickupRequests.pickedUpBy,
+    notes: pickupRequests.notes,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    childPhoto: children.photo,
+  })
+  .from(pickupRequests)
+  .leftJoin(children, eq(pickupRequests.childId, children.id))
+  .where(eq(pickupRequests.parentId, parentId))
+  .orderBy(desc(pickupRequests.requestedAt))
+  .limit(50);
+}
+
+export async function getActivePickupForChild(childId: number) {
+  const db = await getDb();
+  const results = await db!.select()
+    .from(pickupRequests)
+    .where(
+      and(
+        eq(pickupRequests.childId, childId),
+        inArray(pickupRequests.status, ["waiting", "called", "ready"]),
+        gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
+      )
+    )
+    .limit(1);
+  return results[0] || null;
+}
+
+export async function updatePickupRequestStatus(id: number, status: string, extra: Record<string, any> = {}) {
+  const db = await getDb();
+  const updateData: any = { status, ...extra };
+  if (status === "called") updateData.calledAt = new Date();
+  if (status === "ready") updateData.readyAt = new Date();
+  if (status === "picked_up") updateData.pickedUpAt = new Date();
+  await db!.update(pickupRequests).set(updateData).where(eq(pickupRequests.id, id));
+}
+
+export async function getPickupHistory(limit = 100) {
+  const db = await getDb();
+  return db!.select({
+    id: pickupRequests.id,
+    childId: pickupRequests.childId,
+    parentId: pickupRequests.parentId,
+    status: pickupRequests.status,
+    requestedAt: pickupRequests.requestedAt,
+    calledAt: pickupRequests.calledAt,
+    readyAt: pickupRequests.readyAt,
+    pickedUpAt: pickupRequests.pickedUpAt,
+    pickedUpBy: pickupRequests.pickedUpBy,
+    handledBy: pickupRequests.handledBy,
+    notes: pickupRequests.notes,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    childPhoto: children.photo,
+    parentName: users.name,
+  })
+  .from(pickupRequests)
+  .leftJoin(children, eq(pickupRequests.childId, children.id))
+  .leftJoin(users, eq(pickupRequests.parentId, users.id))
+  .where(eq(pickupRequests.status, "picked_up"))
+  .orderBy(desc(pickupRequests.pickedUpAt))
+  .limit(limit);
+}
