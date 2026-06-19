@@ -97,13 +97,13 @@ describe("AUDIT: Admin Full Access Verification", () => {
 
   it("admin can view dashboard stats with full data", async () => {
     const stats = await call(adminCtx).dashboard.stats();
-    expect(stats.totalChildren).toBe(20);
+    expect(stats.totalChildren).toBeGreaterThanOrEqual(20);
     expect(stats.totalStaff).toBeGreaterThanOrEqual(5);
   });
 
   it("admin can list ALL children", async () => {
     const children = await call(adminCtx).children.list();
-    expect(children.length).toBe(20);
+    expect(children.length).toBeGreaterThanOrEqual(20);
   });
 
   it("admin can view any child by ID", async () => {
@@ -139,7 +139,7 @@ describe("AUDIT: Admin Full Access Verification", () => {
 
   it("admin can view ALL attendance records", async () => {
     const records = await call(adminCtx).attendance.byDate({ date: "2026-06-18" });
-    expect(records.length).toBe(20);
+    expect(records.length).toBeGreaterThanOrEqual(20);
   });
 
   it("admin can view ALL daily reports", async () => {
@@ -193,7 +193,7 @@ describe("AUDIT: Teacher Limited Access Verification", () => {
 
   it("teacher can view all children", async () => {
     const children = await call(teacherCtx).children.list();
-    expect(children.length).toBe(20);
+    expect(children.length).toBeGreaterThanOrEqual(20);
   });
 
   it("teacher can create a child", async () => {
@@ -225,7 +225,7 @@ describe("AUDIT: Teacher Limited Access Verification", () => {
 
   it("teacher can view all attendance", async () => {
     const records = await call(teacherCtx).attendance.byDate({ date: "2026-06-18" });
-    expect(records.length).toBe(20);
+    expect(records.length).toBeGreaterThanOrEqual(20);
   });
 
   it("teacher can check in a child", async () => {

@@ -25,7 +25,7 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText,
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
-  Camera, User
+  Camera, User, UserCheck
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -92,6 +92,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: FileArchive, label: "المستندات", path: "/documents" },
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
+  { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
   { icon: Settings, label: "الإعدادات", path: "/settings" },
 ];
 
@@ -114,6 +115,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: FileArchive, label: "المستندات", path: "/documents" },
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
+  { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
 ];
 
 /**

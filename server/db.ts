@@ -61,6 +61,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = 'admin';
       updateSet.role = 'admin';
     }
+    if (user.isActive !== undefined) {
+      values.isActive = user.isActive;
+      updateSet.isActive = user.isActive;
+    }
 
     if (!values.lastSignedIn) {
       values.lastSignedIn = new Date();
@@ -536,6 +540,25 @@ export async function getUsersByRole(role?: string, search?: string) {
     );
   }
   return db.select().from(users).where(and(...conditions)).orderBy(desc(users.createdAt));
+}
+
+export async function getPendingParents() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).where(and(eq(users.role, 'parent'), eq(users.isActive, false))).orderBy(desc(users.createdAt));
+}
+
+export async function approveParent(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
+}
+
+export async function rejectParent(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Set role to 'user' and keep isActive=false to mark as rejected
+  await db.update(users).set({ role: 'user', isActive: false }).where(eq(users.id, userId));
 }
 
 export async function getUserById(id: number) {

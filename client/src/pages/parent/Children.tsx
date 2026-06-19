@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Baby, Heart, Phone, AlertTriangle, Camera, Edit, FileText, Upload, CheckCircle2, Clock, XCircle, Download } from "lucide-react";
+import { Baby, Heart, Phone, AlertTriangle, Camera, Edit, FileText, Upload, CheckCircle2, Clock, XCircle, Download, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 function ChildEmergencyContacts({ childId }: { childId: number }) {
@@ -150,11 +150,48 @@ export default function ParentChildren() {
     onSuccess: () => { utils.children.list.invalidate(); toast.success("تم تحديث البيانات بنجاح"); setEditChild(null); },
     onError: (e) => toast.error(e.message),
   });
+  const registerChild = trpc.children.parentRegisterChild.useMutation({
+    onSuccess: () => { utils.children.list.invalidate(); toast.success("تم تسجيل الطفل بنجاح"); setShowRegister(false); resetRegisterForm(); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const [editChild, setEditChild] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+
+  // Register form state
+  const [regForm, setRegForm] = useState({
+    firstName: "", lastName: "", arabicName: "", dateOfBirth: "", gender: "" as "male" | "female" | "",
+    nationality: "", childNationalId: "", fatherName: "", motherName: "",
+    parentEmail: "", parentMobile: "", altPhone: "", homeAddress: "",
+    allergies: "", medicalConditions: "", medications: "", specialNeeds: "",
+    doctorName: "", bloodType: "", medicalNotes: "",
+  });
+
+  const resetRegisterForm = () => {
+    setRegForm({
+      firstName: "", lastName: "", arabicName: "", dateOfBirth: "", gender: "",
+      nationality: "", childNationalId: "", fatherName: "", motherName: "",
+      parentEmail: "", parentMobile: "", altPhone: "", homeAddress: "",
+      allergies: "", medicalConditions: "", medications: "", specialNeeds: "",
+      doctorName: "", bloodType: "", medicalNotes: "",
+    });
+  };
+
+  const handleRegisterChild = () => {
+    if (!regForm.firstName.trim()) { toast.error("يرجى إدخال اسم الطفل"); return; }
+    if (!regForm.lastName.trim()) { toast.error("يرجى إدخال اسم العائلة"); return; }
+    if (!regForm.dateOfBirth) { toast.error("يرجى إدخال تاريخ الميلاد"); return; }
+    if (!regForm.gender) { toast.error("يرجى اختيار الجنس"); return; }
+
+    const data: any = {};
+    Object.entries(regForm).forEach(([key, value]) => {
+      if (value && value.trim()) data[key] = value.trim();
+    });
+    registerChild.mutate(data);
+  };
 
   const startEdit = (child: any) => {
     setEditChild(child);
@@ -212,7 +249,31 @@ export default function ParentChildren() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">أطفالي</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">أطفالي</h1>
+        <Button onClick={() => setShowRegister(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" />
+          تسجيل طفل جديد
+        </Button>
+      </div>
+
+      {/* Empty state when no children */}
+      {(!children || children.length === 0) && (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Baby className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">لم يتم تسجيل أي طفل بعد</h3>
+            <p className="text-muted-foreground text-sm mb-4">يمكنك تسجيل أطفالك للبدء في استخدام خدمات الحضانة</p>
+            <Button onClick={() => setShowRegister(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              تسجيل طفل جديد
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {children?.map((child: any) => (
         <Card key={child.id}>
           <CardHeader>
@@ -282,6 +343,143 @@ export default function ParentChildren() {
           </CardContent>
         </Card>
       ))}
+
+      {/* Register New Child Dialog */}
+      <Dialog open={showRegister} onOpenChange={setShowRegister}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              تسجيل طفل جديد
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <h4 className="font-medium text-sm text-primary">البيانات الأساسية *</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>الاسم الأول *</Label>
+                <Input value={regForm.firstName} onChange={(e) => setRegForm({...regForm, firstName: e.target.value})} placeholder="اسم الطفل" />
+              </div>
+              <div>
+                <Label>اسم العائلة *</Label>
+                <Input value={regForm.lastName} onChange={(e) => setRegForm({...regForm, lastName: e.target.value})} placeholder="اسم العائلة" />
+              </div>
+            </div>
+            <div>
+              <Label>الاسم بالعربي</Label>
+              <Input value={regForm.arabicName} onChange={(e) => setRegForm({...regForm, arabicName: e.target.value})} placeholder="الاسم الكامل بالعربي" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>تاريخ الميلاد *</Label>
+                <Input type="date" value={regForm.dateOfBirth} onChange={(e) => setRegForm({...regForm, dateOfBirth: e.target.value})} />
+              </div>
+              <div>
+                <Label>الجنس *</Label>
+                <Select value={regForm.gender} onValueChange={(v) => setRegForm({...regForm, gender: v as "male" | "female"})}>
+                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">ذكر</SelectItem>
+                    <SelectItem value="female">أنثى</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>الجنسية</Label>
+                <Input value={regForm.nationality} onChange={(e) => setRegForm({...regForm, nationality: e.target.value})} placeholder="سعودي" />
+              </div>
+              <div>
+                <Label>رقم الهوية</Label>
+                <Input value={regForm.childNationalId} onChange={(e) => setRegForm({...regForm, childNationalId: e.target.value})} dir="ltr" />
+              </div>
+            </div>
+
+            <hr />
+            <h4 className="font-medium text-sm text-primary">بيانات ولي الأمر</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>اسم الأب</Label>
+                <Input value={regForm.fatherName} onChange={(e) => setRegForm({...regForm, fatherName: e.target.value})} />
+              </div>
+              <div>
+                <Label>اسم الأم</Label>
+                <Input value={regForm.motherName} onChange={(e) => setRegForm({...regForm, motherName: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>البريد الإلكتروني</Label>
+                <Input type="email" value={regForm.parentEmail} onChange={(e) => setRegForm({...regForm, parentEmail: e.target.value})} />
+              </div>
+              <div>
+                <Label>رقم الجوال</Label>
+                <Input value={regForm.parentMobile} onChange={(e) => setRegForm({...regForm, parentMobile: e.target.value})} dir="ltr" placeholder="05xxxxxxxx" />
+              </div>
+            </div>
+            <div>
+              <Label>رقم بديل</Label>
+              <Input value={regForm.altPhone} onChange={(e) => setRegForm({...regForm, altPhone: e.target.value})} dir="ltr" />
+            </div>
+            <div>
+              <Label>العنوان</Label>
+              <Textarea value={regForm.homeAddress} onChange={(e) => setRegForm({...regForm, homeAddress: e.target.value})} placeholder="المدينة - الحي - الشارع" />
+            </div>
+
+            <hr />
+            <h4 className="font-medium text-sm text-primary">المعلومات الطبية</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>الحساسية</Label>
+                <Input value={regForm.allergies} onChange={(e) => setRegForm({...regForm, allergies: e.target.value})} placeholder="مثال: حساسية الفول السوداني" />
+              </div>
+              <div>
+                <Label>فصيلة الدم</Label>
+                <Select value={regForm.bloodType} onValueChange={(v) => setRegForm({...regForm, bloodType: v})}>
+                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A+">A+</SelectItem>
+                    <SelectItem value="A-">A-</SelectItem>
+                    <SelectItem value="B+">B+</SelectItem>
+                    <SelectItem value="B-">B-</SelectItem>
+                    <SelectItem value="O+">O+</SelectItem>
+                    <SelectItem value="O-">O-</SelectItem>
+                    <SelectItem value="AB+">AB+</SelectItem>
+                    <SelectItem value="AB-">AB-</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>الحالات الصحية</Label>
+              <Textarea value={regForm.medicalConditions} onChange={(e) => setRegForm({...regForm, medicalConditions: e.target.value})} placeholder="أي حالات صحية يجب معرفتها" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>الأدوية</Label>
+                <Input value={regForm.medications} onChange={(e) => setRegForm({...regForm, medications: e.target.value})} />
+              </div>
+              <div>
+                <Label>اسم الطبيب</Label>
+                <Input value={regForm.doctorName} onChange={(e) => setRegForm({...regForm, doctorName: e.target.value})} />
+              </div>
+            </div>
+            <div>
+              <Label>احتياجات خاصة</Label>
+              <Input value={regForm.specialNeeds} onChange={(e) => setRegForm({...regForm, specialNeeds: e.target.value})} placeholder="أي احتياجات خاصة" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowRegister(false); resetRegisterForm(); }}>إلغاء</Button>
+            <Button onClick={handleRegisterChild} disabled={registerChild.isPending} className="gap-2">
+              {registerChild.isPending ? "جاري التسجيل..." : (
+                <><Plus className="h-4 w-4" />تسجيل الطفل</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Child Dialog */}
       <Dialog open={!!editChild} onOpenChange={(open) => !open && setEditChild(null)}>

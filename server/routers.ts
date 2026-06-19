@@ -18,6 +18,9 @@ const teacherProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 const parentProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+  if (ctx.user.role === 'parent' && !ctx.user.isActive) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة.' });
+  }
   return next({ ctx });
 });
 
@@ -171,6 +174,38 @@ export const appRouter = router({
     }),
     getParents: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
       return db.getParentsForChild(input.childId);
+    }),
+    // Parent can register a new child and auto-link to their account
+    parentRegisterChild: parentProcedure.input(z.object({
+      firstName: z.string().min(1),
+      lastName: z.string().min(1),
+      arabicName: z.string().optional(),
+      dateOfBirth: z.string(),
+      gender: z.enum(["male", "female"]),
+      nationality: z.string().optional(),
+      childNationalId: z.string().optional(),
+      photo: z.string().optional(),
+      fatherName: z.string().optional(),
+      motherName: z.string().optional(),
+      parentEmail: z.string().optional(),
+      parentMobile: z.string().optional(),
+      altPhone: z.string().optional(),
+      homeAddress: z.string().optional(),
+      allergies: z.string().optional(),
+      medicalConditions: z.string().optional(),
+      medications: z.string().optional(),
+      specialNeeds: z.string().optional(),
+      doctorName: z.string().optional(),
+      bloodType: z.string().optional(),
+      medicalNotes: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      // Create the child
+      const child = await db.createChild({ ...input, dateOfBirth: new Date(input.dateOfBirth) });
+      // Auto-link child to the parent
+      if (child && child.id) {
+        await db.linkParentToChild(ctx.user!.id, child.id as number, 'parent');
+      }
+      return child;
     }),
     parentUpdate: parentProcedure.input(z.object({
       id: z.number(),
@@ -1127,6 +1162,20 @@ export const appRouter = router({
     }),
     deactivate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       return db.updateUser(input.id, { isActive: false });
+    }),
+    // Get pending parents (role='parent', isActive=false) awaiting approval
+    pending: adminProcedure.query(async () => {
+      return db.getPendingParents();
+    }),
+    // Approve a pending parent (set isActive=true)
+    approveAsParent: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.approveParent(input.id);
+      return { success: true };
+    }),
+    // Reject a pending parent
+    reject: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.rejectParent(input.id);
+      return { success: true };
     }),
   }),
 });

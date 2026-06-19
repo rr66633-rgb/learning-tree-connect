@@ -62,12 +62,14 @@ export function registerOAuthRoutes(app: Express) {
       }
 
       if (!existingUser) {
-        // New user - create with default role
+        // New user - auto-assign 'parent' role with isActive=false (pending admin approval)
         await db.upsertUser({
           openId: userInfo.openId,
           name: userInfo.name || null,
           email: userInfo.email ?? null,
           loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          role: 'parent',
+          isActive: false,
           lastSignedIn: new Date(),
         });
       } else {

@@ -26,6 +26,7 @@ const StaffDocuments = lazy(() => import("./pages/staff/Documents"));
 const StaffNotifications = lazy(() => import("./pages/staff/Notifications"));
 const StaffUsers = lazy(() => import("./pages/staff/Users"));
 const StaffSettings = lazy(() => import("./pages/staff/Settings"));
+const StaffPendingApprovals = lazy(() => import("./pages/staff/PendingApprovals"));
 const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
 const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
 
@@ -93,6 +94,7 @@ function StaffRouter() {
         <Route path="/staff/documents" component={StaffDocuments} />
         <Route path="/staff/notifications" component={StaffNotifications} />
         <Route path="/staff/users" component={StaffUsers} />
+        <Route path="/staff/pending-approvals" component={StaffPendingApprovals} />
         <Route path="/staff/settings" component={StaffSettings} />
         <Route component={NotFound} />
       </Switch>
@@ -125,7 +127,8 @@ function ParentRouter() {
 
 /** Page shown to users with unassigned role ('user') */
 function PendingRolePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, refresh } = useAuth();
+  const isParent = user?.role === 'parent';
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd]">
       <div className="flex flex-col items-center gap-6 p-8 max-w-md w-full text-center">
@@ -138,19 +141,36 @@ function PendingRolePage() {
           مرحباً {user?.name}
         </h1>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-sm text-amber-800">
-            حسابك قيد المراجعة. يرجى التواصل مع إدارة الحضانة لتفعيل حسابك وتحديد صلاحياتك.
+          <p className="text-sm text-amber-800 font-medium mb-1">
+            {isParent ? 'حسابك قيد المراجعة' : 'حسابك قيد المراجعة'}
+          </p>
+          <p className="text-sm text-amber-700">
+            {isParent
+              ? 'تم إنشاء حسابك كولي أمر بنجاح. يرجى انتظار موافقة الإدارة لتفعيل حسابك والوصول إلى بوابة ولي الأمر.'
+              : 'يرجى التواصل مع إدارة الحضانة لتفعيل حسابك وتحديد صلاحياتك.'
+            }
           </p>
         </div>
         <p className="text-sm text-muted-foreground">
-          سيتم تحديد نوع حسابك (ولي أمر / موظف) من قبل الإدارة.
+          {isParent
+            ? 'ستتمكن من إضافة أطفالك والوصول إلى جميع الخدمات بعد الموافقة.'
+            : 'سيتم تحديد نوع حسابك (ولي أمر / موظف) من قبل الإدارة.'
+          }
         </p>
-        <button
-          onClick={logout}
-          className="text-sm text-destructive hover:underline mt-4"
-        >
-          تسجيل الخروج
-        </button>
+        <div className="flex items-center gap-4 mt-2">
+          <button
+            onClick={() => refresh()}
+            className="text-sm text-primary hover:underline font-medium"
+          >
+            تحديث الحالة
+          </button>
+          <button
+            onClick={logout}
+            className="text-sm text-destructive hover:underline"
+          >
+            تسجيل الخروج
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -175,6 +195,11 @@ function RoleRouter() {
 
   // Users with unassigned role ('user') see a pending page
   if (basePath === "/pending") {
+    return <PendingRolePage />;
+  }
+
+  // Parents with isActive=false are pending admin approval
+  if (isParentRole(userRole) && user.isActive === false) {
     return <PendingRolePage />;
   }
 

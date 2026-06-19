@@ -301,12 +301,27 @@
 - [x] Added /api/upload-photo endpoint for FormData photo uploads
 
 ## Critical: Role-Based Access System Fix
-- [ ] Fix role-based routing: parent users must see Parent Portal
-- [ ] Fix DashboardLayout sidebar to show correct navigation per role
-- [ ] Add role-based redirect after OAuth login (parent→/parent, staff→/staff, admin→/staff)
-- [ ] Handle "user" role (default) - redirect to appropriate portal or show role selection
-- [ ] Ensure route protection: /parent/* only for parents, /staff/* only for staff/admin
-- [ ] Parent Portal sidebar: My Children, Attendance, Daily Reports, Photos & Activities, Messages, Notifications, Invoices & Payments, Documents, Profile Settings
-- [ ] Staff Portal sidebar: Dashboard, Children, Classes, Attendance, Reports, Activities, Messages
-- [ ] Admin Portal sidebar: Full system access including all staff items + User management + Settings
-- [ ] Verify all 158 tests still pass after changes
+- [x] Fix role-based routing: parent users must see Parent Portal
+- [x] Fix DashboardLayout sidebar to show correct navigation per role
+- [x] Add role-based redirect after OAuth login (parent→/parent, staff→/staff, admin→/staff)
+- [x] Handle "user" role (default) - redirect to appropriate portal or show role selection
+- [x] Ensure route protection: /parent/* only for parents, /staff/* only for staff/admin
+- [x] Parent Portal sidebar: My Children, Attendance, Daily Reports, Photos & Activities, Messages, Notifications, Invoices & Payments, Documents, Profile Settings
+- [x] Staff Portal sidebar: Dashboard, Children, Classes, Attendance, Reports, Activities, Messages
+- [x] Admin Portal sidebar: Full system access including all staff items + User management + Settings
+- [x] Verify all 158 tests still pass after changes
+
+## Parent Registration & Approval Workflow Fix
+- [x] Fix OAuth: auto-assign 'parent' role to new registrations (instead of 'user')
+- [x] Add parentRegisterChild procedure so parents can add children themselves
+- [x] Add "Register New Child" button and form in parent Children page
+- [x] Add admin approval dashboard for pending parents (approve/reject)
+- [x] Add users.approve and users.reject procedures for admin
+- [x] Ensure parents can immediately access Parent Portal after role assignment
+- [x] Test complete workflow: register → approve → add child → access portal
+- [x] Add isActive=false for new parent registrations (pending admin approval)
+- [x] Add getPendingParents, approveParent, rejectParent functions to db.ts
+- [x] Update parentProcedure to check isActive (block unapproved parents)
+- [x] Update PendingRolePage with better messaging and refresh button
+- [x] Convert existing 'user' role users to 'parent' + isActive=false
+- [x] All 158 tests pass
