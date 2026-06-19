@@ -283,3 +283,19 @@
 - [x] Fix mobile responsiveness for invoice cards and buttons
 - [x] Add search and filtering (by child, status, date)
 - [x] Fix routing for multi-segment paths (/staff/invoice/:id)
+
+## Phase 9: Responsive Design & Document Management
+- [x] Fix responsive design: sidebar fixed, content area scrolls independently
+- [x] Fix responsive design: dialog/modal components have max-height with internal scrolling
+- [x] Fix responsive design: SidebarInset has overflow-y-auto for proper scrolling
+- [x] Child document management: database schema (child_documents table with status, type, notes)
+- [x] Child document management: API endpoints (upload, list, approve, reject, delete via tRPC childDocuments router)
+- [x] Child document management: Staff UI in ChildProfile documents tab (view/approve/reject/download)
+- [x] Child document management: Parent UI to upload/manage documents in parent Children page
+- [x] Profile photo upload: admin can upload/replace child photo via ChildProfile header
+- [x] Profile photo upload: parent can upload/replace child photo via parent Children page
+- [x] Profile photo: display in children list table (staff), attendance page, child profile header
+- [x] Parent portal: parents can edit their child's information (parentUpdate procedure with ownership check)
+- [x] Parent portal: parents can upload documents for their children
+- [x] Added /api/upload-document endpoint for FormData file uploads (PDF, images, docs)
+- [x] Added /api/upload-photo endpoint for FormData photo uploads

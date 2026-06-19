@@ -187,7 +187,18 @@ export default function StaffAttendance() {
                 const childName = `${child.firstName} ${child.lastName}`;
                 return (
                   <TableRow key={child.id}>
-                    <TableCell className="font-medium">{childName}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {child.photo ? (
+                          <img src={child.photo} alt="" className="h-7 w-7 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                            {(child.firstName?.[0] || "")}{(child.lastName?.[0] || "")}
+                          </div>
+                        )}
+                        <span>{childName}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {record ? (
                         <Badge className={STATUS_COLORS[record.status] || "bg-gray-100 text-gray-700"}>

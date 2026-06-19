@@ -440,3 +440,20 @@ export const auditLog = mysqlTable("audit_log", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const childDocuments = mysqlTable("child_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  type: mysqlEnum("type", ["birth_certificate", "family_id", "immunization", "passport", "national_id", "medical_report", "allergy_report", "photo", "other"]).default("other").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  fileKey: varchar("fileKey", { length: 500 }),
+  mimeType: varchar("mimeType", { length: 100 }),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  reviewNote: text("reviewNote"),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  uploadedBy: int("uploadedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+

@@ -81,6 +81,52 @@ async function startServer() {
     }
   });
 
+  // FormData file upload endpoint for photos
+  const multer = (await import('multer')).default;
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+  app.post('/api/upload-photo', upload.single('file'), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      const file = (req as any).file;
+      if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: 'نوع الملف غير مدعوم' }); return; }
+      const { storagePut } = await import('../storage');
+      const ext = file.originalname.split('.').pop() || 'jpg';
+      const fileName = `photos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { url } = await storagePut(fileName, file.buffer, file.mimetype);
+      res.json({ url });
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      res.status(500).json({ error: 'فشل رفع الصورة' });
+    }
+  });
+
+  app.post('/api/upload-document', upload.single('file'), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      const file = (req as any).file;
+      if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: 'نوع الملف غير مدعوم. يرجى رفع صور أو PDF أو Word' }); return; }
+      const { storagePut } = await import('../storage');
+      const ext = file.originalname.split('.').pop() || 'pdf';
+      const key = `documents/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { url } = await storagePut(key, file.buffer, file.mimetype);
+      res.json({ url, key, mimeType: file.mimetype });
+    } catch (error) {
+      console.error('Document upload error:', error);
+      res.status(500).json({ error: 'فشل رفع المستند' });
+    }
+  });
+
   // Scheduled tasks (Heartbeat cron callbacks)
   app.post('/api/scheduled/daily-backup', async (req, res) => {
     const { dailyBackupHandler } = await import('../backup');

@@ -1,9 +1,17 @@
+import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Baby, Heart, Phone, AlertTriangle, User } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Baby, Heart, Phone, AlertTriangle, Camera, Edit, FileText, Upload, CheckCircle2, Clock, XCircle, Download } from "lucide-react";
+import { toast } from "sonner";
 
 function ChildEmergencyContacts({ childId }: { childId: number }) {
   const { data: contacts, isLoading } = trpc.emergencyContacts.list.useQuery({ childId });
@@ -25,8 +33,180 @@ function ChildEmergencyContacts({ childId }: { childId: number }) {
   );
 }
 
+function ChildDocumentsSection({ childId }: { childId: number }) {
+  const { data: documents, isLoading } = trpc.childDocuments.listByChild.useQuery({ childId });
+  const utils = trpc.useUtils();
+  const createDoc = trpc.childDocuments.create.useMutation({
+    onSuccess: () => { utils.childDocuments.listByChild.invalidate({ childId }); toast.success("تم رفع المستند بنجاح"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [docType, setDocType] = useState<string>("other");
+  const [docName, setDocName] = useState("");
+
+  const handleUpload = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) { toast.error("يرجى اختيار ملف"); return; }
+    if (!docName.trim()) { toast.error("يرجى إدخال اسم المستند"); return; }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload-document", { method: "POST", body: formData });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "فشل الرفع"); }
+      const { url, mimeType } = await res.json();
+      await createDoc.mutateAsync({ childId, type: docType as any, name: docName.trim(), fileUrl: url, mimeType });
+      setDocName("");
+      setDocType("other");
+      if (fileRef.current) fileRef.current.value = "";
+    } catch (e: any) {
+      toast.error(e.message || "فشل رفع المستند");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case "approved": return <Badge className="bg-green-100 text-green-700 gap-1"><CheckCircle2 className="h-3 w-3" />معتمد</Badge>;
+      case "rejected": return <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />مرفوض</Badge>;
+      default: return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />قيد المراجعة</Badge>;
+    }
+  };
+
+  const typeLabels: Record<string, string> = {
+    birth_certificate: "شهادة ميلاد", family_id: "بطاقة عائلة", immunization: "سجل تطعيمات",
+    passport: "جواز سفر", national_id: "هوية وطنية", medical_report: "تقرير طبي",
+    allergy_report: "تقرير حساسية", photo: "صورة شخصية", other: "أخرى"
+  };
+
+  if (isLoading) return <Skeleton className="h-24 w-full" />;
+
+  return (
+    <div className="space-y-4">
+      {/* Upload Section */}
+      <div className="p-4 border rounded-lg space-y-3 bg-muted/20">
+        <h4 className="font-medium text-sm">رفع مستند جديد</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">اسم المستند</Label>
+            <Input value={docName} onChange={(e) => setDocName(e.target.value)} placeholder="مثال: شهادة ميلاد أحمد" className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs">نوع المستند</Label>
+            <Select value={docType} onValueChange={setDocType}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(typeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="flex-1" />
+          <Button onClick={handleUpload} disabled={uploading} size="sm" className="gap-1">
+            <Upload className="h-4 w-4" />
+            {uploading ? "جاري الرفع..." : "رفع"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Documents List */}
+      {documents && documents.length > 0 ? (
+        <div className="space-y-2">
+          {documents.map((doc: any) => (
+            <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">{doc.name}</p>
+                  <p className="text-xs text-muted-foreground">{typeLabels[doc.type] || doc.type} • {new Date(doc.createdAt).toLocaleDateString('ar-SA')}</p>
+                  {doc.reviewNote && <p className="text-xs text-amber-600 mt-1">ملاحظة: {doc.reviewNote}</p>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {statusBadge(doc.status)}
+                {doc.fileUrl && (
+                  <Button size="sm" variant="ghost" asChild>
+                    <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer"><Download className="h-4 w-4" /></a>
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-muted-foreground py-4 text-sm">لا توجد مستندات مرفوعة</p>
+      )}
+    </div>
+  );
+}
+
 export default function ParentChildren() {
   const { data: children, isLoading } = trpc.children.list.useQuery();
+  const utils = trpc.useUtils();
+  const updateChild = trpc.children.parentUpdate.useMutation({
+    onSuccess: () => { utils.children.list.invalidate(); toast.success("تم تحديث البيانات بنجاح"); setEditChild(null); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [editChild, setEditChild] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (child: any) => {
+    setEditChild(child);
+    setEditForm({
+      firstName: child.firstName || "",
+      lastName: child.lastName || "",
+      arabicName: child.arabicName || "",
+      fatherName: child.fatherName || "",
+      motherName: child.motherName || "",
+      parentEmail: child.parentEmail || "",
+      parentMobile: child.parentMobile || "",
+      altPhone: child.altPhone || "",
+      homeAddress: child.homeAddress || "",
+      allergies: child.allergies || "",
+      medicalConditions: child.medicalConditions || "",
+      medications: child.medications || "",
+      specialNeeds: child.specialNeeds || "",
+      doctorName: child.doctorName || "",
+      bloodType: child.bloodType || "",
+      medicalNotes: child.medicalNotes || "",
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editChild) return;
+    const changes: any = {};
+    Object.entries(editForm).forEach(([key, value]) => {
+      if (value !== (editChild[key] || "")) changes[key] = value;
+    });
+    if (Object.keys(changes).length === 0) { toast.info("لا توجد تغييرات"); return; }
+    updateChild.mutate({ id: editChild.id, ...changes });
+  };
+
+  const handlePhotoUpload = async (childId: number) => {
+    const file = photoRef.current?.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload-photo", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("فشل رفع الصورة");
+      const { url } = await res.json();
+      await updateChild.mutateAsync({ id: childId, photo: url });
+      toast.success("تم تحديث الصورة");
+    } catch (e: any) {
+      toast.error(e.message || "فشل رفع الصورة");
+    } finally {
+      setUploadingPhoto(false);
+      if (photoRef.current) photoRef.current.value = "";
+    }
+  };
 
   if (isLoading) return <div className="space-y-4">{Array.from({length:2}).map((_,i) => <Skeleton key={i} className="h-32 w-full" />)}</div>;
 
@@ -36,39 +216,169 @@ export default function ParentChildren() {
       {children?.map((child: any) => (
         <Card key={child.id}>
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Baby className="h-6 w-6 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative group">
+                  {child.photo ? (
+                    <img src={child.photo} alt={child.firstName} className="h-14 w-14 rounded-full object-cover border-2 border-primary/20" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Baby className="h-7 w-7 text-primary" />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => photoRef.current?.click()}
+                    className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >
+                    <Camera className="h-4 w-4 text-white" />
+                  </button>
+                  <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={() => handlePhotoUpload(child.id)} />
+                </div>
+                <div>
+                  <CardTitle>{child.firstName} {child.lastName}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString('ar-SA') : ""}</p>
+                </div>
               </div>
-              <div>
-                <CardTitle>{child.firstName} {child.lastName}</CardTitle>
-                <p className="text-sm text-muted-foreground">{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString('ar-SA') : ""}</p>
-              </div>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => startEdit(child)}>
+                <Edit className="h-4 w-4" />
+                تعديل
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="info">
-              <TabsList><TabsTrigger value="info">المعلومات</TabsTrigger><TabsTrigger value="medical">الطبية</TabsTrigger><TabsTrigger value="emergency">الطوارئ</TabsTrigger></TabsList>
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="info">المعلومات</TabsTrigger>
+                <TabsTrigger value="medical">الطبية</TabsTrigger>
+                <TabsTrigger value="emergency">الطوارئ</TabsTrigger>
+                <TabsTrigger value="documents">المستندات</TabsTrigger>
+              </TabsList>
               <TabsContent value="info" className="space-y-2 mt-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div><span className="text-muted-foreground">الجنس:</span> <span>{child.gender === "male" ? "ذكر" : "أنثى"}</span></div>
                   <div><span className="text-muted-foreground">فصيلة الدم:</span> <span>{child.bloodType || "-"}</span></div>
-                  <div><span className="text-muted-foreground">الفصل:</span> <span>{child.classId || "غير محدد"}</span></div>
+                  <div><span className="text-muted-foreground">اسم الأب:</span> <span>{child.fatherName || "-"}</span></div>
+                  <div><span className="text-muted-foreground">اسم الأم:</span> <span>{child.motherName || "-"}</span></div>
+                  <div><span className="text-muted-foreground">الجوال:</span> <span dir="ltr">{child.parentMobile || "-"}</span></div>
+                  <div><span className="text-muted-foreground">البريد:</span> <span>{child.parentEmail || "-"}</span></div>
+                  <div className="col-span-2"><span className="text-muted-foreground">العنوان:</span> <span>{child.homeAddress || "-"}</span></div>
                 </div>
               </TabsContent>
               <TabsContent value="medical" className="mt-4">
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2"><Heart className="h-4 w-4 text-red-500" /><span>الحالات الصحية: {child.medicalNotes || "لا يوجد"}</span></div>
+                  <div className="flex items-center gap-2"><Heart className="h-4 w-4 text-red-500" /><span>الحالات الصحية: {child.medicalConditions || child.medicalNotes || "لا يوجد"}</span></div>
                   <div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-500" /><span>الحساسية: {child.allergies || "لا يوجد"}</span></div>
+                  {child.medications && <div className="text-sm"><span className="text-muted-foreground">الأدوية:</span> {child.medications}</div>}
+                  {child.doctorName && <div className="text-sm"><span className="text-muted-foreground">الطبيب:</span> {child.doctorName}</div>}
                 </div>
               </TabsContent>
               <TabsContent value="emergency" className="mt-4">
                 <ChildEmergencyContacts childId={child.id} />
               </TabsContent>
+              <TabsContent value="documents" className="mt-4">
+                <ChildDocumentsSection childId={child.id} />
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
       ))}
+
+      {/* Edit Child Dialog */}
+      <Dialog open={!!editChild} onOpenChange={(open) => !open && setEditChild(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات {editChild?.firstName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>الاسم الأول</Label>
+                <Input value={editForm.firstName} onChange={(e) => setEditForm({...editForm, firstName: e.target.value})} />
+              </div>
+              <div>
+                <Label>اسم العائلة</Label>
+                <Input value={editForm.lastName} onChange={(e) => setEditForm({...editForm, lastName: e.target.value})} />
+              </div>
+            </div>
+            <div>
+              <Label>الاسم بالعربي</Label>
+              <Input value={editForm.arabicName} onChange={(e) => setEditForm({...editForm, arabicName: e.target.value})} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>اسم الأب</Label>
+                <Input value={editForm.fatherName} onChange={(e) => setEditForm({...editForm, fatherName: e.target.value})} />
+              </div>
+              <div>
+                <Label>اسم الأم</Label>
+                <Input value={editForm.motherName} onChange={(e) => setEditForm({...editForm, motherName: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>البريد الإلكتروني</Label>
+                <Input value={editForm.parentEmail} onChange={(e) => setEditForm({...editForm, parentEmail: e.target.value})} type="email" />
+              </div>
+              <div>
+                <Label>رقم الجوال</Label>
+                <Input value={editForm.parentMobile} onChange={(e) => setEditForm({...editForm, parentMobile: e.target.value})} dir="ltr" />
+              </div>
+            </div>
+            <div>
+              <Label>رقم بديل</Label>
+              <Input value={editForm.altPhone} onChange={(e) => setEditForm({...editForm, altPhone: e.target.value})} dir="ltr" />
+            </div>
+            <div>
+              <Label>العنوان</Label>
+              <Textarea value={editForm.homeAddress} onChange={(e) => setEditForm({...editForm, homeAddress: e.target.value})} />
+            </div>
+            <hr />
+            <h4 className="font-medium text-sm">المعلومات الطبية</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>الحساسية</Label>
+                <Input value={editForm.allergies} onChange={(e) => setEditForm({...editForm, allergies: e.target.value})} />
+              </div>
+              <div>
+                <Label>فصيلة الدم</Label>
+                <Input value={editForm.bloodType} onChange={(e) => setEditForm({...editForm, bloodType: e.target.value})} />
+              </div>
+            </div>
+            <div>
+              <Label>الحالات الصحية</Label>
+              <Textarea value={editForm.medicalConditions} onChange={(e) => setEditForm({...editForm, medicalConditions: e.target.value})} />
+            </div>
+            <div>
+              <Label>الأدوية</Label>
+              <Input value={editForm.medications} onChange={(e) => setEditForm({...editForm, medications: e.target.value})} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>اسم الطبيب</Label>
+                <Input value={editForm.doctorName} onChange={(e) => setEditForm({...editForm, doctorName: e.target.value})} />
+              </div>
+              <div>
+                <Label>احتياجات خاصة</Label>
+                <Input value={editForm.specialNeeds} onChange={(e) => setEditForm({...editForm, specialNeeds: e.target.value})} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditChild(null)}>إلغاء</Button>
+            <Button onClick={handleSaveEdit} disabled={updateChild.isPending}>
+              {updateChild.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {uploadingPhoto && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg">
+            <p className="text-sm">جاري رفع الصورة...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

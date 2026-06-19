@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, Edit, UserPlus, Unlink, Calendar, Phone, Heart, AlertTriangle, Bus, Shield, User } from "lucide-react";
+import { ArrowRight, Edit, UserPlus, Unlink, Calendar, Phone, Heart, AlertTriangle, Bus, Shield, User, FileText, Upload, CheckCircle, XCircle, Download, Trash2, Camera } from "lucide-react";
 import { toast } from "sonner";
 
-interface ChildProfileProps {
-  params: { id: string };
-}
-
-export default function ChildProfile({ params }: ChildProfileProps) {
-  const childId = parseInt(params.id);
+export default function ChildProfile() {
+  const params = useParams<{ id: string }>();
+  const childId = parseInt(params.id || "0");
   const [, navigate] = useLocation();
   const [editing, setEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
@@ -31,23 +28,103 @@ export default function ChildProfile({ params }: ChildProfileProps) {
   const { data: parents, refetch: refetchParents } = trpc.children.getParents.useQuery({ childId });
   const { data: allUsers } = trpc.users.list.useQuery();
   const { data: classes } = trpc.classes.list.useQuery();
+  const { data: childDocs = [], refetch: refetchDocs } = trpc.childDocuments.listByChild.useQuery({ childId });
+
+  const createDoc = trpc.childDocuments.create.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم رفع المستند"); } });
+  const approveDoc = trpc.childDocuments.approve.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم اعتماد المستند"); } });
+  const rejectDoc = trpc.childDocuments.reject.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم رفض المستند"); } });
+  const deleteDoc = trpc.childDocuments.delete.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم حذف المستند"); } });
+
+  const [docUploading, setDocUploading] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [docType, setDocType] = useState<string>("other");
 
   const updateChild = trpc.children.update.useMutation({
-    onSuccess: () => { toast.success("تم تحديث بيانات الطفل بنجاح"); setEditing(false); refetch(); },
-    onError: (err: any) => toast.error(err.message),
+    onSuccess: () => {
+      toast.success("تم تحديث بيانات الطفل بنجاح");
+      setEditing(false);
+      refetch();
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   const linkParent = trpc.users.linkChild.useMutation({
-    onSuccess: () => { toast.success("تم ربط ولي الأمر بنجاح"); setLinkDialogOpen(false); setSelectedParentId(""); refetchParents(); },
-    onError: (err: any) => toast.error(err.message),
+    onSuccess: () => {
+      toast.success("تم ربط ولي الأمر بنجاح");
+      setLinkDialogOpen(false);
+      setSelectedParentId("");
+      refetchParents();
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   const unlinkParent = trpc.users.unlinkChild.useMutation({
-    onSuccess: () => { toast.success("تم إلغاء ربط ولي الأمر"); refetchParents(); },
-    onError: (err: any) => toast.error(err.message),
+    onSuccess: () => {
+      toast.success("تم إلغاء ربط ولي الأمر");
+      refetchParents();
+    },
+    onError: (err) => toast.error(err.message),
   });
 
-  const [form, setForm] = useState<Record<string, any>>({});
+  const [form, setForm] = useState<any>({});
+
+  const uploadFile = async (file: File, endpoint: string): Promise<{ url: string; key?: string; mimeType?: string }> => {
+    if (endpoint === '/api/upload-document' || endpoint === '/api/upload-photo') {
+      // Use FormData for multer-based endpoints
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch(endpoint, { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Upload failed');
+      return await response.json();
+    }
+    // Use base64 JSON for the standard /api/upload endpoint
+    const reader = new FileReader();
+    return new Promise((resolve, reject) => {
+      reader.onload = async () => {
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: base64, fileName: `${Date.now()}-${file.name}`, contentType: file.type }),
+          });
+          if (!response.ok) throw new Error('Upload failed');
+          resolve(await response.json());
+        } catch (err) { reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 16 * 1024 * 1024) { toast.error("حجم الملف كبير جداً (الحد الأقصى 16 ميجابايت)"); return; }
+    setDocUploading(true);
+    try {
+      const { url, key, mimeType } = await uploadFile(file, '/api/upload-document');
+      await createDoc.mutateAsync({ childId, type: docType as any, name: file.name, fileUrl: url, fileKey: key, mimeType });
+    } catch { toast.error("فشل رفع المستند"); }
+    setDocUploading(false);
+    if (docInputRef.current) docInputRef.current.value = '';
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error("حجم الصورة كبير جداً"); return; }
+    setPhotoUploading(true);
+    try {
+      const { url } = await uploadFile(file, '/api/upload');
+      await updateChild.mutateAsync({ id: childId, photo: url });
+      toast.success("تم تحديث الصورة");
+    } catch { toast.error("فشل رفع الصورة"); }
+    setPhotoUploading(false);
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  };
 
   const startEditing = () => {
     if (child) {
@@ -83,7 +160,7 @@ export default function ChildProfile({ params }: ChildProfileProps) {
   };
 
   const handleSave = () => {
-    updateChild.mutate({
+    const updateData: any = {
       id: childId,
       firstName: form.firstName || undefined,
       lastName: form.lastName || undefined,
@@ -109,7 +186,8 @@ export default function ChildProfile({ params }: ChildProfileProps) {
       pickupAuthorization: form.pickupAuthorization || undefined,
       busRequired: form.busRequired,
       notes: form.notes || undefined,
-    } as any);
+    };
+    updateChild.mutate(updateData);
   };
 
   const parentUsers = allUsers?.filter((u: any) => u.role === "parent") || [];
@@ -126,9 +204,9 @@ export default function ChildProfile({ params }: ChildProfileProps) {
   if (!child) {
     return (
       <div className="p-6 text-center" dir="rtl">
-        <h2 className="text-xl font-bold text-destructive">{"الطفل غير موجود"}</h2>
+        <h2 className="text-xl font-bold text-destructive">الطفل غير موجود</h2>
         <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/children")}>
-          <ArrowRight className="ml-2 h-4 w-4" /> {"العودة للقائمة"}
+          <ArrowRight className="ml-2 h-4 w-4" /> العودة للقائمة
         </Button>
       </div>
     );
@@ -136,7 +214,7 @@ export default function ChildProfile({ params }: ChildProfileProps) {
 
   const c = child as any;
   const childName = `${c.firstName} ${c.lastName}`;
-  const className = (classes as any[])?.find((cl: any) => cl.id === c.classId)?.nameAr || (classes as any[])?.find((cl: any) => cl.id === c.classId)?.name || "—";
+  const classNameStr = (classes as any[])?.find((cl: any) => cl.id === c.classId)?.nameAr || (classes as any[])?.find((cl: any) => cl.id === c.classId)?.name || "—";
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto" dir="rtl">
@@ -146,6 +224,24 @@ export default function ChildProfile({ params }: ChildProfileProps) {
           <Button variant="ghost" size="icon" onClick={() => navigate("/staff/children")}>
             <ArrowRight className="h-5 w-5" />
           </Button>
+          {/* Photo */}
+          <div className="relative group">
+            {c.photo ? (
+              <img src={c.photo} alt={childName} className="h-14 w-14 rounded-full object-cover border-2 border-primary/20" />
+            ) : (
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-7 w-7 text-primary/60" />
+              </div>
+            )}
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              disabled={photoUploading}
+            >
+              <Camera className="h-5 w-5 text-white" />
+            </button>
+            <input ref={photoInputRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+          </div>
           <div>
             <h1 className="text-2xl font-bold">{childName}</h1>
             {c.arabicName && <p className="text-muted-foreground">{c.arabicName}</p>}
@@ -157,21 +253,22 @@ export default function ChildProfile({ params }: ChildProfileProps) {
         <div className="flex gap-2">
           {!editing && (
             <Button variant="outline" onClick={startEditing}>
-              <Edit className="ml-2 h-4 w-4" /> {"تعديل"}
+              <Edit className="ml-2 h-4 w-4" /> تعديل
             </Button>
           )}
           <Button onClick={() => setLinkDialogOpen(true)}>
-            <UserPlus className="ml-2 h-4 w-4" /> {"ربط ولي أمر"}
+            <UserPlus className="ml-2 h-4 w-4" /> ربط ولي أمر
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="personal">{"البيانات الشخصية"}</TabsTrigger>
-          <TabsTrigger value="parent">{"ولي الأمر"}</TabsTrigger>
-          <TabsTrigger value="medical">{"المعلومات الطبية"}</TabsTrigger>
-          <TabsTrigger value="nursery">{"الحضانة"}</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="personal">البيانات الشخصية</TabsTrigger>
+          <TabsTrigger value="parent">ولي الأمر</TabsTrigger>
+          <TabsTrigger value="medical">الطبية</TabsTrigger>
+          <TabsTrigger value="nursery">الحضانة</TabsTrigger>
+          <TabsTrigger value="documents">المستندات</TabsTrigger>
         </TabsList>
 
         {/* Personal Info Tab */}
@@ -179,32 +276,34 @@ export default function ChildProfile({ params }: ChildProfileProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" /> {"البيانات الشخصية"}
+                <Calendar className="h-5 w-5" /> البيانات الشخصية
               </CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label>{"الاسم الأول"}</Label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-                  <div><Label>{"اسم العائلة"}</Label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
-                  <div><Label>{"الاسم بالعربي"}</Label><Input value={form.arabicName} onChange={(e) => setForm({ ...form, arabicName: e.target.value })} /></div>
-                  <div><Label>{"تاريخ الميلاد"}</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} /></div>
-                  <div><Label>{"الجنس"}</Label>
+                  <div><Label>الاسم الأول</Label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
+                  <div><Label>اسم العائلة</Label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
+                  <div><Label>الاسم بالعربي</Label><Input value={form.arabicName} onChange={(e) => setForm({ ...form, arabicName: e.target.value })} /></div>
+                  <div><Label>تاريخ الميلاد</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} /></div>
+                  <div>
+                    <Label>الجنس</Label>
                     <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">{"ذكر"}</SelectItem>
-                        <SelectItem value="female">{"أنثى"}</SelectItem>
+                        <SelectItem value="male">ذكر</SelectItem>
+                        <SelectItem value="female">أنثى</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div><Label>{"الجنسية"}</Label><Input value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value })} /></div>
-                  <div><Label>{"رقم الهوية / الإقامة"}</Label><Input value={form.childNationalId} onChange={(e) => setForm({ ...form, childNationalId: e.target.value })} /></div>
-                  <div><Label>{"الفصل"}</Label>
+                  <div><Label>الجنسية</Label><Input value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value })} /></div>
+                  <div><Label>رقم الهوية / الإقامة</Label><Input value={form.childNationalId} onChange={(e) => setForm({ ...form, childNationalId: e.target.value })} /></div>
+                  <div>
+                    <Label>الفصل</Label>
                     <Select value={form.classId || "none"} onValueChange={(v) => setForm({ ...form, classId: v === "none" ? "" : v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">{"بدون فصل"}</SelectItem>
+                        <SelectItem value="none">بدون فصل</SelectItem>
                         {(classes as any[])?.map((cl: any) => (
                           <SelectItem key={cl.id} value={String(cl.id)}>{cl.nameAr || cl.name}</SelectItem>
                         ))}
@@ -213,19 +312,19 @@ export default function ChildProfile({ params }: ChildProfileProps) {
                   </div>
                   <div className="col-span-full flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>{"إلغاء"}</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label={"الاسم الأول"} value={c.firstName} />
-                  <InfoRow label={"اسم العائلة"} value={c.lastName} />
-                  <InfoRow label={"الاسم بالعربي"} value={c.arabicName || "—"} />
-                  <InfoRow label={"تاريخ الميلاد"} value={c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString("ar-SA") : "—"} />
-                  <InfoRow label={"الجنس"} value={c.gender === "male" ? "ذكر" : c.gender === "female" ? "أنثى" : "—"} />
-                  <InfoRow label={"الجنسية"} value={c.nationality || "—"} />
-                  <InfoRow label={"رقم الهوية / الإقامة"} value={c.childNationalId || "—"} />
-                  <InfoRow label={"الفصل"} value={className} />
+                  <InfoRow label="الاسم الأول" value={c.firstName} />
+                  <InfoRow label="اسم العائلة" value={c.lastName} />
+                  <InfoRow label="الاسم بالعربي" value={c.arabicName || "—"} />
+                  <InfoRow label="تاريخ الميلاد" value={c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString("ar-SA") : "—"} />
+                  <InfoRow label="الجنس" value={c.gender === "male" ? "ذكر" : c.gender === "female" ? "أنثى" : "—"} />
+                  <InfoRow label="الجنسية" value={c.nationality || "—"} />
+                  <InfoRow label="رقم الهوية / الإقامة" value={c.childNationalId || "—"} />
+                  <InfoRow label="الفصل" value={classNameStr} />
                 </div>
               )}
             </CardContent>
@@ -236,90 +335,78 @@ export default function ChildProfile({ params }: ChildProfileProps) {
         <TabsContent value="parent" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" /> {"بيانات ولي الأمر"}
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> بيانات ولي الأمر</CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label>{"اسم الأب"}</Label><Input value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} /></div>
-                  <div><Label>{"اسم الأم"}</Label><Input value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} /></div>
-                  <div><Label>{"البريد الإلكتروني"}</Label><Input type="email" value={form.parentEmail} onChange={(e) => setForm({ ...form, parentEmail: e.target.value })} dir="ltr" /></div>
-                  <div><Label>{"رقم الجوال"}</Label><Input value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} dir="ltr" /></div>
-                  <div><Label>{"رقم بديل"}</Label><Input value={form.altPhone} onChange={(e) => setForm({ ...form, altPhone: e.target.value })} dir="ltr" /></div>
-                  <div className="col-span-full"><Label>{"العنوان"}</Label><Textarea value={form.homeAddress} onChange={(e) => setForm({ ...form, homeAddress: e.target.value })} /></div>
+                  <div><Label>اسم الأب</Label><Input value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} /></div>
+                  <div><Label>اسم الأم</Label><Input value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} /></div>
+                  <div><Label>البريد الإلكتروني</Label><Input type="email" value={form.parentEmail} onChange={(e) => setForm({ ...form, parentEmail: e.target.value })} dir="ltr" /></div>
+                  <div><Label>رقم الجوال</Label><Input value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} dir="ltr" /></div>
+                  <div><Label>رقم بديل</Label><Input value={form.altPhone} onChange={(e) => setForm({ ...form, altPhone: e.target.value })} dir="ltr" /></div>
+                  <div className="col-span-full"><Label>العنوان</Label><Textarea value={form.homeAddress} onChange={(e) => setForm({ ...form, homeAddress: e.target.value })} /></div>
                   <div className="col-span-full flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>{"إلغاء"}</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label={"اسم الأب"} value={c.fatherName || "—"} />
-                  <InfoRow label={"اسم الأم"} value={c.motherName || "—"} />
-                  <InfoRow label={"البريد الإلكتروني"} value={c.parentEmail || "—"} />
-                  <InfoRow label={"رقم الجوال"} value={c.parentMobile || "—"} />
-                  <InfoRow label={"رقم بديل"} value={c.altPhone || "—"} />
-                  <InfoRow label={"العنوان"} value={c.homeAddress || "—"} />
+                  <InfoRow label="اسم الأب" value={c.fatherName || "—"} />
+                  <InfoRow label="اسم الأم" value={c.motherName || "—"} />
+                  <InfoRow label="البريد الإلكتروني" value={c.parentEmail || "—"} />
+                  <InfoRow label="رقم الجوال" value={c.parentMobile || "—"} />
+                  <InfoRow label="رقم بديل" value={c.altPhone || "—"} />
+                  <InfoRow label="العنوان" value={c.homeAddress || "—"} />
                 </div>
               )}
             </CardContent>
           </Card>
+
           {/* Linked Parents */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" /> {"أولياء الأمور المرتبطين (حسابات)"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {parents && (parents as any[]).length > 0 ? (
-                <div className="space-y-3">
+          {(parents as any[])?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">أولياء الأمور المرتبطون</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-2">
                   {(parents as any[]).map((p: any) => (
-                    <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={p.id} className="flex items-center justify-between p-2 border rounded">
                       <div>
-                        <p className="font-medium">{p.name}</p>
-                        <p className="text-sm text-muted-foreground">{p.email}</p>
-                        {p.phone && <p className="text-sm text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{p.phone}</p>}
-                        <Badge variant="outline" className="mt-1">
-                          {p.relationship === "father" ? "أب" : p.relationship === "mother" ? "أم" : "ولي أمر"}
-                        </Badge>
+                        <p className="font-medium">{p.parentName || p.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{p.relationship === "father" ? "أب" : p.relationship === "mother" ? "أم" : "ولي أمر"}</p>
                       </div>
-                      <Button variant="destructive" size="sm" onClick={() => unlinkParent.mutate({ parentId: p.id, childId })}>
-                        <Unlink className="ml-1 h-3 w-3" /> {"إلغاء الربط"}
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => unlinkParent.mutate({ parentId: p.parentId || p.id, childId })}>
+                        <Unlink className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-6">{"لا يوجد أولياء أمور مرتبطين بهذا الطفل"}</p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Medical Tab */}
         <TabsContent value="medical" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="h-5 w-5" /> {"المعلومات الطبية"}
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5" /> المعلومات الطبية</CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label>{"الحساسية"}</Label><Textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} /></div>
-                  <div><Label>{"الحالات الطبية"}</Label><Textarea value={form.medicalConditions} onChange={(e) => setForm({ ...form, medicalConditions: e.target.value })} /></div>
-                  <div><Label>{"الأدوية"}</Label><Textarea value={form.medications} onChange={(e) => setForm({ ...form, medications: e.target.value })} /></div>
-                  <div><Label>{"الاحتياجات الخاصة"}</Label><Textarea value={form.specialNeeds} onChange={(e) => setForm({ ...form, specialNeeds: e.target.value })} /></div>
-                  <div><Label>{"اسم الطبيب"}</Label><Input value={form.doctorName} onChange={(e) => setForm({ ...form, doctorName: e.target.value })} /></div>
-                  <div><Label>{"فصيلة الدم"}</Label>
+                  <div><Label>الحساسية</Label><Textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} /></div>
+                  <div><Label>الحالات الطبية</Label><Textarea value={form.medicalConditions} onChange={(e) => setForm({ ...form, medicalConditions: e.target.value })} /></div>
+                  <div><Label>الأدوية</Label><Input value={form.medications} onChange={(e) => setForm({ ...form, medications: e.target.value })} /></div>
+                  <div><Label>الاحتياجات الخاصة</Label><Input value={form.specialNeeds} onChange={(e) => setForm({ ...form, specialNeeds: e.target.value })} /></div>
+                  <div><Label>اسم الطبيب</Label><Input value={form.doctorName} onChange={(e) => setForm({ ...form, doctorName: e.target.value })} /></div>
+                  <div>
+                    <Label>فصيلة الدم</Label>
                     <Select value={form.bloodType || "unknown"} onValueChange={(v) => setForm({ ...form, bloodType: v === "unknown" ? "" : v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unknown">{"غير محدد"}</SelectItem>
+                        <SelectItem value="unknown">غير محدد</SelectItem>
                         <SelectItem value="A+">A+</SelectItem>
                         <SelectItem value="A-">A-</SelectItem>
                         <SelectItem value="B+">B+</SelectItem>
@@ -331,21 +418,21 @@ export default function ChildProfile({ params }: ChildProfileProps) {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-full"><Label>{"ملاحظات طبية"}</Label><Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} /></div>
+                  <div className="col-span-full"><Label>ملاحظات طبية</Label><Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} /></div>
                   <div className="col-span-full flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>{"إلغاء"}</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label={"الحساسية"} value={c.allergies || "لا يوجد"} />
-                  <InfoRow label={"الحالات الطبية"} value={c.medicalConditions || "لا يوجد"} />
-                  <InfoRow label={"الأدوية"} value={c.medications || "لا يوجد"} />
-                  <InfoRow label={"الاحتياجات الخاصة"} value={c.specialNeeds || "لا يوجد"} />
-                  <InfoRow label={"اسم الطبيب"} value={c.doctorName || "—"} />
-                  <InfoRow label={"فصيلة الدم"} value={c.bloodType || "—"} />
-                  <div className="col-span-full"><InfoRow label={"ملاحظات طبية"} value={c.medicalNotes || "—"} /></div>
+                  <InfoRow label="الحساسية" value={c.allergies || "لا يوجد"} />
+                  <InfoRow label="الحالات الطبية" value={c.medicalConditions || "لا يوجد"} />
+                  <InfoRow label="الأدوية" value={c.medications || "لا يوجد"} />
+                  <InfoRow label="الاحتياجات الخاصة" value={c.specialNeeds || "لا يوجد"} />
+                  <InfoRow label="اسم الطبيب" value={c.doctorName || "—"} />
+                  <InfoRow label="فصيلة الدم" value={c.bloodType || "—"} />
+                  <div className="col-span-full"><InfoRow label="ملاحظات طبية" value={c.medicalNotes || "—"} /></div>
                 </div>
               )}
             </CardContent>
@@ -356,33 +443,104 @@ export default function ChildProfile({ params }: ChildProfileProps) {
         <TabsContent value="nursery" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" /> {"بيانات الحضانة"}
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> بيانات الحضانة</CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 gap-4">
-                  <div><Label>{"المصرح لهم بالاستلام"}</Label><Textarea value={form.pickupAuthorization} onChange={(e) => setForm({ ...form, pickupAuthorization: e.target.value })} rows={4} placeholder={"أسماء وأرقام المصرح لهم"} /></div>
+                  <div><Label>المصرح لهم بالاستلام</Label><Textarea value={form.pickupAuthorization} onChange={(e) => setForm({ ...form, pickupAuthorization: e.target.value })} rows={4} placeholder="أسماء وأرقام المصرح لهم" /></div>
                   <div className="flex items-center gap-3">
                     <Switch checked={form.busRequired} onCheckedChange={(v) => setForm({ ...form, busRequired: v })} />
-                    <Label>{"يحتاج نقل بالباص"}</Label>
+                    <Label>يحتاج نقل بالباص</Label>
                   </div>
-                  <div><Label>{"ملاحظات عامة"}</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+                  <div><Label>ملاحظات عامة</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
                   <div className="flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>{"إلغاء"}</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Bus className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{"نقل بالباص:"}</span>
+                    <span className="text-sm text-muted-foreground">نقل بالباص:</span>
                     <Badge variant={c.busRequired ? "default" : "secondary"}>{c.busRequired ? "نعم" : "لا"}</Badge>
                   </div>
-                  <InfoRow label={"المصرح لهم بالاستلام"} value={c.pickupAuthorization || "لم يتم التحديد"} />
-                  <InfoRow label={"ملاحظات"} value={c.notes || "—"} />
+                  <InfoRow label="المصرح لهم بالاستلام" value={c.pickupAuthorization || "لم يتم التحديد"} />
+                  <InfoRow label="ملاحظات" value={c.notes || "—"} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Documents Tab */}
+        <TabsContent value="documents" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+                <span className="flex items-center gap-2"><FileText className="h-5 w-5" /> مستندات الطفل</span>
+                <div className="flex items-center gap-2">
+                  <Select value={docType} onValueChange={setDocType}>
+                    <SelectTrigger className="w-[140px] text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="birth_certificate">شهادة ميلاد</SelectItem>
+                      <SelectItem value="family_id">سجل الأسرة</SelectItem>
+                      <SelectItem value="immunization">سجل التطعيمات</SelectItem>
+                      <SelectItem value="passport">جواز سفر</SelectItem>
+                      <SelectItem value="national_id">هوية وطنية</SelectItem>
+                      <SelectItem value="medical_report">تقرير طبي</SelectItem>
+                      <SelectItem value="allergy_report">تقرير حساسية</SelectItem>
+                      <SelectItem value="photo">صورة</SelectItem>
+                      <SelectItem value="other">أخرى</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button size="sm" onClick={() => docInputRef.current?.click()} disabled={docUploading}>
+                    <Upload className="ml-1 h-4 w-4" /> {docUploading ? "جارٍ الرفع..." : "رفع مستند"}
+                  </Button>
+                  <input ref={docInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={handleDocUpload} />
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(childDocs as any[]).length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">لا توجد مستندات</p>
+              ) : (
+                <div className="space-y-3">
+                  {(childDocs as any[]).map((doc: any) => (
+                    <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg flex-wrap gap-2">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div>
+                          <p className="font-medium text-sm">{doc.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {{ birth_certificate: "شهادة ميلاد", family_id: "سجل الأسرة", immunization: "تطعيمات", passport: "جواز سفر", national_id: "هوية وطنية", medical_report: "تقرير طبي", allergy_report: "تقرير حساسية", photo: "صورة", other: "أخرى" }[doc.type as string] || doc.type} • {new Date(doc.createdAt).toLocaleDateString("ar-SA")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={doc.status === 'approved' ? 'default' : doc.status === 'rejected' ? 'destructive' : 'secondary'}>
+                          {doc.status === 'approved' ? 'معتمد' : doc.status === 'rejected' ? 'مرفوض' : 'بانتظار المراجعة'}
+                        </Badge>
+                        {doc.status === 'pending' && (
+                          <>
+                            <Button size="sm" variant="ghost" className="text-green-600 h-8 w-8 p-0" onClick={() => approveDoc.mutate({ id: doc.id })} title="اعتماد">
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => rejectDoc.mutate({ id: doc.id })} title="رفض">
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="تحميل"><Download className="h-4 w-4" /></Button>
+                        </a>
+                        <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => deleteDoc.mutate({ id: doc.id })} title="حذف">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -394,13 +552,13 @@ export default function ChildProfile({ params }: ChildProfileProps) {
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{"ربط ولي أمر بالطفل"}</DialogTitle>
+            <DialogTitle>ربط ولي أمر بالطفل</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{"ولي الأمر"}</Label>
+              <Label>ولي الأمر</Label>
               <Select value={selectedParentId} onValueChange={setSelectedParentId}>
-                <SelectTrigger><SelectValue placeholder={"اختر ولي الأمر"} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="اختر ولي الأمر" /></SelectTrigger>
                 <SelectContent>
                   {parentUsers.map((u: any) => (
                     <SelectItem key={u.id} value={u.id.toString()}>{u.name} - {u.email}</SelectItem>
@@ -409,19 +567,20 @@ export default function ChildProfile({ params }: ChildProfileProps) {
               </Select>
             </div>
             <div>
-              <Label>{"صلة القرابة"}</Label>
+              <Label>صلة القرابة</Label>
               <Select value={relationship} onValueChange={setRelationship}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="father">{"أب"}</SelectItem>
-                  <SelectItem value="mother">{"أم"}</SelectItem>
-                  <SelectItem value="guardian">{"ولي أمر"}</SelectItem>
+                  <SelectItem value="father">أب</SelectItem>
+                  <SelectItem value="mother">أم</SelectItem>
+                  <SelectItem value="guardian">ولي أمر</SelectItem>
+                  <SelectItem value="parent">ولي أمر (عام)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>{"إلغاء"}</Button>
+            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>إلغاء</Button>
             <Button
               onClick={() => { if (selectedParentId) linkParent.mutate({ parentId: parseInt(selectedParentId), childId, relationship }); }}
               disabled={!selectedParentId || linkParent.isPending}

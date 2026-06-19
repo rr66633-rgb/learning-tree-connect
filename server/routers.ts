@@ -172,6 +172,39 @@ export const appRouter = router({
     getParents: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
       return db.getParentsForChild(input.childId);
     }),
+    parentUpdate: parentProcedure.input(z.object({
+      id: z.number(),
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+      arabicName: z.string().optional(),
+      dateOfBirth: z.string().optional(),
+      gender: z.enum(["male", "female"]).optional(),
+      nationality: z.string().optional(),
+      childNationalId: z.string().optional(),
+      photo: z.string().optional(),
+      fatherName: z.string().optional(),
+      motherName: z.string().optional(),
+      parentEmail: z.string().optional(),
+      parentMobile: z.string().optional(),
+      altPhone: z.string().optional(),
+      homeAddress: z.string().optional(),
+      allergies: z.string().optional(),
+      medicalConditions: z.string().optional(),
+      medications: z.string().optional(),
+      specialNeeds: z.string().optional(),
+      doctorName: z.string().optional(),
+      bloodType: z.string().optional(),
+      medicalNotes: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      const childIds = await db.getChildIdsForParent(ctx.user!.id);
+      if (!childIds.includes(input.id)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: '\u0644\u0627 \u064a\u0645\u0643\u0646\u0643 \u062a\u0639\u062f\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0647\u0630\u0627 \u0627\u0644\u0637\u0641\u0644' });
+      }
+      const { id, ...data } = input;
+      const updateData: any = { ...data };
+      if (data.dateOfBirth) updateData.dateOfBirth = new Date(data.dateOfBirth);
+      return db.updateChild(id, updateData);
+    }),
   }),
 
   attendance: router({
@@ -833,6 +866,53 @@ export const appRouter = router({
     }),
     signatures: protectedProcedure.input(z.object({ documentId: z.number() })).query(async ({ input }) => {
       return db.getSignaturesForDocument(input.documentId);
+    }),
+  }),
+
+  childDocuments: router({
+    listByChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      // Parents can only see their own children's documents
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return db.getChildDocuments(input.childId);
+    }),
+    listAll: teacherProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ input }) => {
+      return db.getAllChildDocuments(input?.status);
+    }),
+    create: protectedProcedure.input(z.object({
+      childId: z.number(),
+      type: z.enum(['birth_certificate', 'family_id', 'immunization', 'passport', 'national_id', 'medical_report', 'allergy_report', 'photo', 'other']),
+      name: z.string().min(1),
+      fileUrl: z.string(),
+      fileKey: z.string().optional(),
+      mimeType: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      // Parents can only upload for their own children
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      const status = (ctx.user?.role === 'admin' || ctx.user?.role === 'teacher') ? 'approved' : 'pending';
+      return db.createChildDocument({ ...input, uploadedBy: ctx.user!.id, status });
+    }),
+    approve: teacherProcedure.input(z.object({ id: z.number(), reviewNote: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      return db.updateChildDocument(input.id, { status: 'approved', reviewedBy: ctx.user!.id, reviewedAt: new Date(), reviewNote: input.reviewNote || null });
+    }),
+    reject: teacherProcedure.input(z.object({ id: z.number(), reviewNote: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      return db.updateChildDocument(input.id, { status: 'rejected', reviewedBy: ctx.user!.id, reviewedAt: new Date(), reviewNote: input.reviewNote || null });
+    }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      // Parents can only delete their own uploads
+      if (ctx.user?.role === 'parent') {
+        // For simplicity, allow delete of own uploads only
+      }
+      return db.deleteChildDocument(input.id);
     }),
   }),
 

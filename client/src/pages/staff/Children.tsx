@@ -361,7 +361,18 @@ export default function StaffChildren() {
               <tbody>
                 {filtered.map((child: any) => (
                   <tr key={child.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-medium">{child.firstName} {child.lastName}</td>
+                    <td className="p-3 font-medium">
+                      <div className="flex items-center gap-2">
+                        {child.photo ? (
+                          <img src={child.photo} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            {(child.firstName?.[0] || "")}{(child.lastName?.[0] || "")}
+                          </div>
+                        )}
+                        <span>{child.firstName} {child.lastName}</span>
+                      </div>
+                    </td>
                     <td className="p-3">{child.arabicName || "-"}</td>
                     <td className="p-3">{(classes as any[]).find((c: any) => c.id === child.classId)?.nameAr || (classes as any[]).find((c: any) => c.id === child.classId)?.name || "-"}</td>
                     <td className="p-3">{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString("ar-SA") : "-"}</td>
