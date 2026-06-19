@@ -311,9 +311,43 @@ export async function getInvoices(parentId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (parentId) {
-    return db.select().from(invoices).where(eq(invoices.parentId, parentId)).orderBy(desc(invoices.createdAt));
+    const results = await db.select({
+      id: invoices.id,
+      childId: invoices.childId,
+      parentId: invoices.parentId,
+      invoiceNumber: invoices.invoiceNumber,
+      description: invoices.description,
+      subtotal: invoices.subtotal,
+      vatRate: invoices.vatRate,
+      vatAmount: invoices.vatAmount,
+      total: invoices.total,
+      status: invoices.status,
+      dueDate: invoices.dueDate,
+      paidAt: invoices.paidAt,
+      createdAt: invoices.createdAt,
+      childFirstName: children.firstName,
+      childLastName: children.lastName,
+    }).from(invoices).leftJoin(children, eq(invoices.childId, children.id)).where(eq(invoices.parentId, parentId)).orderBy(desc(invoices.createdAt));
+    return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
   }
-  return db.select().from(invoices).orderBy(desc(invoices.createdAt));
+  const results = await db.select({
+    id: invoices.id,
+    childId: invoices.childId,
+    parentId: invoices.parentId,
+    invoiceNumber: invoices.invoiceNumber,
+    description: invoices.description,
+    subtotal: invoices.subtotal,
+    vatRate: invoices.vatRate,
+    vatAmount: invoices.vatAmount,
+    total: invoices.total,
+    status: invoices.status,
+    dueDate: invoices.dueDate,
+    paidAt: invoices.paidAt,
+    createdAt: invoices.createdAt,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+  }).from(invoices).leftJoin(children, eq(invoices.childId, children.id)).orderBy(desc(invoices.createdAt));
+  return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
 }
 
 export async function createInvoice(data: InsertInvoice) {

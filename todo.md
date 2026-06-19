@@ -265,3 +265,9 @@
 - [x] Ensure immediate database updates on status change
 - [x] Update all pages, reports, and parent notifications to reflect changes
 - [x] End-to-end testing of status change workflow (158 tests passing)
+
+## Finance Table UI Fixes
+- [x] Fix child names not displayed in invoices table (join with children table)
+- [x] Fix invoice amounts not displayed correctly (use total field instead of amount)
+- [x] Make invoices table fully responsive on mobile (horizontal scroll + responsive cards)
+- [x] Ensure all columns visible on mobile with clear status badges

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Receipt, Clock, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -23,7 +23,7 @@ export default function StaffFinance() {
   const [description, setDescription] = useState("");
 
   const create = trpc.finance.createInvoice.useMutation({
-    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); setOpen(false); toast.success("تم إنشاء الفاتورة"); },
+    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); setOpen(false); setChildId(""); setAmount(""); setDescription(""); toast.success("تم إنشاء الفاتورة"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -49,31 +49,102 @@ export default function StaffFinance() {
         </Dialog>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">إجمالي الإيرادات</p><p className="text-2xl font-bold text-green-600">{(summary?.totalRevenue ?? 0).toLocaleString()} ر.س</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">مستحقات معلقة</p><p className="text-2xl font-bold text-amber-600">{(summary?.pendingAmount ?? 0).toLocaleString()} ر.س</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">عدد الفواتير</p><p className="text-2xl font-bold">{summary?.totalInvoices ?? 0}</p></CardContent></Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <CheckCircle2 className="h-8 w-8 text-green-500 shrink-0" />
+            <div>
+              <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
+              <p className="text-xl font-bold text-green-600">{(summary?.totalRevenue ?? 0).toLocaleString('ar-SA')} ر.س</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Clock className="h-8 w-8 text-amber-500 shrink-0" />
+            <div>
+              <p className="text-sm text-muted-foreground">مستحقات معلقة</p>
+              <p className="text-xl font-bold text-amber-600">{(summary?.pendingAmount ?? 0).toLocaleString('ar-SA')} ر.س</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Receipt className="h-8 w-8 text-blue-500 shrink-0" />
+            <div>
+              <p className="text-sm text-muted-foreground">عدد الفواتير</p>
+              <p className="text-xl font-bold">{summary?.totalInvoices ?? 0}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Card>
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader><TableRow><TableHead>الطفل</TableHead><TableHead>المبلغ</TableHead><TableHead>الوصف</TableHead><TableHead>الحالة</TableHead><TableHead>التاريخ</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {isLoading ? Array.from({length:3}).map((_,i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>) :
-              invoices?.map((inv: any) => (
-                <TableRow key={inv.id}>
-                  <TableCell>{inv.childName}</TableCell>
-                  <TableCell className="font-medium">{inv.amount?.toLocaleString()} ر.س</TableCell>
-                  <TableCell>{inv.description}</TableCell>
-                  <TableCell><Badge className={inv.status === "paid" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}>{inv.status === "paid" ? "مدفوعة" : "معلقة"}</Badge></TableCell>
-                  <TableCell>{new Date(inv.createdAt).toLocaleDateString('ar-SA')}</TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">الطفل</TableHead>
+                  <TableHead className="text-right">المبلغ</TableHead>
+                  <TableHead className="text-right">الوصف</TableHead>
+                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">التاريخ</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? Array.from({length:3}).map((_,i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>) :
+                invoices?.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">لا توجد فواتير</TableCell></TableRow>
+                ) :
+                invoices?.map((inv: any) => (
+                  <TableRow key={inv.id}>
+                    <TableCell className="font-medium">{inv.childName || "—"}</TableCell>
+                    <TableCell className="font-bold text-nowrap">{Number(inv.total).toLocaleString('ar-SA')} ر.س</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{inv.description || "—"}</TableCell>
+                    <TableCell>
+                      <Badge className={inv.status === "paid" ? "bg-green-100 text-green-700" : inv.status === "overdue" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}>
+                        {inv.status === "paid" ? "مدفوعة" : inv.status === "overdue" ? "متأخرة" : "معلقة"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-nowrap">{new Date(inv.createdAt).toLocaleDateString('ar-SA')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? Array.from({length:3}).map((_,i) => (
+          <Card key={i}><CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent></Card>
+        )) : invoices?.length === 0 ? (
+          <Card><CardContent className="p-6 text-center text-muted-foreground">لا توجد فواتير</CardContent></Card>
+        ) : invoices?.map((inv: any) => (
+          <Card key={inv.id} className="overflow-hidden">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-base">{inv.childName || "—"}</span>
+                <Badge className={inv.status === "paid" ? "bg-green-100 text-green-700" : inv.status === "overdue" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}>
+                  {inv.status === "paid" ? "مدفوعة" : inv.status === "overdue" ? "متأخرة" : "معلقة"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{inv.description || "بدون وصف"}</span>
+                <span className="font-bold text-lg">{Number(inv.total).toLocaleString('ar-SA')} ر.س</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
+                <span>رقم الفاتورة: {inv.invoiceNumber}</span>
+                <span>{new Date(inv.createdAt).toLocaleDateString('ar-SA')}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
