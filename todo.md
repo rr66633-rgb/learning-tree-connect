@@ -230,3 +230,5 @@
 ## Bug Fixes
 - [x] Fix children attendance page - children names not displaying in the table
 - [x] Implement automatic daily database backup system
+- [x] Fix Children Management page (/staff/children) showing "No children registered" despite data existing
+- [x] Create daily backup Heartbeat cron job after deployment (task_uid: JtL44VYLLGeyeP4qpvVVjX, runs daily at 3:00 AM UTC)

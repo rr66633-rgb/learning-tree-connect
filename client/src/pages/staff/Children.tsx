@@ -1,24 +1,49 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export default function StaffChildren() {
   const { data: children, isLoading } = trpc.children.list.useQuery();
   const { data: classes } = trpc.classes.list.useQuery();
+  const { data: users } = trpc.users.list.useQuery();
   const [search, setSearch] = useState("");
 
-  const filtered = children?.filter((c: any) =>
-    c.name?.includes(search) || c.parentName?.includes(search)
-  ) ?? [];
+  const filtered = children?.filter((c: any) => {
+    const fullName = `${c.firstName} ${c.lastName}`;
+    const parent = users?.find((u: any) => u.id === c.parentId);
+    const parentName = parent?.name ?? "";
+    return fullName.includes(search) || parentName.includes(search);
+  }) ?? [];
+
+  const getClassName = (classId: number | null) => {
+    if (!classId) return "-";
+    return classes?.find((c: any) => c.id === classId)?.name ?? "-";
+  };
+
+  const getParentName = (parentId: number | null) => {
+    if (!parentId) return "-";
+    return users?.find((u: any) => u.id === parentId)?.name ?? "-";
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-100 text-green-700">نشط</Badge>;
+      case "inactive":
+        return <Badge variant="secondary">غير نشط</Badge>;
+      case "graduated":
+        return <Badge className="bg-blue-100 text-blue-700">متخرج</Badge>;
+      case "waitlist":
+        return <Badge className="bg-yellow-100 text-yellow-700">قائمة انتظار</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -70,13 +95,11 @@ export default function StaffChildren() {
               ) : (
                 filtered.map((child: any) => (
                   <TableRow key={child.id}>
-                    <TableCell className="font-medium">{child.name}</TableCell>
-                    <TableCell>{classes?.find((c: any) => c.id === child.classId)?.name ?? "-"}</TableCell>
+                    <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
+                    <TableCell>{getClassName(child.classId)}</TableCell>
                     <TableCell>{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString('ar-SA') : "-"}</TableCell>
-                    <TableCell>{child.parentName ?? "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-green-100 text-green-700">نشط</Badge>
-                    </TableCell>
+                    <TableCell>{getParentName(child.parentId)}</TableCell>
+                    <TableCell>{getStatusBadge(child.status)}</TableCell>
                   </TableRow>
                 ))
               )}
