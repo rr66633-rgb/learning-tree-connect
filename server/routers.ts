@@ -219,8 +219,104 @@ export const appRouter = router({
       date: z.string(),
       status: z.enum(["absent", "excused"]),
       notes: z.string().optional(),
-    })).mutation(async ({ input }) => {
-      return db.createAttendance({ childId: input.childId, date: new Date(input.date), status: input.status, notes: input.notes });
+    })).mutation(async ({ input, ctx }) => {
+      // Check if attendance record exists for this child on this date
+      const existing = await db.getAttendanceForChildOnDate(input.childId, input.date);
+      if (existing) {
+        const previousStatus = existing.status;
+        await db.updateAttendance(existing.id, { status: input.status, notes: input.notes });
+        await db.createAttendanceAuditLog({
+          attendanceId: existing.id,
+          childId: input.childId,
+          previousStatus,
+          newStatus: input.status,
+          changedBy: ctx.user!.id,
+          changedByName: ctx.user!.name || '\u0645\u0633\u062a\u062e\u062f\u0645',
+          notes: input.notes,
+        });
+        return { id: existing.id, childId: input.childId, status: input.status };
+      }
+      const result = await db.createAttendance({ childId: input.childId, date: new Date(input.date), status: input.status, notes: input.notes });
+      await db.createAttendanceAuditLog({
+        attendanceId: result.id,
+        childId: input.childId,
+        previousStatus: 'none',
+        newStatus: input.status,
+        changedBy: ctx.user!.id,
+        changedByName: ctx.user!.name || '\u0645\u0633\u062a\u062e\u062f\u0645',
+        notes: input.notes,
+      });
+      return result;
+    }),
+    updateStatus: teacherProcedure.input(z.object({
+      id: z.number(),
+      childId: z.number(),
+      newStatus: z.enum(["present", "absent", "late", "excused", "checked_in", "checked_out"]),
+      notes: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      const existing = await db.getAttendanceById(input.id);
+      if (!existing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: '\u0633\u062c\u0644 \u0627\u0644\u062d\u0636\u0648\u0631 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f' });
+      }
+      const previousStatus = existing.status;
+      const updateData: any = { status: input.newStatus };
+      if ((input.newStatus === 'present' || input.newStatus === 'checked_in') && !existing.checkInTime) {
+        updateData.checkInTime = new Date();
+        updateData.checkedInBy = ctx.user!.id;
+      }
+      if (input.newStatus === 'checked_out' && !existing.checkOutTime) {
+        updateData.checkOutTime = new Date();
+        updateData.checkedOutBy = ctx.user!.id;
+      }
+      await db.updateAttendance(input.id, updateData);
+      await db.createAttendanceAuditLog({
+        attendanceId: input.id,
+        childId: input.childId,
+        previousStatus,
+        newStatus: input.newStatus,
+        changedBy: ctx.user!.id,
+        changedByName: ctx.user!.name || '\u0645\u0633\u062a\u062e\u062f\u0645',
+        notes: input.notes,
+      });
+      const child = await db.getChildById(input.childId);
+      if (child?.parentId) {
+        const statusLabels: Record<string, string> = {
+          present: '\u062d\u0627\u0636\u0631',
+          absent: '\u063a\u0627\u0626\u0628',
+          late: '\u0645\u062a\u0623\u062e\u0631',
+          excused: '\u063a\u064a\u0627\u0628 \u0628\u0639\u0630\u0631',
+          checked_in: '\u062a\u0645 \u0627\u0644\u062a\u0633\u062c\u064a\u0644',
+          checked_out: '\u062a\u0645 \u0627\u0644\u0645\u063a\u0627\u062f\u0631\u0629',
+        };
+        await db.createNotification({
+          userId: child.parentId,
+          title: '\u062a\u062d\u062f\u064a\u062b \u062d\u0627\u0644\u0629 \u0627\u0644\u062d\u0636\u0648\u0631',
+          titleAr: '\u062a\u062d\u062f\u064a\u062b \u062d\u0627\u0644\u0629 \u0627\u0644\u062d\u0636\u0648\u0631',
+          body: `Attendance status updated for ${child.firstName}`,
+          bodyAr: `\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u062d\u0627\u0644\u0629 \u062d\u0636\u0648\u0631 ${child.firstName} ${child.lastName} \u0625\u0644\u0649: ${statusLabels[input.newStatus] || input.newStatus}`,
+          type: 'attendance',
+          metadata: { childId: input.childId, previousStatus, newStatus: input.newStatus, time: new Date().toISOString() },
+        });
+      }
+      return { success: true, previousStatus, newStatus: input.newStatus };
+    }),
+    auditLog: protectedProcedure.input(z.object({
+      childId: z.number().optional(),
+      attendanceId: z.number().optional(),
+    })).query(async ({ input, ctx }) => {
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (input.childId && !childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      if (input.attendanceId) {
+        return db.getAttendanceAuditLogByAttendance(input.attendanceId);
+      }
+      if (input.childId) {
+        return db.getAttendanceAuditLogByChild(input.childId);
+      }
+      return [];
     }),
   }),
 

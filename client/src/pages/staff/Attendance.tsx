@@ -5,18 +5,40 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, X, LogIn, LogOut, Loader2 } from "lucide-react";
+import { Check, X, LogIn, LogOut, Loader2, History, Edit } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { toast } from "sonner";
+
+const STATUS_LABELS: Record<string, string> = {
+  present: "حاضر",
+  absent: "غائب",
+  late: "متأخر",
+  excused: "غياب بعذر",
+  checked_in: "تم التسجيل",
+  checked_out: "تم المغادرة",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  present: "bg-green-100 text-green-700",
+  absent: "bg-red-100 text-red-700",
+  late: "bg-amber-100 text-amber-700",
+  excused: "bg-blue-100 text-blue-700",
+  checked_in: "bg-emerald-100 text-emerald-700",
+  checked_out: "bg-gray-100 text-gray-700",
+};
 
 export default function StaffAttendance() {
   const [selectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [checkInDialog, setCheckInDialog] = useState<{ childId: number; childName: string } | null>(null);
   const [checkOutDialog, setCheckOutDialog] = useState<{ id: number; childId: number; childName: string } | null>(null);
+  const [statusChangeDialog, setStatusChangeDialog] = useState<{ id: number; childId: number; childName: string; currentStatus: string; newStatus: string } | null>(null);
+  const [auditLogDialog, setAuditLogDialog] = useState<{ childId: number; childName: string; attendanceId?: number } | null>(null);
+  const [statusChangeNotes, setStatusChangeNotes] = useState("");
   const [droppedOffBy, setDroppedOffBy] = useState("");
   const [droppedOffRelationship, setDroppedOffRelationship] = useState<string>("");
   const [checkInNotes, setCheckInNotes] = useState("");
@@ -24,9 +46,14 @@ export default function StaffAttendance() {
   const [pickupRelationship, setPickupRelationship] = useState<string>("");
   const [checkOutNotes, setCheckOutNotes] = useState("");
   const [signatureData, setSignatureData] = useState("");
+  const [markAbsentConfirm, setMarkAbsentConfirm] = useState<{ childId: number; childName: string } | null>(null);
 
   const { data: children, isLoading } = trpc.children.list.useQuery();
   const { data: records } = trpc.attendance.byDate.useQuery({ date: selectedDate });
+  const { data: auditLogs } = trpc.attendance.auditLog.useQuery(
+    { childId: auditLogDialog?.childId, attendanceId: auditLogDialog?.attendanceId },
+    { enabled: !!auditLogDialog }
+  );
   const utils = trpc.useUtils();
 
   const checkIn = trpc.attendance.checkIn.useMutation({
@@ -35,10 +62,20 @@ export default function StaffAttendance() {
   });
   const markAbsent = trpc.attendance.markAbsent.useMutation({
     onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل الغياب"); },
+    onError: () => toast.error("حدث خطأ"),
   });
   const checkOut = trpc.attendance.checkOut.useMutation({
     onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل المغادرة"); setCheckOutDialog(null); resetCheckOutForm(); },
     onError: () => toast.error("حدث خطأ"),
+  });
+  const updateStatus = trpc.attendance.updateStatus.useMutation({
+    onSuccess: (data) => {
+      utils.attendance.byDate.invalidate();
+      toast.success(`تم تغيير الحالة من "${STATUS_LABELS[data.previousStatus] || data.previousStatus}" إلى "${STATUS_LABELS[data.newStatus] || data.newStatus}"`);
+      setStatusChangeDialog(null);
+      setStatusChangeNotes("");
+    },
+    onError: () => toast.error("حدث خطأ في تغيير الحالة"),
   });
 
   function resetCheckInForm() { setDroppedOffBy(""); setDroppedOffRelationship(""); setCheckInNotes(""); }
@@ -54,7 +91,7 @@ export default function StaffAttendance() {
     if (!records || !children) return [];
     return children.filter((child: any) => {
       const record = attendanceMap.get(child.id);
-      return record && (record.status === 'present' || record.status === 'late') && !record.checkOutTime;
+      return record && (record.status === 'present' || record.status === 'late' || record.status === 'checked_in') && !record.checkOutTime;
     });
   }, [children, records, attendanceMap]);
 
@@ -81,6 +118,26 @@ export default function StaffAttendance() {
       relationship: pickupRelationship as any,
       signatureData: signatureData || undefined,
       notes: checkOutNotes || undefined,
+    });
+  }
+
+  function handleStatusChangeConfirm() {
+    if (!statusChangeDialog) return;
+    updateStatus.mutate({
+      id: statusChangeDialog.id,
+      childId: statusChangeDialog.childId,
+      newStatus: statusChangeDialog.newStatus as any,
+      notes: statusChangeNotes || undefined,
+    });
+  }
+
+  function openStatusChange(record: any, childName: string, newStatus: string) {
+    setStatusChangeDialog({
+      id: record.id,
+      childId: record.childId,
+      childName,
+      currentStatus: record.status,
+      newStatus,
     });
   }
 
@@ -118,22 +175,27 @@ export default function StaffAttendance() {
                 <TableHead className="text-right">الحالة</TableHead>
                 <TableHead className="text-right">الوصول</TableHead>
                 <TableHead className="text-right">المغادرة</TableHead>
+                <TableHead className="text-right">تغيير الحالة</TableHead>
                 <TableHead className="text-right">الإجراء</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
               )) : children?.map((child: any) => {
                 const record = attendanceMap.get(child.id);
+                const childName = `${child.firstName} ${child.lastName}`;
                 return (
                   <TableRow key={child.id}>
-                    <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
+                    <TableCell className="font-medium">{childName}</TableCell>
                     <TableCell>
-                      {record?.status === "present" ? <Badge className="bg-green-100 text-green-700">حاضر</Badge> :
-                       record?.status === "absent" ? <Badge variant="destructive">غائب</Badge> :
-                       record?.status === "late" ? <Badge className="bg-amber-100 text-amber-700">متأخر</Badge> :
-                       <Badge variant="secondary">لم يُسجل</Badge>}
+                      {record ? (
+                        <Badge className={STATUS_COLORS[record.status] || "bg-gray-100 text-gray-700"}>
+                          {STATUS_LABELS[record.status] || record.status}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">لم يُسجل</Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
                       {record?.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}
@@ -142,19 +204,60 @@ export default function StaffAttendance() {
                       {record?.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}
                     </TableCell>
                     <TableCell>
+                      {record ? (
+                        <div className="flex flex-wrap gap-1">
+                          {record.status !== 'present' && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-green-600 hover:bg-green-50" onClick={() => openStatusChange(record, childName, 'present')}>
+                              حاضر
+                            </Button>
+                          )}
+                          {record.status !== 'absent' && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-red-600 hover:bg-red-50" onClick={() => openStatusChange(record, childName, 'absent')}>
+                              غائب
+                            </Button>
+                          )}
+                          {record.status !== 'late' && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-amber-600 hover:bg-amber-50" onClick={() => openStatusChange(record, childName, 'late')}>
+                              متأخر
+                            </Button>
+                          )}
+                          {record.status !== 'excused' && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-blue-600 hover:bg-blue-50" onClick={() => openStatusChange(record, childName, 'excused')}>
+                              بعذر
+                            </Button>
+                          )}
+                          {record.status !== 'checked_in' && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50" onClick={() => openStatusChange(record, childName, 'checked_in')}>
+                              تسجيل
+                            </Button>
+                          )}
+                          {record.status !== 'checked_out' && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-gray-600 hover:bg-gray-50" onClick={() => openStatusChange(record, childName, 'checked_out')}>
+                              مغادرة
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-purple-600 hover:bg-purple-50" onClick={() => setAuditLogDialog({ childId: child.id, childName, attendanceId: record.id })}>
+                            <History className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-2">
                         {!record && (
                           <>
-                            <Button size="sm" variant="outline" className="text-green-600 gap-1" onClick={() => setCheckInDialog({ childId: child.id, childName: `${child.firstName} ${child.lastName}` })}>
+                            <Button size="sm" variant="outline" className="text-green-600 gap-1" onClick={() => setCheckInDialog({ childId: child.id, childName })}>
                               <LogIn className="h-3 w-3" /> وصول
                             </Button>
-                            <Button size="sm" variant="outline" className="text-red-600" onClick={() => markAbsent.mutate({ childId: child.id, date: selectedDate, status: "absent" as const })} disabled={markAbsent.isPending}>
+                            <Button size="sm" variant="outline" className="text-red-600" onClick={() => setMarkAbsentConfirm({ childId: child.id, childName })} disabled={markAbsent.isPending}>
                               <X className="h-4 w-4" />
                             </Button>
                           </>
                         )}
-                        {record && (record.status === 'present' || record.status === 'late') && !record.checkOutTime && (
-                          <Button size="sm" variant="outline" className="text-orange-600 gap-1" onClick={() => setCheckOutDialog({ id: record.id, childId: child.id, childName: `${child.firstName} ${child.lastName}` })}>
+                        {record && (record.status === 'present' || record.status === 'late' || record.status === 'checked_in') && !record.checkOutTime && (
+                          <Button size="sm" variant="outline" className="text-orange-600 gap-1" onClick={() => setCheckOutDialog({ id: record.id, childId: child.id, childName })}>
                             <LogOut className="h-3 w-3" /> مغادرة
                           </Button>
                         )}
@@ -170,6 +273,112 @@ export default function StaffAttendance() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Mark Absent Confirmation Dialog */}
+      <AlertDialog open={!!markAbsentConfirm} onOpenChange={(open) => { if (!open) setMarkAbsentConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد تسجيل الغياب</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل تريد تسجيل <strong>{markAbsentConfirm?.childName}</strong> كغائب اليوم؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (markAbsentConfirm) {
+                  markAbsent.mutate({ childId: markAbsentConfirm.childId, date: selectedDate, status: "absent" as const });
+                  setMarkAbsentConfirm(null);
+                }
+              }}
+            >
+              تأكيد الغياب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Status Change Confirmation Dialog */}
+      <AlertDialog open={!!statusChangeDialog} onOpenChange={(open) => { if (!open) { setStatusChangeDialog(null); setStatusChangeNotes(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد تغيير الحالة</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                هل تريد تغيير حالة <strong>{statusChangeDialog?.childName}</strong> من{" "}
+                <Badge className={STATUS_COLORS[statusChangeDialog?.currentStatus || ""] || ""}>{STATUS_LABELS[statusChangeDialog?.currentStatus || ""] || statusChangeDialog?.currentStatus}</Badge>
+                {" "}إلى{" "}
+                <Badge className={STATUS_COLORS[statusChangeDialog?.newStatus || ""] || ""}>{STATUS_LABELS[statusChangeDialog?.newStatus || ""] || statusChangeDialog?.newStatus}</Badge>
+                ؟
+              </p>
+              <div className="pt-2">
+                <Label className="text-sm">ملاحظات (اختياري)</Label>
+                <Textarea
+                  value={statusChangeNotes}
+                  onChange={e => setStatusChangeNotes(e.target.value)}
+                  placeholder="سبب التغيير..."
+                  className="mt-1"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleStatusChangeConfirm} disabled={updateStatus.isPending}>
+              {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              تأكيد التغيير
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Audit Log Dialog */}
+      <Dialog open={!!auditLogDialog} onOpenChange={(open) => { if (!open) setAuditLogDialog(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>سجل التغييرات - {auditLogDialog?.childName}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-80 overflow-y-auto">
+            {auditLogs && auditLogs.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">الوقت</TableHead>
+                    <TableHead className="text-right">من</TableHead>
+                    <TableHead className="text-right">إلى</TableHead>
+                    <TableHead className="text-right">بواسطة</TableHead>
+                    <TableHead className="text-right">ملاحظات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {auditLogs.map((log: any) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-xs">
+                        {new Date(log.createdAt).toLocaleString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{STATUS_LABELS[log.previousStatus] || log.previousStatus}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`text-xs ${STATUS_COLORS[log.newStatus] || ""}`}>{STATUS_LABELS[log.newStatus] || log.newStatus}</Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{log.changedByName || "-"}</TableCell>
+                      <TableCell className="text-xs max-w-[100px] truncate">{log.notes || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">لا توجد تغييرات مسجلة</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAuditLogDialog(null)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Check-In Dialog */}
       <Dialog open={!!checkInDialog} onOpenChange={(open) => { if (!open) { setCheckInDialog(null); resetCheckInForm(); } }}>

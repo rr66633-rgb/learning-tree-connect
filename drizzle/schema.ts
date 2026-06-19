@@ -89,7 +89,7 @@ export const attendance = mysqlTable("attendance", {
   id: int("id").autoincrement().primaryKey(),
   childId: int("childId").notNull(),
   date: timestamp("date").notNull(),
-  status: mysqlEnum("status", ["present", "absent", "late", "excused"]).default("present").notNull(),
+  status: mysqlEnum("status", ["present", "absent", "late", "excused", "checked_in", "checked_out"]).default("present").notNull(),
   checkInTime: timestamp("checkInTime"),
   checkOutTime: timestamp("checkOutTime"),
   checkedInBy: int("checkedInBy"),
@@ -379,6 +379,20 @@ export const childDepartures = mysqlTable("child_departures", {
 export type ChildDeparture = typeof childDepartures.$inferSelect;
 export type InsertChildDeparture = typeof childDepartures.$inferInsert;
 
+// ============ ATTENDANCE AUDIT LOG ============
+export const attendanceAuditLog = mysqlTable("attendance_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  attendanceId: int("attendanceId").notNull(),
+  childId: int("childId").notNull(),
+  previousStatus: varchar("previousStatus", { length: 50 }).notNull(),
+  newStatus: varchar("newStatus", { length: 50 }).notNull(),
+  changedBy: int("changedBy").notNull(),
+  changedByName: varchar("changedByName", { length: 200 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AttendanceAuditLog = typeof attendanceAuditLog.$inferSelect;
+export type InsertAttendanceAuditLog = typeof attendanceAuditLog.$inferInsert;
 // ============ AUDIT LOG ============
 export const auditLog = mysqlTable("audit_log", {
   id: int("id").autoincrement().primaryKey(),

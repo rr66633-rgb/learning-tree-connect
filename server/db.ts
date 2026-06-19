@@ -1,7 +1,7 @@
 import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures } from "../drizzle/schema";
-import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog } from "../drizzle/schema";
+import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -180,6 +180,44 @@ export async function updateAttendance(id: number, data: Partial<InsertAttendanc
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(attendance).set(data).where(eq(attendance.id, id));
+}
+
+export async function getAttendanceById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(attendance).where(eq(attendance.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getAttendanceForChildOnDate(childId: number, date: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+  const result = await db.select().from(attendance).where(and(eq(attendance.childId, childId), gte(attendance.date, startOfDay), lte(attendance.date, endOfDay))).limit(1);
+  return result[0];
+}
+
+// ============ ATTENDANCE AUDIT LOG ============
+export async function createAttendanceAuditLog(data: InsertAttendanceAuditLog) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(attendanceAuditLog).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function getAttendanceAuditLogByAttendance(attendanceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(attendanceAuditLog).where(eq(attendanceAuditLog.attendanceId, attendanceId)).orderBy(desc(attendanceAuditLog.createdAt));
+}
+
+export async function getAttendanceAuditLogByChild(childId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(attendanceAuditLog).where(eq(attendanceAuditLog.childId, childId)).orderBy(desc(attendanceAuditLog.createdAt));
 }
 
 // ============ DAILY REPORTS ============

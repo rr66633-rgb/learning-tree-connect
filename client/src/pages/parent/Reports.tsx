@@ -17,8 +17,8 @@ export default function ParentReports() {
   const stats = useMemo(() => {
     if (!records || records.length === 0) return null;
     const total = records.length;
-    const present = records.filter((r: any) => r.status === "present").length;
-    const absent = total - present;
+    const present = records.filter((r: any) => r.status === "present" || r.status === "late" || r.status === "checked_in" || r.status === "checked_out").length;
+    const absent = records.filter((r: any) => r.status === "absent" || r.status === "excused").length;
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
     return { total, present, absent, rate };
   }, [records]);
@@ -115,8 +115,20 @@ export default function ParentReports() {
                         <CalendarDays className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">{new Date(r.date).toLocaleDateString('ar-SA', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
                       </div>
-                      <Badge className={r.status === "present" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
-                        {r.status === "present" ? "حاضر" : "غائب"}
+                      <Badge className={
+                        r.status === 'present' ? 'bg-green-100 text-green-700' :
+                        r.status === 'absent' ? 'bg-red-100 text-red-700' :
+                        r.status === 'late' ? 'bg-amber-100 text-amber-700' :
+                        r.status === 'excused' ? 'bg-blue-100 text-blue-700' :
+                        r.status === 'checked_in' ? 'bg-emerald-100 text-emerald-700' :
+                        r.status === 'checked_out' ? 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-700'
+                      }>
+                        {r.status === 'present' ? 'حاضر' :
+                         r.status === 'absent' ? 'غائب' :
+                         r.status === 'late' ? 'متأخر' :
+                         r.status === 'excused' ? 'غياب بعذر' :
+                         r.status === 'checked_in' ? 'تم التسجيل' :
+                         r.status === 'checked_out' ? 'تم المغادرة' : r.status}
                       </Badge>
                     </div>
                   ))}

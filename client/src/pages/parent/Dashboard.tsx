@@ -52,6 +52,21 @@ export default function ParentDashboard() {
                     <div className="flex items-center gap-2 mb-1">
                       <Clock className="h-3.5 w-3.5 text-green-600" />
                       <span className="text-xs font-medium text-green-700 dark:text-green-300">حالة اليوم</span>
+                      <Badge variant="secondary" className={`text-xs ${
+                        att.status === 'present' ? 'bg-green-100 text-green-700' :
+                        att.status === 'absent' ? 'bg-red-100 text-red-700' :
+                        att.status === 'late' ? 'bg-amber-100 text-amber-700' :
+                        att.status === 'excused' ? 'bg-blue-100 text-blue-700' :
+                        att.status === 'checked_in' ? 'bg-emerald-100 text-emerald-700' :
+                        att.status === 'checked_out' ? 'bg-gray-100 text-gray-700' : ''
+                      }`}>
+                        {att.status === 'present' ? 'حاضر' :
+                         att.status === 'absent' ? 'غائب' :
+                         att.status === 'late' ? 'متأخر' :
+                         att.status === 'excused' ? 'غياب بعذر' :
+                         att.status === 'checked_in' ? 'تم التسجيل' :
+                         att.status === 'checked_out' ? 'تم المغادرة' : att.status}
+                      </Badge>
                     </div>
                     <div className="flex gap-3 text-xs">
                       {att.checkInTime && (
@@ -65,9 +80,9 @@ export default function ParentDashboard() {
                           <LogOut className="h-3 w-3" />
                           المغادرة: {new Date(att.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                         </span>
-                      ) : (
+                      ) : att.status !== 'absent' && att.status !== 'excused' ? (
                         <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">في المركز</Badge>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 ) : (

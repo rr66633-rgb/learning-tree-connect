@@ -254,3 +254,14 @@
 - [x] Teachers and admins can view all check-in/check-out records
 - [x] Generate attendance reports with arrival and departure times
 - [x] End-to-end testing of the entire feature (150 tests passing)
+
+## Attendance System Redesign
+- [x] Make attendance status always editable by teachers and administrators
+- [x] Allow status changes: Present, Absent, Late, Checked In, Checked Out
+- [x] Allow changing absent back to present immediately
+- [x] Add confirmation dialog before status changes
+- [x] Add attendance audit log (previous status, new status, user, timestamp)
+- [x] Display attendance history for each child
+- [x] Ensure immediate database updates on status change
+- [x] Update all pages, reports, and parent notifications to reflect changes
+- [x] End-to-end testing of status change workflow (158 tests passing)
