@@ -104,3 +104,19 @@
 - [x] Verify teacher sidebar excludes المالية and برنامج الولاء (shows: لوحة التحكم، الأطفال، الحضور، التقارير اليومية، الرسائل، الإشعارات)
 - [x] Verify parent sidebar shows correct items: لوحة التحكم، الأطفال، الحضور، التقارير اليومية، الرسائل، المالية، برنامج الولاء، الإشعارات
 - [x] Retake and verify role-based screenshots after sidebar fixes
+
+## User Management (Admin Only)
+- [x] Backend: tRPC procedures for listing all users with role filter
+- [x] Backend: tRPC procedure for creating new user (teacher/parent)
+- [x] Backend: tRPC procedure for updating user info (name, email, phone, role)
+- [x] Backend: tRPC procedure for deleting/deactivating user
+- [x] Backend: tRPC procedure for linking parent to child
+- [x] Frontend: User management page with table showing all users
+- [x] Frontend: Add user dialog with role selection (teacher/parent)
+- [x] Frontend: Edit user dialog for modifying user details
+- [x] Frontend: Filter users by role (all/teacher/parent)
+- [x] Frontend: Search users by name or email
+- [x] Navigation: Add user management link to admin sidebar only
+- [x] Route: Register /users path in App.tsx
+- [x] Tests: Admin can list/create/update/delete users
+- [x] Tests: Teacher/Parent cannot access user management

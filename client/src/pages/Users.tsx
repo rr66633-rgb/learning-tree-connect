@@ -1,0 +1,401 @@
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, Link2, Unlink } from "lucide-react";
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
+
+type UserForm = { name: string; email: string; phone: string; role: "teacher" | "parent" };
+const emptyForm: UserForm = { name: "", email: "", phone: "", role: "teacher" };
+
+export default function UsersPage() {
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [form, setForm] = useState<UserForm>(emptyForm);
+  const [editForm, setEditForm] = useState<UserForm>(emptyForm);
+
+  const { data: users, isLoading } = trpc.users.list.useQuery({ role: roleFilter, search: search || undefined });
+  const { data: unlinkedChildren } = trpc.users.getUnlinkedChildren.useQuery(undefined, { enabled: linkOpen });
+  const { data: linkedChildren } = trpc.users.getChildren.useQuery(
+    { parentId: selectedUser?.id ?? 0 },
+    { enabled: linkOpen && selectedUser?.role === 'parent' }
+  );
+
+  const utils = trpc.useUtils();
+
+  const createUser = trpc.users.create.useMutation({
+    onSuccess: () => { utils.users.list.invalidate(); toast.success("تم إنشاء الحساب بنجاح"); setCreateOpen(false); setForm(emptyForm); },
+    onError: (err) => toast.error(err.message || "حدث خطأ أثناء الإنشاء"),
+  });
+  const updateUser = trpc.users.update.useMutation({
+    onSuccess: () => { utils.users.list.invalidate(); toast.success("تم تحديث البيانات بنجاح"); setEditOpen(false); setSelectedUser(null); },
+    onError: (err) => toast.error(err.message || "حدث خطأ أثناء التحديث"),
+  });
+  const deleteUser = trpc.users.delete.useMutation({
+    onSuccess: () => { utils.users.list.invalidate(); toast.success("تم حذف الحساب بنجاح"); setDeleteOpen(false); setSelectedUser(null); },
+    onError: (err) => toast.error(err.message || "حدث خطأ أثناء الحذف"),
+  });
+  const linkChild = trpc.users.linkChild.useMutation({
+    onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success("تم ربط الطفل بنجاح"); },
+    onError: () => toast.error("حدث خطأ أثناء الربط"),
+  });
+  const unlinkChild = trpc.users.unlinkChild.useMutation({
+    onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success("تم إلغاء الربط"); },
+    onError: () => toast.error("حدث خطأ أثناء إلغاء الربط"),
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    createUser.mutate(form);
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    updateUser.mutate({ id: selectedUser.id, ...editForm });
+  };
+
+  const openEdit = (user: any) => {
+    setSelectedUser(user);
+    setEditForm({ name: user.name || "", email: user.email || "", phone: user.phone || "", role: user.role });
+    setEditOpen(true);
+  };
+
+  const openDelete = (user: any) => {
+    setSelectedUser(user);
+    setDeleteOpen(true);
+  };
+
+  const openLink = (user: any) => {
+    setSelectedUser(user);
+    setLinkOpen(true);
+  };
+
+  const stats = useMemo(() => {
+    if (!users) return { total: 0, teachers: 0, parents: 0 };
+    return {
+      total: users.length,
+      teachers: users.filter((u: any) => u.role === 'teacher').length,
+      parents: users.filter((u: any) => u.role === 'parent').length,
+    };
+  }, [users]);
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin': return <Badge className="bg-red-100 text-red-800 border-red-200">مدير</Badge>;
+      case 'teacher': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">معلمة</Badge>;
+      case 'parent': return <Badge className="bg-green-100 text-green-800 border-green-200">ولي أمر</Badge>;
+      default: return <Badge variant="outline">مستخدم</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">إدارة المستخدمين</h1>
+        <Button onClick={() => { setForm(emptyForm); setCreateOpen(true); }} className="gap-2">
+          <UserPlus className="h-4 w-4" />
+          إضافة مستخدم
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">إجمالي المستخدمين</p>
+                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stats.total}</p>
+              </div>
+              <Users className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">المعلمات</p>
+                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stats.teachers}</p>
+              </div>
+              <GraduationCap className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">أولياء الأمور</p>
+                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stats.parents}</p>
+              </div>
+              <UserCheck className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالاسم أو البريد أو الهاتف..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pr-10"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="جميع الأدوار" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الأدوار</SelectItem>
+                <SelectItem value="teacher">المعلمات</SelectItem>
+                <SelectItem value="parent">أولياء الأمور</SelectItem>
+                <SelectItem value="admin">المديرون</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Users Table */}
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-6 space-y-4">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
+          ) : users && users.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">الاسم</TableHead>
+                  <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                  <TableHead className="text-right">الهاتف</TableHead>
+                  <TableHead className="text-right">الدور</TableHead>
+                  <TableHead className="text-right">تاريخ الإنشاء</TableHead>
+                  <TableHead className="text-right">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user: any) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name || "—"}</TableCell>
+                    <TableCell>{user.email || "—"}</TableCell>
+                    <TableCell dir="ltr" className="text-right">{user.phone || "—"}</TableCell>
+                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString('ar-SA')}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="تعديل">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {user.role === 'parent' && (
+                          <Button variant="ghost" size="icon" onClick={() => openLink(user)} title="ربط الأطفال">
+                            <Link2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {user.role !== 'admin' && (
+                          <Button variant="ghost" size="icon" onClick={() => openDelete(user)} title="حذف" className="text-red-500 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-12 text-center text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>لا يوجد مستخدمون</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create User Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>إضافة مستخدم جديد</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-2">
+              <Label>الاسم الكامل</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label>البريد الإلكتروني</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required dir="ltr" />
+            </div>
+            <div className="space-y-2">
+              <Label>رقم الهاتف</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} dir="ltr" placeholder="+966xxxxxxxxx" />
+            </div>
+            <div className="space-y-2">
+              <Label>الدور</Label>
+              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as "teacher" | "parent" })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teacher">معلمة</SelectItem>
+                  <SelectItem value="parent">ولي أمر</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>إلغاء</Button>
+              <Button type="submit" disabled={createUser.isPending}>
+                {createUser.isPending ? "جاري الإنشاء..." : "إنشاء الحساب"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>الاسم الكامل</Label>
+              <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label>البريد الإلكتروني</Label>
+              <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} required dir="ltr" />
+            </div>
+            <div className="space-y-2">
+              <Label>رقم الهاتف</Label>
+              <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} dir="ltr" placeholder="+966xxxxxxxxx" />
+            </div>
+            {selectedUser?.role !== 'admin' && (
+              <div className="space-y-2">
+                <Label>الدور</Label>
+                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as "teacher" | "parent" })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="teacher">معلمة</SelectItem>
+                    <SelectItem value="parent">ولي أمر</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>إلغاء</Button>
+              <Button type="submit" disabled={updateUser.isPending}>
+                {updateUser.isPending ? "جاري التحديث..." : "حفظ التعديلات"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground">
+            هل أنت متأكد من حذف حساب <span className="font-bold text-foreground">{selectedUser?.name}</span>؟
+            سيتم إلغاء ربط جميع الأطفال المرتبطين بهذا الحساب.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>إلغاء</Button>
+            <Button variant="destructive" onClick={() => selectedUser && deleteUser.mutate({ id: selectedUser.id })} disabled={deleteUser.isPending}>
+              {deleteUser.isPending ? "جاري الحذف..." : "حذف الحساب"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Children Dialog */}
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>ربط الأطفال - {selectedUser?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Currently linked children */}
+            {linkedChildren && linkedChildren.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">الأطفال المرتبطون حالياً</Label>
+                <div className="space-y-2">
+                  {linkedChildren.map((child: any) => (
+                    <div key={child.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                      <span className="font-medium">{child.firstName} {child.lastName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => unlinkChild.mutate({ childId: child.id })}
+                        className="text-red-500 hover:text-red-700 gap-1"
+                      >
+                        <Unlink className="h-3 w-3" />
+                        إلغاء الربط
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Available children to link */}
+            {unlinkedChildren && unlinkedChildren.length > 0 ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">أطفال غير مرتبطين (اضغط للربط)</Label>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {unlinkedChildren.map((child: any) => (
+                    <div key={child.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                      <span>{child.firstName} {child.lastName}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => selectedUser && linkChild.mutate({ parentId: selectedUser.id, childId: child.id })}
+                        className="gap-1"
+                      >
+                        <Link2 className="h-3 w-3" />
+                        ربط
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">لا يوجد أطفال غير مرتبطين</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkOpen(false)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText, MessageCircle, CreditCard, Gift, Bell, Settings } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText, MessageCircle, CreditCard, Gift, Bell, Settings, UserCog } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -38,6 +38,7 @@ const allMenuItems: MenuItem[] = [
   { icon: CreditCard, label: "المالية", path: "/finance", roles: ["admin", "parent"] },
   { icon: Gift, label: "برنامج الولاء", path: "/loyalty", roles: ["admin", "parent"] },
   { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["admin", "teacher", "parent"] },
+  { icon: UserCog, label: "إدارة المستخدمين", path: "/users", roles: ["admin"] },
 ];
 
 function getMenuItemsForRole(role?: string): MenuItem[] {

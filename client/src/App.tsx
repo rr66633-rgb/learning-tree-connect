@@ -13,6 +13,7 @@ import Messages from "./pages/Messages";
 import Finance from "./pages/Finance";
 import Loyalty from "./pages/Loyalty";
 import Notifications from "./pages/Notifications";
+import Users from "./pages/Users";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
         <Route path={"/finance"} component={Finance} />
         <Route path={"/loyalty"} component={Loyalty} />
         <Route path={"/notifications"} component={Notifications} />
+        <Route path={"/users"} component={Users} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
       </Switch>

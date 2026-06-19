@@ -330,8 +330,46 @@ export const appRouter = router({
   }),
 
   users: router({
-    list: adminProcedure.query(async () => {
-      return db.getAllUsers();
+    list: adminProcedure.input(z.object({ role: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input }) => {
+      return db.getUsersByRole(input?.role, input?.search);
+    }),
+    getById: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+      return db.getUserById(input.id);
+    }),
+    create: adminProcedure.input(z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      phone: z.string().optional(),
+      role: z.enum(['teacher', 'parent']),
+    })).mutation(async ({ input }) => {
+      // Generate a unique openId for manually created users
+      const openId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      return db.createUser({ ...input, openId });
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      role: z.enum(['teacher', 'parent']).optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      return db.updateUser(id, data);
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteUser(input.id);
+    }),
+    linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number() })).mutation(async ({ input }) => {
+      return db.linkParentToChild(input.parentId, input.childId);
+    }),
+    unlinkChild: adminProcedure.input(z.object({ childId: z.number() })).mutation(async ({ input }) => {
+      return db.unlinkParentFromChild(input.childId);
+    }),
+    getChildren: adminProcedure.input(z.object({ parentId: z.number() })).query(async ({ input }) => {
+      return db.getChildrenForParent(input.parentId);
+    }),
+    getUnlinkedChildren: adminProcedure.query(async () => {
+      return db.getUnlinkedChildren();
     }),
   }),
 });

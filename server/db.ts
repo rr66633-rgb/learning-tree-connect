@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, gte, lte, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, inArray, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification } from "../drizzle/schema";
@@ -389,4 +389,97 @@ export async function getDashboardStats() {
   const paidInvoices = await db.select().from(invoices).where(eq(invoices.status, 'paid'));
   const totalRevenue = paidInvoices.reduce((sum, i) => sum + Number(i.total), 0);
   return { totalChildren: allChildren[0]?.count ?? 0, totalStaff: allStaff[0]?.count ?? 0, presentToday: presentToday[0]?.count ?? 0, totalRevenue };
+}
+
+// ============ USER MANAGEMENT (Admin) ============
+export async function getUsersByRole(role?: string, search?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (role && role !== 'all') {
+    conditions.push(eq(users.role, role as any));
+  } else {
+    // Exclude 'user' role (unassigned), show only admin/teacher/parent
+    conditions.push(sql`${users.role} IN ('admin', 'teacher', 'parent')`);
+  }
+  if (search) {
+    conditions.push(
+      or(
+        like(users.name, `%${search}%`),
+        like(users.email, `%${search}%`),
+        like(users.phone, `%${search}%`)
+      )!
+    );
+  }
+  return db.select().from(users).where(and(...conditions)).orderBy(desc(users.createdAt));
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createUser(data: { name: string; email: string; phone?: string; role: 'teacher' | 'parent'; openId: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(users).values({
+    openId: data.openId,
+    name: data.name,
+    email: data.email,
+    phone: data.phone || null,
+    role: data.role,
+    lastSignedIn: new Date(),
+  });
+  return { id: result[0].insertId, ...data };
+}
+
+export async function updateUser(id: number, data: { name?: string; email?: string; phone?: string; role?: 'teacher' | 'parent' }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: Record<string, any> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.phone !== undefined) updateData.phone = data.phone;
+  if (data.role !== undefined) updateData.role = data.role;
+  if (Object.keys(updateData).length > 0) {
+    await db.update(users).set(updateData).where(eq(users.id, id));
+  }
+  return getUserById(id);
+}
+
+export async function deleteUser(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Unlink children from this parent before deleting
+  await db.update(children).set({ parentId: null }).where(eq(children.parentId, id));
+  await db.delete(users).where(eq(users.id, id));
+  return { success: true };
+}
+
+export async function linkParentToChild(parentId: number, childId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(children).set({ parentId }).where(eq(children.id, childId));
+  return { success: true };
+}
+
+export async function unlinkParentFromChild(childId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(children).set({ parentId: null }).where(eq(children.id, childId));
+  return { success: true };
+}
+
+export async function getChildrenForParent(parentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(children).where(eq(children.parentId, parentId));
+}
+
+export async function getUnlinkedChildren() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(children).where(sql`${children.parentId} IS NULL`).orderBy(children.firstName);
 }
