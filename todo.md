@@ -191,7 +191,7 @@
 - [x] Daily timeline with all activities
 - [x] Daily reports view
 - [x] Attendance history with check-in/out times
-- [ ] Photos & videos gallery
+- [x] Photos & videos gallery
 - [x] Meal/Snack/Nap/Diaper/Toilet/Water reports
 - [x] Medication reports
 - [ ] Learning observations
@@ -334,3 +334,9 @@
 - [x] Build parent media gallery view (only their children's media)
 - [x] Add media link in staff sidebar and parent sidebar
 - [x] Support multiple file upload simultaneously with progress indicators
+
+## AI Media Features
+- [x] Add AI auto-caption generation for uploaded photos using LLM vision
+- [x] Add AI child face recognition/suggestion to assist tagging children
+- [x] Update teacher media upload UI with AI suggestion buttons
+- [x] Add loading states for AI processing

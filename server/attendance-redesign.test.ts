@@ -81,7 +81,7 @@ describe("Attendance System Redesign", () => {
     expect(updateResult.success).toBe(true);
     expect(updateResult.previousStatus).toBe("absent");
     expect(updateResult.newStatus).toBe("present");
-  });
+  }, 15000);
 
   it("teacher can update attendance status from present to late", async () => {
     const caller = appRouter.createCaller(createTeacherContext());

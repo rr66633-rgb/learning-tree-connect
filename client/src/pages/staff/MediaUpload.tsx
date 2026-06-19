@@ -1,8 +1,7 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +12,7 @@ import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Camera, Video, Upload, X, Image as ImageIcon, Film, Plus,
-  Trash2, Eye, Users, Loader2, CheckCircle2
+  Trash2, Eye, Loader2, CheckCircle2, Sparkles, Wand2, UserCheck
 } from "lucide-react";
 
 interface UploadedFile {
@@ -40,6 +39,8 @@ export default function StaffMediaUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [showPreview, setShowPreview] = useState<string | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [aiCaptionLoading, setAiCaptionLoading] = useState<number | null>(null);
+  const [aiChildrenLoading, setAiChildrenLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +65,9 @@ export default function StaffMediaUpload() {
     onError: (e) => toast.error(e.message),
   });
 
+  const aiCaption = trpc.media.aiCaption.useMutation();
+  const aiSuggestChildren = trpc.media.aiSuggestChildren.useMutation();
+
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (!selectedFiles) return;
@@ -79,7 +83,6 @@ export default function StaffMediaUpload() {
         continue;
       }
 
-      // Check file size
       if (isVideo && file.size > 50 * 1024 * 1024) {
         toast.error(`الفيديو ${file.name} أكبر من 50 ميجابايت`);
         continue;
@@ -100,7 +103,6 @@ export default function StaffMediaUpload() {
     }
 
     setFiles(prev => [...prev, ...newFiles]);
-    // Reset input
     e.target.value = '';
   }, []);
 
@@ -127,6 +129,102 @@ export default function StaffMediaUpload() {
     );
   };
 
+  // AI: Generate caption for a specific photo
+  const handleAiCaption = async (index: number) => {
+    const file = files[index];
+    if (file.type !== 'photo') {
+      toast.error("اقتراح الوصف متاح للصور فقط");
+      return;
+    }
+
+    setAiCaptionLoading(index);
+    try {
+      // First upload the file temporarily to get a URL for the AI
+      const formData = new FormData();
+      formData.append('file', file.file);
+      const uploadRes = await fetch('/api/upload-media', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!uploadRes.ok) throw new Error('فشل رفع الملف للمعالجة');
+      const { url } = await uploadRes.json();
+
+      // Update the file with the uploaded URL
+      setFiles(prev => {
+        const newFiles = [...prev];
+        newFiles[index] = { ...newFiles[index], url };
+        return newFiles;
+      });
+
+      // Call AI caption
+      const result = await aiCaption.mutateAsync({ imageUrl: url });
+      if (result.caption) {
+        updateCaption(index, result.caption);
+        toast.success("تم اقتراح وصف بواسطة الذكاء الاصطناعي");
+      } else {
+        toast.error("لم يتمكن الذكاء الاصطناعي من اقتراح وصف");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "فشل اقتراح الوصف");
+    } finally {
+      setAiCaptionLoading(null);
+    }
+  };
+
+  // AI: Suggest children in photos
+  const handleAiSuggestChildren = async () => {
+    // Find the first photo that has been uploaded or upload the first photo
+    const firstPhoto = files.find(f => f.type === 'photo');
+    if (!firstPhoto) {
+      toast.error("يرجى إضافة صورة واحدة على الأقل لاستخدام هذه الميزة");
+      return;
+    }
+
+    setAiChildrenLoading(true);
+    try {
+      let imageUrl = firstPhoto.url;
+      
+      // If not uploaded yet, upload it first
+      if (!imageUrl) {
+        const formData = new FormData();
+        formData.append('file', firstPhoto.file);
+        const uploadRes = await fetch('/api/upload-media', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        if (!uploadRes.ok) throw new Error('فشل رفع الملف للمعالجة');
+        const result = await uploadRes.json();
+        imageUrl = result.url;
+
+        // Update the file with the URL
+        const idx = files.indexOf(firstPhoto);
+        setFiles(prev => {
+          const newFiles = [...prev];
+          newFiles[idx] = { ...newFiles[idx], url: imageUrl };
+          return newFiles;
+        });
+      }
+
+      const result = await aiSuggestChildren.mutateAsync({
+        imageUrl: imageUrl!,
+        classId: selectedClass ? parseInt(selectedClass) : undefined,
+      });
+
+      if (result.suggestedChildIds && result.suggestedChildIds.length > 0) {
+        setSelectedChildren(result.suggestedChildIds);
+        toast.success(result.message || `تم التعرف على ${result.suggestedChildIds.length} طفل/أطفال`);
+      } else {
+        toast(result.message || "لم يتم التعرف على أي طفل في الصورة");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "فشل التعرف على الأطفال");
+    } finally {
+      setAiChildrenLoading(false);
+    }
+  };
+
   const handleUploadAll = async () => {
     if (files.length === 0) {
       toast.error("يرجى اختيار ملفات أولاً");
@@ -140,10 +238,26 @@ export default function StaffMediaUpload() {
     setIsUploading(true);
 
     try {
-      // Upload files to storage first
       const uploadedItems: { type: 'photo' | 'video'; url: string; caption?: string; mimeType?: string; fileSize?: number }[] = [];
 
       for (let i = 0; i < files.length; i++) {
+        // If already uploaded (e.g., during AI processing), skip upload
+        if (files[i].url) {
+          uploadedItems.push({
+            type: files[i].type,
+            url: files[i].url!,
+            caption: files[i].caption || undefined,
+            mimeType: files[i].file.type,
+            fileSize: files[i].file.size,
+          });
+          setFiles(prev => {
+            const newFiles = [...prev];
+            newFiles[i] = { ...newFiles[i], uploaded: true };
+            return newFiles;
+          });
+          continue;
+        }
+
         setFiles(prev => {
           const newFiles = [...prev];
           newFiles[i] = { ...newFiles[i], uploading: true };
@@ -180,7 +294,6 @@ export default function StaffMediaUpload() {
         });
       }
 
-      // Save to database
       await uploadBatch.mutateAsync({
         items: uploadedItems,
         classId: selectedClass ? parseInt(selectedClass) : undefined,
@@ -284,6 +397,15 @@ export default function StaffMediaUpload() {
                           <CheckCircle2 className="h-5 w-5 text-green-500" />
                         </div>
                       )}
+                      {/* AI Caption Loading */}
+                      {aiCaptionLoading === idx && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="flex items-center gap-2 bg-white/90 rounded-full px-3 py-1.5">
+                            <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
+                            <span className="text-xs font-medium">جاري التحليل...</span>
+                          </div>
+                        </div>
+                      )}
                       {/* Remove button */}
                       <button
                         onClick={() => removeFile(idx)}
@@ -291,6 +413,17 @@ export default function StaffMediaUpload() {
                       >
                         <X className="h-3 w-3" />
                       </button>
+                      {/* AI Caption button for photos */}
+                      {f.type === 'photo' && (
+                        <button
+                          onClick={() => handleAiCaption(idx)}
+                          disabled={aiCaptionLoading !== null}
+                          className="absolute bottom-9 left-1 bg-amber-500/90 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                          title="اقتراح وصف بالذكاء الاصطناعي"
+                        >
+                          <Wand2 className="h-3 w-3" />
+                        </button>
+                      )}
                       {/* Caption input */}
                       <Input
                         placeholder="وصف..."
@@ -300,6 +433,47 @@ export default function StaffMediaUpload() {
                       />
                     </div>
                   ))}
+                </div>
+
+                {/* AI Actions Bar */}
+                <div className="flex flex-wrap gap-2 p-3 bg-gradient-to-l from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="flex items-center gap-2 w-full mb-2">
+                    <Sparkles className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">مساعد الذكاء الاصطناعي</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Generate captions for all photos
+                      const photoIndex = files.findIndex(f => f.type === 'photo' && !f.caption);
+                      if (photoIndex >= 0) handleAiCaption(photoIndex);
+                      else toast("جميع الصور لديها وصف بالفعل");
+                    }}
+                    disabled={aiCaptionLoading !== null || !files.some(f => f.type === 'photo')}
+                    className="gap-2 border-amber-300 dark:border-amber-700"
+                  >
+                    {aiCaptionLoading !== null ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-3.5 w-3.5" />
+                    )}
+                    اقتراح وصف تلقائي
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAiSuggestChildren}
+                    disabled={aiChildrenLoading || !files.some(f => f.type === 'photo')}
+                    className="gap-2 border-amber-300 dark:border-amber-700"
+                  >
+                    {aiChildrenLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UserCheck className="h-3.5 w-3.5" />
+                    )}
+                    التعرف على الأطفال تلقائياً
+                  </Button>
                 </div>
               </div>
             )}
@@ -335,7 +509,15 @@ export default function StaffMediaUpload() {
 
             {/* Child Selection */}
             <div className="space-y-2">
-              <Label>الأطفال الظاهرون في الصور/الفيديو</Label>
+              <div className="flex items-center justify-between">
+                <Label>الأطفال الظاهرون في الصور/الفيديو</Label>
+                {selectedChildren.length > 0 && (
+                  <Badge variant="secondary" className="gap-1">
+                    <UserCheck className="h-3 w-3" />
+                    {selectedChildren.length} طفل
+                  </Badge>
+                )}
+              </div>
               <div className="max-h-48 overflow-y-auto border rounded-lg p-3 space-y-2">
                 {children?.map((child: any) => (
                   <label key={child.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
@@ -343,15 +525,13 @@ export default function StaffMediaUpload() {
                       checked={selectedChildren.includes(child.id)}
                       onCheckedChange={() => toggleChild(child.id)}
                     />
-                    <span className="text-sm">{child.firstName} {child.lastName}</span>
+                    <span className="text-sm">{child.arabicName || `${child.firstName} ${child.lastName}`}</span>
+                    {selectedChildren.includes(child.id) && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 mr-auto">محدد</Badge>
+                    )}
                   </label>
                 ))}
               </div>
-              {selectedChildren.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  تم اختيار {selectedChildren.length} طفل
-                </p>
-              )}
             </div>
 
             {/* Upload Button */}

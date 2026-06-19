@@ -905,6 +905,111 @@ export const appRouter = router({
       await db.updateMediaApproval(input.id, input.isApproved);
       return { success: true };
     }),
+    // AI: Generate caption for an uploaded photo
+    aiCaption: teacherProcedure.input(z.object({
+      imageUrl: z.string(),
+    })).mutation(async ({ input }) => {
+      const { invokeLLM } = await import("./_core/llm");
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: "أنت مساعد في حضانة أطفال. مهمتك هي كتابة وصف قصير وجذاب باللغة العربية للصور المرفوعة. الوصف يجب أن يكون مناسباً لأولياء الأمور ويصف النشاط أو اللحظة الظاهرة في الصورة. اكتب وصفاً واحداً مختصراً (جملة أو جملتين) بدون أي كلمات إنجليزية."
+          },
+          {
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: input.imageUrl, detail: "low" } },
+              { type: "text", text: "اكتب وصفاً قصيراً وجذاباً لهذه الصورة باللغة العربية. الوصف يجب أن يكون مناسباً لمشاركته مع أولياء الأمور في تطبيق الحضانة." }
+            ]
+          }
+        ],
+      });
+      const captionContent = response.choices?.[0]?.message?.content;
+      const caption = (typeof captionContent === 'string' ? captionContent.trim() : '') || "";
+      return { caption };
+    }),
+    // AI: Suggest which children appear in a photo
+    aiSuggestChildren: teacherProcedure.input(z.object({
+      imageUrl: z.string(),
+      classId: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      const { invokeLLM } = await import("./_core/llm");
+      // Get children from the class (or all active children)
+      let childrenList;
+      if (input.classId) {
+        childrenList = await db.getChildrenByClass(input.classId);
+      } else {
+        childrenList = await db.getChildren();
+      }
+      const activeChildren = childrenList.filter((c: any) => c.status === 'active');
+      // Build a list of children with their photos for the AI to compare
+      const childrenWithPhotos = activeChildren.filter((c: any) => c.photo);
+      const childrenWithoutPhotos = activeChildren.filter((c: any) => !c.photo);
+      
+      if (childrenWithPhotos.length === 0) {
+        // No photos to compare - just return the count of children
+        return { suggestedChildIds: [], message: "لا توجد صور مرجعية للأطفال للمقارنة. يرجى إضافة صور للأطفال في ملفاتهم الشخصية." };
+      }
+      
+      // Use AI vision to analyze the uploaded photo and compare with children's photos
+      const childrenInfo = childrenWithPhotos.map((c: any) => ({
+        id: c.id,
+        name: c.arabicName || `${c.firstName} ${c.lastName}`,
+        photoUrl: c.photo
+      }));
+      
+      // Build message content with the uploaded image and children reference photos
+      const messageContent: any[] = [
+        { type: "image_url", image_url: { url: input.imageUrl, detail: "low" } },
+        { type: "text", text: `هذه صورة تم رفعها في الحضانة. أريد منك تحديد أي من الأطفال التالية أسماؤهم قد يظهرون في هذه الصورة بناءً على مقارنة الوجوه.\n\nقائمة الأطفال المسجلين:\n${childrenInfo.map((c: any) => `- معرف: ${c.id} | الاسم: ${c.name}`).join('\n')}\n\nأعد فقط أرقام المعرفات (IDs) للأطفال الذين تعتقد أنهم يظهرون في الصورة، مفصولة بفواصل. إذا لم تتمكن من التعرف على أي طفل، أعد كلمة "لا يوجد". أعد الأرقام فقط بدون أي نص إضافي.` }
+      ];
+      
+      // Add children reference photos (max 5 to avoid token limits)
+      const limitedChildren = childrenInfo.slice(0, 5);
+      for (const child of limitedChildren) {
+        messageContent.push({ type: "image_url", image_url: { url: child.photoUrl, detail: "low" } });
+        messageContent.push({ type: "text", text: `الصورة أعلاه هي للطفل: ${child.name} (معرف: ${child.id})` });
+      }
+      
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: "أنت نظام ذكاء اصطناعي متخصص في التعرف على الوجوه في بيئة حضانة أطفال. مهمتك هي مقارنة الوجوه في الصورة المرفوعة مع صور الأطفال المرجعية وتحديد من يظهر في الصورة. أعد فقط أرقام المعرفات مفصولة بفواصل أو كلمة 'لا يوجد'."
+          },
+          {
+            role: "user",
+            content: messageContent
+          }
+        ],
+      });
+      
+      const rawContent = response.choices?.[0]?.message?.content;
+      const aiResponse = (typeof rawContent === 'string' ? rawContent.trim() : '') || "";
+      
+      // Parse the response to extract child IDs
+      let suggestedChildIds: number[] = [];
+      if (aiResponse && !aiResponse.includes("لا يوجد")) {
+        const ids = aiResponse.match(/\d+/g);
+        if (ids) {
+          suggestedChildIds = ids.map(Number).filter((id: number) => 
+            activeChildren.some((c: any) => c.id === id)
+          );
+        }
+      }
+      
+      return { 
+        suggestedChildIds,
+        childrenNames: suggestedChildIds.map(id => {
+          const child = activeChildren.find((c: any) => c.id === id);
+          return child ? (child.arabicName || `${child.firstName} ${child.lastName}`) : '';
+        }),
+        message: suggestedChildIds.length > 0 
+          ? `تم التعرف على ${suggestedChildIds.length} طفل/أطفال في الصورة`
+          : "لم يتم التعرف على أي طفل. يمكنك تحديد الأطفال يدوياً."
+      };
+    }),
   }),
   calendar: router({
     events: protectedProcedure.input(z.object({ classId: z.number().optional() }).optional()).query(async ({ input }) => {
