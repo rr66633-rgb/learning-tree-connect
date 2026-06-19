@@ -120,3 +120,9 @@
 - [x] Route: Register /users path in App.tsx
 - [x] Tests: Admin can list/create/update/delete users
 - [x] Tests: Teacher/Parent cannot access user management
+
+## Export Users List
+- [x] Frontend: Add export button (Excel/CSV) to users management page
+- [x] Frontend: Implement client-side CSV generation from displayed table data
+- [x] Frontend: Implement client-side Excel (XLSX) generation using SheetJS
+- [x] Frontend: Export respects current filters (role/search)

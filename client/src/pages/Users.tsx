@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, Link2, Unlink } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, Link2, Unlink, Download, FileSpreadsheet, FileText } from "lucide-react";
+import * as XLSX from "xlsx";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
 type UserForm = { name: string; email: string; phone: string; role: "teacher" | "parent" };
@@ -101,14 +103,80 @@ export default function UsersPage() {
     }
   };
 
+  const getRoleText = (role: string) => {
+    switch (role) {
+      case 'admin': return 'مدير';
+      case 'teacher': return 'معلمة';
+      case 'parent': return 'ولي أمر';
+      default: return 'مستخدم';
+    }
+  };
+
+  const getExportData = useCallback(() => {
+    if (!users || users.length === 0) return [];
+    return users.map((user: any) => ({
+      'الاسم': user.name || '—',
+      'البريد الإلكتروني': user.email || '—',
+      'رقم الهاتف': user.phone || '—',
+      'الدور': getRoleText(user.role),
+      'تاريخ الإنشاء': new Date(user.createdAt).toLocaleDateString('ar-SA'),
+    }));
+  }, [users]);
+
+  const exportToExcel = useCallback(() => {
+    const data = getExportData();
+    if (data.length === 0) { toast.error('لا توجد بيانات للتصدير'); return; }
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'المستخدمون');
+    XLSX.writeFile(wb, `قائمة_المستخدمين_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success('تم تصدير الملف بنجاح');
+  }, [getExportData]);
+
+  const exportToCSV = useCallback(() => {
+    const data = getExportData();
+    if (data.length === 0) { toast.error('لا توجد بيانات للتصدير'); return; }
+    const ws = XLSX.utils.json_to_sheet(data);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `قائمة_المستخدمين_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('تم تصدير الملف بنجاح');
+  }, [getExportData]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">إدارة المستخدمين</h1>
-        <Button onClick={() => { setForm(emptyForm); setCreateOpen(true); }} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          إضافة مستخدم
-        </Button>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                تصدير
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToExcel} className="gap-2 cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4" />
+                تصدير Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToCSV} className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                تصدير CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={() => { setForm(emptyForm); setCreateOpen(true); }} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            إضافة مستخدم
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
