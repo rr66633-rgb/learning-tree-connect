@@ -35,7 +35,7 @@ const allMenuItems: MenuItem[] = [
   { icon: CalendarCheck, label: "الحضور", path: "/attendance", roles: ["admin", "teacher", "parent"] },
   { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", roles: ["admin", "teacher", "parent"] },
   { icon: MessageCircle, label: "الرسائل", path: "/messages", roles: ["admin", "teacher", "parent"] },
-  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["admin", "teacher"] },
+  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["admin", "parent"] },
   { icon: Gift, label: "برنامج الولاء", path: "/loyalty", roles: ["admin", "parent"] },
   { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["admin", "teacher", "parent"] },
 ];

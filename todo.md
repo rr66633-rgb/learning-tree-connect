@@ -99,3 +99,8 @@
 - [x] Role-based navigation: different sidebar menus for admin, teacher, parent
 - [x] Write tests for data isolation (20 tests)
 - [x] Write tests for upload authentication
+
+## Sidebar Permission Refinement
+- [x] Verify teacher sidebar excludes المالية and برنامج الولاء (shows: لوحة التحكم، الأطفال، الحضور، التقارير اليومية، الرسائل، الإشعارات)
+- [x] Verify parent sidebar shows correct items: لوحة التحكم، الأطفال، الحضور، التقارير اليومية، الرسائل، المالية، برنامج الولاء، الإشعارات
+- [x] Retake and verify role-based screenshots after sidebar fixes

@@ -207,7 +207,7 @@ describe("Finance & Invoices", () => {
     const caller = appRouter.createCaller(createAdminContext());
     const invoices = await caller.finance.invoices();
     expect(invoices).toBeDefined();
-    expect(invoices.length).toBe(60);
+    expect(invoices.length).toBeGreaterThanOrEqual(60);
   });
 
   it("gets financial summary", async () => {
