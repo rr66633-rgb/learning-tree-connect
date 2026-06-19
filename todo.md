@@ -126,3 +126,13 @@
 - [x] Frontend: Implement client-side CSV generation from displayed table data
 - [x] Frontend: Implement client-side Excel (XLSX) generation using SheetJS
 - [x] Frontend: Export respects current filters (role/search)
+
+## Production Deployment Preparation
+- [x] Remove all Manus branding from UI (logos, text, footer)
+- [x] Remove "Made with Manus" text/badge (none found in UI)
+- [x] Replace Manus logo with Learning Tree logo in all locations (already done)
+- [x] Clean up demo/seed data and replace with production-ready setup
+- [x] Configure custom domain: portal.learningtreeco.com (guide created)
+- [x] Generate deployment guide document
+- [x] Generate backup guide document
+- [x] Final verification before publish (all 150 tests passing)
