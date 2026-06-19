@@ -61,11 +61,23 @@ export const appRouter = router({
   }),
 
   children: router({
-    list: protectedProcedure.input(z.object({ parentId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+    list: protectedProcedure.input(z.object({ parentId: z.number().optional(), classId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
       // Parents can only see their own children
       if (ctx.user?.role === 'parent') {
         return db.getChildren(ctx.user.id);
       }
+      // If classId filter is provided, return children for that class
+      if (input?.classId) {
+        return db.getChildrenByClass(input.classId);
+      }
+      // Teachers see children from their assigned class, fallback to all if no class assigned
+      if (ctx.user?.role === 'teacher' || ctx.user?.role === 'assistant') {
+        const teacherClass = await db.getClassForTeacher(ctx.user!.id);
+        if (teacherClass) {
+          return db.getChildrenByClass(teacherClass.id);
+        }
+      }
+      // Admin or teacher without class: return all children
       return db.getChildren(input?.parentId);
     }),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {

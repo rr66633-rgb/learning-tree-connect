@@ -519,6 +519,15 @@ export async function deleteClass(id: number) {
   return { success: true };
 }
 
+export async function getClassForTeacher(teacherId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(classes).where(
+    or(eq(classes.teacherId, teacherId), eq(classes.assistantId, teacherId))
+  ).limit(1);
+  return result[0] || null;
+}
+
 export async function getChildrenByClass(classId: number) {
   const db = await getDb();
   if (!db) return [];
