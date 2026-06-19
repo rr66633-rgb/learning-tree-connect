@@ -2,7 +2,7 @@ import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog } from "../drizzle/schema";
-import { parentChildren } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1099,4 +1099,96 @@ export async function deleteChildDocument(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(childDocuments).where(eq(childDocuments.id, id));
+}
+
+
+// ============ MEDIA ============
+export async function createMedia(data: { type: string; url: string; fileKey?: string; thumbnailUrl?: string; caption?: string; mimeType?: string; fileSize?: number; uploadedBy: number; classId?: number; visibility?: string; childIds?: number[] }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { childIds, ...mediaData } = data;
+  const result = await db.insert(media).values(mediaData as any);
+  const mediaId = result[0].insertId;
+  
+  // Link children to media
+  if (childIds && childIds.length > 0) {
+    const links = childIds.map(childId => ({ mediaId, childId }));
+    await db.insert(mediaChildren).values(links);
+  }
+  
+  return { id: mediaId, ...mediaData };
+}
+
+export async function getMediaForClass(classId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(media)
+    .where(and(eq(media.classId, classId), eq(media.isApproved, true)))
+    .orderBy(desc(media.createdAt))
+    .limit(limit);
+}
+
+export async function getMediaForChild(childId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get media where this child is tagged
+  const tagged = await db.select({ mediaId: mediaChildren.mediaId })
+    .from(mediaChildren)
+    .where(eq(mediaChildren.childId, childId));
+  
+  if (tagged.length === 0) return [];
+  const mediaIds = tagged.map(t => t.mediaId);
+  return db.select().from(media)
+    .where(and(inArray(media.id, mediaIds), eq(media.isApproved, true)))
+    .orderBy(desc(media.createdAt))
+    .limit(limit);
+}
+
+export async function getMediaForChildren(childIds: number[], limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  if (childIds.length === 0) return [];
+  // Get media where any of these children are tagged
+  const tagged = await db.select({ mediaId: mediaChildren.mediaId })
+    .from(mediaChildren)
+    .where(inArray(mediaChildren.childId, childIds));
+  
+  if (tagged.length === 0) return [];
+  const mediaIds = Array.from(new Set(tagged.map(t => t.mediaId)));
+  return db.select().from(media)
+    .where(and(inArray(media.id, mediaIds), eq(media.isApproved, true)))
+    .orderBy(desc(media.createdAt))
+    .limit(limit);
+}
+
+export async function getAllMedia(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(media).orderBy(desc(media.createdAt)).limit(limit);
+}
+
+export async function getMediaById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(media).where(eq(media.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getMediaChildren(mediaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(mediaChildren).where(eq(mediaChildren.mediaId, mediaId));
+}
+
+export async function deleteMedia(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(mediaChildren).where(eq(mediaChildren.mediaId, id));
+  await db.delete(media).where(eq(media.id, id));
+}
+
+export async function updateMediaApproval(id: number, isApproved: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(media).set({ isApproved }).where(eq(media.id, id));
 }

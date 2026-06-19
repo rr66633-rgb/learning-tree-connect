@@ -457,3 +457,31 @@ export const childDocuments = mysqlTable("child_documents", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+
+
+// ============ MEDIA (Photos & Videos) ============
+export const media = mysqlTable("media", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["photo", "video"]).notNull(),
+  url: text("url").notNull(),
+  fileKey: varchar("fileKey", { length: 500 }),
+  thumbnailUrl: text("thumbnailUrl"),
+  caption: text("caption"),
+  mimeType: varchar("mimeType", { length: 100 }),
+  fileSize: int("fileSize"),
+  uploadedBy: int("uploadedBy").notNull(),
+  classId: int("classId"),
+  visibility: mysqlEnum("visibility", ["class", "specific"]).default("class").notNull(),
+  isApproved: boolean("isApproved").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Media = typeof media.$inferSelect;
+export type InsertMedia = typeof media.$inferInsert;
+
+// Junction table for media-children relationship (which children appear in the media)
+export const mediaChildren = mysqlTable("media_children", {
+  id: int("id").autoincrement().primaryKey(),
+  mediaId: int("mediaId").notNull(),
+  childId: int("childId").notNull(),
+});
+export type MediaChild = typeof mediaChildren.$inferSelect;

@@ -821,7 +821,91 @@ export const appRouter = router({
       });
     }),
   }),
-
+  media: router({
+    upload: teacherProcedure.input(z.object({
+      type: z.enum(['photo', 'video']),
+      url: z.string(),
+      fileKey: z.string().optional(),
+      thumbnailUrl: z.string().optional(),
+      caption: z.string().optional(),
+      mimeType: z.string().optional(),
+      fileSize: z.number().optional(),
+      classId: z.number().optional(),
+      visibility: z.enum(['class', 'specific']).optional(),
+      childIds: z.array(z.number()).optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createMedia({ ...input, uploadedBy: ctx.user!.id });
+    }),
+    uploadBatch: teacherProcedure.input(z.object({
+      items: z.array(z.object({
+        type: z.enum(['photo', 'video']),
+        url: z.string(),
+        fileKey: z.string().optional(),
+        caption: z.string().optional(),
+        mimeType: z.string().optional(),
+        fileSize: z.number().optional(),
+      })),
+      classId: z.number().optional(),
+      visibility: z.enum(['class', 'specific']).optional(),
+      childIds: z.array(z.number()).optional(),
+    })).mutation(async ({ input, ctx }) => {
+      const results = [];
+      for (const item of input.items) {
+        const result = await db.createMedia({
+          ...item,
+          classId: input.classId,
+          visibility: input.visibility,
+          childIds: input.childIds,
+          uploadedBy: ctx.user!.id,
+        });
+        results.push(result);
+      }
+      return results;
+    }),
+    list: protectedProcedure.input(z.object({
+      classId: z.number().optional(),
+      childId: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional()).query(async ({ input, ctx }) => {
+      // Parents can only see media for their own children
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (input?.childId) {
+          if (!childIds.includes(input.childId)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+          }
+          return db.getMediaForChild(input.childId, input?.limit);
+        }
+        return db.getMediaForChildren(childIds, input?.limit);
+      }
+      // Admin sees all
+      if (ctx.user?.role === 'admin') {
+        return db.getAllMedia(input?.limit);
+      }
+      // Teacher sees by class
+      if (input?.classId) {
+        return db.getMediaForClass(input.classId, input?.limit);
+      }
+      return db.getAllMedia(input?.limit);
+    }),
+    getChildren: protectedProcedure.input(z.object({ mediaId: z.number() })).query(async ({ input }) => {
+      return db.getMediaChildren(input.mediaId);
+    }),
+    delete: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      // Only admin or the uploader can delete
+      const item = await db.getMediaById(input.id);
+      if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (ctx.user?.role !== 'admin' && item.uploadedBy !== ctx.user!.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: '\u0644\u0627 \u064a\u0645\u0643\u0646\u0643 \u062d\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641' });
+      }
+      await db.deleteMedia(input.id);
+      return { success: true };
+    }),
+    approve: adminProcedure.input(z.object({ id: z.number(), isApproved: z.boolean() })).mutation(async ({ input }) => {
+      await db.updateMediaApproval(input.id, input.isApproved);
+      return { success: true };
+    }),
+  }),
   calendar: router({
     events: protectedProcedure.input(z.object({ classId: z.number().optional() }).optional()).query(async ({ input }) => {
       return db.getCalendarEvents(input?.classId);

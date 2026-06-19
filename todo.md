@@ -325,3 +325,12 @@
 - [x] Update PendingRolePage with better messaging and refresh button
 - [x] Convert existing 'user' role users to 'parent' + isActive=false
 - [x] All 158 tests pass
+
+## Media Management System
+- [x] Add media database schema (media + media_children tables)
+- [x] Add backend procedures: media.upload, media.list, media.delete, media.byChild
+- [x] Add upload-media endpoint for photos/videos (JPG, PNG, HEIC, MP4, MOV)
+- [x] Build teacher media upload UI with multi-file upload, camera capture, captions, child tagging
+- [x] Build parent media gallery view (only their children's media)
+- [x] Add media link in staff sidebar and parent sidebar
+- [x] Support multiple file upload simultaneously with progress indicators

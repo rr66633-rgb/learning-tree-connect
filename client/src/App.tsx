@@ -27,6 +27,7 @@ const StaffNotifications = lazy(() => import("./pages/staff/Notifications"));
 const StaffUsers = lazy(() => import("./pages/staff/Users"));
 const StaffSettings = lazy(() => import("./pages/staff/Settings"));
 const StaffPendingApprovals = lazy(() => import("./pages/staff/PendingApprovals"));
+const StaffMediaUpload = lazy(() => import("./pages/staff/MediaUpload"));
 const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
 const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
 
@@ -43,6 +44,7 @@ const ParentDocuments = lazy(() => import("./pages/parent/Documents"));
 const ParentNotifications = lazy(() => import("./pages/parent/Notifications"));
 const ParentAnnouncements = lazy(() => import("./pages/parent/Announcements"));
 const ParentMedical = lazy(() => import("./pages/parent/Medical"));
+const ParentPhotos = lazy(() => import("./pages/parent/Photos"));
 
 function PageLoader() {
   return (
@@ -85,6 +87,7 @@ function StaffRouter() {
         <Route path="/staff/staff-attendance" component={StaffStaffAttendance} />
         <Route path="/staff/daily-log" component={StaffDailyLog} />
         <Route path="/staff/daily-reports" component={StaffDailyReports} />
+        <Route path="/staff/media" component={StaffMediaUpload} />
         <Route path="/staff/messages" component={StaffMessages} />
         <Route path="/staff/finance" component={StaffFinance} />
         <Route path="/staff/invoice/:id" component={InvoiceDetail} />
@@ -118,6 +121,7 @@ function ParentRouter() {
         <Route path="/parent/documents" component={ParentDocuments} />
         <Route path="/parent/notifications" component={ParentNotifications} />
         <Route path="/parent/announcements" component={ParentAnnouncements} />
+        <Route path="/parent/photos" component={ParentPhotos} />
         <Route path="/parent/medical" component={ParentMedical} />
         <Route component={NotFound} />
       </Switch>

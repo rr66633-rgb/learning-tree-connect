@@ -127,6 +127,59 @@ async function startServer() {
     }
   });
 
+  // Media upload endpoint (photos + videos with larger size limit)
+  const uploadMedia = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+  app.post('/api/upload-media', uploadMedia.single('file'), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: '\u064a\u062c\u0628 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644' }); return; }
+      if (!user) { res.status(401).json({ error: '\u064a\u062c\u0628 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644' }); return; }
+      const file = (req as any).file;
+      if (!file) { res.status(400).json({ error: '\u0644\u0645 \u064a\u062a\u0645 \u0625\u0631\u0641\u0627\u0642 \u0645\u0644\u0641' }); return; }
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/webm'];
+      if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: '\u0646\u0648\u0639 \u0627\u0644\u0645\u0644\u0641 \u063a\u064a\u0631 \u0645\u062f\u0639\u0648\u0645. \u064a\u0631\u062c\u0649 \u0631\u0641\u0639 \u0635\u0648\u0631 (JPG, PNG, HEIC) \u0623\u0648 \u0641\u064a\u062f\u064a\u0648 (MP4, MOV)' }); return; }
+      const { storagePut } = await import('../storage');
+      const ext = file.originalname.split('.').pop() || 'jpg';
+      const isVideo = file.mimetype.startsWith('video/');
+      const folder = isVideo ? 'videos' : 'photos';
+      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { url } = await storagePut(fileName, file.buffer, file.mimetype);
+      res.json({ url, mimeType: file.mimetype, fileSize: file.size, type: isVideo ? 'video' : 'photo' });
+    } catch (error) {
+      console.error('Media upload error:', error);
+      res.status(500).json({ error: '\u0641\u0634\u0644 \u0631\u0641\u0639 \u0627\u0644\u0645\u0644\u0641' });
+    }
+  });
+
+  // Multiple media upload endpoint
+  app.post('/api/upload-media-batch', uploadMedia.array('files', 20), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: '\u064a\u062c\u0628 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644' }); return; }
+      if (!user) { res.status(401).json({ error: '\u064a\u062c\u0628 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644' }); return; }
+      const files = (req as any).files as any[];
+      if (!files || files.length === 0) { res.status(400).json({ error: '\u0644\u0645 \u064a\u062a\u0645 \u0625\u0631\u0641\u0627\u0642 \u0645\u0644\u0641\u0627\u062a' }); return; }
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/webm'];
+      const { storagePut } = await import('../storage');
+      const results = [];
+      for (const file of files) {
+        if (!allowedTypes.includes(file.mimetype)) continue;
+        const ext = file.originalname.split('.').pop() || 'jpg';
+        const isVideo = file.mimetype.startsWith('video/');
+        const folder = isVideo ? 'videos' : 'photos';
+        const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url } = await storagePut(fileName, file.buffer, file.mimetype);
+        results.push({ url, mimeType: file.mimetype, fileSize: file.size, type: isVideo ? 'video' : 'photo' });
+      }
+      res.json({ files: results });
+    } catch (error) {
+      console.error('Batch media upload error:', error);
+      res.status(500).json({ error: '\u0641\u0634\u0644 \u0631\u0641\u0639 \u0627\u0644\u0645\u0644\u0641\u0627\u062a' });
+    }
+  });
+
   // Scheduled tasks (Heartbeat cron callbacks)
   app.post('/api/scheduled/daily-backup', async (req, res) => {
     const { dailyBackupHandler } = await import('../backup');
