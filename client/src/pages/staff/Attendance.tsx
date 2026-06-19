@@ -43,7 +43,7 @@ export default function StaffAttendance() {
                 const record = getStatus(child.id);
                 return (
                   <TableRow key={child.id}>
-                    <TableCell className="font-medium">{child.name}</TableCell>
+                    <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
                     <TableCell>
                       {record?.status === "present" ? <Badge className="bg-green-100 text-green-700">حاضر</Badge> :
                        record?.status === "absent" ? <Badge variant="destructive">غائب</Badge> :

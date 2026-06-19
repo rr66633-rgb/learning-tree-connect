@@ -81,6 +81,12 @@ async function startServer() {
     }
   });
 
+  // Scheduled tasks (Heartbeat cron callbacks)
+  app.post('/api/scheduled/daily-backup', async (req, res) => {
+    const { dailyBackupHandler } = await import('../backup');
+    await dailyBackupHandler(req, res);
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

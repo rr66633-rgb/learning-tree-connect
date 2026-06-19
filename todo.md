@@ -226,3 +226,7 @@
 - [x] Mobile-first responsive design
 - [x] Optimized for iPhone and iPad
 - [x] Fast performance
+
+## Bug Fixes
+- [x] Fix children attendance page - children names not displaying in the table
+- [x] Implement automatic daily database backup system
