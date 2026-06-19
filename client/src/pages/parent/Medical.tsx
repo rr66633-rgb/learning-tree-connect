@@ -43,9 +43,13 @@ function ChildMedicalCard({ child }: { child: any }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="h-4 w-4 text-primary" />
-          </div>
+          {child.photo ? (
+            <img src={child.photo} alt={`${child.firstName} ${child.lastName}`} className="h-10 w-10 rounded-full object-cover border-2 border-primary/20" />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-5 w-5 text-primary" />
+            </div>
+          )}
           {child.firstName} {child.lastName}
         </CardTitle>
       </CardHeader>

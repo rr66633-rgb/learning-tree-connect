@@ -54,7 +54,18 @@ export default function ParentAttendance() {
       
       <Select value={selectedChild} onValueChange={(v) => { setSelectedChild(v); setShowHistory(false); }}>
         <SelectTrigger className="max-w-xs"><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
-        <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>)}</SelectContent>
+        <SelectContent>{children?.map((c: any) => (
+          <SelectItem key={c.id} value={c.id.toString()}>
+            <span className="flex items-center gap-2">
+              {c.photo ? (
+                <img src={c.photo} alt="" className="h-6 w-6 rounded-full object-cover" />
+              ) : (
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">{c.firstName?.charAt(0)}</div>
+              )}
+              {c.firstName} {c.lastName}
+            </span>
+          </SelectItem>
+        ))}</SelectContent>
       </Select>
 
       {selectedChild && (
@@ -62,8 +73,17 @@ export default function ParentAttendance() {
           {/* Today's Status Card */}
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg flex items-center gap-3">
+                {(() => {
+                  const child = children?.find((c: any) => c.id === parseInt(selectedChild));
+                  return child?.photo ? (
+                    <img src={child.photo} alt="" className="h-10 w-10 rounded-full object-cover border-2 border-primary/20" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                  );
+                })()}
                 حالة اليوم
               </CardTitle>
             </CardHeader>

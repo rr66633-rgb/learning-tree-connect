@@ -72,8 +72,17 @@ async function startServer() {
         res.status(400).json({ error: 'حجم الملف كبير جداً (الحد الأقصى 10 ميجابايت)' });
         return;
       }
-      const fileName = jsonBody.fileName || `upload-${Date.now()}.jpg`;
-      const { url } = await storagePut(`uploads/${fileName}`, fileBuffer, contentType);
+      
+      // Auto-resize and optimize profile photos
+      const sharp = (await import('sharp')).default;
+      const optimizedBuffer = await sharp(fileBuffer)
+        .rotate() // Auto-rotate based on EXIF orientation
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 85, progressive: true })
+        .toBuffer();
+      
+      const fileName = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+      const { url } = await storagePut(fileName, optimizedBuffer, 'image/jpeg');
       res.json({ url });
     } catch (error) {
       console.error('Upload error:', error);
@@ -93,12 +102,20 @@ async function startServer() {
       if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       const file = (req as any).file;
       if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
       if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: 'نوع الملف غير مدعوم' }); return; }
       const { storagePut } = await import('../storage');
-      const ext = file.originalname.split('.').pop() || 'jpg';
-      const fileName = `photos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { url } = await storagePut(fileName, file.buffer, file.mimetype);
+      const sharp = (await import('sharp')).default;
+      
+      // Auto-resize and optimize: max 800x800, JPEG quality 85, auto-rotate based on EXIF
+      const optimizedBuffer = await sharp(file.buffer)
+        .rotate() // Auto-rotate based on EXIF orientation
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 85, progressive: true })
+        .toBuffer();
+      
+      const fileName = `photos/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+      const { url } = await storagePut(fileName, optimizedBuffer, 'image/jpeg');
       res.json({ url });
     } catch (error) {
       console.error('Photo upload error:', error);

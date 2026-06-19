@@ -461,3 +461,27 @@
 - [x] Resend OTP button with cooldown (60 seconds)
 - [x] Auto-logout on inactivity (30 minutes)
 - [x] Works on mobile and desktop
+
+## Child Profile Photo - Complete Implementation
+
+### Photo Upload
+- [x] Camera capture support (mobile + desktop) - accept="image/*" with capture attribute
+- [x] Auto-resize and optimize uploaded photos (sharp: 800x800, JPEG 85%, EXIF rotation)
+- [x] Parents can upload/update child photo
+- [x] Admin can upload/update child photo
+- [x] Teachers can view child photo
+
+### Photo Display in All Screens
+- [x] Attendance screen - show child photo next to name
+- [x] Check-in / Check-out screen - show child photo prominently
+- [x] Classroom lists - show child photo
+- [x] Daily reports - show child photo
+- [x] Child profile page - show large photo with upload
+- [x] Pickup/dismissal screen - show photo for verification (large photo + identity confirmation)
+- [x] Medical information screen - show child photo
+- [x] Parent portal - child cards with photo (Dashboard, Attendance, DailyReport)
+- [x] Admin portal - children list with photos
+
+### Pickup Security
+- [x] Photo verification display during pickup/dismissal
+- [x] Large photo view for staff to verify child identity before release

@@ -37,9 +37,13 @@ export default function ParentDashboard() {
             <Card key={child.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Baby className="h-6 w-6 text-primary" />
-                  </div>
+                  {child.photo ? (
+                    <img src={child.photo} alt={`${child.firstName} ${child.lastName}`} className="h-12 w-12 rounded-full object-cover border-2 border-primary/20" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Baby className="h-6 w-6 text-primary" />
+                    </div>
+                  )}
                   <div>
                     <p className="font-semibold">{child.firstName} {child.lastName}</p>
                     <p className="text-sm text-muted-foreground">{child.dateOfBirth ? `${getAge(child.dateOfBirth)} سنوات` : ""}</p>

@@ -161,6 +161,26 @@ export default function StaffDailyLog() {
     return child ? `${child.firstName} ${child.lastName}` : `طفل #${childId}`;
   };
 
+  const getChildPhoto = (childId: number) => {
+    const child = children?.find((c: any) => c.id === childId);
+    return child?.photo || null;
+  };
+
+  const ChildAvatar = ({ childId, size = "sm" }: { childId: number; size?: "sm" | "md" | "lg" }) => {
+    const photo = getChildPhoto(childId);
+    const name = getChildName(childId);
+    const sizeClasses = size === "lg" ? "h-16 w-16" : size === "md" ? "h-10 w-10" : "h-7 w-7";
+    const textSize = size === "lg" ? "text-lg" : size === "md" ? "text-sm" : "text-[10px]";
+    if (photo) {
+      return <img src={photo} alt={name} className={`${sizeClasses} rounded-full object-cover border border-primary/20`} />;
+    }
+    return (
+      <div className={`${sizeClasses} rounded-full bg-primary/10 flex items-center justify-center ${textSize} font-bold text-primary`}>
+        {name.charAt(0)}
+      </div>
+    );
+  };
+
   const getRelationshipLabel = (rel: string) => {
     const labels: Record<string, string> = { parent: "ولي أمر", driver: "سائق", guardian: "وصي", other: "آخر" };
     return labels[rel] || rel;
@@ -212,7 +232,14 @@ export default function StaffDailyLog() {
                         ) : (
                           filteredChildren.map((c: any) => (
                             <SelectItem key={c.id} value={c.id.toString()}>
-                              {c.firstName} {c.lastName}
+                              <span className="flex items-center gap-2">
+                                {c.photo ? (
+                                  <img src={c.photo} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">{c.firstName?.charAt(0)}</div>
+                                )}
+                                {c.firstName} {c.lastName}
+                              </span>
                             </SelectItem>
                           ))
                         )}
@@ -322,12 +349,30 @@ export default function StaffDailyLog() {
                   <SelectContent>
                     {filteredDepartureChildren.map((c: any) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.firstName} {c.lastName}
+                        <span className="flex items-center gap-2">
+                          {c.photo ? (
+                            <img src={c.photo} alt="" className="h-6 w-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">{c.firstName?.charAt(0)}</div>
+                          )}
+                          {c.firstName} {c.lastName}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Pickup verification - show child photo prominently */}
+              {departureChild && (
+                <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                  <ChildAvatar childId={parseInt(departureChild)} size="lg" />
+                  <div>
+                    <p className="font-bold text-lg">{getChildName(parseInt(departureChild))}</p>
+                    <p className="text-sm text-muted-foreground">تأكد من هوية الطفل قبل التسليم</p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -396,7 +441,12 @@ export default function StaffDailyLog() {
                   <TableBody>
                     {todayDepartures.map((dep: any) => (
                       <TableRow key={dep.id}>
-                        <TableCell className="font-medium">{getChildName(dep.childId)}</TableCell>
+                        <TableCell className="font-medium">
+                          <span className="flex items-center gap-2">
+                            <ChildAvatar childId={dep.childId} size="sm" />
+                            {getChildName(dep.childId)}
+                          </span>
+                        </TableCell>
                         <TableCell>{new Date(dep.departureTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</TableCell>
                         <TableCell>{dep.pickedUpBy}</TableCell>
                         <TableCell>{getRelationshipLabel(dep.relationship)}</TableCell>
