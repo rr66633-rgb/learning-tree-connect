@@ -581,12 +581,17 @@ export const appRouter = router({
         await db.createNotification({
           userId: child.parentId,
           title: 'Child Arrival',
-          titleAr: '\u0648\u0635\u0648\u0644 \u0627\u0644\u0637\u0641\u0644',
+          titleAr: 'وصول الطفل',
           body: `${child.firstName} has arrived at the center`,
-          bodyAr: `\u0648\u0635\u0644 ${child.firstName} ${child.lastName} \u0625\u0644\u0649 \u0627\u0644\u0645\u0631\u0643\u0632`,
+          bodyAr: `وصل ${child.firstName} ${child.lastName} إلى المركز`,
           type: 'attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkin' },
         });
+        // Send push notification
+        try {
+          const { notifyParentCheckIn } = await import('./_core/pushTriggers');
+          await notifyParentCheckIn(child.parentId, `${child.firstName} ${child.lastName}`, input.childId);
+        } catch (e) { /* push failure shouldn't block */ }
       }
       return result;
     }),
@@ -616,12 +621,17 @@ export const appRouter = router({
         await db.createNotification({
           userId: child.parentId,
           title: 'Child Departure',
-          titleAr: '\u0645\u063a\u0627\u062f\u0631\u0629 \u0627\u0644\u0637\u0641\u0644',
+          titleAr: 'مغادرة الطفل',
           body: `${child.firstName} has left the center`,
-          bodyAr: `\u063a\u0627\u062f\u0631 ${child.firstName} ${child.lastName} \u0627\u0644\u0645\u0631\u0643\u0632`,
+          bodyAr: `غادر ${child.firstName} ${child.lastName} المركز`,
           type: 'attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkout', pickedUpBy: input.pickedUpBy },
         });
+        // Send push notification
+        try {
+          const { notifyParentCheckOut } = await import('./_core/pushTriggers');
+          await notifyParentCheckOut(child.parentId, `${child.firstName} ${child.lastName}`, input.childId, input.pickedUpBy);
+        } catch (e) { /* push failure shouldn't block */ }
       }
       return { success: true };
     }),
@@ -2127,6 +2137,9 @@ export const appRouter = router({
           type: 'general',
           metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId }),
         });
+        // Send push notification to all staff
+        const { notifyStaffPickupRequest } = await import('./_core/pushTriggers');
+        await notifyStaffPickupRequest(childName, id, input.childId);
       } catch (e) { /* notification failure shouldn't block */ }
       return { id, status: 'waiting' };
     }),
@@ -2188,18 +2201,70 @@ export const appRouter = router({
             type: 'general',
             metadata: JSON.stringify({ pickupRequestId: input.id, status: input.status }),
           });
+          // Send push notification to parent
+          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
+          const child = await db.getChildById(req.childId);
+          const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
+          await notifyParentPickupStatus(req.parentId, childName, input.status, input.id);
         }
       } catch (e) { /* notification failure shouldn't block */ }
       return { success: true };
     }),
 
-    // Staff views pickup history
+        // Staff views pickup history
     history: protectedProcedure.input(z.object({
       limit: z.number().min(1).max(500).default(100),
     }).optional()).query(async ({ input }) => {
       return db.getPickupHistory(input?.limit || 100);
     }),
   }),
-});
 
+  // ============ PUSH NOTIFICATIONS ============
+  push: router({
+    getVapidPublicKey: publicProcedure.query(async () => {
+      const { getVapidPublicKey } = await import('./_core/webPush');
+      return { publicKey: getVapidPublicKey() };
+    }),
+    subscribe: protectedProcedure.input(z.object({
+      endpoint: z.string().url(),
+      p256dh: z.string(),
+      auth: z.string(),
+      userAgent: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      await db.savePushSubscription({
+        userId: ctx.user!.id,
+        endpoint: input.endpoint,
+        p256dh: input.p256dh,
+        auth: input.auth,
+        userAgent: input.userAgent,
+      });
+      return { success: true };
+    }),
+    unsubscribe: protectedProcedure.input(z.object({
+      endpoint: z.string(),
+    })).mutation(async ({ input, ctx }) => {
+      await db.removePushSubscription(input.endpoint, ctx.user!.id);
+      return { success: true };
+    }),
+    // Test push notification (for debugging)
+    test: protectedProcedure.mutation(async ({ ctx }) => {
+      const { sendPushToUser } = await import('./_core/webPush');
+      const result = await sendPushToUser(
+        ctx.user!.id,
+        {
+          title: '\u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',
+          body: '\u0645\u0631\u062d\u0628\u0627\u064b! \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u062f\u0641\u0639 \u062a\u0639\u0645\u0644 \u0628\u0646\u062c\u0627\u062d \ud83c\udf89',
+          tag: 'test',
+          data: { url: '/' },
+        },
+        db.getPushSubscriptionsForUser
+      );
+      // Clean up expired subscriptions
+      if (result.expired.length > 0) {
+        await db.removeExpiredSubscriptions(result.expired);
+      }
+      return { sent: result.sent, failed: result.failed };
+    }),
+  }),
+});
 export type AppRouter = typeof appRouter;

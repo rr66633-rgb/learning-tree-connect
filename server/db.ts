@@ -1,6 +1,6 @@
 import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
 import { parentChildren, media, mediaChildren } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -1736,4 +1736,50 @@ export async function getLearningObservationsByArea(childId: number, area: strin
   const db = await getDb();
   if (!db) return [];
   return db.select().from(learningObservations).where(and(eq(learningObservations.childId, childId), eq(learningObservations.area, area))).orderBy(desc(learningObservations.observedAt));
+}
+
+// ============ PUSH SUBSCRIPTIONS ============
+export async function savePushSubscription(data: { userId: number; endpoint: string; p256dh: string; auth: string; userAgent?: string }) {
+  const db = await getDb();
+  if (!db) return null;
+  // Remove existing subscription with same endpoint to avoid duplicates
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, data.endpoint));
+  const [result] = await db.insert(pushSubscriptions).values(data).$returningId();
+  return result;
+}
+
+export async function removePushSubscription(endpoint: string, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(pushSubscriptions).where(and(eq(pushSubscriptions.endpoint, endpoint), eq(pushSubscriptions.userId, userId)));
+}
+
+export async function removeExpiredSubscriptions(ids: number[]) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return;
+  await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.id, ids));
+}
+
+export async function getPushSubscriptionsForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+}
+
+export async function getPushSubscriptionsForUsers(userIds: number[]) {
+  const db = await getDb();
+  if (!db || userIds.length === 0) return [];
+  return db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, userIds));
+}
+
+// ============ STAFF USERS HELPER ============
+export async function getStaffUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ id: users.id, name: users.name, role: users.role })
+    .from(users)
+    .where(and(
+      inArray(users.role, ['super_admin', 'admin', 'principal', 'teacher', 'assistant', 'receptionist']),
+      eq(users.isActive, true)
+    ));
 }

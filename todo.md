@@ -514,3 +514,30 @@
 
 ### Child Photo in Add Child Form
 - [x] Photo upload section added to Add/Edit Child form with camera capture support
+
+## Web Push Notifications (Service Worker)
+
+### Database
+- [x] Create push_subscriptions table (userId, endpoint, p256dh, auth, userAgent, createdAt)
+
+### Backend
+- [x] Generate VAPID keys for web push
+- [x] Create web-push service (sendPushNotification helper)
+- [x] tRPC: push.subscribe (save subscription)
+- [x] tRPC: push.unsubscribe (remove subscription)
+- [x] tRPC: push.getVapidPublicKey (return public key)
+- [x] tRPC: push.test (test push notification)
+
+### Frontend
+- [x] Create Service Worker (sw.js) for push event handling
+- [x] Register Service Worker on app load (via usePushNotifications hook)
+- [x] Request notification permission with UI prompt
+- [x] Subscribe to push notifications after permission granted
+- [x] Show notification permission banner/button in dashboard (PushNotificationBanner + PushNotificationToggle)
+
+### Integration
+- [x] Send push to teachers when parent requests pickup
+- [x] Send push to parent when child status changes (called, ready, picked up)
+- [x] Send push to parent when attendance is recorded (check-in + check-out)
+- [x] Send push to parent when new invoice is created (trigger helper ready)
+- [x] Send push to parent when daily report is submitted (trigger helper ready)

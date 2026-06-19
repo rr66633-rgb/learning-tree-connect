@@ -28,6 +28,7 @@ import {
   Camera, User, UserCheck, MapPin, BookOpen, Shield
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
+import { PushNotificationBanner } from "@/components/PushNotificationBanner";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
@@ -440,6 +441,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
+        <PushNotificationBanner />
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
     </>
