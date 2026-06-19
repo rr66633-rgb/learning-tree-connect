@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import { useAuth } from "./_core/hooks/useAuth";
+import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -30,6 +31,12 @@ const StaffPendingApprovals = lazy(() => import("./pages/staff/PendingApprovals"
 const StaffMediaUpload = lazy(() => import("./pages/staff/MediaUpload"));
 const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
 const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
+
+// Auth Pages
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
 
 // Parent Pages
 const ParentDashboard = lazy(() => import("./pages/parent/Dashboard"));
@@ -182,15 +189,26 @@ function PendingRolePage() {
 
 function RoleRouter() {
   const { user, loading } = useAuth();
+  useSessionTimeout();
 
   if (loading) return <PageLoader />;
 
-  // Not logged in - DashboardLayout handles the login page
+  // Not logged in - show auth pages or redirect to login
   if (!user) {
     return (
-      <DashboardLayout basePath="/staff">
-        <StaffRouter />
-      </DashboardLayout>
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
+          <Route>
+            <DashboardLayout basePath="/staff">
+              <StaffRouter />
+            </DashboardLayout>
+          </Route>
+        </Switch>
+      </Suspense>
     );
   }
 
@@ -214,6 +232,18 @@ function RoleRouter() {
         <Route path="/">
           <Redirect to={basePath} />
         </Route>
+
+        {/* Auth routes redirect logged-in users */}
+        <Route path="/login">
+          <Redirect to={basePath} />
+        </Route>
+        <Route path="/register">
+          <Redirect to={basePath} />
+        </Route>
+        <Route path="/forgot-password">
+          <Redirect to={basePath} />
+        </Route>
+        <Route path="/reset-password" component={ResetPassword} />
 
         {/* Staff routes - protected for staff roles only */}
         <Route path="/staff/**">

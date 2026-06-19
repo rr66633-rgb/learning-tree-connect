@@ -17,6 +17,9 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
+  accountLockedUntil: timestamp("accountLockedUntil"),
+  passwordChangedAt: timestamp("passwordChangedAt"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -573,3 +576,48 @@ export const mediaChildren = mysqlTable("media_children", {
   childId: int("childId").notNull(),
 });
 export type MediaChild = typeof mediaChildren.$inferSelect;
+
+// ============ OTP CODES ============
+export const otpCodes = mysqlTable("otp_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  code: varchar("code", { length: 6 }).notNull(),
+  type: mysqlEnum("type", ["registration", "password_reset", "login_verification", "phone_verification", "email_verification"]).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  verified: boolean("verified").default(false).notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OtpCode = typeof otpCodes.$inferSelect;
+export type InsertOtpCode = typeof otpCodes.$inferInsert;
+
+// ============ PASSWORD RESET TOKENS ============
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  type: mysqlEnum("type", ["email_link", "otp"]).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  used: boolean("used").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// ============ LOGIN ATTEMPTS ============
+export const loginAttempts = mysqlTable("login_attempts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  identifier: varchar("identifier", { length: 320 }),
+  ip: varchar("ip", { length: 45 }),
+  success: boolean("success").default(false).notNull(),
+  reason: varchar("reason", { length: 200 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LoginAttempt = typeof loginAttempts.$inferSelect;
+export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;

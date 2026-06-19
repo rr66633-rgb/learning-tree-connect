@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { MapPin, Clock, Building2, Save } from "lucide-react";
+import ChangePassword from "@/components/ChangePassword";
 
 export default function StaffSettings() {
   const { data: settings, isLoading } = trpc.centerSettings.get.useQuery();
@@ -157,6 +158,9 @@ export default function StaffSettings() {
           {update.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
         </Button>
       </div>
+
+      {/* Change Password */}
+      <ChangePassword />
     </div>
   );
 }

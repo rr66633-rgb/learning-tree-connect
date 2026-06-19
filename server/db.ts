@@ -1554,3 +1554,52 @@ export async function getEnhancedFinanceSummary() {
     thisMonthRevenue,
   };
 }
+
+// ============ AUTHENTICATION HELPERS ============
+
+export async function findUserByIdentifier(identifier: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  // Try to find by email first, then by phone
+  const byEmail = await db.select().from(users).where(eq(users.email, identifier)).limit(1);
+  if (byEmail.length > 0) return byEmail[0];
+  
+  const byPhone = await db.select().from(users).where(eq(users.phone, identifier)).limit(1);
+  if (byPhone.length > 0) return byPhone[0];
+  
+  return undefined;
+}
+
+export async function createUserWithPassword(data: {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+  role: string;
+  isActive: boolean;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const openId = `local_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+  
+  const result = await db.insert(users).values({
+    openId,
+    name: data.name,
+    phone: data.phone,
+    email: data.email,
+    password: data.password,
+    role: data.role as any,
+    isActive: data.isActive,
+  });
+  
+  return result[0].insertId;
+}
+
+export async function activateUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
+}
+

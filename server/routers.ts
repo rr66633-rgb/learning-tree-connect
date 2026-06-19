@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
+import * as authService from "./_core/authService";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -45,6 +46,301 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    // ============ LOGIN WITH PASSWORD ============
+    login: publicProcedure
+      .input(z.object({
+        identifier: z.string().min(1), // email or phone
+        password: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const ip = ctx.req.headers['x-forwarded-for'] as string || ctx.req.socket.remoteAddress || '';
+        
+        // Find user by email or phone
+        const user = await db.findUserByIdentifier(input.identifier);
+        if (!user) {
+          await authService.recordLoginAttempt({ identifier: input.identifier, ip, success: false, reason: 'user_not_found' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'بيانات الدخول غير صحيحة' });
+        }
+
+        // Check if account is locked
+        const lockStatus = await authService.isAccountLocked(user.id);
+        if (lockStatus.locked) {
+          const remainingMinutes = Math.ceil((lockStatus.lockedUntil!.getTime() - Date.now()) / 60000);
+          throw new TRPCError({ code: 'FORBIDDEN', message: `تم قفل الحساب مؤقتاً. يرجى المحاولة بعد ${remainingMinutes} دقيقة.` });
+        }
+
+        // Verify password
+        if (!user.password) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'يرجى استخدام تسجيل الدخول عبر المنصة' });
+        }
+
+        const passwordValid = await authService.verifyPassword(input.password, user.password);
+        if (!passwordValid) {
+          const result = await authService.handleFailedLogin(user.id);
+          await authService.recordLoginAttempt({ userId: user.id, identifier: input.identifier, ip, success: false, reason: 'wrong_password' });
+          if (result.locked) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: `تم قفل الحساب بعد ${authService.AUTH_CONSTANTS.MAX_FAILED_LOGIN_ATTEMPTS} محاولات فاشلة. يرجى المحاولة بعد ${authService.AUTH_CONSTANTS.ACCOUNT_LOCKOUT_MINUTES} دقيقة.` });
+          }
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: `بيانات الدخول غير صحيحة. المحاولات المتبقية: ${result.attemptsRemaining}` });
+        }
+
+        // Check if account is active
+        if (!user.isActive) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'حسابك غير مفعل. يرجى التواصل مع الإدارة.' });
+        }
+
+        // Successful login - reset failed attempts
+        await authService.resetFailedAttempts(user.id);
+        await authService.recordLoginAttempt({ userId: user.id, identifier: input.identifier, ip, success: true });
+
+        return { success: true, user: { id: user.id, name: user.name, role: user.role, email: user.email } };
+      }),
+
+    // ============ REGISTER (Parent Self-Registration) ============
+    register: publicProcedure
+      .input(z.object({
+        name: z.string().min(2),
+        phone: z.string().min(9),
+        email: z.string().email(),
+        password: z.string().min(6),
+      }))
+      .mutation(async ({ input }) => {
+        // Check if email or phone already exists
+        const existingByEmail = await db.findUserByIdentifier(input.email);
+        if (existingByEmail) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'البريد الإلكتروني مسجل مسبقاً' });
+        }
+        const existingByPhone = await db.findUserByIdentifier(input.phone);
+        if (existingByPhone) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'رقم الجوال مسجل مسبقاً' });
+        }
+
+        // Hash password
+        const hashedPassword = await authService.hashPassword(input.password);
+
+        // Create user (inactive until OTP verification)
+        const userId = await db.createUserWithPassword({
+          name: input.name,
+          phone: input.phone,
+          email: input.email,
+          password: hashedPassword,
+          role: 'parent',
+          isActive: false,
+        });
+
+        // Generate and send OTP
+        const { code, expiresAt } = await authService.createOtp({
+          userId,
+          phone: input.phone,
+          email: input.email,
+          type: 'registration',
+        });
+
+        // Send OTP via SMS
+        await authService.sendSmsOtp(input.phone, code);
+
+        return {
+          success: true,
+          message: 'تم إنشاء الحساب. يرجى إدخال رمز التحقق المرسل إلى جوالك.',
+          userId,
+          expiresAt: expiresAt.getTime(),
+        };
+      }),
+
+    // ============ VERIFY REGISTRATION OTP ============
+    verifyRegistration: publicProcedure
+      .input(z.object({
+        identifier: z.string().min(1), // phone or email
+        code: z.string().length(6),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await authService.verifyOtp({
+          identifier: input.identifier,
+          code: input.code,
+          type: 'registration',
+        });
+
+        if (!result.valid) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: result.error || 'رمز التحقق غير صحيح' });
+        }
+
+        // Activate the user account
+        if (result.userId) {
+          await db.activateUser(result.userId);
+        }
+
+        return { success: true, message: 'تم تفعيل حسابك بنجاح. يمكنك الآن تسجيل الدخول.' };
+      }),
+
+    // ============ FORGOT PASSWORD - REQUEST RESET ============
+    forgotPassword: publicProcedure
+      .input(z.object({
+        identifier: z.string().min(1), // email or phone
+        method: z.enum(['email', 'sms']),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = await db.findUserByIdentifier(input.identifier);
+        if (!user) {
+          // Don't reveal whether user exists
+          return { success: true, message: 'إذا كان الحساب موجوداً، سيتم إرسال رمز التحقق.' };
+        }
+
+        // Rate limit check
+        const canRequest = await authService.canRequestOtp(input.identifier);
+        if (!canRequest.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: `يرجى الانتظار ${canRequest.waitSeconds} ثانية قبل طلب رمز جديد.` });
+        }
+
+        if (input.method === 'email') {
+          // Generate reset token and send email link
+          const { token } = await authService.createPasswordResetToken(user.id);
+          const origin = ctx.req.headers.origin || ctx.req.headers.referer || '';
+          const resetLink = `${origin}/reset-password?token=${token}`;
+          await authService.sendPasswordResetEmail(user.email || input.identifier, resetLink, user.name || undefined);
+          
+          // Also send OTP for email verification
+          const { code, expiresAt } = await authService.createOtp({
+            userId: user.id,
+            email: user.email || input.identifier,
+            type: 'password_reset',
+          });
+          await authService.sendEmailOtp(user.email || input.identifier, code, user.name || undefined);
+          
+          return { success: true, message: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.', expiresAt: expiresAt.getTime() };
+        } else {
+          // Send OTP via SMS
+          const { code, expiresAt } = await authService.createOtp({
+            userId: user.id,
+            phone: user.phone || input.identifier,
+            type: 'password_reset',
+          });
+          await authService.sendSmsOtp(user.phone || input.identifier, code);
+          
+          return { success: true, message: 'تم إرسال رمز التحقق إلى رقم جوالك.', expiresAt: expiresAt.getTime() };
+        }
+      }),
+
+    // ============ VERIFY RESET OTP ============
+    verifyResetOtp: publicProcedure
+      .input(z.object({
+        identifier: z.string().min(1),
+        code: z.string().length(6),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await authService.verifyOtp({
+          identifier: input.identifier,
+          code: input.code,
+          type: 'password_reset',
+        });
+
+        if (!result.valid) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: result.error || 'رمز التحقق غير صحيح' });
+        }
+
+        // Generate a temporary token for password reset
+        const { token } = await authService.createPasswordResetToken(result.userId!);
+        return { success: true, resetToken: token };
+      }),
+
+    // ============ VERIFY RESET TOKEN (from email link) ============
+    verifyResetToken: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const result = await authService.verifyResetToken(input.token);
+        if (!result.valid) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: result.error || 'الرابط غير صالح' });
+        }
+        return { success: true, valid: true };
+      }),
+
+    // ============ RESET PASSWORD ============
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ input }) => {
+        // Verify the token
+        const tokenResult = await authService.verifyResetToken(input.token);
+        if (!tokenResult.valid) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: tokenResult.error || 'رابط إعادة التعيين غير صالح' });
+        }
+
+        // Update password
+        await authService.updatePassword(tokenResult.userId!, input.newPassword);
+        
+        // Mark token as used
+        await authService.markTokenUsed(input.token);
+
+        return { success: true, message: 'تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.' };
+      }),
+
+    // ============ CHANGE PASSWORD (logged in user) ============
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = ctx.user!;
+        
+        // Verify current password
+        if (!user.password) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكن تغيير كلمة المرور لحسابات المنصة' });
+        }
+
+        const isValid = await authService.verifyPassword(input.currentPassword, user.password);
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'كلمة المرور الحالية غير صحيحة' });
+        }
+
+        await authService.updatePassword(user.id, input.newPassword);
+        return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
+      }),
+
+    // ============ RESEND OTP ============
+    resendOtp: publicProcedure
+      .input(z.object({
+        identifier: z.string().min(1), // phone or email
+        type: z.enum(['registration', 'password_reset', 'login_verification', 'phone_verification', 'email_verification']),
+      }))
+      .mutation(async ({ input }) => {
+        // Rate limit check
+        const canRequest = await authService.canRequestOtp(input.identifier);
+        if (!canRequest.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: `يرجى الانتظار ${canRequest.waitSeconds} ثانية قبل طلب رمز جديد.` });
+        }
+
+        // Find user
+        const user = await db.findUserByIdentifier(input.identifier);
+        
+        // Generate new OTP
+        const { code, expiresAt } = await authService.createOtp({
+          userId: user?.id,
+          phone: input.identifier.includes('@') ? undefined : input.identifier,
+          email: input.identifier.includes('@') ? input.identifier : undefined,
+          type: input.type,
+        });
+
+        // Send OTP
+        if (input.identifier.includes('@')) {
+          await authService.sendEmailOtp(input.identifier, code);
+        } else {
+          await authService.sendSmsOtp(input.identifier, code);
+        }
+
+        return { success: true, message: 'تم إرسال رمز تحقق جديد.', expiresAt: expiresAt.getTime() };
+      }),
+
+    // ============ GET AUTH CONSTANTS (for frontend) ============
+    getAuthConfig: publicProcedure.query(() => ({
+      otpExpiryMinutes: authService.AUTH_CONSTANTS.OTP_EXPIRY_MINUTES,
+      otpCooldownSeconds: authService.AUTH_CONSTANTS.OTP_COOLDOWN_SECONDS,
+      maxFailedAttempts: authService.AUTH_CONSTANTS.MAX_FAILED_LOGIN_ATTEMPTS,
+      lockoutMinutes: authService.AUTH_CONSTANTS.ACCOUNT_LOCKOUT_MINUTES,
+      sessionTimeoutMinutes: authService.AUTH_CONSTANTS.SESSION_TIMEOUT_MINUTES,
+    })),
   }),
 
   dashboard: router({

@@ -401,3 +401,63 @@
 ### Sidebar & Navigation
 - [x] Add finance/payments links in admin sidebar
 - [x] Add invoices/payments links in parent sidebar
+
+## Authentication & Security System
+
+### Database Schema
+- [x] Create otp_codes table (id, userId, phone, email, code, type, expiresAt, verified, attempts, createdAt)
+- [x] Create password_reset_tokens table (id, userId, token, type, expiresAt, used, createdAt)
+- [x] Create login_attempts table (id, userId, ip, success, createdAt)
+- [x] Add phone field to users table
+- [x] Add accountLockedUntil field to users table
+- [x] Add failedLoginAttempts field to users table
+- [x] Add lastLoginAt field to users table
+- [x] Add passwordHash field to users table
+
+### Backend - OTP Service
+- [x] Create OTP generation service (6-digit codes, 5-minute expiry)
+- [x] Create OTP verification service with attempt limiting
+- [x] Implement rate limiting for OTP requests (max 3 per 10 minutes)
+- [x] Support SMS OTP sending (placeholder for SMS gateway integration)
+- [x] Support Email OTP sending (using notification system)
+- [x] OTP resend with cooldown period (60 seconds)
+
+### Backend - Password Reset
+- [x] Forgot password via email (generate reset link with token)
+- [x] Forgot password via mobile (send OTP)
+- [x] Verify reset token and allow password change
+- [x] Verify OTP and allow password change
+- [x] Invalidate all previous tokens on successful reset
+
+### Backend - Registration Flow
+- [x] Parent self-registration endpoint (name, phone, email, password)
+- [x] Send OTP to phone/email after registration
+- [x] Verify OTP to activate account
+- [x] Support both mobile+OTP and email+OTP verification
+
+### Backend - Security
+- [x] Password hashing with PBKDF2 (salt + hash)
+- [x] Track failed login attempts per user
+- [x] Lock account after 5 failed attempts (30 min lockout)
+- [x] Session timeout after 30 minutes of inactivity
+- [x] Rate limit OTP requests (max 3 per 10 min, 60s cooldown)
+
+### Frontend - Forgot Password
+- [x] Forgot password page with email/phone input
+- [x] Email reset link sent confirmation page
+- [x] OTP input page with countdown timer
+- [x] New password creation page
+- [x] Success confirmation page
+
+### Frontend - Registration
+- [x] Parent registration form (name, phone, email, password)
+- [x] OTP verification page with countdown timer and resend button
+- [x] Registration success page
+
+### Frontend - Security UX
+- [x] Clear error messages for all auth states
+- [x] Account locked message with remaining time
+- [x] OTP countdown timer (5 minutes)
+- [x] Resend OTP button with cooldown (60 seconds)
+- [x] Auto-logout on inactivity (30 minutes)
+- [x] Works on mobile and desktop

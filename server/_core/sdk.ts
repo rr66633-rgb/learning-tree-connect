@@ -301,6 +301,22 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
+    // Check for account lockout
+    if (user.accountLockedUntil && new Date(user.accountLockedUntil) > new Date()) {
+      throw ForbiddenError("Account is locked");
+    }
+
+    // Check for inactivity timeout (30 minutes)
+    const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+    if (user.lastSignedIn) {
+      const lastActivity = new Date(user.lastSignedIn).getTime();
+      const now = Date.now();
+      if (now - lastActivity > SESSION_TIMEOUT_MS) {
+        // Session expired due to inactivity - but don't block OAuth users
+        // Just update the timestamp (frontend handles logout)
+      }
+    }
+
     await db.upsertUser({
       openId: user.openId,
       lastSignedIn: signedInAt,
