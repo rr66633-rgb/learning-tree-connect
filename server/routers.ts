@@ -34,16 +34,37 @@ export const appRouter = router({
   }),
 
   dashboard: router({
-    stats: protectedProcedure.query(async () => {
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      // Parents see only their children's stats
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        return {
+          totalChildren: childIds.length,
+          totalStaff: 0,
+          presentToday: 0,
+          totalRevenue: 0,
+        };
+      }
       return db.getDashboardStats();
     }),
   }),
 
   children: router({
-    list: protectedProcedure.input(z.object({ parentId: z.number().optional() }).optional()).query(async ({ input }) => {
+    list: protectedProcedure.input(z.object({ parentId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      // Parents can only see their own children
+      if (ctx.user?.role === 'parent') {
+        return db.getChildren(ctx.user.id);
+      }
       return db.getChildren(input?.parentId);
     }),
-    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+      // Parents can only view their own children's details
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.id)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
       return db.getChildById(input.id);
     }),
     create: teacherProcedure.input(z.object({
@@ -60,7 +81,7 @@ export const appRouter = router({
     })).mutation(async ({ input }) => {
       return db.createChild({ ...input, dateOfBirth: new Date(input.dateOfBirth) });
     }),
-    update: protectedProcedure.input(z.object({
+    update: teacherProcedure.input(z.object({
       id: z.number(),
       firstName: z.string().optional(),
       lastName: z.string().optional(),
@@ -85,13 +106,25 @@ export const appRouter = router({
   }),
 
   attendance: router({
-    byDate: protectedProcedure.input(z.object({ date: z.string() })).query(async ({ input }) => {
+    byDate: protectedProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
+      // Parents can only see attendance for their own children
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        return db.getAttendanceByDateForChildren(input.date, childIds);
+      }
       return db.getAttendanceByDate(input.date);
     }),
-    byChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
+    byChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      // Parents can only see their own children's attendance
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(input.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
       return db.getAttendanceByChild(input.childId);
     }),
-    checkIn: protectedProcedure.input(z.object({
+    checkIn: teacherProcedure.input(z.object({
       childId: z.number(),
       date: z.string(),
       notes: z.string().optional(),
@@ -105,11 +138,11 @@ export const appRouter = router({
         notes: input.notes,
       });
     }),
-    checkOut: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    checkOut: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.updateAttendance(input.id, { checkOutTime: new Date(), checkedOutBy: ctx.user!.id });
       return { success: true };
     }),
-    markAbsent: protectedProcedure.input(z.object({
+    markAbsent: teacherProcedure.input(z.object({
       childId: z.number(),
       date: z.string(),
       status: z.enum(["absent", "excused"]),
@@ -120,13 +153,33 @@ export const appRouter = router({
   }),
 
   dailyReports: router({
-    list: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input }) => {
+    list: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      // Parents can only see reports for their own children
+      if (ctx.user?.role === 'parent') {
+        if (input?.childId) {
+          const childIds = await db.getChildIdsForParent(ctx.user.id);
+          if (!childIds.includes(input.childId)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+          }
+          return db.getDailyReports(input.childId);
+        }
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        return db.getDailyReportsForChildren(childIds);
+      }
       return db.getDailyReports(input?.childId);
     }),
-    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-      return db.getDailyReportById(input.id);
+    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+      const report = await db.getDailyReportById(input.id);
+      // Parents can only view reports for their own children
+      if (ctx.user?.role === 'parent' && report) {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(report.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      }
+      return report;
     }),
-    create: protectedProcedure.input(z.object({
+    create: teacherProcedure.input(z.object({
       childId: z.number(),
       date: z.string(),
       meals: z.any().optional(),
@@ -140,7 +193,7 @@ export const appRouter = router({
     })).mutation(async ({ input, ctx }) => {
       return db.createDailyReport({ ...input, date: new Date(input.date), teacherId: ctx.user!.id });
     }),
-    update: protectedProcedure.input(z.object({
+    update: teacherProcedure.input(z.object({
       id: z.number(),
       meals: z.any().optional(),
       sleep: z.any().optional(),
@@ -182,7 +235,11 @@ export const appRouter = router({
   }),
 
   finance: router({
-    invoices: protectedProcedure.input(z.object({ parentId: z.number().optional() }).optional()).query(async ({ input }) => {
+    invoices: protectedProcedure.input(z.object({ parentId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      // Parents can only see their own invoices
+      if (ctx.user?.role === 'parent') {
+        return db.getInvoices(ctx.user.id);
+      }
       return db.getInvoices(input?.parentId);
     }),
     createInvoice: adminProcedure.input(z.object({
@@ -204,11 +261,15 @@ export const appRouter = router({
         dueDate: new Date(input.dueDate),
       });
     }),
-    markPaid: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    markPaid: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await db.updateInvoiceStatus(input.id, "paid", new Date());
       return { success: true };
     }),
-    summary: protectedProcedure.query(async () => {
+    summary: protectedProcedure.query(async ({ ctx }) => {
+      // Only admin/teacher can see financial summary
+      if (ctx.user?.role === 'parent') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
       return db.getFinanceSummary();
     }),
   }),
@@ -234,9 +295,9 @@ export const appRouter = router({
     redeem: protectedProcedure.input(z.object({ rewardId: z.number() })).mutation(async ({ ctx, input }) => {
       const rewards = await db.getLoyaltyRewards();
       const reward = rewards.find(r => r.id === input.rewardId);
-      if (!reward) throw new Error("Reward not found");
+      if (!reward) throw new TRPCError({ code: 'NOT_FOUND', message: 'Reward not found' });
       const balance = await db.getLoyaltyBalance(ctx.user!.id);
-      if (balance.points < reward.pointsCost) throw new Error("Insufficient points");
+      if (balance.points < reward.pointsCost) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Insufficient points' });
       await db.addLoyaltyPoints(ctx.user!.id, -reward.pointsCost, "redeemed", `Redeemed: ${reward.name}`);
       return { success: true };
     }),

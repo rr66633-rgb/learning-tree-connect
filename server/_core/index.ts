@@ -37,9 +37,22 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
 
-  // File upload endpoint - handles base64 JSON uploads
+  // File upload endpoint - handles base64 JSON uploads (requires authentication)
   app.post('/api/upload', async (req, res) => {
     try {
+      // Verify authentication
+      const { sdk } = await import('./sdk');
+      let user;
+      try {
+        user = await sdk.authenticateRequest(req);
+      } catch (e) {
+        res.status(401).json({ error: 'يجب تسجيل الدخول لرفع الملفات' });
+        return;
+      }
+      if (!user) {
+        res.status(401).json({ error: 'يجب تسجيل الدخول لرفع الملفات' });
+        return;
+      }
       const { storagePut } = await import('../storage');
       const jsonBody = req.body;
       if (!jsonBody || !jsonBody.data) {

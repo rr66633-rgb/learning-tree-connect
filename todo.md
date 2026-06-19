@@ -88,3 +88,14 @@
 - [x] Verify all pages work with real data
 - [x] Take screenshots of all modules (Login, Dashboard, Children, Attendance, Daily Reports, Messaging, Loyalty, Finance)
 - [x] Fix all remaining bugs
+
+## Critical Security Fixes
+- [x] Data isolation: parents can only see their own children's data
+- [x] Data isolation: parents can only see their own invoices
+- [x] Data isolation: parents can only see attendance for their own children
+- [x] Data isolation: parents can only see daily reports for their own children
+- [x] Data isolation: parents can only see their own loyalty points
+- [x] Upload endpoint: require authentication
+- [x] Role-based navigation: different sidebar menus for admin, teacher, parent
+- [x] Write tests for data isolation (20 tests)
+- [x] Write tests for upload authentication

@@ -27,16 +27,23 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/" },
-  { icon: Users, label: "الأطفال", path: "/children" },
-  { icon: CalendarCheck, label: "الحضور", path: "/attendance" },
-  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
-  { icon: CreditCard, label: "المالية", path: "/finance" },
-  { icon: Gift, label: "برنامج الولاء", path: "/loyalty" },
-  { icon: Bell, label: "الإشعارات", path: "/notifications" },
+type MenuItem = { icon: any; label: string; path: string; roles: string[] };
+
+const allMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/", roles: ["admin", "teacher", "parent"] },
+  { icon: Users, label: "الأطفال", path: "/children", roles: ["admin", "teacher", "parent"] },
+  { icon: CalendarCheck, label: "الحضور", path: "/attendance", roles: ["admin", "teacher", "parent"] },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", roles: ["admin", "teacher", "parent"] },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages", roles: ["admin", "teacher", "parent"] },
+  { icon: CreditCard, label: "المالية", path: "/finance", roles: ["admin", "teacher"] },
+  { icon: Gift, label: "برنامج الولاء", path: "/loyalty", roles: ["admin", "parent"] },
+  { icon: Bell, label: "الإشعارات", path: "/notifications", roles: ["admin", "teacher", "parent"] },
 ];
+
+function getMenuItemsForRole(role?: string): MenuItem[] {
+  const userRole = role || 'parent';
+  return allMenuItems.filter(item => item.roles.includes(userRole));
+}
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -123,7 +130,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const menuItems = getMenuItemsForRole(user?.role);
+  const activeMenuItem = menuItems.find((item: MenuItem) => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -194,7 +202,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {menuItems.map((item: MenuItem) => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>

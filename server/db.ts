@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, gte, lte } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification } from "../drizzle/schema";
@@ -96,6 +96,14 @@ export async function getAllUsers() {
   return db.select().from(users).orderBy(desc(users.createdAt));
 }
 
+// ============ HELPERS ============
+export async function getChildIdsForParent(parentId: number): Promise<number[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({ id: children.id }).from(children).where(eq(children.parentId, parentId));
+  return result.map(r => r.id);
+}
+
 // ============ CHILDREN ============
 export async function getChildren(parentId?: number) {
   const db = await getDb();
@@ -150,6 +158,17 @@ export async function getAttendanceByChild(childId: number) {
   return db.select().from(attendance).where(eq(attendance.childId, childId)).orderBy(desc(attendance.date));
 }
 
+export async function getAttendanceByDateForChildren(date: string, childIds: number[]) {
+  const db = await getDb();
+  if (!db) return [];
+  if (childIds.length === 0) return [];
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+  return db.select().from(attendance).where(and(gte(attendance.date, startOfDay), lte(attendance.date, endOfDay), inArray(attendance.childId, childIds)));
+}
+
 export async function createAttendance(data: InsertAttendance) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -171,6 +190,13 @@ export async function getDailyReports(childId?: number) {
     return db.select().from(dailyReports).where(eq(dailyReports.childId, childId)).orderBy(desc(dailyReports.date));
   }
   return db.select().from(dailyReports).orderBy(desc(dailyReports.date));
+}
+
+export async function getDailyReportsForChildren(childIds: number[]) {
+  const db = await getDb();
+  if (!db) return [];
+  if (childIds.length === 0) return [];
+  return db.select().from(dailyReports).where(inArray(dailyReports.childId, childIds)).orderBy(desc(dailyReports.date));
 }
 
 export async function getDailyReportById(id: number) {
