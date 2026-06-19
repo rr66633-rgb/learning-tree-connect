@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, Link2, Unlink, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, UserX, Link2, Unlink, Download, FileSpreadsheet, FileText } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
@@ -56,6 +56,14 @@ export default function UsersPage() {
   const unlinkChild = trpc.users.unlinkChild.useMutation({
     onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success("تم إلغاء الربط"); },
     onError: () => toast.error("حدث خطأ أثناء إلغاء الربط"),
+  });
+
+  const toggleActive = trpc.users.update.useMutation({
+    onSuccess: (_, vars) => {
+      utils.users.list.invalidate();
+      toast.success(vars.isActive ? "تم تفعيل الحساب" : "تم تعطيل الحساب");
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   const handleCreate = (e: React.FormEvent) => {
@@ -282,6 +290,17 @@ export default function UsersPage() {
                           </Button>
                         )}
                         {user.role !== 'admin' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleActive.mutate({ id: user.id, isActive: !user.isActive })}
+                            title={user.isActive !== false ? "تعطيل" : "تفعيل"}
+                            className={user.isActive !== false ? "text-orange-500 hover:text-orange-700" : "text-green-500 hover:text-green-700"}
+                          >
+                            {user.isActive !== false ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                          </Button>
+                        )}
+                        {user.role !== 'admin' && (
                           <Button variant="ghost" size="icon" onClick={() => openDelete(user)} title="حذف" className="text-red-500 hover:text-red-700">
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -422,7 +441,7 @@ export default function UsersPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => unlinkChild.mutate({ childId: child.id })}
+                        onClick={() => unlinkChild.mutate({ parentId: selectedUser!.id, childId: child.id })}
                         className="text-red-500 hover:text-red-700 gap-1"
                       >
                         <Unlink className="h-3 w-3" />

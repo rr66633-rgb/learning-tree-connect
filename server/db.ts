@@ -2,6 +2,7 @@ import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog } from "../drizzle/schema";
+import { parentChildren } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -531,7 +532,7 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
-export async function createUser(data: { name: string; email: string; phone?: string; role: 'teacher' | 'parent'; openId: string }) {
+export async function createUser(data: { name: string; email: string; phone?: string; role: string; openId: string; nationalId?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(users).values({
@@ -539,13 +540,14 @@ export async function createUser(data: { name: string; email: string; phone?: st
     name: data.name,
     email: data.email,
     phone: data.phone || null,
-    role: data.role,
+    role: data.role as any,
+    nationalId: (data as any).nationalId || null,
     lastSignedIn: new Date(),
   });
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateUser(id: number, data: { name?: string; email?: string; phone?: string; role?: 'teacher' | 'parent' }) {
+export async function updateUser(id: number, data: { name?: string; email?: string; phone?: string; role?: string; nationalId?: string; isActive?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const updateData: Record<string, any> = {};
@@ -553,6 +555,8 @@ export async function updateUser(id: number, data: { name?: string; email?: stri
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.role !== undefined) updateData.role = data.role;
+  if (data.nationalId !== undefined) updateData.nationalId = data.nationalId;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
   if (Object.keys(updateData).length > 0) {
     await db.update(users).set(updateData).where(eq(users.id, id));
   }
@@ -568,30 +572,67 @@ export async function deleteUser(id: number) {
   return { success: true };
 }
 
-export async function linkParentToChild(parentId: number, childId: number) {
+export async function linkParentToChild(parentId: number, childId: number, relationship: string = 'parent') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  // Check if link already exists
+  const existing = await db.select().from(parentChildren)
+    .where(and(eq(parentChildren.parentId, parentId), eq(parentChildren.childId, childId)))
+    .limit(1);
+  if (existing.length > 0) return { success: true, id: existing[0].id };
+  const result = await db.insert(parentChildren).values({ parentId, childId, relationship });
+  // Also update legacy parentId column for backward compatibility
   await db.update(children).set({ parentId }).where(eq(children.id, childId));
-  return { success: true };
+  return { success: true, id: result[0].insertId };
 }
 
-export async function unlinkParentFromChild(childId: number) {
+export async function unlinkParentFromChild(parentId: number, childId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(children).set({ parentId: null }).where(eq(children.id, childId));
+  await db.delete(parentChildren).where(
+    and(eq(parentChildren.parentId, parentId), eq(parentChildren.childId, childId))
+  );
+  // Check if child has any other parents, if not clear legacy parentId
+  const remaining = await db.select().from(parentChildren).where(eq(parentChildren.childId, childId));
+  if (remaining.length === 0) {
+    await db.update(children).set({ parentId: null }).where(eq(children.id, childId));
+  }
   return { success: true };
 }
 
 export async function getChildrenForParent(parentId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(children).where(eq(children.parentId, parentId));
+  const links = await db.select().from(parentChildren).where(eq(parentChildren.parentId, parentId));
+  if (links.length === 0) {
+    // Fallback to legacy parentId
+    return db.select().from(children).where(eq(children.parentId, parentId));
+  }
+  const childIds = links.map(l => l.childId);
+  return db.select().from(children).where(inArray(children.id, childIds));
+}
+
+export async function getParentsForChild(childId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const links = await db.select().from(parentChildren).where(eq(parentChildren.childId, childId));
+  if (links.length === 0) return [];
+  const parentIds = links.map(l => l.parentId);
+  const parents = await db.select().from(users).where(inArray(users.id, parentIds));
+  return parents.map(p => {
+    const link = links.find(l => l.parentId === p.id);
+    return { ...p, relationship: link?.relationship || "parent", isPrimary: link?.isPrimary || false };
+  });
 }
 
 export async function getUnlinkedChildren() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(children).where(sql`${children.parentId} IS NULL`).orderBy(children.firstName);
+  const linkedChildIds = await db.select({ childId: parentChildren.childId }).from(parentChildren);
+  const ids = linkedChildIds.map(r => r.childId);
+  if (ids.length === 0) return db.select().from(children).where(eq(children.status, "active")).orderBy(children.firstName);
+  const idPlaceholders = ids.map(id => sql`${id}`);
+  return db.select().from(children).where(and(eq(children.status, "active"), sql`${children.id} NOT IN (${sql.join(idPlaceholders, sql`, `)})`)).orderBy(children.firstName);
 }
 
 // ============ CLASSES ============

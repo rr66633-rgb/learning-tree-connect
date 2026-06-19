@@ -93,29 +93,37 @@ export const appRouter = router({
     create: teacherProcedure.input(z.object({
       firstName: z.string().min(1),
       lastName: z.string().min(1),
+      arabicName: z.string().optional(),
       dateOfBirth: z.string(),
       gender: z.enum(["male", "female"]),
-      className: z.string().optional(),
+      classId: z.number().optional(),
       parentId: z.number().optional(),
+      photo: z.string().optional(),
       medicalNotes: z.string().optional(),
       allergies: z.string().optional(),
-      emergencyContact: z.string().optional(),
-      emergencyPhone: z.string().optional(),
+      bloodType: z.string().optional(),
     })).mutation(async ({ input }) => {
-      return db.createChild({ ...input, dateOfBirth: new Date(input.dateOfBirth) });
+      const { parentId, ...childData } = input;
+      const child = await db.createChild({ ...childData, dateOfBirth: new Date(input.dateOfBirth) });
+      // If parentId provided, create link in junction table
+      if (parentId && child.id) {
+        await db.linkParentToChild(parentId, child.id as number);
+      }
+      return child;
     }),
     update: teacherProcedure.input(z.object({
       id: z.number(),
       firstName: z.string().optional(),
       lastName: z.string().optional(),
+      arabicName: z.string().optional(),
       dateOfBirth: z.string().optional(),
       gender: z.enum(["male", "female"]).optional(),
-      className: z.string().optional(),
+      classId: z.number().nullable().optional(),
+      photo: z.string().optional(),
       medicalNotes: z.string().optional(),
       allergies: z.string().optional(),
-      emergencyContact: z.string().optional(),
-      emergencyPhone: z.string().optional(),
-      status: z.enum(["active", "inactive", "graduated"]).optional(),
+      bloodType: z.string().optional(),
+      status: z.enum(["active", "inactive", "graduated", "waitlist"]).optional(),
     })).mutation(async ({ input }) => {
       const { id, ...data } = input;
       const updateData: any = { ...data };
@@ -125,6 +133,15 @@ export const appRouter = router({
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await db.deleteChild(input.id);
       return { success: true };
+    }),
+    archive: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.updateChild(input.id, { status: 'inactive' });
+    }),
+    activate: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.updateChild(input.id, { status: 'active' });
+    }),
+    getParents: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
+      return db.getParentsForChild(input.childId);
     }),
   }),
 
@@ -950,18 +967,30 @@ export const appRouter = router({
       name: z.string().min(1),
       email: z.string().email(),
       phone: z.string().optional(),
-      role: z.enum(['teacher', 'parent']),
+      role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist']),
+      nationalId: z.string().optional(),
+      password: z.string().optional(),
     })).mutation(async ({ input }) => {
       // Generate a unique openId for manually created users
       const openId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-      return db.createUser({ ...input, openId });
+      const { password, ...userData } = input;
+      const user = await db.createUser({ ...userData, openId });
+      // If password provided, store hashed password for direct login
+      if (password && user) {
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.updateUser(user.id, { password: hashedPassword } as any);
+      }
+      return user;
     }),
     update: adminProcedure.input(z.object({
       id: z.number(),
       name: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().optional(),
-      role: z.enum(['teacher', 'parent']).optional(),
+      role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist']).optional(),
+      nationalId: z.string().optional(),
+      isActive: z.boolean().optional(),
     })).mutation(async ({ input }) => {
       const { id, ...data } = input;
       return db.updateUser(id, data);
@@ -969,17 +998,26 @@ export const appRouter = router({
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       return db.deleteUser(input.id);
     }),
-    linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number() })).mutation(async ({ input }) => {
-      return db.linkParentToChild(input.parentId, input.childId);
+    linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input }) => {
+      return db.linkParentToChild(input.parentId, input.childId, input.relationship || 'parent');
     }),
-    unlinkChild: adminProcedure.input(z.object({ childId: z.number() })).mutation(async ({ input }) => {
-      return db.unlinkParentFromChild(input.childId);
+    unlinkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input }) => {
+      return db.unlinkParentFromChild(input.parentId, input.childId);
     }),
     getChildren: adminProcedure.input(z.object({ parentId: z.number() })).query(async ({ input }) => {
       return db.getChildrenForParent(input.parentId);
     }),
     getUnlinkedChildren: adminProcedure.query(async () => {
       return db.getUnlinkedChildren();
+    }),
+    getParentsForChild: adminProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
+      return db.getParentsForChild(input.childId);
+    }),
+    activate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.updateUser(input.id, { isActive: true });
+    }),
+    deactivate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.updateUser(input.id, { isActive: false });
     }),
   }),
 });

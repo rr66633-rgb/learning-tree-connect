@@ -10,6 +10,8 @@ export const users = mysqlTable("users", {
   role: mysqlEnum("role", ["super_admin", "admin", "principal", "teacher", "assistant", "accountant", "receptionist", "parent", "user"]).default("user").notNull(),
   phone: varchar("phone", { length: 20 }),
   avatar: text("avatar"),
+  nationalId: varchar("nationalId", { length: 20 }),
+  password: varchar("password", { length: 255 }),
   language: mysqlEnum("language", ["ar", "en"]).default("ar").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -42,6 +44,7 @@ export const children = mysqlTable("children", {
   id: int("id").autoincrement().primaryKey(),
   firstName: varchar("firstName", { length: 100 }).notNull(),
   lastName: varchar("lastName", { length: 100 }).notNull(),
+  arabicName: varchar("arabicName", { length: 200 }),
   dateOfBirth: timestamp("dateOfBirth").notNull(),
   gender: mysqlEnum("gender", ["male", "female"]).notNull(),
   classId: int("classId"),
@@ -394,6 +397,17 @@ export const attendanceAuditLog = mysqlTable("attendance_audit_log", {
 });
 export type AttendanceAuditLog = typeof attendanceAuditLog.$inferSelect;
 export type InsertAttendanceAuditLog = typeof attendanceAuditLog.$inferInsert;
+// ============ PARENT-CHILDREN JUNCTION (Many-to-Many) ============
+export const parentChildren = mysqlTable("parent_children", {
+  id: int("id").autoincrement().primaryKey(),
+  parentId: int("parentId").notNull(),
+  childId: int("childId").notNull(),
+  relationship: varchar("relationship", { length: 50 }).default("parent").notNull(),
+  isPrimary: boolean("isPrimary").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ParentChild = typeof parentChildren.$inferSelect;
+export type InsertParentChild = typeof parentChildren.$inferInsert;
 // ============ AUDIT LOG ============
 export const auditLog = mysqlTable("audit_log", {
   id: int("id").autoincrement().primaryKey(),
@@ -405,3 +419,4 @@ export const auditLog = mysqlTable("audit_log", {
   ipAddress: varchar("ipAddress", { length: 45 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+

@@ -27,6 +27,7 @@ const StaffNotifications = lazy(() => import("./pages/staff/Notifications"));
 const StaffUsers = lazy(() => import("./pages/staff/Users"));
 const StaffSettings = lazy(() => import("./pages/staff/Settings"));
 const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
+const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
 
 // Parent Pages
 const ParentDashboard = lazy(() => import("./pages/parent/Dashboard"));
@@ -57,6 +58,7 @@ function StaffRouter() {
       <Switch>
         <Route path="/staff" component={StaffDashboard} />
         <Route path="/staff/children" component={StaffChildren} />
+        <Route path="/staff/children/:id" component={ChildProfile} />
         <Route path="/staff/classes" component={StaffClasses} />
         <Route path="/staff/attendance" component={StaffAttendance} />
         <Route path="/staff/staff-attendance" component={StaffStaffAttendance} />
