@@ -213,88 +213,458 @@ export default function AIPlanner() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     const isAr = language === "ar";
+    const dir = isAr ? 'rtl' : 'ltr';
     const days = result.days && Array.isArray(result.days) ? result.days : [];
-    
-    const daysHtml = days.map((day: any) => `
-      <div class="day-section">
-        <h2 class="day-title">${day.day || ''}</h2>
-        ${day.learningObjective ? `<div class="objective"><strong>🎯 الهدف التعليمي:</strong> ${day.learningObjective}</div>` : ''}
-        ${day.circleTime ? `
-          <div class="section">
-            <h3>👥 حلقة الصباح ${day.circleTime.duration ? `(${day.circleTime.duration})` : ''}</h3>
-            <p><strong>${day.circleTime.activity || ''}</strong></p>
-            ${day.circleTime.description ? `<p>${day.circleTime.description}</p>` : ''}
-            ${day.circleTime.teacherInstructions ? `<div class="instructions"><strong>تعليمات المعلمة:</strong><br/>${day.circleTime.teacherInstructions}</div>` : ''}
-          </div>` : ''}
-        ${day.mainActivity ? `
-          <div class="section">
-            <h3>⭐ النشاط الرئيسي ${day.mainActivity.duration ? `(${day.mainActivity.duration})` : ''}</h3>
-            <p><strong>${day.mainActivity.title || ''}</strong></p>
-            ${day.mainActivity.description ? `<p>${day.mainActivity.description}</p>` : ''}
-            ${day.mainActivity.teacherInstructions ? `<div class="instructions"><strong>تعليمات المعلمة:</strong><br/>${day.mainActivity.teacherInstructions}</div>` : ''}
-            ${day.mainActivity.materials && Array.isArray(day.mainActivity.materials) ? `<p class="materials"><strong>المواد:</strong> ${day.mainActivity.materials.join('، ')}</p>` : ''}
-            ${day.mainActivity.differentiation ? `<p class="diff"><strong>التمايز:</strong> ${day.mainActivity.differentiation}</p>` : ''}
-          </div>` : ''}
-        ${day.storyRecommendation ? `
-          <div class="section">
-            <h3>📖 القصة المقترحة</h3>
-            <p><strong>${day.storyRecommendation.title || ''}</strong>${day.storyRecommendation.author ? ` - ${day.storyRecommendation.author}` : ''}</p>
-            ${day.storyRecommendation.summary ? `<p>${day.storyRecommendation.summary}</p>` : ''}
-          </div>` : ''}
-        ${day.discussionQuestions && Array.isArray(day.discussionQuestions) ? `
-          <div class="section">
-            <h3>💬 أسئلة النقاش</h3>
-            <ul>${day.discussionQuestions.map((q: string) => `<li>${q}</li>`).join('')}</ul>
-          </div>` : ''}
-        ${day.islamicValue ? `
-          <div class="section islamic">
-            <h3>🕌 القيمة الإسلامية: ${day.islamicValue.value || ''}</h3>
-            ${day.islamicValue.connection ? `<p>${day.islamicValue.connection}</p>` : ''}
-            ${day.islamicValue.hadithOrAyah ? `<p class="hadith">"${day.islamicValue.hadithOrAyah}"</p>` : ''}
-          </div>` : ''}
-        ${day.assessmentOpportunity ? `
-          <div class="section">
-            <h3>✅ فرصة التقييم</h3>
-            ${day.assessmentOpportunity.what ? `<p><strong>ماذا نقيّم:</strong> ${day.assessmentOpportunity.what}</p>` : ''}
-            ${day.assessmentOpportunity.how ? `<p><strong>كيف نقيّم:</strong> ${day.assessmentOpportunity.how}</p>` : ''}
-            ${day.assessmentOpportunity.indicators && Array.isArray(day.assessmentOpportunity.indicators) ? `<p><strong>المؤشرات:</strong> ${day.assessmentOpportunity.indicators.join('، ')}</p>` : ''}
-          </div>` : ''}
-        ${day.totalDuration ? `<p class="duration"><strong>⏱ المدة الإجمالية:</strong> ${day.totalDuration}</p>` : ''}
-      </div>`).join('');
+    const today = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    printWindow.document.write(`<!DOCTYPE html><html dir="${isAr ? 'rtl' : 'ltr'}" lang="${language}"><head><meta charset="utf-8"/><title>${result.title || 'Weekly Plan'}</title>
-    <style>
-      body{font-family:'Segoe UI',Tahoma,sans-serif;padding:30px;line-height:1.7;color:#1a1a1a;font-size:13px}
-      h1{color:#1d4ed8;border-bottom:3px solid #1d4ed8;padding-bottom:10px;font-size:22px}
-      .overview{background:#f0f9ff;padding:12px;border-radius:8px;margin:12px 0;border-right:4px solid #1d4ed8}
-      .objectives{margin:12px 0}
-      .objectives li{margin:4px 0}
-      .day-section{margin:20px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;page-break-inside:avoid}
-      .day-title{color:#0369a1;font-size:18px;border-bottom:2px solid #0ea5e9;padding-bottom:6px;margin-bottom:12px}
-      .section{margin:10px 0;padding:10px;background:#fafafa;border-radius:6px;border:1px solid #f0f0f0}
-      .section h3{font-size:13px;color:#374151;margin:0 0 6px}
-      .instructions{background:#fffbeb;padding:8px;border-radius:4px;margin-top:6px;border:1px solid #fde68a;font-size:12px}
-      .materials{color:#0369a1;font-size:12px;margin-top:6px}
-      .diff{color:#92400e;font-size:12px;font-style:italic}
-      .islamic{background:#ecfdf5;border:1px solid #a7f3d0}
-      .hadith{font-style:italic;color:#065f46;background:#d1fae5;padding:6px;border-radius:4px;margin-top:6px}
-      .objective{background:#fef3c7;padding:8px;border-radius:6px;margin-bottom:10px;border-right:3px solid #f59e0b}
-      .duration{color:#6b7280;font-size:12px;margin-top:8px;text-align:left}
-      .footer{margin-top:30px;padding-top:12px;border-top:2px solid #e5e7eb;font-size:11px;color:#6b7280;text-align:center}
-      .weekly-materials{background:#f0fdf4;padding:12px;border-radius:8px;margin:16px 0;border:1px solid #bbf7d0}
-      @media print{.day-section{page-break-inside:avoid}}
-    </style></head><body>
+    const dayColors = ['#1d4ed8', '#059669', '#7c3aed', '#d97706', '#e11d48'];
+
+    const daysHtml = days.map((day: any, idx: number) => {
+      const color = dayColors[idx % dayColors.length];
+      return `
+      <div class="day-section" style="border-color:${color}20;">
+        <div class="day-header" style="background:${color};">
+          <h2>${day.day || ''}</h2>
+          ${day.totalDuration ? `<span class="day-duration">${day.totalDuration}</span>` : ''}
+        </div>
+        <div class="day-body">
+          ${day.learningObjective ? `
+            <div class="field objective-field">
+              <div class="field-icon">🎯</div>
+              <div class="field-content">
+                <div class="field-label">الهدف التعليمي</div>
+                <div class="field-value">${day.learningObjective}</div>
+              </div>
+            </div>` : ''}
+
+          ${day.circleTime ? `
+            <div class="field">
+              <div class="field-icon">👥</div>
+              <div class="field-content">
+                <div class="field-label">حلقة الصباح ${day.circleTime.duration ? `<span class="badge">${day.circleTime.duration}</span>` : ''}</div>
+                <div class="field-value"><strong>${day.circleTime.activity || ''}</strong></div>
+                ${day.circleTime.description ? `<div class="field-desc">${day.circleTime.description}</div>` : ''}
+                ${day.circleTime.teacherInstructions ? `<div class="teacher-note"><span class="note-label">تعليمات المعلمة:</span> ${day.circleTime.teacherInstructions}</div>` : ''}
+              </div>
+            </div>` : ''}
+
+          ${day.mainActivity ? `
+            <div class="field main-activity-field">
+              <div class="field-icon">⭐</div>
+              <div class="field-content">
+                <div class="field-label">النشاط الرئيسي ${day.mainActivity.duration ? `<span class="badge">${day.mainActivity.duration}</span>` : ''}</div>
+                <div class="field-value"><strong>${day.mainActivity.title || ''}</strong></div>
+                ${day.mainActivity.description ? `<div class="field-desc">${day.mainActivity.description}</div>` : ''}
+                ${day.mainActivity.teacherInstructions ? `<div class="teacher-note"><span class="note-label">تعليمات المعلمة:</span> ${day.mainActivity.teacherInstructions}</div>` : ''}
+                ${day.mainActivity.materials && Array.isArray(day.mainActivity.materials) && day.mainActivity.materials.length > 0 ? `<div class="materials-list"><span class="note-label">المواد:</span> ${day.mainActivity.materials.join(' • ')}</div>` : ''}
+                ${day.mainActivity.differentiation ? `<div class="differentiation"><span class="note-label">التمايز:</span> ${day.mainActivity.differentiation}</div>` : ''}
+              </div>
+            </div>` : ''}
+
+          ${day.storyRecommendation ? `
+            <div class="field">
+              <div class="field-icon">📖</div>
+              <div class="field-content">
+                <div class="field-label">القصة المقترحة</div>
+                <div class="field-value"><strong>${day.storyRecommendation.title || ''}</strong>${day.storyRecommendation.author ? ` <span class="author">— ${day.storyRecommendation.author}</span>` : ''}</div>
+                ${day.storyRecommendation.summary ? `<div class="field-desc">${day.storyRecommendation.summary}</div>` : ''}
+                ${day.storyRecommendation.connection ? `<div class="connection">الربط بالموضوع: ${day.storyRecommendation.connection}</div>` : ''}
+              </div>
+            </div>` : ''}
+
+          ${day.discussionQuestions && Array.isArray(day.discussionQuestions) && day.discussionQuestions.length > 0 ? `
+            <div class="field">
+              <div class="field-icon">💬</div>
+              <div class="field-content">
+                <div class="field-label">أسئلة النقاش</div>
+                <ol class="questions-list">${day.discussionQuestions.map((q: string) => `<li>${q}</li>`).join('')}</ol>
+              </div>
+            </div>` : ''}
+
+          ${day.islamicValue ? `
+            <div class="field islamic-field">
+              <div class="field-icon">🕌</div>
+              <div class="field-content">
+                <div class="field-label">القيمة الإسلامية</div>
+                <div class="field-value"><strong>${day.islamicValue.value || ''}</strong></div>
+                ${day.islamicValue.connection ? `<div class="field-desc">${day.islamicValue.connection}</div>` : ''}
+                ${day.islamicValue.hadithOrAyah ? `<div class="hadith">"${day.islamicValue.hadithOrAyah}"</div>` : ''}
+              </div>
+            </div>` : ''}
+
+          ${day.assessmentOpportunity ? `
+            <div class="field assessment-field">
+              <div class="field-icon">✅</div>
+              <div class="field-content">
+                <div class="field-label">فرصة التقييم</div>
+                ${day.assessmentOpportunity.what ? `<div class="field-desc"><strong>ماذا نقيّم:</strong> ${day.assessmentOpportunity.what}</div>` : ''}
+                ${day.assessmentOpportunity.how ? `<div class="field-desc"><strong>كيف نقيّم:</strong> ${day.assessmentOpportunity.how}</div>` : ''}
+                ${day.assessmentOpportunity.indicators && Array.isArray(day.assessmentOpportunity.indicators) ? `<div class="indicators">${day.assessmentOpportunity.indicators.map((ind: string) => `<span class="indicator-badge">${ind}</span>`).join('')}</div>` : ''}
+              </div>
+            </div>` : ''}
+
+          ${day.materials && Array.isArray(day.materials) && day.materials.length > 0 ? `
+            <div class="field">
+              <div class="field-icon">📦</div>
+              <div class="field-content">
+                <div class="field-label">المواد المطلوبة لهذا اليوم</div>
+                <div class="materials-list">${day.materials.join(' • ')}</div>
+              </div>
+            </div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html dir="${dir}" lang="${language}">
+<head>
+  <meta charset="utf-8"/>
+  <title>${result.title || 'الخطة الأسبوعية'}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Arial', 'Tahoma', sans-serif;
+      padding: 0;
+      line-height: 1.7;
+      color: #1f2937;
+      font-size: 12px;
+      background: #fff;
+    }
+    .cover {
+      background: linear-gradient(135deg, #1e40af 0%, #0891b2 100%);
+      color: white;
+      padding: 40px 50px;
+      margin-bottom: 30px;
+    }
+    .cover h1 {
+      font-size: 26px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .cover .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 16px;
+    }
+    .cover .meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      opacity: 0.85;
+    }
+    .cover .meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .content {
+      padding: 0 40px 40px;
+    }
+    .overview-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-${isAr ? 'right' : 'left'}: 5px solid #0284c7;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .overview-box p {
+      font-size: 13px;
+      color: #0c4a6e;
+    }
+    .objectives-section {
+      margin-bottom: 24px;
+    }
+    .objectives-section h3 {
+      font-size: 14px;
+      color: #1e40af;
+      margin-bottom: 8px;
+    }
+    .objectives-section ul {
+      list-style: none;
+      padding: 0;
+    }
+    .objectives-section li {
+      padding: 4px 0;
+      padding-${isAr ? 'right' : 'left'}: 20px;
+      position: relative;
+      font-size: 12px;
+    }
+    .objectives-section li::before {
+      content: '✓';
+      position: absolute;
+      ${isAr ? 'right' : 'left'}: 0;
+      color: #059669;
+      font-weight: bold;
+    }
+    .day-section {
+      margin: 24px 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .day-header {
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .day-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .day-duration {
+      background: rgba(255,255,255,0.25);
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+    .day-body {
+      padding: 16px 20px;
+    }
+    .field {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .field:last-child {
+      border-bottom: none;
+    }
+    .field-icon {
+      font-size: 18px;
+      width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+    .field-content {
+      flex: 1;
+    }
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+    .field-value {
+      font-size: 13px;
+      color: #1f2937;
+    }
+    .field-desc {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 4px;
+    }
+    .badge {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 500;
+      margin-${isAr ? 'right' : 'left'}: 6px;
+    }
+    .teacher-note {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #92400e;
+    }
+    .note-label {
+      font-weight: 600;
+      color: #78350f;
+    }
+    .materials-list {
+      font-size: 11px;
+      color: #0369a1;
+      margin-top: 6px;
+    }
+    .differentiation {
+      font-size: 11px;
+      color: #92400e;
+      font-style: italic;
+      margin-top: 4px;
+    }
+    .author {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .connection {
+      font-size: 11px;
+      color: #0d9488;
+      font-style: italic;
+      margin-top: 4px;
+    }
+    .questions-list {
+      padding-${isAr ? 'right' : 'left'}: 18px;
+      margin-top: 4px;
+    }
+    .questions-list li {
+      font-size: 12px;
+      margin: 3px 0;
+      color: #374151;
+    }
+    .objective-field {
+      background: #fefce8;
+      border-radius: 8px;
+      padding: 12px !important;
+      border: 1px solid #fef08a !important;
+      border-bottom: 1px solid #fef08a !important;
+    }
+    .islamic-field {
+      background: #ecfdf5;
+      border-radius: 8px;
+      padding: 12px !important;
+      border: 1px solid #a7f3d0 !important;
+      border-bottom: 1px solid #a7f3d0 !important;
+    }
+    .hadith {
+      font-style: italic;
+      color: #065f46;
+      background: #d1fae5;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-top: 6px;
+      font-size: 12px;
+    }
+    .assessment-field {
+      background: #f0fdf4;
+      border-radius: 8px;
+      padding: 12px !important;
+      border: 1px solid #bbf7d0 !important;
+      border-bottom: 1px solid #bbf7d0 !important;
+    }
+    .indicators {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .indicator-badge {
+      background: #dcfce7;
+      color: #166534;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      border: 1px solid #bbf7d0;
+    }
+    .main-activity-field {
+      background: #fff7ed;
+      border-radius: 8px;
+      padding: 12px !important;
+      border: 1px solid #fed7aa !important;
+      border-bottom: 1px solid #fed7aa !important;
+    }
+    .summary-section {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .summary-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .summary-card h4 {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .summary-card p, .summary-card ul {
+      font-size: 12px;
+      color: #374151;
+    }
+    .summary-card ul {
+      list-style: disc;
+      padding-${isAr ? 'right' : 'left'}: 16px;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 2px solid #e5e7eb;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 11px;
+    }
+    .footer .logo-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+    @media print {
+      body { padding: 0; }
+      .cover { margin-bottom: 20px; }
+      .day-section { page-break-inside: avoid; }
+      .content { padding: 0 30px 30px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cover">
     <h1>${result.title || 'الخطة الأسبوعية'}</h1>
-    ${result.overview ? `<div class="overview">${result.overview}</div>` : ''}
-    ${result.learningObjectives && Array.isArray(result.learningObjectives) ? `<div class="objectives"><strong>أهداف الأسبوع:</strong><ul>${result.learningObjectives.map((o: string) => `<li>${o}</li>`).join('')}</ul></div>` : ''}
+    <p class="subtitle">${result.overview || 'خطة تعليمية أسبوعية شاملة وفق منهج EYFS'}</p>
+    <div class="meta">
+      <span>📅 ${today}</span>
+      <span>👶 الفئة العمرية: ${ageGroup} سنوات</span>
+      <span>📚 الموضوع: ${theme}</span>
+      <span>📄 ${days.length} أيام</span>
+    </div>
+  </div>
+  <div class="content">
+    ${result.overview ? `<div class="overview-box"><p>${result.overview}</p></div>` : ''}
+    ${result.learningObjectives && Array.isArray(result.learningObjectives) && result.learningObjectives.length > 0 ? `
+      <div class="objectives-section">
+        <h3>أهداف الأسبوع</h3>
+        <ul>${result.learningObjectives.map((o: string) => `<li>${o}</li>`).join('')}</ul>
+      </div>` : ''}
+    ${result.eyfsAreas && Array.isArray(result.eyfsAreas) && result.eyfsAreas.length > 0 ? `
+      <div style="margin-bottom:20px;">
+        <span style="font-size:11px;color:#6b7280;font-weight:600;">مجالات EYFS المغطاة: </span>
+        ${result.eyfsAreas.map((a: string) => `<span class="indicator-badge" style="background:#dbeafe;color:#1e40af;border-color:#bfdbfe;">${a}</span>`).join(' ')}
+      </div>` : ''}
     ${daysHtml}
-    ${result.weeklyMaterials && Array.isArray(result.weeklyMaterials) ? `<div class="weekly-materials"><strong>📦 جميع المواد المطلوبة للأسبوع:</strong><br/>${result.weeklyMaterials.join('، ')}</div>` : ''}
-    ${result.parentInvolvement ? `<div class="section"><h3>👨‍👩‍👧 إشراك الأهل:</h3><p>${result.parentInvolvement}</p></div>` : ''}
-    ${result.weeklyAssessment ? `<div class="section"><h3>📊 تقييم نهاية الأسبوع:</h3><p>${result.weeklyAssessment}</p></div>` : ''}
-    <div class="footer"><p>Learning Tree Kids Center | ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p></div>
-    </body></html>`);
+    <div class="summary-section">
+      ${result.weeklyMaterials && Array.isArray(result.weeklyMaterials) && result.weeklyMaterials.length > 0 ? `
+        <div class="summary-card">
+          <h4>📦 جميع المواد المطلوبة للأسبوع</h4>
+          <ul>${result.weeklyMaterials.map((m: string) => `<li>${m}</li>`).join('')}</ul>
+        </div>` : ''}
+      ${result.parentInvolvement ? `
+        <div class="summary-card">
+          <h4>👨‍👩‍👧 إشراك الأهل</h4>
+          <p>${result.parentInvolvement}</p>
+        </div>` : ''}
+      ${result.weeklyAssessment ? `
+        <div class="summary-card">
+          <h4>📊 تقييم نهاية الأسبوع</h4>
+          <p>${result.weeklyAssessment}</p>
+        </div>` : ''}
+    </div>
+    <div class="footer">
+      <p class="logo-text">Learning Tree Kids Center</p>
+      <p>خطة أسبوعية تفصيلية — تم إنشاؤها بواسطة المساعد الذكي | ${today}</p>
+      <p>هذه الخطة مُعدّة للاستخدام المباشر في الفصل الدراسي</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    printWindow.document.write(html);
     printWindow.document.close();
-    setTimeout(() => printWindow.print(), 500);
+    setTimeout(() => printWindow.print(), 600);
   };
 
   const handleGenerate = () => {
