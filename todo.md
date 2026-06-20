@@ -602,3 +602,50 @@
 - [x] Service worker: Handle parent_arrival type with requireInteraction and renotify
 - [x] Service worker: Post message to open clients for immediate in-app alert
 - [x] Service worker: Handle acknowledge action from notification buttons
+
+## Enhanced Pickup System - Multi-Step Workflow (Completed)
+
+### Priority & Response Time Tracking
+- [x] Display waiting timer on each pickup request (WaitTimer component with live seconds)
+- [x] Yellow color after 5 minutes waiting (border-r-amber-500)
+- [x] Red color after 10 minutes waiting (border-r-red-600 + animate-pulse)
+- [x] Priority badge (عاجل/متأخر) based on wait time
+
+### Child Information Display
+- [x] Show child photo, full name, classroom, teacher, request time on each request
+- [x] Visible to teacher, assistant, reception, and admin (all staff roles)
+
+### 4-Step Pickup Workflow
+- [x] Step 1: Parent presses "أنا هنا" (requestPickup)
+- [x] Step 2: Teacher presses "تم الاستلام" (status: called)
+- [x] Step 3: Teacher presses "الطفل جاهز" (status: ready)
+- [x] Step 4: Reception presses "تم التسليم" (status: picked_up with verification)
+- [x] Request cannot close until Step 4 confirmed (verification dialog required)
+- [x] Visual progress bar showing all 4 steps
+
+### Pickup Security
+- [x] Display authorized pickup persons list (from emergency contacts)
+- [x] Verify pickup person before completing (verification dialog)
+- [x] Record who picked up the child (pickedUpBy field)
+- [x] Display child photo for identification
+- [x] Custom pickup person name input option
+
+### Automatic History Recording
+- [x] Store request time (requestedAt), teacher response time (calledAt), child ready time (readyAt), pickup completion time (pickedUpAt)
+- [x] Calculate total waiting time (displayed in history)
+- [x] Record staff member who completed pickup (completedBy)
+- [x] Record name of pickup person (pickedUpBy)
+
+### Live Pickup Dashboard
+- [x] Number of pending pickup requests (pendingCount)
+- [x] Number of completed pickups today (completedToday)
+- [x] Average response time (avgResponseSeconds)
+- [x] Average total pickup time (avgTotalSeconds)
+- [x] Auto-refresh every 10 seconds
+
+### Parent Notifications
+- [x] "المعلمة استلمت طلبك" notification (when status → called)
+- [x] "طفلك جاهز للاستلام" notification (when status → ready)
+- [x] "تم تسليم طفلك بنجاح" notification (when status → picked_up)
+- [x] Real-time polling on parent page (every 5 seconds)
+- [x] Step-by-step progress tracker with timestamps on parent page

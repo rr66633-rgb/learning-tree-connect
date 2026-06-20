@@ -1815,7 +1815,7 @@ export async function createPickupRequest(data: InsertPickupRequest) {
 
 export async function getActivePickupRequests() {
   const db = await getDb();
-  return db!.select({
+  const results = await db!.select({
     id: pickupRequests.id,
     childId: pickupRequests.childId,
     parentId: pickupRequests.parentId,
@@ -1833,10 +1833,13 @@ export async function getActivePickupRequests() {
     childClassId: children.classId,
     parentName: users.name,
     parentPhone: users.phone,
+    className: classes.name,
+    classNameAr: classes.nameAr,
   })
   .from(pickupRequests)
   .leftJoin(children, eq(pickupRequests.childId, children.id))
   .leftJoin(users, eq(pickupRequests.parentId, users.id))
+  .leftJoin(classes, eq(children.classId, classes.id))
   .where(
     and(
       inArray(pickupRequests.status, ["waiting", "called", "ready"]),
@@ -1844,6 +1847,20 @@ export async function getActivePickupRequests() {
     )
   )
   .orderBy(desc(pickupRequests.requestedAt));
+
+  // Enrich with teacher name from classes
+  const enriched = await Promise.all(results.map(async (r) => {
+    let teacherName = '';
+    if (r.childClassId) {
+      const classInfo = await db!.select({ teacherId: classes.teacherId }).from(classes).where(eq(classes.id, r.childClassId)).limit(1);
+      if (classInfo[0]?.teacherId) {
+        const teacher = await db!.select({ name: users.name }).from(users).where(eq(users.id, classInfo[0].teacherId)).limit(1);
+        teacherName = teacher[0]?.name || '';
+      }
+    }
+    return { ...r, teacherName };
+  }));
+  return enriched;
 }
 
 export async function getPickupRequestsByParent(parentId: number) {
@@ -1911,13 +1928,76 @@ export async function getPickupHistory(limit = 100) {
     childLastName: children.lastName,
     childPhoto: children.photo,
     parentName: users.name,
+    className: classes.name,
+    classNameAr: classes.nameAr,
   })
   .from(pickupRequests)
   .leftJoin(children, eq(pickupRequests.childId, children.id))
   .leftJoin(users, eq(pickupRequests.parentId, users.id))
+  .leftJoin(classes, eq(children.classId, classes.id))
   .where(eq(pickupRequests.status, "picked_up"))
   .orderBy(desc(pickupRequests.pickedUpAt))
   .limit(limit);
+}
+
+export async function getPickupStats() {
+  const db = await getDb();
+  // Get today's stats
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const pending = await db!.select({ count: sql<number>`count(*)` })
+    .from(pickupRequests)
+    .where(and(
+      inArray(pickupRequests.status, ['waiting', 'called', 'ready']),
+      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
+    ));
+  
+  const completedToday = await db!.select({ count: sql<number>`count(*)` })
+    .from(pickupRequests)
+    .where(and(
+      eq(pickupRequests.status, 'picked_up'),
+      gte(pickupRequests.pickedUpAt, sql`CURDATE()`)
+    ));
+  
+  // Average response time (requestedAt to calledAt) for today's completed pickups
+  const avgResponse = await db!.select({
+    avgSeconds: sql<number>`AVG(TIMESTAMPDIFF(SECOND, requestedAt, calledAt))`
+  })
+    .from(pickupRequests)
+    .where(and(
+      eq(pickupRequests.status, 'picked_up'),
+      gte(pickupRequests.pickedUpAt, sql`CURDATE()`),
+      sql`calledAt IS NOT NULL`
+    ));
+  
+  // Average total pickup time (requestedAt to pickedUpAt) for today
+  const avgTotal = await db!.select({
+    avgSeconds: sql<number>`AVG(TIMESTAMPDIFF(SECOND, requestedAt, pickedUpAt))`
+  })
+    .from(pickupRequests)
+    .where(and(
+      eq(pickupRequests.status, 'picked_up'),
+      gte(pickupRequests.pickedUpAt, sql`CURDATE()`)
+    ));
+
+  return {
+    pendingCount: pending[0]?.count || 0,
+    completedToday: completedToday[0]?.count || 0,
+    avgResponseSeconds: avgResponse[0]?.avgSeconds || 0,
+    avgTotalSeconds: avgTotal[0]?.avgSeconds || 0,
+  };
+}
+
+export async function getAuthorizedPickupPersons(childId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(emergencyContacts)
+    .where(and(
+      eq(emergencyContacts.childId, childId),
+      eq(emergencyContacts.isAuthorizedPickup, true)
+    ));
 }
 
 // ============ LEARNING OBSERVATIONS ============

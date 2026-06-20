@@ -1,28 +1,53 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { MapPin, Clock, CheckCircle2, UserCheck, Bell, History } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, UserCheck, Bell, History, Car, Timer } from "lucide-react";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; description: string }> = {
-  waiting: { label: "بانتظار الاستجابة", color: "bg-amber-100 text-amber-800 border-amber-200", icon: Clock, description: "تم إرسال طلبك، بانتظار استجابة المعلمة" },
-  called: { label: "تم استدعاء الطفل", color: "bg-blue-100 text-blue-800 border-blue-200", icon: Bell, description: "تم استدعاء طفلك من الفصل، يرجى الانتظار" },
-  ready: { label: "جاهز للاستلام", color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2, description: "طفلك جاهز للاستلام، يرجى التوجه للاستقبال" },
-  picked_up: { label: "تم الاستلام", color: "bg-gray-100 text-gray-700 border-gray-200", icon: UserCheck, description: "تم تسليم طفلك بنجاح" },
-  cancelled: { label: "ملغي", color: "bg-red-100 text-red-700 border-red-200", icon: Clock, description: "تم إلغاء الطلب" },
-};
+const STATUS_STEPS = [
+  { key: "waiting", label: "تم الإرسال", description: "تم إرسال طلبك، بانتظار استجابة المعلمة", icon: Clock, color: "text-amber-600" },
+  { key: "called", label: "تم الاستلام", description: "المعلمة استلمت طلبك وجاري تجهيز طفلك", icon: Bell, color: "text-blue-600" },
+  { key: "ready", label: "جاهز", description: "طفلك جاهز للاستلام، يرجى التوجه للاستقبال", icon: CheckCircle2, color: "text-green-600" },
+  { key: "picked_up", label: "تم التسليم", description: "تم تسليم طفلك بنجاح", icon: UserCheck, color: "text-primary" },
+];
+
+// Live timer showing how long the parent has been waiting
+function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const start = new Date(requestedAt).getTime();
+    const update = () => setElapsed(Math.floor((Date.now() - start) / 1000));
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [requestedAt]);
+
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+
+  return (
+    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <Timer className="h-4 w-4" />
+      <span className="font-mono">{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}</span>
+      <span className="text-xs">وقت الانتظار</span>
+    </div>
+  );
+}
 
 export default function ParentPickup() {
   const { data: children, isLoading: loadingChildren } = trpc.children.list.useQuery();
-  const { data: myRequests, refetch: refetchRequests } = trpc.pickup.myRequests.useQuery();
+  const { data: myRequests, refetch: refetchRequests } = trpc.pickup.myRequests.useQuery(undefined, {
+    refetchInterval: 5000, // Poll every 5 seconds for real-time status updates
+  });
   const [showHistory, setShowHistory] = useState(false);
 
   const requestPickup = trpc.pickup.request.useMutation({
     onSuccess: () => {
-      toast.success("تم إرسال طلب الاستلام بنجاح");
+      toast.success("تم إرسال طلب الاستلام بنجاح - ستصلك إشعارات بكل تحديث");
       refetchRequests();
     },
     onError: (err) => {
@@ -66,31 +91,27 @@ export default function ParentPickup() {
 
       {!showHistory ? (
         <>
-          {/* Active pickup requests status */}
+          {/* Active pickup requests with detailed status tracking */}
           {activeRequests.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <h2 className="text-lg font-semibold">الطلبات النشطة</h2>
               {activeRequests.map((req: any) => {
-                const config = STATUS_CONFIG[req.status] || STATUS_CONFIG.waiting;
-                const StatusIcon = config.icon;
+                const currentStepIndex = STATUS_STEPS.findIndex(s => s.key === req.status);
                 return (
-                  <Card key={req.id} className={`border-2 ${req.status === 'ready' ? 'border-green-300 bg-green-50/50' : 'border-primary/20'}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
+                  <Card key={req.id} className={`border-2 ${req.status === 'ready' ? 'border-green-300 bg-green-50/30' : 'border-primary/20'}`}>
+                    <CardContent className="p-5">
+                      {/* Child info */}
+                      <div className="flex items-center gap-4 mb-4">
                         {req.childPhoto ? (
-                          <img src={req.childPhoto} alt="" className="h-14 w-14 rounded-full object-cover border-2 border-primary/20" />
+                          <img src={req.childPhoto} alt="" className="h-16 w-16 rounded-full object-cover border-2 border-primary/20 shadow-sm" />
                         ) : (
-                          <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
+                          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-xl font-bold text-primary">
                             {req.childFirstName?.charAt(0)}
                           </div>
                         )}
                         <div className="flex-1">
-                          <p className="font-semibold text-lg">{req.childFirstName} {req.childLastName}</p>
-                          <Badge className={`${config.color} mt-1`}>
-                            <StatusIcon className="h-3.5 w-3.5 ml-1" />
-                            {config.label}
-                          </Badge>
-                          <p className="text-sm text-muted-foreground mt-1">{config.description}</p>
+                          <p className="font-bold text-lg">{req.childFirstName} {req.childLastName}</p>
+                          <ParentWaitTimer requestedAt={req.requestedAt} />
                         </div>
                         {req.status === 'waiting' && (
                           <Button
@@ -104,23 +125,64 @@ export default function ParentPickup() {
                           </Button>
                         )}
                       </div>
-                      {/* Progress steps */}
-                      <div className="mt-4 flex items-center gap-1">
-                        {["waiting", "called", "ready", "picked_up"].map((step, i) => {
-                          const stepIndex = ["waiting", "called", "ready", "picked_up"].indexOf(req.status);
-                          const isActive = i <= stepIndex;
+
+                      {/* Current status message */}
+                      {req.status === 'ready' && (
+                        <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4 text-center">
+                          <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-1" />
+                          <p className="font-bold text-green-800">طفلك جاهز للاستلام!</p>
+                          <p className="text-sm text-green-700">يرجى التوجه إلى الاستقبال</p>
+                        </div>
+                      )}
+
+                      {/* Step-by-step progress */}
+                      <div className="space-y-0">
+                        {STATUS_STEPS.map((step, i) => {
+                          const isCompleted = i <= currentStepIndex;
+                          const isCurrent = i === currentStepIndex;
+                          const StepIcon = step.icon;
                           return (
-                            <div key={step} className="flex items-center flex-1">
-                              <div className={`h-2 flex-1 rounded-full ${isActive ? 'bg-primary' : 'bg-muted'}`} />
+                            <div key={step.key} className="flex items-start gap-3">
+                              {/* Vertical line connector */}
+                              <div className="flex flex-col items-center">
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                                  isCompleted ? 'bg-primary border-primary text-white' :
+                                  'bg-muted border-muted-foreground/20 text-muted-foreground'
+                                } ${isCurrent ? 'ring-2 ring-primary/30 ring-offset-2' : ''}`}>
+                                  <StepIcon className="h-4 w-4" />
+                                </div>
+                                {i < STATUS_STEPS.length - 1 && (
+                                  <div className={`w-0.5 h-8 ${i < currentStepIndex ? 'bg-primary' : 'bg-muted'}`} />
+                                )}
+                              </div>
+                              {/* Step label */}
+                              <div className={`pt-1 ${isCurrent ? 'font-bold' : ''}`}>
+                                <p className={`text-sm ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                  {step.label}
+                                </p>
+                                {isCurrent && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                                )}
+                                {/* Show timestamps for completed steps */}
+                                {isCompleted && i === 0 && req.requestedAt && (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {new Date(req.requestedAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                )}
+                                {isCompleted && i === 1 && req.calledAt && (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {new Date(req.calledAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                )}
+                                {isCompleted && i === 2 && req.readyAt && (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {new Date(req.readyAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
-                      </div>
-                      <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
-                        <span>بانتظار</span>
-                        <span>استدعاء</span>
-                        <span>جاهز</span>
-                        <span>تم</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -155,17 +217,23 @@ export default function ParentPickup() {
                       
                       {hasActive ? (
                         <div className="text-center py-2">
-                          <Badge className={STATUS_CONFIG[activeReq?.status || "waiting"].color}>
-                            {STATUS_CONFIG[activeReq?.status || "waiting"].label}
+                          <Badge className={
+                            activeReq?.status === 'waiting' ? "bg-amber-100 text-amber-800 border-amber-200" :
+                            activeReq?.status === 'called' ? "bg-blue-100 text-blue-800 border-blue-200" :
+                            "bg-green-100 text-green-800 border-green-200"
+                          }>
+                            {activeReq?.status === 'waiting' && "بانتظار الاستجابة"}
+                            {activeReq?.status === 'called' && "جاري التجهيز"}
+                            {activeReq?.status === 'ready' && "جاهز للاستلام"}
                           </Badge>
                         </div>
                       ) : (
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-6"
+                          className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-6 shadow-lg hover:shadow-xl transition-all active:scale-[0.97]"
                           onClick={() => requestPickup.mutate({ childId: child.id })}
                           disabled={requestPickup.isPending}
                         >
-                          <MapPin className="h-5 w-5 ml-2" />
+                          <Car className="h-5 w-5 ml-2" />
                           {requestPickup.isPending ? "جاري الإرسال..." : "أنا هنا - طلب استلام"}
                         </Button>
                       )}
@@ -183,31 +251,39 @@ export default function ParentPickup() {
           {historyRequests.length === 0 ? (
             <Card><CardContent className="p-8 text-center text-muted-foreground">لا يوجد سجل استلام سابق</CardContent></Card>
           ) : (
-            historyRequests.map((req: any) => (
-              <Card key={req.id}>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    {req.childPhoto ? (
-                      <img src={req.childPhoto} alt="" className="h-10 w-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                        {req.childFirstName?.charAt(0)}
+            historyRequests.map((req: any) => {
+              const totalMinutes = req.requestedAt && req.pickedUpAt
+                ? Math.round((new Date(req.pickedUpAt).getTime() - new Date(req.requestedAt).getTime()) / 60000)
+                : null;
+              return (
+                <Card key={req.id}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      {req.childPhoto ? (
+                        <img src={req.childPhoto} alt="" className="h-10 w-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                          {req.childFirstName?.charAt(0)}
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">{req.childFirstName} {req.childLastName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {req.pickedUpAt ? new Date(req.pickedUpAt).toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date(req.requestedAt).toLocaleDateString('ar-SA')}
+                        </p>
+                        {totalMinutes !== null && (
+                          <p className="text-xs text-muted-foreground">مدة الانتظار: {totalMinutes} دقيقة</p>
+                        )}
+                        {req.pickedUpBy && <p className="text-xs text-muted-foreground">المستلم: {req.pickedUpBy}</p>}
                       </div>
-                    )}
-                    <div className="flex-1">
-                      <p className="font-medium">{req.childFirstName} {req.childLastName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {req.pickedUpAt ? new Date(req.pickedUpAt).toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date(req.requestedAt).toLocaleDateString('ar-SA')}
-                      </p>
-                      {req.pickedUpBy && <p className="text-xs text-muted-foreground">المستلم: {req.pickedUpBy}</p>}
+                      <Badge className={req.status === 'picked_up' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-700"}>
+                        {req.status === 'picked_up' ? "تم الاستلام" : "ملغي"}
+                      </Badge>
                     </div>
-                    <Badge className={STATUS_CONFIG[req.status]?.color || "bg-gray-100"}>
-                      {STATUS_CONFIG[req.status]?.label || req.status}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       )}

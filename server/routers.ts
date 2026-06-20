@@ -2255,7 +2255,19 @@ export const appRouter = router({
       return db.getActivePickupRequests();
     }),
 
-    // Staff updates pickup status
+    // Staff gets pickup dashboard stats
+    stats: protectedProcedure.query(async () => {
+      return db.getPickupStats();
+    }),
+
+    // Staff gets authorized pickup persons for a child
+    authorizedPersons: protectedProcedure.input(z.object({
+      childId: z.number(),
+    })).query(async ({ input }) => {
+      return db.getAuthorizedPickupPersons(input.childId);
+    }),
+
+    // Staff updates pickup status (4-step workflow)
     updateStatus: protectedProcedure.input(z.object({
       id: z.number(),
       status: z.enum(['called', 'ready', 'picked_up', 'cancelled']),
@@ -2268,22 +2280,33 @@ export const appRouter = router({
       extra.handledBy = ctx.user!.id;
       await db.updatePickupRequestStatus(input.id, input.status, extra);
 
-      // Send notification to parent about status change
-      const statusMessages: Record<string, string> = {
-        called: 'تم استدعاء طفلك، يرجى الانتظار',
-        ready: 'طفلك جاهز للاستلام',
-        picked_up: 'تم تسليم طفلك بنجاح',
-        cancelled: 'تم إلغاء طلب الاستلام',
+      // Send specific notification to parent for each step
+      const statusMessages: Record<string, { title: string; body: string }> = {
+        called: { title: 'تم استلام طلبك', body: 'المعلمة استلمت طلبك وجاري تجهيز طفلك' },
+        ready: { title: 'طفلك جاهز', body: 'طفلك جاهز للاستلام، يرجى التوجه للاستقبال' },
+        picked_up: { title: 'تم الاستلام بنجاح', body: 'تم تسليم طفلك بنجاح. شكراً لك!' },
+        cancelled: { title: 'تم إلغاء الطلب', body: 'تم إلغاء طلب الاستلام' },
       };
       try {
-        // Get the pickup request to find parentId
-        const requests = await db.getActivePickupRequests();
-        const req = requests.find((r: any) => r.id === input.id);
+        // Get the pickup request to find parentId - search in all active + just-completed
+        const allActive = await db.getActivePickupRequests();
+        let req = allActive.find((r: any) => r.id === input.id);
+        // If just picked_up, it won't be in active anymore, fetch directly
+        if (!req) {
+          const direct = await db.getActivePickupForChild(0); // fallback
+          // Use a direct query instead
+          const dbConn = await (await import('./db')).getDb();
+          const { pickupRequests: pr } = await import('../drizzle/schema');
+          const { eq: eqOp } = await import('drizzle-orm');
+          const rows = await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+          req = rows[0] as any;
+        }
         if (req) {
+          const msg = statusMessages[input.status];
           await db.createNotification({
             userId: req.parentId,
-            title: 'تحديث طلب الاستلام',
-            body: statusMessages[input.status] || 'تم تحديث حالة طلب الاستلام',
+            title: msg.title,
+            body: msg.body,
             type: 'general',
             metadata: JSON.stringify({ pickupRequestId: input.id, status: input.status }),
           });
@@ -2303,6 +2326,24 @@ export const appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       // Move from 'waiting' to 'called' when teacher acknowledges
       await db.updatePickupRequestStatus(input.id, 'called', { handledBy: ctx.user!.id });
+      // Notify parent that teacher received the request
+      try {
+        const allActive = await db.getActivePickupRequests();
+        const req = allActive.find((r: any) => r.id === input.id);
+        if (req) {
+          await db.createNotification({
+            userId: req.parentId,
+            title: 'تم استلام طلبك',
+            body: 'المعلمة استلمت طلبك وجاري تجهيز طفلك',
+            type: 'general',
+            metadata: JSON.stringify({ pickupRequestId: input.id, status: 'called' }),
+          });
+          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
+          const child = await db.getChildById(req.childId);
+          const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
+          await notifyParentPickupStatus(req.parentId, childName, 'called', input.id);
+        }
+      } catch (e) { /* notification failure shouldn't block */ }
       return { success: true };
     }),
 
