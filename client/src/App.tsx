@@ -47,6 +47,7 @@ const AIMessage = lazy(() => import("./pages/ai/AIMessage"));
 const AINewsletter = lazy(() => import("./pages/ai/AINewsletter"));
 const AIStory = lazy(() => import("./pages/ai/AIStory"));
 const AILibrary = lazy(() => import("./pages/ai/AILibrary"));
+const AIAssistant = lazy(() => import("./pages/ai/AIAssistant"));
 
 // Legal Pages (public, no auth required)
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
@@ -317,6 +318,9 @@ function RoleRouter() {
         </Route>
         <Route path="/ai/library">
           {isStaffRole(userRole) ? <AILibrary /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/assistant">
+          <AIAssistant />
         </Route>
 
         {/* Staff routes - protected for staff roles only */}

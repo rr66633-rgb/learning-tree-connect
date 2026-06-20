@@ -737,3 +737,14 @@
 - [ ] Add AI section to staff navigation menu
 - [ ] Connect all features to LLM provider
 - [ ] Test all 8 AI generation workflows
+- [ ] Fix: AI Assistant 404 - Create child-friendly AI Assistant page at /ai/assistant
+- [ ] AI Assistant: Quran memorization help
+- [ ] AI Assistant: Daily revision
+- [ ] AI Assistant: Islamic questions for children
+- [ ] AI Assistant: Daily motivation
+- [ ] AI Assistant: Memorization plans
+- [ ] AI Assistant: Encouragement messages
+- [ ] AI Assistant: Quick actions (Help me memorize, Test me, Review today, Daily challenge, Ask a question)
+- [ ] AI Assistant: Child-friendly conversational interface
+- [ ] AI Assistant: Proper loading states and error handling
+- [ ] AI Assistant: Add to parent navigation menu

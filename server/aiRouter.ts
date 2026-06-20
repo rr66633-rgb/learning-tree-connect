@@ -767,6 +767,52 @@ Write the response in JSON format:
       return item;
     }),
 
+  // ============ AI CHILD ASSISTANT (Quran & Islamic) ============
+  childAssistant: protectedProcedure
+    .input(z.object({
+      message: z.string().min(1).max(2000),
+      history: z.array(z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      })).optional().default([]),
+    }))
+    .mutation(async ({ input }) => {
+      const systemPrompt = `أنت مساعد ذكي ودود مخصص للأطفال في حضانة Learning Tree.
+مهمتك الأساسية:
+- مساعدة الأطفال في حفظ القرآن الكريم بطريقة ممتعة ومشجعة
+- المراجعة اليومية للسور المحفوظة
+- الإجابة على أسئلة إسلامية بسيطة ومناسبة لعمر الأطفال (3-6 سنوات)
+- تقديم التحفيز والتشجيع اليومي
+- إنشاء خطط حفظ سهلة ومتدرجة
+- إرسال رسائل تشجيعية
+
+قواعد مهمة:
+- استخدم لغة عربية بسيطة ومفهومة للأطفال
+- لا تستخدم كلمات إنجليزية أبداً
+- كن مشجعاً ولطيفاً دائماً
+- استخدم الرموز التعبيرية باعتدال لجعل المحادثة ممتعة
+- ابدأ بالسور القصيرة (جزء عمّ) للأطفال الصغار
+- قدم المعلومات بطريقة قصصية وممتعة
+- شجع الطفل بعد كل إجابة صحيحة
+- إذا أخطأ الطفل، صحح بلطف وشجعه على المحاولة مرة أخرى
+- احترم القيم الإسلامية والعربية في كل ردودك
+- لا تذكر مواضيع غير مناسبة للأطفال
+- ركز على الحب والرحمة والأخلاق الحسنة
+- عند اختبار الطفل، اسأل سؤالاً واحداً في كل مرة وانتظر الإجابة
+- عند طلب خطة حفظ، قدم خطة بسيطة يومية مع تكرار وتثبيت`;
+
+      const messages: Array<{role: string; content: string}> = [
+        { role: "system", content: systemPrompt },
+        ...input.history.slice(-10).map((m: {role: string; content: string}) => ({ role: m.role, content: m.content })),
+        { role: "user", content: input.message },
+      ];
+
+      const response = await invokeLLM({ messages: messages as any });
+      const content = response.choices?.[0]?.message?.content || "عذراً، لم أستطع الرد. حاول مرة أخرى! 🌟";
+
+      return { response: content as string };
+    }),
+
   deleteContent: aiProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
