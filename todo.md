@@ -649,3 +649,17 @@
 - [x] "تم تسليم طفلك بنجاح" notification (when status → picked_up)
 - [x] Real-time polling on parent page (every 5 seconds)
 - [x] Step-by-step progress tracker with timestamps on parent page
+
+## Notification Sound Improvements (Completed)
+
+- [x] Replace harsh alarm oscillator with gentle nursery-friendly tones (Web Audio API sine/triangle waves)
+- [x] Create multiple tone options: soft chime, gentle bell, friendly ping, calm melody
+- [x] Add notification settings page with volume slider (10-100%)
+- [x] Add mute option (sound enable/disable toggle)
+- [x] Add vibration-only option (quick preset button)
+- [x] Add tone selection with preview play button for each tone
+- [x] Persist settings in localStorage (auto-save on change)
+- [x] Apply settings to ParentArrivalAlert component (uses useNotificationSound hook)
+- [x] Change alert styling from red/urgent to emerald/friendly (nursery-appropriate)
+- [x] Add quick preset buttons: default, vibration only, silent, loud
+- [x] Gentle vibration pattern (200ms-100ms-200ms instead of harsh 500ms bursts)

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Bell, CheckCircle2, X } from "lucide-react";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 
 interface ArrivalAlert {
   id: number;
@@ -16,13 +17,13 @@ interface ArrivalAlert {
 /**
  * Full-screen persistent alert component for staff/teachers.
  * Shows when a parent presses "I'm here" and stays visible until acknowledged.
- * Plays a loud alarm sound and triggers device vibration.
+ * Plays a gentle, nursery-friendly notification sound and optionally vibrates.
  */
 export function ParentArrivalAlert() {
   const [alerts, setAlerts] = useState<ArrivalAlert[]>([]);
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const vibrationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { playRepeating, stopRepeating, vibrate, settings } = useNotificationSound();
 
   // Query active pickup requests (poll every 5 seconds for real-time)
   const { data: activeRequests, refetch } = trpc.pickup.active.useQuery(undefined, {
@@ -35,7 +36,6 @@ export function ParentArrivalAlert() {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'PARENT_ARRIVAL_ALERT') {
-        // Immediately refetch to show the alert
         refetch();
       }
       if (event.data?.type === 'ACKNOWLEDGE_PICKUP' && event.data?.pickupRequestId) {
@@ -64,98 +64,36 @@ export function ParentArrivalAlert() {
     setAlerts(waitingRequests as ArrivalAlert[]);
   }, [activeRequests, dismissed]);
 
-  // Play alarm sound and vibrate when there are active alerts
+  // Play gentle notification sound and vibrate when there are active alerts
   useEffect(() => {
     if (alerts.length > 0) {
-      // Start playing alarm sound in a loop
-      playAlarmSound();
-      // Vibrate device
-      triggerVibration();
-      // Set up repeating vibration
-      intervalRef.current = setInterval(() => {
-        triggerVibration();
-      }, 3000);
+      // Start playing gentle notification sound in a loop
+      playRepeating();
+      // Vibrate device gently
+      vibrate();
+      // Set up repeating gentle vibration
+      vibrationIntervalRef.current = setInterval(() => {
+        vibrate();
+      }, 5000);
     } else {
       // Stop sound and vibration
-      stopAlarmSound();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      stopRepeating();
+      if (vibrationIntervalRef.current) {
+        clearInterval(vibrationIntervalRef.current);
+        vibrationIntervalRef.current = null;
       }
     }
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (vibrationIntervalRef.current) {
+        clearInterval(vibrationIntervalRef.current);
       }
     };
-  }, [alerts.length]);
-
-  const playAlarmSound = useCallback(() => {
-    if (!audioRef.current) {
-      // Create an audio element with a generated alarm tone
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      // Create an urgent alarm pattern
-      oscillator.type = "square";
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-
-      // Modulate frequency for urgency
-      const now = audioCtx.currentTime;
-      for (let i = 0; i < 20; i++) {
-        oscillator.frequency.setValueAtTime(880, now + i * 0.5);
-        oscillator.frequency.setValueAtTime(1100, now + i * 0.5 + 0.25);
-      }
-
-      oscillator.start();
-      oscillator.stop(now + 10); // Play for 10 seconds max
-
-      // Store reference for cleanup
-      (audioRef as any).current = { oscillator, audioCtx, gainNode };
-
-      // Repeat after 10 seconds if still active
-      setTimeout(() => {
-        audioRef.current = null;
-        if (alerts.length > 0) {
-          playAlarmSound();
-        }
-      }, 10000);
-    }
-  }, [alerts.length]);
-
-  const stopAlarmSound = useCallback(() => {
-    if (audioRef.current) {
-      try {
-        const ref = audioRef.current as any;
-        if (ref.oscillator) {
-          ref.oscillator.stop();
-        }
-        if (ref.audioCtx) {
-          ref.audioCtx.close();
-        }
-      } catch (e) {
-        // Ignore errors on cleanup
-      }
-      audioRef.current = null;
-    }
-  }, []);
-
-  const triggerVibration = () => {
-    if ("vibrate" in navigator) {
-      // Strong vibration pattern: long-short-long-short-long
-      navigator.vibrate([500, 200, 500, 200, 500, 200, 500]);
-    }
-  };
+  }, [alerts.length, playRepeating, stopRepeating, vibrate]);
 
   const handleAcknowledge = (requestId: number) => {
     // Stop sound immediately
-    stopAlarmSound();
+    stopRepeating();
     // Dismiss this alert
     setDismissed((prev) => new Set(Array.from(prev).concat(requestId)));
     // Call the acknowledge endpoint (moves status to 'called')
@@ -166,7 +104,7 @@ export function ParentArrivalAlert() {
     // Just dismiss from UI without changing status
     setDismissed((prev) => new Set(Array.from(prev).concat(requestId)));
     if (alerts.length <= 1) {
-      stopAlarmSound();
+      stopRepeating();
     }
   };
 
@@ -174,25 +112,22 @@ export function ParentArrivalAlert() {
   if (alerts.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Pulsing background effect */}
-      <div className="absolute inset-0 animate-pulse bg-red-600/20 pointer-events-none" />
-
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="relative w-full max-w-lg mx-4 space-y-4">
         {alerts.map((alert) => (
           <div
             key={alert.id}
-            className="bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-red-500 animate-in zoom-in-95 duration-300"
+            className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-emerald-400 animate-in zoom-in-95 duration-300"
           >
-            {/* Header with urgent styling */}
-            <div className="bg-red-600 text-white px-6 py-4 flex items-center gap-3">
+            {/* Header with friendly styling */}
+            <div className="bg-gradient-to-l from-emerald-600 to-teal-600 text-white px-6 py-4 flex items-center gap-3">
               <div className="relative">
-                <Bell className="h-8 w-8 animate-bounce" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-ping" />
+                <Bell className="h-7 w-7 animate-[swing_2s_ease-in-out_infinite]" />
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-amber-300 rounded-full animate-ping" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold">ولي أمر وصل للاستلام</h2>
-                <p className="text-red-100 text-sm">يرجى الاستجابة فوراً</p>
+                <p className="text-emerald-100 text-sm">يرجى الاستجابة</p>
               </div>
               <Button
                 variant="ghost"
@@ -211,10 +146,10 @@ export function ParentArrivalAlert() {
                   <img
                     src={alert.childPhoto}
                     alt=""
-                    className="h-20 w-20 rounded-full object-cover border-4 border-red-200 shadow-lg"
+                    className="h-20 w-20 rounded-full object-cover border-4 border-emerald-100 shadow-lg"
                   />
                 ) : (
-                  <div className="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center text-3xl font-bold text-red-600 border-4 border-red-200">
+                  <div className="h-20 w-20 rounded-full bg-emerald-50 flex items-center justify-center text-3xl font-bold text-emerald-600 border-4 border-emerald-100">
                     {alert.childFirstName?.charAt(0)}
                   </div>
                 )}
@@ -238,7 +173,7 @@ export function ParentArrivalAlert() {
               {/* Action buttons */}
               <div className="space-y-3">
                 <Button
-                  className="w-full py-6 text-lg font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg transition-transform active:scale-[0.97]"
+                  className="w-full py-6 text-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg transition-transform active:scale-[0.97]"
                   onClick={() => handleAcknowledge(alert.id)}
                   disabled={acknowledgeMutation.isPending}
                 >
@@ -250,11 +185,20 @@ export function ParentArrivalAlert() {
               </div>
             </div>
 
-            {/* Animated bottom bar */}
-            <div className="h-2 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 animate-pulse" />
+            {/* Animated bottom bar - gentle gradient */}
+            <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400" />
           </div>
         ))}
       </div>
+
+      {/* Add swing animation keyframes */}
+      <style>{`
+        @keyframes swing {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(10deg); }
+          75% { transform: rotate(-10deg); }
+        }
+      `}</style>
     </div>
   );
 }

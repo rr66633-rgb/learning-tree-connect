@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { MapPin, Clock, Building2, Save } from "lucide-react";
 import ChangePassword from "@/components/ChangePassword";
+import { NotificationSoundSettings } from "@/components/NotificationSoundSettings";
 
 export default function StaffSettings() {
   const { data: settings, isLoading } = trpc.centerSettings.get.useQuery();
@@ -158,6 +159,9 @@ export default function StaffSettings() {
           {update.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
         </Button>
       </div>
+
+      {/* Notification Sound Settings */}
+      <NotificationSoundSettings />
 
       {/* Change Password */}
       <ChangePassword />
