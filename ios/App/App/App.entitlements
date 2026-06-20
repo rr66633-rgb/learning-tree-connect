@@ -6,8 +6,8 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:learningtree.manus.space</string>
-		<string>webcredentials:learningtree.manus.space</string>
+		<string>applinks:portal.learningtreeco.com</string>
+		<string>webcredentials:portal.learningtreeco.com</string>
 	</array>
 </dict>
 </plist>
