@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, Redirect } from "wouter";
+import { Route, Switch, Redirect, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
@@ -36,6 +36,10 @@ const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
 const StaffPickup = lazy(() => import("./pages/staff/Pickup"));
 const StaffAssessments = lazy(() => import("./pages/staff/Assessments"));
 const StaffAuditLog = lazy(() => import("./pages/staff/AuditLog"));
+
+// Legal Pages (public, no auth required)
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -201,8 +205,21 @@ function PendingRolePage() {
 
 function RoleRouter() {
   const { user, loading } = useAuth();
+  const [location] = useLocation();
   useSessionTimeout();
   useNativeInit();
+
+  // Public legal pages - always accessible without auth or dashboard
+  if (location === "/privacy" || location === "/terms") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/privacy" component={PrivacyPolicy} />
+          <Route path="/terms" component={TermsOfService} />
+        </Switch>
+      </Suspense>
+    );
+  }
 
   if (loading) return <PageLoader />;
 
@@ -211,6 +228,8 @@ function RoleRouter() {
     return (
       <Suspense fallback={<PageLoader />}>
         <Switch>
+          <Route path="/privacy" component={PrivacyPolicy} />
+          <Route path="/terms" component={TermsOfService} />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
           <Route path="/forgot-password" component={ForgotPassword} />

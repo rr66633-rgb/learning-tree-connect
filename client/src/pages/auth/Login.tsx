@@ -154,6 +154,19 @@ export default function Login() {
               </button>
             </p>
           </div>
+
+          <div className="text-center pt-4 border-t mt-4">
+            <p className="text-xs text-muted-foreground">
+              بتسجيل الدخول، أنت توافق على{" "}
+              <a href="/terms" className="text-primary hover:underline">
+                شروط الخدمة
+              </a>
+              {" "}و{" "}
+              <a href="/privacy" className="text-primary hover:underline">
+                سياسة الخصوصية
+              </a>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
