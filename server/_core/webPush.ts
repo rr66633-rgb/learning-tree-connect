@@ -25,6 +25,10 @@ export interface PushPayload {
   tag?: string;
   data?: Record<string, any>;
   actions?: Array<{ action: string; title: string; icon?: string }>;
+  requireInteraction?: boolean;
+  urgency?: 'very-low' | 'low' | 'normal' | 'high';
+  vibrate?: number[];
+  silent?: boolean;
 }
 
 export async function sendPushNotification(
@@ -45,7 +49,7 @@ export async function sendPushNotification(
       JSON.stringify(payload),
       {
         TTL: 60 * 60, // 1 hour
-        urgency: 'high',
+        urgency: payload.urgency || 'high',
       }
     );
     return true;

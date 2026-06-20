@@ -25,33 +25,97 @@ self.addEventListener('push', (event) => {
     };
   }
 
+  const data = payload.data || {};
+  const isUrgentPickup = data.type === 'parent_arrival' || data.priority === 'urgent';
+
   const options = {
     body: payload.body || '',
     icon: payload.icon || '/favicon.ico',
     badge: payload.badge || '/favicon.ico',
     tag: payload.tag || 'default',
-    data: payload.data || {},
+    data: data,
     dir: 'rtl',
     lang: 'ar',
-    vibrate: [200, 100, 200],
-    requireInteraction: payload.requireInteraction || false,
+    // High-priority: strong vibration pattern for urgent pickup alerts
+    vibrate: isUrgentPickup
+      ? [500, 200, 500, 200, 500, 200, 500, 200, 500]
+      : (payload.vibrate || [200, 100, 200]),
+    // Urgent notifications stay visible until user interacts
+    requireInteraction: isUrgentPickup ? true : (payload.requireInteraction || false),
+    // Do NOT make it silent - we want sound
+    silent: false,
     actions: payload.actions || [],
+    // Renotify even if same tag exists (for repeated alerts)
+    renotify: isUrgentPickup,
   };
 
-  event.waitUntil(
-    self.registration.showNotification(payload.title || 'Learning Tree', options)
+  // For urgent pickup alerts, also post a message to all open clients
+  // so the in-app full-screen alert can show immediately
+  const notificationPromise = self.registration.showNotification(
+    payload.title || 'Learning Tree',
+    options
   );
+
+  const clientMessagePromise = isUrgentPickup
+    ? self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({
+            type: 'PARENT_ARRIVAL_ALERT',
+            payload: {
+              pickupRequestId: data.pickupRequestId,
+              childId: data.childId,
+              title: payload.title,
+              body: payload.body,
+            },
+          });
+        });
+      })
+    : Promise.resolve();
+
+  event.waitUntil(Promise.all([notificationPromise, clientMessagePromise]));
 });
 
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
+  const data = event.notification.data || {};
+  const action = event.action;
+
+  // Handle acknowledge action from notification buttons
+  if (action === 'acknowledge' && data.pickupRequestId) {
+    event.notification.close();
+    // Navigate to pickup page and let the in-app handler acknowledge
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        // Post message to client to trigger acknowledge
+        for (const client of clientList) {
+          client.postMessage({
+            type: 'ACKNOWLEDGE_PICKUP',
+            pickupRequestId: data.pickupRequestId,
+          });
+          client.focus();
+          return;
+        }
+        // If no client open, open the pickup page
+        if (self.clients.openWindow) {
+          return self.clients.openWindow('/staff/pickup');
+        }
+      })
+    );
+    return;
+  }
+
   event.notification.close();
 
-  const data = event.notification.data || {};
   let url = data.url || '/';
-  // Handle message notifications - navigate to messages page
+
+  // Handle message notifications
   if (data.type === 'new_message') {
     url = '/staff/messages';
+  }
+
+  // Handle parent arrival - go to pickup page
+  if (data.type === 'parent_arrival') {
+    url = '/staff/pickup';
   }
 
   event.waitUntil(

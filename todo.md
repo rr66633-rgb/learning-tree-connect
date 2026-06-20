@@ -589,3 +589,16 @@
 - [x] Ensure ChildProfile page renders all required sections (personal, parent, medical, nursery, documents tabs)
 - [x] Perform full routing audit and fix all broken navigation links
 - [x] Test on mobile and desktop viewports
+
+## Parent Arrival High-Priority Notification
+
+- [x] Parent "I'm here" button on pickup page (existing requestPickup procedure)
+- [x] Backend: High-priority push notification with requireInteraction, vibration, and sound
+- [x] Backend: Target child's specific teacher(s) + admins/principals/receptionists
+- [x] Backend: Acknowledge endpoint for teacher to dismiss alert (pickup.acknowledge)
+- [x] Frontend: Full-screen persistent alert component (ParentArrivalAlert.tsx)
+- [x] Frontend: Alarm sound (Web Audio API oscillator) and vibration pattern on alert
+- [x] Frontend: Alert stays visible until teacher acknowledges (requireInteraction + polling)
+- [x] Service worker: Handle parent_arrival type with requireInteraction and renotify
+- [x] Service worker: Post message to open clients for immediate in-app alert
+- [x] Service worker: Handle acknowledge action from notification buttons

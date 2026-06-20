@@ -2297,7 +2297,16 @@ export const appRouter = router({
       return { success: true };
     }),
 
-        // Staff views pickup history
+    // Staff acknowledges a pickup request (dismisses the alert)
+    acknowledge: protectedProcedure.input(z.object({
+      id: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      // Move from 'waiting' to 'called' when teacher acknowledges
+      await db.updatePickupRequestStatus(input.id, 'called', { handledBy: ctx.user!.id });
+      return { success: true };
+    }),
+
+    // Staff views pickup history
     history: protectedProcedure.input(z.object({
       limit: z.number().min(1).max(500).default(100),
     }).optional()).query(async ({ input }) => {

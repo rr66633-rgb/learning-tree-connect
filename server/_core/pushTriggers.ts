@@ -2,26 +2,49 @@ import { sendPushToUser, sendPushToUsers, PushPayload } from './webPush';
 import * as db from '../db';
 
 /**
- * Send push notification to all staff (teachers, admins, etc.) about a pickup request
+ * Send HIGH-PRIORITY push notification to child's teacher(s) about parent arrival.
+ * Uses requireInteraction=true so the notification persists until acknowledged.
+ * Includes vibration pattern and special data flags for full-screen alert.
  */
 export async function notifyStaffPickupRequest(childName: string, pickupRequestId: number, childId: number) {
   const payload: PushPayload = {
-    title: 'طلب استلام جديد 🚗',
-    body: `ولي أمر ${childName} وصل لاستلامه`,
-    tag: `pickup-${pickupRequestId}`,
-    data: { url: '/pickup', pickupRequestId, childId },
+    title: '🚨 ولي أمر وصل للاستلام',
+    body: `ولي أمر ${childName} وصل وينتظر - يرجى الاستجابة فوراً`,
+    tag: `pickup-urgent-${pickupRequestId}`,
+    requireInteraction: true,
+    urgency: 'high',
+    vibrate: [500, 200, 500, 200, 500, 200, 500],
+    data: {
+      url: '/staff/pickup',
+      pickupRequestId,
+      childId,
+      type: 'parent_arrival',
+      priority: 'urgent',
+      fullScreenAlert: true,
+      sound: 'urgent',
+    },
     actions: [
-      { action: 'view', title: 'عرض' },
+      { action: 'acknowledge', title: 'تم الاستلام ✓' },
+      { action: 'view', title: 'عرض التفاصيل' },
     ],
   };
 
-  // Get all staff users
+  // First, try to notify the specific teacher(s) for this child's class
+  const teachers = await db.getTeachersForChild(childId);
+  let targetIds = teachers.map((t: any) => t.id);
+
+  // Also notify admins/principals for visibility
   const staffUsers = await db.getStaffUsers();
-  const staffIds = staffUsers.map((u: any) => u.id);
+  const adminIds = staffUsers
+    .filter((u: any) => ['super_admin', 'admin', 'principal', 'receptionist'].includes(u.role))
+    .map((u: any) => u.id);
 
-  if (staffIds.length === 0) return;
+  // Combine teacher IDs + admin IDs (deduplicated)
+  const allTargetIds = Array.from(new Set([...targetIds, ...adminIds]));
 
-  const result = await sendPushToUsers(staffIds, payload, db.getPushSubscriptionsForUser);
+  if (allTargetIds.length === 0) return;
+
+  const result = await sendPushToUsers(allTargetIds, payload, db.getPushSubscriptionsForUser);
   if (result.expiredIds.length > 0) {
     await db.removeExpiredSubscriptions(result.expiredIds);
   }

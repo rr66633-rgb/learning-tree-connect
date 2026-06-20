@@ -5,6 +5,7 @@ import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
+import { ParentArrivalAlert } from "./components/ParentArrivalAlert";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { lazy, Suspense } from "react";
@@ -237,6 +238,8 @@ function RoleRouter() {
 
   return (
     <DashboardLayout basePath={basePath}>
+      {/* Full-screen alert for staff when parent arrives for pickup */}
+      {isStaffRole(userRole) && <ParentArrivalAlert />}
       <Switch>
         {/* Root redirect based on role */}
         <Route path="/">
