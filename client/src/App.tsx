@@ -8,6 +8,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import { ParentArrivalAlert } from "./components/ParentArrivalAlert";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
+import { useNativeInit } from "./hooks/useNativeInit";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -201,6 +202,7 @@ function PendingRolePage() {
 function RoleRouter() {
   const { user, loading } = useAuth();
   useSessionTimeout();
+  useNativeInit();
 
   if (loading) return <PageLoader />;
 
