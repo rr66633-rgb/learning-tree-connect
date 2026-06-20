@@ -132,7 +132,7 @@ Write the response in JSON format with this structure:
       const goals = input.learningGoals?.join("، ") || "";
       
       const prompt = input.language === "ar"
-        ? `أنت مخططة مناهج رياض أطفال محترفة في المملكة العربية السعودية. أنشئي خطة أسبوعية كاملة.
+        ? `أنتِ مخططة مناهج رياض أطفال خبيرة في المملكة العربية السعودية متخصصة في إطار EYFS. أنشئي خطة أسبوعية تفصيلية كاملة وجاهزة للتطبيق المباشر في الفصل.
 
 الفئة العمرية: ${input.ageGroup}
 الموضوع/الثيمة: ${input.theme}
@@ -140,31 +140,62 @@ ${goals ? `أهداف التعلم: ${goals}` : ""}
 
 ${CULTURAL_GUIDELINES}
 
-اكتبي الرد بصيغة JSON:
+مهم جداً: يجب أن تكون الخطة تفصيلية بحيث تستطيع المعلمة فتحها وتطبيقها مباشرة بدون إعداد إضافي. كل يوم يجب أن يحتوي على جميع التفاصيل اللازمة.
+
+اكتبي الرد بصيغة JSON بالضبط كالتالي:
 {
   "title": "عنوان الخطة الأسبوعية",
   "theme": "${input.theme}",
   "ageGroup": "${input.ageGroup}",
-  "overview": "نظرة عامة على الأسبوع (2-3 جمل)",
-  "learningObjectives": ["هدف 1", "هدف 2", "هدف 3"],
+  "overview": "نظرة عامة شاملة على الأسبوع (3-4 جمل تشرح الأهداف العامة والمخرجات المتوقعة)",
+  "learningObjectives": ["هدف تعلم 1 مرتبط بـ EYFS", "هدف تعلم 2", "هدف تعلم 3", "هدف تعلم 4"],
+  "eyfsAreas": ["التواصل واللغة", "النمو الجسدي", "النمو الشخصي والاجتماعي والعاطفي"],
   "days": [
     {
       "day": "الأحد",
-      "mainActivity": "النشاط الرئيسي",
-      "description": "وصف النشاط",
-      "materials": ["مادة 1", "مادة 2"],
-      "eyfsAreas": ["المجال 1"],
-      "duration": "30 دقيقة",
-      "additionalActivities": ["نشاط إضافي 1"]
+      "learningObjective": "الهدف التعليمي المحدد لهذا اليوم - ماذا سيتعلم الطفل بنهاية اليوم",
+      "circleTime": {
+        "activity": "اسم نشاط حلقة الصباح",
+        "description": "وصف تفصيلي لما تفعله المعلمة خطوة بخطوة",
+        "duration": "15 دقيقة",
+        "teacherInstructions": "تعليمات واضحة للمعلمة: 1) اجمعي الأطفال في الحلقة 2) ابدئي بـ... 3) اسألي..."
+      },
+      "mainActivity": {
+        "title": "عنوان النشاط الرئيسي",
+        "description": "وصف تفصيلي للنشاط وكيفية تنفيذه",
+        "duration": "30 دقيقة",
+        "teacherInstructions": "تعليمات تفصيلية للمعلمة خطوة بخطوة",
+        "materials": ["مادة 1", "مادة 2", "مادة 3"],
+        "differentiation": "كيفية تعديل النشاط للأطفال ذوي المستويات المختلفة"
+      },
+      "storyRecommendation": {
+        "title": "اسم القصة المقترحة",
+        "author": "المؤلف إن وجد",
+        "summary": "ملخص قصير للقصة",
+        "connection": "كيف ترتبط القصة بموضوع اليوم"
+      },
+      "discussionQuestions": ["سؤال نقاشي 1 مناسب للعمر", "سؤال نقاشي 2", "سؤال نقاشي 3"],
+      "materials": ["قائمة كاملة بجميع المواد المطلوبة لهذا اليوم"],
+      "islamicValue": {
+        "value": "القيمة الإسلامية (مثل: التعاون، الأمانة، الشكر)",
+        "connection": "كيف نربط هذه القيمة بأنشطة اليوم",
+        "hadithOrAyah": "حديث أو آية قصيرة مناسبة للأطفال"
+      },
+      "assessmentOpportunity": {
+        "what": "ماذا نلاحظ/نقيّم",
+        "how": "كيف نقيّم (ملاحظة، سؤال، إنتاج)",
+        "indicators": ["مؤشر نجاح 1", "مؤشر نجاح 2"]
+      },
+      "totalDuration": "المدة الإجمالية لأنشطة اليوم"
     }
   ],
-  "materialsNeeded": ["قائمة كاملة بالمواد المطلوبة للأسبوع"],
-  "assessmentOpportunities": ["فرصة تقييم 1", "فرصة تقييم 2"],
-  "parentInvolvement": "كيف يمكن إشراك الأهل"
+  "weeklyMaterials": ["قائمة شاملة بجميع المواد المطلوبة للأسبوع كاملاً"],
+  "parentInvolvement": "أنشطة منزلية مقترحة لإشراك الأهل",
+  "weeklyAssessment": "ملخص تقييم نهاية الأسبوع - ما المتوقع أن يحققه الأطفال"
 }
 
-أنشئي خطة لـ 5 أيام (الأحد إلى الخميس). اكتبي كل شيء بالعربية فقط.`
-        : `You are a professional early years curriculum planner in Saudi Arabia. Create a complete weekly plan.
+أنشئي خطة تفصيلية كاملة لـ 5 أيام (الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس). كل يوم يجب أن يكون مختلفاً ومتدرجاً في الصعوبة. اكتبي كل شيء بالعربية فقط. لا تترك أي حقل فارغاً.`
+        : `You are an expert early years curriculum planner in Saudi Arabia specializing in the EYFS framework. Create a comprehensive, ready-to-teach weekly plan that a teacher can open and use directly without any additional preparation.
 
 Age group: ${input.ageGroup}
 Theme: ${input.theme}
@@ -172,30 +203,61 @@ ${goals ? `Learning goals: ${goals}` : ""}
 
 ${CULTURAL_GUIDELINES}
 
-Write the response in JSON format:
+IMPORTANT: The plan must be detailed enough that a teacher can open it and teach directly without creating additional content. Every day must contain ALL necessary details.
+
+Write the response in JSON format exactly as follows:
 {
   "title": "Weekly plan title",
   "theme": "${input.theme}",
   "ageGroup": "${input.ageGroup}",
-  "overview": "Week overview (2-3 sentences)",
-  "learningObjectives": ["objective 1", "objective 2", "objective 3"],
+  "overview": "Comprehensive week overview (3-4 sentences explaining overall goals and expected outcomes)",
+  "learningObjectives": ["EYFS-linked learning objective 1", "objective 2", "objective 3", "objective 4"],
+  "eyfsAreas": ["Communication and Language", "Physical Development", "Personal Social and Emotional Development"],
   "days": [
     {
       "day": "Sunday",
-      "mainActivity": "Main activity",
-      "description": "Activity description",
-      "materials": ["material 1", "material 2"],
-      "eyfsAreas": ["Area 1"],
-      "duration": "30 minutes",
-      "additionalActivities": ["additional activity 1"]
+      "learningObjective": "Specific learning objective for this day - what the child will learn by end of day",
+      "circleTime": {
+        "activity": "Circle time activity name",
+        "description": "Detailed step-by-step description of what the teacher does",
+        "duration": "15 minutes",
+        "teacherInstructions": "Clear teacher instructions: 1) Gather children 2) Begin with... 3) Ask..."
+      },
+      "mainActivity": {
+        "title": "Main activity title",
+        "description": "Detailed activity description and how to execute it",
+        "duration": "30 minutes",
+        "teacherInstructions": "Step-by-step detailed teacher instructions",
+        "materials": ["material 1", "material 2", "material 3"],
+        "differentiation": "How to modify for different ability levels"
+      },
+      "storyRecommendation": {
+        "title": "Recommended story name",
+        "author": "Author if available",
+        "summary": "Brief story summary",
+        "connection": "How the story connects to today's theme"
+      },
+      "discussionQuestions": ["Age-appropriate discussion question 1", "question 2", "question 3"],
+      "materials": ["Complete list of all materials needed for this day"],
+      "islamicValue": {
+        "value": "Islamic value (e.g., cooperation, honesty, gratitude)",
+        "connection": "How to connect this value to today's activities",
+        "hadithOrAyah": "Short hadith or ayah appropriate for children"
+      },
+      "assessmentOpportunity": {
+        "what": "What to observe/assess",
+        "how": "How to assess (observation, questioning, production)",
+        "indicators": ["Success indicator 1", "Success indicator 2"]
+      },
+      "totalDuration": "Total duration of day's activities"
     }
   ],
-  "materialsNeeded": ["Complete list of materials needed for the week"],
-  "assessmentOpportunities": ["Assessment opportunity 1", "Assessment opportunity 2"],
-  "parentInvolvement": "How to involve parents"
+  "weeklyMaterials": ["Comprehensive list of all materials needed for the entire week"],
+  "parentInvolvement": "Suggested home activities for parent engagement",
+  "weeklyAssessment": "End-of-week assessment summary - what children are expected to achieve"
 }
 
-Create a plan for 5 days (Sunday to Thursday).`;
+Create a detailed complete plan for 5 days (Sunday, Monday, Tuesday, Wednesday, Thursday). Each day must be different and progressively build on the previous day. Do NOT leave any field empty.`;
 
       const response = await invokeLLM({
         messages: [
