@@ -279,36 +279,164 @@ export async function updateDailyReport(id: number, data: Partial<InsertDailyRep
 export async function getConversations(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(conversations)
-    .where(sql`${conversations.participantOneId} = ${userId} OR ${conversations.participantTwoId} = ${userId}`)
+  const rows = await db.select({
+    id: conversations.id,
+    participantOneId: conversations.participantOneId,
+    participantTwoId: conversations.participantTwoId,
+    childId: conversations.childId,
+    subject: conversations.subject,
+    lastMessageAt: conversations.lastMessageAt,
+    lastMessagePreview: conversations.lastMessagePreview,
+    isArchived: conversations.isArchived,
+    createdAt: conversations.createdAt,
+  }).from(conversations)
+    .where(and(
+      sql`(${conversations.participantOneId} = ${userId} OR ${conversations.participantTwoId} = ${userId})`,
+      eq(conversations.isArchived, false)
+    ))
     .orderBy(desc(conversations.lastMessageAt));
+  
+  // Enrich with participant names and unread counts
+  const enriched = [];
+  for (const conv of rows) {
+    const otherUserId = conv.participantOneId === userId ? conv.participantTwoId : conv.participantOneId;
+    const otherUser = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, otherUserId)).limit(1);
+    const unreadResult = await db.select({ count: sql<number>`count(*)` }).from(messages)
+      .where(and(
+        eq(messages.conversationId, conv.id),
+        eq(messages.isRead, false),
+        sql`${messages.senderId} != ${userId}`,
+        eq(messages.isDeleted, false)
+      ));
+    let childName = null;
+    if (conv.childId) {
+      const child = await db.select({ firstName: children.firstName, lastName: children.lastName }).from(children).where(eq(children.id, conv.childId)).limit(1);
+      childName = child[0] ? `${child[0].firstName} ${child[0].lastName}` : null;
+    }
+    enriched.push({
+      ...conv,
+      otherUserName: otherUser[0]?.name || 'مستخدم',
+      otherUserRole: otherUser[0]?.role || 'user',
+      otherUserId,
+      unreadCount: unreadResult[0]?.count ?? 0,
+      childName,
+    });
+  }
+  return enriched;
 }
 
-export async function getAllConversations() {
+export async function getAllConversations(search?: string) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(conversations).orderBy(desc(conversations.lastMessageAt));
+  let query = db.select({
+    id: conversations.id,
+    participantOneId: conversations.participantOneId,
+    participantTwoId: conversations.participantTwoId,
+    childId: conversations.childId,
+    subject: conversations.subject,
+    lastMessageAt: conversations.lastMessageAt,
+    lastMessagePreview: conversations.lastMessagePreview,
+    isArchived: conversations.isArchived,
+    createdAt: conversations.createdAt,
+  }).from(conversations).orderBy(desc(conversations.lastMessageAt));
+  
+  const rows = await query;
+  const enriched = [];
+  for (const conv of rows) {
+    const user1 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantOneId)).limit(1);
+    const user2 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantTwoId)).limit(1);
+    let childName = null;
+    if (conv.childId) {
+      const child = await db.select({ firstName: children.firstName, lastName: children.lastName }).from(children).where(eq(children.id, conv.childId)).limit(1);
+      childName = child[0] ? `${child[0].firstName} ${child[0].lastName}` : null;
+    }
+    const item = {
+      ...conv,
+      participantOneName: user1[0]?.name || 'مستخدم',
+      participantOneRole: user1[0]?.role || 'user',
+      participantTwoName: user2[0]?.name || 'مستخدم',
+      participantTwoRole: user2[0]?.role || 'user',
+      childName,
+    };
+    if (search) {
+      const s = search.toLowerCase();
+      if (item.participantOneName.toLowerCase().includes(s) || item.participantTwoName.toLowerCase().includes(s) || (item.childName && item.childName.toLowerCase().includes(s)) || (item.subject && item.subject.toLowerCase().includes(s))) {
+        enriched.push(item);
+      }
+    } else {
+      enriched.push(item);
+    }
+  }
+  return enriched;
 }
 
 export async function getMessages(conversationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+  const rows = await db.select({
+    id: messages.id,
+    conversationId: messages.conversationId,
+    senderId: messages.senderId,
+    content: messages.content,
+    attachmentUrl: messages.attachmentUrl,
+    attachmentType: messages.attachmentType,
+    attachmentName: messages.attachmentName,
+    isRead: messages.isRead,
+    readAt: messages.readAt,
+    isDeleted: messages.isDeleted,
+    createdAt: messages.createdAt,
+    senderName: users.name,
+    senderRole: users.role,
+  }).from(messages)
+    .leftJoin(users, eq(messages.senderId, users.id))
+    .where(and(eq(messages.conversationId, conversationId), eq(messages.isDeleted, false)))
+    .orderBy(messages.createdAt);
+  
+  return rows.map(r => ({
+    ...r,
+    senderName: r.senderName || 'مستخدم',
+    senderRole: r.senderRole || 'user',
+  }));
 }
 
-export async function createMessage(data: InsertMessage) {
+export async function createMessage(data: { conversationId: number; senderId: number; content: string; attachmentUrl?: string | null; attachmentType?: string | null; attachmentName?: string | null }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(messages).values(data);
-  await db.update(conversations).set({ lastMessageAt: new Date() }).where(eq(conversations.id, data.conversationId));
+  const result = await db.insert(messages).values({
+    conversationId: data.conversationId,
+    senderId: data.senderId,
+    content: data.content,
+    attachmentUrl: data.attachmentUrl || null,
+    attachmentType: data.attachmentType || null,
+    attachmentName: data.attachmentName || null,
+  });
+  // Update conversation last message
+  const preview = data.content.length > 100 ? data.content.slice(0, 100) + '...' : data.content;
+  await db.update(conversations).set({ lastMessageAt: new Date(), lastMessagePreview: preview }).where(eq(conversations.id, data.conversationId));
   return { id: result[0].insertId, ...data };
 }
 
-export async function createConversation(participantOneId: number, participantTwoId: number) {
+export async function createConversation(participantOneId: number, participantTwoId: number, childId?: number | null, subject?: string | null) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(conversations).values({ participantOneId, participantTwoId });
-  return { id: result[0].insertId, participantOneId, participantTwoId };
+  // Check if conversation already exists between these two for this child
+  const existing = await db.select().from(conversations).where(and(
+    sql`((${conversations.participantOneId} = ${participantOneId} AND ${conversations.participantTwoId} = ${participantTwoId}) OR (${conversations.participantOneId} = ${participantTwoId} AND ${conversations.participantTwoId} = ${participantOneId}))`,
+    childId ? eq(conversations.childId, childId) : sql`${conversations.childId} IS NULL`
+  )).limit(1);
+  if (existing.length > 0) return existing[0];
+  const result = await db.insert(conversations).values({ participantOneId, participantTwoId, childId: childId || null, subject: subject || null });
+  return { id: result[0].insertId, participantOneId, participantTwoId, childId, subject };
+}
+
+export async function markMessagesAsRead(conversationId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(messages).set({ isRead: true, readAt: new Date() }).where(and(
+    eq(messages.conversationId, conversationId),
+    sql`${messages.senderId} != ${userId}`,
+    eq(messages.isRead, false)
+  ));
 }
 
 export async function getUnreadMessageCount(userId: number) {
@@ -319,9 +447,83 @@ export async function getUnreadMessageCount(userId: number) {
     .where(and(
       sql`(${conversations.participantOneId} = ${userId} OR ${conversations.participantTwoId} = ${userId})`,
       eq(messages.isRead, false),
+      eq(messages.isDeleted, false),
       sql`${messages.senderId} != ${userId}`
     ));
   return result[0]?.count ?? 0;
+}
+
+export async function archiveConversation(conversationId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(conversations).set({ isArchived: true }).where(eq(conversations.id, conversationId));
+}
+
+export async function unarchiveConversation(conversationId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(conversations).set({ isArchived: false }).where(eq(conversations.id, conversationId));
+}
+
+export async function deleteMessage(messageId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(messages).set({ isDeleted: true }).where(eq(messages.id, messageId));
+}
+
+export async function getConversationById(conversationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(conversations).where(eq(conversations.id, conversationId)).limit(1);
+  return result[0] || null;
+}
+
+export async function getTeachersForChild(childId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get the child's class, then find teachers assigned to that class via classes table
+  const child = await db.select({ classId: children.classId }).from(children).where(eq(children.id, childId)).limit(1);
+  if (!child[0]?.classId) return [];
+  const classInfo = await db.select({ teacherId: classes.teacherId, assistantId: classes.assistantId }).from(classes).where(eq(classes.id, child[0].classId)).limit(1);
+  if (!classInfo[0]) return [];
+  const teacherIds = [classInfo[0].teacherId, classInfo[0].assistantId].filter(Boolean) as number[];
+  if (teacherIds.length === 0) return [];
+  return db.select({ id: users.id, name: users.name, role: users.role })
+    .from(users)
+    .where(inArray(users.id, teacherIds));
+}
+
+export async function getParentsForTeacher(teacherId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get classes where this teacher is assigned, then find children in those classes, then their parents
+  const teacherClasses = await db.select({ id: classes.id }).from(classes)
+    .where(sql`${classes.teacherId} = ${teacherId} OR ${classes.assistantId} = ${teacherId}`);
+  if (teacherClasses.length === 0) return [];
+  const classIds = teacherClasses.map(c => c.id);
+  const childrenInClasses = await db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName, parentId: children.parentId })
+    .from(children)
+    .where(inArray(children.classId, classIds));
+  const parentIds = Array.from(new Set(childrenInClasses.filter(c => c.parentId).map(c => c.parentId!)));
+  if (parentIds.length === 0) return [];
+  const parents = await db.select({ id: users.id, name: users.name, role: users.role })
+    .from(users)
+    .where(inArray(users.id, parentIds));
+  return parents.map(p => ({
+    ...p,
+    children: childrenInClasses.filter(c => c.parentId === p.id).map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}` }))
+  }));
+}
+
+export async function getAllActiveStaffAndParents() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ id: users.id, name: users.name, role: users.role })
+    .from(users)
+    .where(and(
+      eq(users.isActive, true),
+      sql`${users.role} != 'user'`
+    ));
 }
 
 // ============ INVOICES ============

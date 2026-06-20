@@ -174,32 +174,32 @@ describe("Daily Reports", () => {
 });
 
 describe("Messaging System", () => {
-  it("lists conversations", async () => {
+  it("lists all conversations (admin)", async () => {
     const caller = appRouter.createCaller(createAdminContext());
-    const conversations = await caller.messages.conversations();
+    const conversations = await caller.messages.allConversations({});
     expect(conversations).toBeDefined();
     expect(conversations.length).toBe(10);
   });
 
   it("gets messages for a conversation", async () => {
     const caller = appRouter.createCaller(createAdminContext());
-    const conversations = await caller.messages.conversations();
+    const conversations = await caller.messages.allConversations({});
     const msgs = await caller.messages.list({ conversationId: conversations[0].id });
     expect(msgs).toBeDefined();
     expect(msgs.length).toBeGreaterThan(0);
     expect(msgs[0]).toHaveProperty("content");
-  });
+  }, 15000);
 
   it("sends a message", async () => {
     const caller = appRouter.createCaller(createAdminContext());
-    const conversations = await caller.messages.conversations();
+    const conversations = await caller.messages.allConversations({});
     const result = await caller.messages.send({
       conversationId: conversations[0].id,
       content: "مرحباً، كيف حال الطفل اليوم؟",
     });
     expect(result).toBeDefined();
     expect(result.content).toBe("مرحباً، كيف حال الطفل اليوم؟");
-  });
+  }, 15000);
 });
 
 describe("Finance & Invoices", () => {

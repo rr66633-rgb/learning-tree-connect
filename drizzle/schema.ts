@@ -301,7 +301,11 @@ export const conversations = mysqlTable("conversations", {
   id: int("id").autoincrement().primaryKey(),
   participantOneId: int("participantOneId").notNull(),
   participantTwoId: int("participantTwoId").notNull(),
+  childId: int("childId"), // link conversation to a child for visibility control
+  subject: varchar("subject", { length: 255 }),
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
+  lastMessagePreview: varchar("lastMessagePreview", { length: 255 }),
+  isArchived: boolean("isArchived").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -310,12 +314,18 @@ export const messages = mysqlTable("messages", {
   conversationId: int("conversationId").notNull(),
   senderId: int("senderId").notNull(),
   content: text("content").notNull(),
+  attachmentUrl: text("attachmentUrl"),
+  attachmentType: varchar("attachmentType", { length: 50 }), // image, document, pdf
+  attachmentName: varchar("attachmentName", { length: 255 }),
   isRead: boolean("isRead").default(false).notNull(),
+  readAt: timestamp("readAt"),
+  isDeleted: boolean("isDeleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
+export type Conversation = typeof conversations.$inferSelect;
 
 // ============ INVOICES ============
 export const invoices = mysqlTable("invoices", {

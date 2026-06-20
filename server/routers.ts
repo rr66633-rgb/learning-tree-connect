@@ -800,26 +800,112 @@ export const appRouter = router({
 
   messages: router({
     conversations: protectedProcedure.query(async ({ ctx }) => {
-      // Admin sees all conversations, others see only their own
-      if (ctx.user?.role === 'admin') {
-        return db.getAllConversations();
-      }
       return db.getConversations(ctx.user!.id);
     }),
-    list: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input }) => {
+    allConversations: adminProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async ({ input }) => {
+      return db.getAllConversations(input?.search);
+    }),
+    list: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input, ctx }) => {
+      // Verify user is participant or admin
+      const conv = await db.getConversationById(input.conversationId);
+      if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
+      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin';
+      if (!isAdmin && conv.participantOneId !== ctx.user!.id && conv.participantTwoId !== ctx.user!.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح بالوصول' });
+      }
+      // Mark messages as read
+      await db.markMessagesAsRead(input.conversationId, ctx.user!.id);
       return db.getMessages(input.conversationId);
     }),
     send: protectedProcedure.input(z.object({
       conversationId: z.number(),
       content: z.string().min(1),
+      attachmentUrl: z.string().optional(),
+      attachmentType: z.string().optional(),
+      attachmentName: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createMessage({ conversationId: input.conversationId, senderId: ctx.user!.id, content: input.content });
+      // Verify user is participant or admin
+      const conv = await db.getConversationById(input.conversationId);
+      if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
+      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin';
+      if (!isAdmin && conv.participantOneId !== ctx.user!.id && conv.participantTwoId !== ctx.user!.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح بالإرسال' });
+      }
+      const message = await db.createMessage({
+        conversationId: input.conversationId,
+        senderId: ctx.user!.id,
+        content: input.content,
+        attachmentUrl: input.attachmentUrl,
+        attachmentType: input.attachmentType,
+        attachmentName: input.attachmentName,
+      });
+      // Send push notification + in-app notification to the other participant
+      const recipientId = conv.participantOneId === ctx.user!.id ? conv.participantTwoId : conv.participantOneId;
+      // In-app notification
+      try {
+        await db.createNotification({
+          userId: recipientId,
+          title: 'رسالة جديدة',
+          body: `${ctx.user!.name || 'مستخدم'}: ${input.content.slice(0, 100)}`,
+          type: 'message',
+        });
+      } catch (e) { /* non-critical */ }
+      // Web push notification
+      try {
+        const { sendPushToUser } = await import('./_core/webPush');
+        const result = await sendPushToUser(recipientId, {
+          title: 'رسالة جديدة',
+          body: `${ctx.user!.name || 'مستخدم'}: ${input.content.slice(0, 80)}`,
+          tag: 'new_message',
+          data: { type: 'new_message', conversationId: input.conversationId },
+        }, db.getPushSubscriptionsForUser);
+        if (result.expired.length > 0) {
+          await db.removeExpiredSubscriptions(result.expired);
+        }
+      } catch (e) { /* push notification failure is non-critical */ }
+      return message;
     }),
-    createConversation: protectedProcedure.input(z.object({ participantId: z.number() })).mutation(async ({ input, ctx }) => {
-      return db.createConversation(ctx.user!.id, input.participantId);
+    createConversation: protectedProcedure.input(z.object({
+      participantId: z.number(),
+      childId: z.number().optional(),
+      subject: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      return db.createConversation(ctx.user!.id, input.participantId, input.childId, input.subject);
     }),
     unreadCount: protectedProcedure.query(async ({ ctx }) => {
       return db.getUnreadMessageCount(ctx.user!.id);
+    }),
+    markRead: protectedProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input, ctx }) => {
+      await db.markMessagesAsRead(input.conversationId, ctx.user!.id);
+      return { success: true };
+    }),
+    archive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input }) => {
+      await db.archiveConversation(input.conversationId);
+      return { success: true };
+    }),
+    unarchive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input }) => {
+      await db.unarchiveConversation(input.conversationId);
+      return { success: true };
+    }),
+    deleteMessage: adminProcedure.input(z.object({ messageId: z.number() })).mutation(async ({ input }) => {
+      await db.deleteMessage(input.messageId);
+      return { success: true };
+    }),
+    getContacts: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      const role = ctx.user?.role;
+      if (role === 'parent') {
+        // Parents get teachers of their children
+        if (input?.childId) {
+          return db.getTeachersForChild(input.childId);
+        }
+        return [];
+      } else if (role === 'teacher' || role === 'assistant') {
+        // Teachers get parents of children in their class
+        return db.getParentsForTeacher(ctx.user!.id);
+      } else {
+        // Admin gets all active non-user users
+        return db.getAllActiveStaffAndParents();
+      }
     }),
   }),
 

@@ -541,3 +541,42 @@
 - [x] Send push to parent when attendance is recorded (check-in + check-out)
 - [x] Send push to parent when new invoice is created (trigger helper ready)
 - [x] Send push to parent when daily report is submitted (trigger helper ready)
+
+## Messaging System - Complete Rebuild
+
+### Database
+- [x] Fix/rebuild conversations table with proper fields
+- [x] Fix/rebuild messages table with attachments support
+- [x] Add read receipts tracking (isRead + readAt fields on messages)
+- [x] Add visibility control via participantOneId/participantTwoId + role checks
+
+### Backend Procedures
+- [x] conversations.list - list conversations for current user (role-based visibility)
+- [x] conversations.create - start new conversation (parent↔teacher only for their classroom)
+- [x] conversations.getMessages - get messages in a conversation with JOIN optimization
+- [x] messages.send - send message with optional attachment (url, type, name)
+- [x] messages.markRead - mark messages as read (read receipts)
+- [x] messages.getUnreadCount - get unread message count
+- [x] admin.allConversations - admin view all conversations with search
+- [x] admin.archiveConversation - archive a conversation
+- [x] admin.unarchiveConversation - unarchive a conversation
+- [x] admin.deleteMessage - delete inappropriate message (soft delete)
+- [x] admin.replyToConversation - admin can reply to any conversation
+
+### Frontend - Messaging UI
+- [x] Conversations list page (with search, unread badges)
+- [x] Conversation detail/chat page (real-time polling, message bubbles)
+- [x] New conversation dialog (select recipient based on classroom)
+- [x] Message input with attachment upload (photos, docs, PDFs)
+- [x] Read receipts display (seen/delivered checkmarks)
+- [x] Unread message counter badges on conversation list
+
+### Security & Visibility
+- [x] Parents can only message teachers of their child's classroom
+- [x] Teachers can only see conversations for children in their classroom
+- [x] Admin can view and participate in all conversations
+- [x] All messages stored securely with timestamps
+
+### Push Notifications
+- [x] Push notification when new message received
+- [x] In-app notification for new messages

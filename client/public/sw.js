@@ -48,7 +48,11 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const data = event.notification.data || {};
-  const url = data.url || '/';
+  let url = data.url || '/';
+  // Handle message notifications - navigate to messages page
+  if (data.type === 'new_message') {
+    url = '/staff/messages';
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
