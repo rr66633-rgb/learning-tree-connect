@@ -439,7 +439,7 @@ export default function StaffChildren() {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/child/${child.id}`)} title={"\u0639\u0631\u0636 \u0627\u0644\u0645\u0644\u0641"}>
+                        <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/children/${child.id}`)} title={"\u0639\u0631\u0636 \u0627\u0644\u0645\u0644\u0641"}>
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => handleEdit(child)} title={"\u062A\u0639\u062F\u064A\u0644"}>

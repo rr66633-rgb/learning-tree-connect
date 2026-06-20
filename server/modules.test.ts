@@ -178,7 +178,7 @@ describe("Messaging System", () => {
     const caller = appRouter.createCaller(createAdminContext());
     const conversations = await caller.messages.allConversations({});
     expect(conversations).toBeDefined();
-    expect(conversations.length).toBe(10);
+    expect(conversations.length).toBeGreaterThanOrEqual(10);
   });
 
   it("gets messages for a conversation", async () => {

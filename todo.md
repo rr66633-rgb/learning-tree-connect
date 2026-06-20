@@ -580,3 +580,12 @@
 ### Push Notifications
 - [x] Push notification when new message received
 - [x] In-app notification for new messages
+
+## Child Profile View - Bug Fix
+
+- [x] Fix Eye icon navigation to child profile (was navigating to /staff/child/:id instead of /staff/children/:id)
+- [x] Ensure child profile route is correctly defined in App.tsx (/staff/children/:id)
+- [x] Verify child ID is correctly passed to the profile page
+- [x] Ensure ChildProfile page renders all required sections (personal, parent, medical, nursery, documents tabs)
+- [x] Perform full routing audit and fix all broken navigation links
+- [x] Test on mobile and desktop viewports

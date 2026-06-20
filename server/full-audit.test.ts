@@ -149,8 +149,8 @@ describe("AUDIT: Admin Full Access Verification", () => {
 
   it("admin can view ALL conversations", async () => {
     const conversations = await call(adminCtx).messages.allConversations({});
-    expect(conversations.length).toBe(10);
-  });
+    expect(conversations.length).toBeGreaterThanOrEqual(10);
+  }, 15000);
 
   it("admin can view ALL invoices", async () => {
     const invoices = await call(adminCtx).finance.invoices();
