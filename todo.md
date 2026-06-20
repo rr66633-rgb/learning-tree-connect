@@ -699,3 +699,41 @@
 - [x] Guideline 2.1 app completeness - PASS
 - [x] Guideline 4.0 design guidelines - PASS
 - [x] Final approval probability: 85-90%
+
+## AI Teacher Assistant - Learning Tree AI
+
+### Database & Schema
+- [ ] Create ai_generated_content table for all AI outputs
+- [ ] Create ai_library table for saved/reusable content
+- [ ] Run migration SQL
+
+### Server-Side AI Procedures
+- [ ] AI Observation Writer - generate professional EYFS observation from short note
+- [ ] AI Weekly Planner - generate weekly plan with daily activities
+- [ ] AI Activity Generator - generate activity with objectives and materials
+- [ ] AI Child Progress Report - aggregate data and generate parent report
+- [ ] AI Parent Message Generator - generate bilingual professional message
+- [ ] AI Newsletter Generator - generate monthly newsletter from activities/events
+- [ ] AI Story Creator - generate educational story with questions and vocabulary
+- [ ] AI Library - save/search/reuse generated content
+
+### Frontend - Learning Tree AI Section
+- [ ] Create dedicated Learning Tree AI section with premium design
+- [ ] AI Observation Writer page with one-click generation
+- [ ] AI Weekly Planner page with age group and theme selection
+- [ ] AI Activity Generator page with topic input
+- [ ] AI Progress Report page with child data aggregation
+- [ ] AI Parent Message Generator page
+- [ ] AI Newsletter Generator page
+- [ ] AI Story Creator page
+- [ ] AI Library page with search and filters
+- [ ] PDF export for plans, reports, and newsletters
+
+### Permissions & Access
+- [ ] Restrict AI features to teacher and admin roles
+- [ ] Arabic-first output with English option
+
+### Integration
+- [ ] Add AI section to staff navigation menu
+- [ ] Connect all features to LLM provider
+- [ ] Test all 8 AI generation workflows

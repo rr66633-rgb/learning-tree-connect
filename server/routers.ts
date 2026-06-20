@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import * as authService from "./_core/authService";
+import { aiRouter } from "./aiRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -2402,5 +2403,7 @@ export const appRouter = router({
       return { sent: result.sent, failed: result.failed };
     }),
   }),
+  // ============ AI TEACHER ASSISTANT ============
+  ai: aiRouter,
 });
 export type AppRouter = typeof appRouter;

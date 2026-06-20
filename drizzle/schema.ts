@@ -678,3 +678,38 @@ export const pushSubscriptions = mysqlTable("push_subscriptions", {
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+// ============ AI GENERATED CONTENT ============
+export const aiGeneratedContent = mysqlTable("ai_generated_content", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("type", ["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story"]).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  content: json("content").notNull(),
+  language: mysqlEnum("language", ["ar", "en"]).default("ar").notNull(),
+  childId: int("childId"),
+  classId: int("classId"),
+  ageGroup: varchar("ageGroup", { length: 50 }),
+  theme: varchar("theme", { length: 200 }),
+  inputPrompt: text("inputPrompt"),
+  createdBy: int("createdBy").notNull(),
+  isSaved: boolean("isSaved").default(false).notNull(),
+  isPublished: boolean("isPublished").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AiGeneratedContent = typeof aiGeneratedContent.$inferSelect;
+export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
+
+// ============ AI LIBRARY (Saved & Reusable Content) ============
+export const aiLibrary = mysqlTable("ai_library", {
+  id: int("id").autoincrement().primaryKey(),
+  contentId: int("contentId").notNull(),
+  category: mysqlEnum("category", ["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story"]).notNull(),
+  tags: json("tags"),
+  isFavorite: boolean("isFavorite").default(false).notNull(),
+  usageCount: int("usageCount").default(0).notNull(),
+  savedBy: int("savedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AiLibrary = typeof aiLibrary.$inferSelect;
+export type InsertAiLibrary = typeof aiLibrary.$inferInsert;

@@ -37,6 +37,17 @@ const StaffPickup = lazy(() => import("./pages/staff/Pickup"));
 const StaffAssessments = lazy(() => import("./pages/staff/Assessments"));
 const StaffAuditLog = lazy(() => import("./pages/staff/AuditLog"));
 
+// AI Pages
+const AIHub = lazy(() => import("./pages/ai/AIHub"));
+const AIObservation = lazy(() => import("./pages/ai/AIObservation"));
+const AIPlanner = lazy(() => import("./pages/ai/AIPlanner"));
+const AIActivity = lazy(() => import("./pages/ai/AIActivity"));
+const AIReport = lazy(() => import("./pages/ai/AIReport"));
+const AIMessage = lazy(() => import("./pages/ai/AIMessage"));
+const AINewsletter = lazy(() => import("./pages/ai/AINewsletter"));
+const AIStory = lazy(() => import("./pages/ai/AIStory"));
+const AILibrary = lazy(() => import("./pages/ai/AILibrary"));
+
 // Legal Pages (public, no auth required)
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -278,6 +289,35 @@ function RoleRouter() {
           <Redirect to={basePath} />
         </Route>
         <Route path="/reset-password" component={ResetPassword} />
+
+        {/* AI routes - accessible by staff roles */}
+        <Route path="/ai">
+          {isStaffRole(userRole) ? <AIHub /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/observation">
+          {isStaffRole(userRole) ? <AIObservation /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/planner">
+          {isStaffRole(userRole) ? <AIPlanner /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/activity">
+          {isStaffRole(userRole) ? <AIActivity /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/report">
+          {isStaffRole(userRole) ? <AIReport /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/message">
+          {isStaffRole(userRole) ? <AIMessage /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/newsletter">
+          {isStaffRole(userRole) ? <AINewsletter /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/story">
+          {isStaffRole(userRole) ? <AIStory /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/library">
+          {isStaffRole(userRole) ? <AILibrary /> : <Redirect to={basePath} />}
+        </Route>
 
         {/* Staff routes - protected for staff roles only */}
         <Route path="/staff/**">
