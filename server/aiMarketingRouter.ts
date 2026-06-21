@@ -2,7 +2,7 @@ import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
-import { generateImage } from "./_core/imageGeneration";
+// Image generation is handled by posterGenerator.ts
 
 // Only staff can use marketing features
 const marketingProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -250,30 +250,18 @@ ${BRAND_GUIDELINES}
     template: z.string().optional(),
     language: z.enum(["ar", "en"]).default("ar"),
   })).mutation(async ({ input }) => {
-    const templateDescriptions: Record<string, string> = {
-      trip: "رحلة مدرسية ممتعة مع حافلة وأطفال سعداء",
-      national_day: "اليوم الوطني السعودي مع علم المملكة والألوان الخضراء",
-      founding_day: "يوم التأسيس السعودي مع عناصر تراثية",
-      ramadan: "شهر رمضان المبارك مع هلال ونجوم وفوانيس",
-      eid: "عيد سعيد مع بالونات وزينة احتفالية",
-      graduation: "حفل تخرج أطفال مع قبعات التخرج",
-      sports_day: "يوم رياضي مع أطفال يمارسون الرياضة",
-      science_day: "يوم العلوم مع تجارب علمية وأطفال فضوليين",
-      family_day: "يوم الأسرة مع عائلات سعيدة",
-      water_fun: "يوم مائي ممتع مع ألعاب مائية",
-      open_house: "يوم مفتوح للتعرف على المركز",
-      parent_workshop: "ورشة عمل لأولياء الأمور",
-      summer_program: "برنامج صيفي ممتع مع أنشطة متنوعة",
-      registration: "حملة تسجيل مع أطفال سعداء في بيئة تعليمية",
-    };
-
-    const templateDesc = input.template ? templateDescriptions[input.template] || input.template : "فعالية تعليمية للأطفال";
-
-    const imagePrompt = `Professional nursery/kindergarten event poster design. Theme: ${templateDesc}. Title text in ${input.language === 'ar' ? 'Arabic' : 'English'}: "${input.title}". ${input.date ? `Date: ${input.date}.` : ''} ${input.time ? `Time: ${input.time}.` : ''} ${input.location ? `Location: ${input.location}.` : ''} Style: Modern, colorful, child-friendly, professional. Brand colors: emerald green (#10B981), dark blue (#0F4C5C), golden (#F59E0B). Include "Learning Tree" logo text. Clean layout with clear typography. Saudi Arabian cultural context. No faces of real children - use cartoon/illustrated style.`;
-
     try {
-      const { url } = await generateImage({ prompt: imagePrompt });
-      return { posterUrl: url, prompt: imagePrompt };
+      const { generatePoster: genPoster } = await import('./posterGenerator');
+      const { posterUrl } = await genPoster({
+        title: input.title,
+        date: input.date,
+        time: input.time,
+        location: input.location,
+        ageGroup: input.ageGroup,
+        template: input.template,
+        language: input.language,
+      });
+      return { posterUrl };
     } catch (error: any) {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
