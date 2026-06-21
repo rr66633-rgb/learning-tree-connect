@@ -191,9 +191,32 @@ export default function AIPlanner() {
 
   const generateMutation = trpc.ai.generateWeeklyPlan.useMutation({
     onSuccess: (data: any) => {
+      // Validate completeness: must have exactly 5 days with required fields
+      const requiredDays = 5;
+      const requiredFields = ['learningObjective', 'circleTime', 'mainActivity'];
+      
+      if (!data.days || !Array.isArray(data.days) || data.days.length < requiredDays) {
+        const missingCount = requiredDays - (data.days?.length || 0);
+        toast.error(`الخطة غير مكتملة (${data.days?.length || 0} أيام من ${requiredDays}). يرجى إعادة التوليد.`);
+        return;
+      }
+      
+      // Check each day has required fields
+      const incompleteDays: string[] = [];
+      for (const day of data.days) {
+        const missing = requiredFields.filter(f => !day[f]);
+        if (missing.length > 0) {
+          incompleteDays.push(day.day || 'يوم غير محدد');
+        }
+      }
+      
+      if (incompleteDays.length > 0) {
+        toast.warning(`بعض الأيام غير مكتملة: ${incompleteDays.join('، ')}. يمكنك إعادة التوليد للحصول على خطة أفضل.`);
+      }
+      
       setResult(data);
       setContentId(data.id ? Number(data.id) : null);
-      toast.success("تم إنشاء الخطة الأسبوعية بنجاح");
+      toast.success(`تم إنشاء الخطة الأسبوعية بنجاح (${data.days.length} أيام)`);
     },
     onError: (err) => {
       const msg = err.message || "حدث خطأ";

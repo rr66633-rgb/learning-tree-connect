@@ -136,9 +136,15 @@ Write the response in JSON format with this structure:
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       const goals = input.learningGoals?.join("، ") || "";
+      const isArabic = input.language === "ar";
       
-      const prompt = input.language === "ar"
-        ? `أنتِ مخططة مناهج رياض أطفال خبيرة في المملكة العربية السعودية متخصصة في إطار EYFS. أنشئي خطة أسبوعية تفصيلية كاملة وجاهزة للتطبيق المباشر في الفصل.
+      const DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+      const DAYS_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+      const days = isArabic ? DAYS_AR : DAYS_EN;
+
+      // Step 1: Generate the overview/meta first (small JSON, reliable)
+      const overviewPrompt = isArabic
+        ? `أنتِ مخططة مناهج رياض أطفال خبيرة في المملكة العربية السعودية متخصصة في إطار EYFS.
 
 الفئة العمرية: ${input.ageGroup}
 الموضوع/الثيمة: ${input.theme}
@@ -146,62 +152,20 @@ ${goals ? `أهداف التعلم: ${goals}` : ""}
 
 ${CULTURAL_GUIDELINES}
 
-مهم جداً: يجب أن تكون الخطة تفصيلية بحيث تستطيع المعلمة فتحها وتطبيقها مباشرة بدون إعداد إضافي. كل يوم يجب أن يحتوي على جميع التفاصيل اللازمة.
-
-اكتبي الرد بصيغة JSON بالضبط كالتالي:
+أنشئي فقط المعلومات العامة للخطة الأسبوعية (بدون الأيام). اكتبي JSON فقط:
 {
   "title": "عنوان الخطة الأسبوعية",
   "theme": "${input.theme}",
   "ageGroup": "${input.ageGroup}",
-  "overview": "نظرة عامة شاملة على الأسبوع (3-4 جمل تشرح الأهداف العامة والمخرجات المتوقعة)",
-  "learningObjectives": ["هدف تعلم 1 مرتبط بـ EYFS", "هدف تعلم 2", "هدف تعلم 3", "هدف تعلم 4"],
-  "eyfsAreas": ["التواصل واللغة", "النمو الجسدي", "النمو الشخصي والاجتماعي والعاطفي"],
-  "days": [
-    {
-      "day": "الأحد",
-      "learningObjective": "الهدف التعليمي المحدد لهذا اليوم - ماذا سيتعلم الطفل بنهاية اليوم",
-      "circleTime": {
-        "activity": "اسم نشاط حلقة الصباح",
-        "description": "وصف تفصيلي لما تفعله المعلمة خطوة بخطوة",
-        "duration": "15 دقيقة",
-        "teacherInstructions": "تعليمات واضحة للمعلمة: 1) اجمعي الأطفال في الحلقة 2) ابدئي بـ... 3) اسألي..."
-      },
-      "mainActivity": {
-        "title": "عنوان النشاط الرئيسي",
-        "description": "وصف تفصيلي للنشاط وكيفية تنفيذه",
-        "duration": "30 دقيقة",
-        "teacherInstructions": "تعليمات تفصيلية للمعلمة خطوة بخطوة",
-        "materials": ["مادة 1", "مادة 2", "مادة 3"],
-        "differentiation": "كيفية تعديل النشاط للأطفال ذوي المستويات المختلفة"
-      },
-      "storyRecommendation": {
-        "title": "اسم القصة المقترحة",
-        "author": "المؤلف إن وجد",
-        "summary": "ملخص قصير للقصة",
-        "connection": "كيف ترتبط القصة بموضوع اليوم"
-      },
-      "discussionQuestions": ["سؤال نقاشي 1 مناسب للعمر", "سؤال نقاشي 2", "سؤال نقاشي 3"],
-      "materials": ["قائمة كاملة بجميع المواد المطلوبة لهذا اليوم"],
-      "islamicValue": {
-        "value": "القيمة الإسلامية (مثل: التعاون، الأمانة، الشكر)",
-        "connection": "كيف نربط هذه القيمة بأنشطة اليوم",
-        "hadithOrAyah": "حديث أو آية قصيرة مناسبة للأطفال"
-      },
-      "assessmentOpportunity": {
-        "what": "ماذا نلاحظ/نقيّم",
-        "how": "كيف نقيّم (ملاحظة، سؤال، إنتاج)",
-        "indicators": ["مؤشر نجاح 1", "مؤشر نجاح 2"]
-      },
-      "totalDuration": "المدة الإجمالية لأنشطة اليوم"
-    }
-  ],
-  "weeklyMaterials": ["قائمة شاملة بجميع المواد المطلوبة للأسبوع كاملاً"],
+  "overview": "نظرة عامة شاملة على الأسبوع (3-4 جمل)",
+  "learningObjectives": ["هدف 1 مرتبط بـ EYFS", "هدف 2", "هدف 3", "هدف 4"],
+  "eyfsAreas": ["مجال EYFS 1", "مجال 2", "مجال 3"],
+  "weeklyMaterials": ["مادة 1", "مادة 2", "مادة 3", "مادة 4", "مادة 5"],
   "parentInvolvement": "أنشطة منزلية مقترحة لإشراك الأهل",
-  "weeklyAssessment": "ملخص تقييم نهاية الأسبوع - ما المتوقع أن يحققه الأطفال"
+  "weeklyAssessment": "ملخص تقييم نهاية الأسبوع"
 }
-
-أنشئي خطة تفصيلية كاملة لـ 5 أيام (الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس). كل يوم يجب أن يكون مختلفاً ومتدرجاً في الصعوبة. اكتبي كل شيء بالعربية فقط. لا تترك أي حقل فارغاً.`
-        : `You are an expert early years curriculum planner in Saudi Arabia specializing in the EYFS framework. Create a comprehensive, ready-to-teach weekly plan that a teacher can open and use directly without any additional preparation.
+اكتبي بالعربية فقط.`
+        : `You are an expert EYFS curriculum planner in Saudi Arabia.
 
 Age group: ${input.ageGroup}
 Theme: ${input.theme}
@@ -209,106 +173,231 @@ ${goals ? `Learning goals: ${goals}` : ""}
 
 ${CULTURAL_GUIDELINES}
 
-IMPORTANT: The plan must be detailed enough that a teacher can open it and teach directly without creating additional content. Every day must contain ALL necessary details.
-
-Write the response in JSON format exactly as follows:
+Generate ONLY the overview metadata for the weekly plan (no days). Return JSON only:
 {
   "title": "Weekly plan title",
   "theme": "${input.theme}",
   "ageGroup": "${input.ageGroup}",
-  "overview": "Comprehensive week overview (3-4 sentences explaining overall goals and expected outcomes)",
-  "learningObjectives": ["EYFS-linked learning objective 1", "objective 2", "objective 3", "objective 4"],
-  "eyfsAreas": ["Communication and Language", "Physical Development", "Personal Social and Emotional Development"],
-  "days": [
-    {
-      "day": "Sunday",
-      "learningObjective": "Specific learning objective for this day - what the child will learn by end of day",
-      "circleTime": {
-        "activity": "Circle time activity name",
-        "description": "Detailed step-by-step description of what the teacher does",
-        "duration": "15 minutes",
-        "teacherInstructions": "Clear teacher instructions: 1) Gather children 2) Begin with... 3) Ask..."
-      },
-      "mainActivity": {
-        "title": "Main activity title",
-        "description": "Detailed activity description and how to execute it",
-        "duration": "30 minutes",
-        "teacherInstructions": "Step-by-step detailed teacher instructions",
-        "materials": ["material 1", "material 2", "material 3"],
-        "differentiation": "How to modify for different ability levels"
-      },
-      "storyRecommendation": {
-        "title": "Recommended story name",
-        "author": "Author if available",
-        "summary": "Brief story summary",
-        "connection": "How the story connects to today's theme"
-      },
-      "discussionQuestions": ["Age-appropriate discussion question 1", "question 2", "question 3"],
-      "materials": ["Complete list of all materials needed for this day"],
-      "islamicValue": {
-        "value": "Islamic value (e.g., cooperation, honesty, gratitude)",
-        "connection": "How to connect this value to today's activities",
-        "hadithOrAyah": "Short hadith or ayah appropriate for children"
-      },
-      "assessmentOpportunity": {
-        "what": "What to observe/assess",
-        "how": "How to assess (observation, questioning, production)",
-        "indicators": ["Success indicator 1", "Success indicator 2"]
-      },
-      "totalDuration": "Total duration of day's activities"
-    }
-  ],
-  "weeklyMaterials": ["Comprehensive list of all materials needed for the entire week"],
-  "parentInvolvement": "Suggested home activities for parent engagement",
-  "weeklyAssessment": "End-of-week assessment summary - what children are expected to achieve"
+  "overview": "Comprehensive week overview (3-4 sentences)",
+  "learningObjectives": ["EYFS objective 1", "objective 2", "objective 3", "objective 4"],
+  "eyfsAreas": ["EYFS area 1", "area 2", "area 3"],
+  "weeklyMaterials": ["material 1", "material 2", "material 3", "material 4", "material 5"],
+  "parentInvolvement": "Suggested home activities",
+  "weeklyAssessment": "End-of-week assessment summary"
+}`;
+
+      const overviewResponse = await invokeLLM({
+        messages: [
+          { role: "system", content: "You MUST respond with valid JSON only. No text outside JSON." },
+          { role: "user", content: overviewPrompt }
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      const overviewParsed = safeJsonParse((overviewResponse.choices[0].message.content as string) || "{}");
+      const overview = overviewParsed.success ? overviewParsed.data : {
+        title: isArabic ? `خطة أسبوعية: ${input.theme}` : `Weekly Plan: ${input.theme}`,
+        theme: input.theme,
+        ageGroup: input.ageGroup,
+        overview: "",
+        learningObjectives: [],
+        eyfsAreas: [],
+        weeklyMaterials: [],
+        parentInvolvement: "",
+        weeklyAssessment: ""
+      };
+
+      // Step 2: Generate each day individually (5 separate calls)
+      const generatedDays: any[] = [];
+      
+      for (let i = 0; i < 5; i++) {
+        const dayName = days[i];
+        const dayNumber = i + 1;
+        
+        const dayPrompt = isArabic
+          ? `أنتِ مخططة مناهج رياض أطفال خبيرة في المملكة العربية السعودية. أنشئي خطة يوم ${dayName} فقط (اليوم ${dayNumber} من 5).
+
+الفئة العمرية: ${input.ageGroup}
+الموضوع/الثيمة: ${input.theme}
+${goals ? `أهداف التعلم: ${goals}` : ""}
+هذا اليوم ${dayNumber} من 5 أيام. ${dayNumber > 1 ? "يجب أن يبني على ما سبق ويتدرج في الصعوبة." : "هذا أول يوم - ابدئي بالتعريف والاستكشاف."}
+
+${CULTURAL_GUIDELINES}
+
+اكتبي JSON فقط لهذا اليوم الواحد:
+{
+  "day": "${dayName}",
+  "learningObjective": "الهدف التعليمي المحدد لهذا اليوم",
+  "circleTime": {
+    "activity": "اسم نشاط حلقة الصباح",
+    "description": "وصف تفصيلي لما تفعله المعلمة خطوة بخطوة",
+    "duration": "15 دقيقة",
+    "teacherInstructions": "تعليمات واضحة ومرقمة للمعلمة"
+  },
+  "mainActivity": {
+    "title": "عنوان النشاط الرئيسي",
+    "description": "وصف تفصيلي للنشاط",
+    "duration": "30 دقيقة",
+    "teacherInstructions": "تعليمات تفصيلية خطوة بخطوة",
+    "materials": ["مادة 1", "مادة 2", "مادة 3"],
+    "differentiation": "تعديلات للمستويات المختلفة"
+  },
+  "storyRecommendation": {
+    "title": "اسم القصة",
+    "author": "المؤلف",
+    "summary": "ملخص القصة",
+    "connection": "ارتباط القصة بالموضوع"
+  },
+  "discussionQuestions": ["سؤال 1", "سؤال 2", "سؤال 3"],
+  "materials": ["جميع المواد المطلوبة لهذا اليوم"],
+  "islamicValue": {
+    "value": "القيمة الإسلامية",
+    "connection": "ربط القيمة بالأنشطة",
+    "hadithOrAyah": "حديث أو آية مناسبة للأطفال"
+  },
+  "assessmentOpportunity": {
+    "what": "ماذا نقيّم",
+    "how": "طريقة التقييم",
+    "indicators": ["مؤشر 1", "مؤشر 2"]
+  },
+  "totalDuration": "المدة الإجمالية"
 }
+اكتبي بالعربية فقط. لا تترك أي حقل فارغاً.`
+          : `You are an expert EYFS curriculum planner in Saudi Arabia. Create the plan for ${dayName} ONLY (day ${dayNumber} of 5).
 
-Create a detailed complete plan for 5 days (Sunday, Monday, Tuesday, Wednesday, Thursday). Each day must be different and progressively build on the previous day. Do NOT leave any field empty.`;
+Age group: ${input.ageGroup}
+Theme: ${input.theme}
+${goals ? `Learning goals: ${goals}` : ""}
+This is day ${dayNumber} of 5. ${dayNumber > 1 ? "Build on previous days and increase complexity." : "This is the first day - start with introduction and exploration."}
 
-      // Attempt generation with retry on JSON failure
-      let content: any = null;
-      let attempts = 0;
-      const maxAttempts = 2;
-      
-      while (attempts < maxAttempts) {
-        attempts++;
-        const response = await invokeLLM({
-          messages: [
-            { role: "system", content: "You are an expert early years curriculum planner. You MUST respond with valid JSON only. Do not include any text outside the JSON object. Ensure all strings are properly escaped and all brackets are closed." },
-            { role: "user", content: prompt }
-          ],
-          response_format: { type: "json_object" },
-        });
+${CULTURAL_GUIDELINES}
 
-        const rawContent = (response.choices[0].message.content as string) || "{}";
-        const parsed = safeJsonParse(rawContent);
+Return JSON for this single day only:
+{
+  "day": "${dayName}",
+  "learningObjective": "Specific learning objective for this day",
+  "circleTime": {
+    "activity": "Circle time activity name",
+    "description": "Detailed step-by-step description",
+    "duration": "15 minutes",
+    "teacherInstructions": "Clear numbered instructions for teacher"
+  },
+  "mainActivity": {
+    "title": "Main activity title",
+    "description": "Detailed activity description",
+    "duration": "30 minutes",
+    "teacherInstructions": "Step-by-step teacher instructions",
+    "materials": ["material 1", "material 2", "material 3"],
+    "differentiation": "Modifications for different levels"
+  },
+  "storyRecommendation": {
+    "title": "Story name",
+    "author": "Author",
+    "summary": "Brief summary",
+    "connection": "Connection to theme"
+  },
+  "discussionQuestions": ["question 1", "question 2", "question 3"],
+  "materials": ["All materials needed for this day"],
+  "islamicValue": {
+    "value": "Islamic value",
+    "connection": "How to connect to activities",
+    "hadithOrAyah": "Short hadith or ayah for children"
+  },
+  "assessmentOpportunity": {
+    "what": "What to assess",
+    "how": "Assessment method",
+    "indicators": ["indicator 1", "indicator 2"]
+  },
+  "totalDuration": "Total duration"
+}
+Do NOT leave any field empty.`;
+
+        let dayContent: any = null;
+        let dayAttempts = 0;
         
-        if (parsed.success) {
-          const validation = validateWeeklyPlan(parsed.data);
-          if (validation.valid || attempts >= maxAttempts) {
-            content = parsed.data;
-            break;
+        while (dayAttempts < 2 && !dayContent) {
+          dayAttempts++;
+          try {
+            const dayResponse = await invokeLLM({
+              messages: [
+                { role: "system", content: "You MUST respond with valid JSON only for a single day plan. No text outside JSON. Keep response concise but complete." },
+                { role: "user", content: dayPrompt }
+              ],
+              response_format: { type: "json_object" },
+            });
+
+            const rawDay = (dayResponse.choices[0].message.content as string) || "{}";
+            const parsedDay = safeJsonParse(rawDay);
+            
+            if (parsedDay.success && parsedDay.data) {
+              // Validate this day has required fields
+              const d = parsedDay.data;
+              if (d.learningObjective && (d.circleTime || d.circle_time) && (d.mainActivity || d.main_activity)) {
+                // Normalize field names
+                dayContent = {
+                  day: dayName,
+                  learningObjective: d.learningObjective || d.learning_objective || "",
+                  circleTime: d.circleTime || d.circle_time || { activity: "", description: "", duration: "15 دقيقة", teacherInstructions: "" },
+                  mainActivity: d.mainActivity || d.main_activity || { title: "", description: "", duration: "30 دقيقة", teacherInstructions: "", materials: [], differentiation: "" },
+                  storyRecommendation: d.storyRecommendation || d.story_recommendation || d.story || { title: "", author: "", summary: "", connection: "" },
+                  discussionQuestions: d.discussionQuestions || d.discussion_questions || [],
+                  materials: d.materials || [],
+                  islamicValue: d.islamicValue || d.islamic_value || { value: "", connection: "", hadithOrAyah: "" },
+                  assessmentOpportunity: d.assessmentOpportunity || d.assessment_opportunity || d.assessment || { what: "", how: "", indicators: [] },
+                  totalDuration: d.totalDuration || d.total_duration || (isArabic ? "ساعة ونصف" : "1.5 hours")
+                };
+              }
+            }
+          } catch (e) {
+            // Retry on error
           }
-          // If validation failed on first attempt, retry
-          continue;
         }
         
-        // If parsing failed on last attempt, throw error
-        if (attempts >= maxAttempts) {
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: 'حدث خطأ في إنشاء الخطة الأسبوعية. يرجى المحاولة مرة أخرى.' 
-          });
+        // If day generation failed after retries, create a minimal placeholder
+        if (!dayContent) {
+          dayContent = {
+            day: dayName,
+            learningObjective: isArabic ? `استكشاف موضوع ${input.theme} - اليوم ${dayNumber}` : `Explore ${input.theme} - Day ${dayNumber}`,
+            circleTime: {
+              activity: isArabic ? "حلقة الصباح" : "Morning Circle",
+              description: isArabic ? "مناقشة موضوع اليوم مع الأطفال" : "Discuss today's topic with children",
+              duration: isArabic ? "15 دقيقة" : "15 minutes",
+              teacherInstructions: isArabic ? "اجمعي الأطفال في الحلقة وابدئي بالمناقشة" : "Gather children and begin discussion"
+            },
+            mainActivity: {
+              title: isArabic ? `نشاط ${input.theme}` : `${input.theme} Activity`,
+              description: isArabic ? "نشاط تفاعلي مرتبط بالموضوع" : "Interactive activity related to theme",
+              duration: isArabic ? "30 دقيقة" : "30 minutes",
+              teacherInstructions: isArabic ? "يرجى إعادة التوليد للحصول على تعليمات مفصلة" : "Please regenerate for detailed instructions",
+              materials: [],
+              differentiation: ""
+            },
+            storyRecommendation: { title: "", author: "", summary: "", connection: "" },
+            discussionQuestions: [],
+            materials: [],
+            islamicValue: { value: "", connection: "", hadithOrAyah: "" },
+            assessmentOpportunity: { what: "", how: "", indicators: [] },
+            totalDuration: isArabic ? "ساعة ونصف" : "1.5 hours"
+          };
         }
+        
+        generatedDays.push(dayContent);
       }
-      
-      if (!content) {
-        throw new TRPCError({ 
-          code: 'INTERNAL_SERVER_ERROR', 
-          message: 'فشل في إنشاء الخطة الأسبوعية. يرجى المحاولة مرة أخرى.' 
+
+      // Step 3: Assemble the complete plan
+      const content: any = {
+        ...overview,
+        days: generatedDays
+      };
+
+      // Step 4: Final validation - ensure we have exactly 5 days
+      if (content.days.length !== 5) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: isArabic ? 'فشل في إنشاء خطة كاملة لـ 5 أيام. يرجى المحاولة مرة أخرى.' : 'Failed to generate complete 5-day plan. Please try again.'
         });
       }
-      
+
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "weekly_plan",
         title: content.title || `خطة أسبوعية: ${input.theme}`,

@@ -755,3 +755,10 @@
 - [x] Add retry logic when JSON is malformed
 - [x] Add user-friendly error messages instead of raw JSON errors on frontend
 - [x] Test with Arabic text, long descriptions, special characters
+
+## Bug Fix: Weekly Planner generates only 2 days instead of 5
+- [x] Fix LLM prompt to reliably generate all 5 days (Sunday-Thursday)
+- [x] Split generation into per-day calls to avoid token limit truncation
+- [x] Add server-side validation: reject plan with fewer than 5 days
+- [x] Add auto-regeneration logic when plan is incomplete (retry per day)
+- [x] Frontend completeness check before displaying results
