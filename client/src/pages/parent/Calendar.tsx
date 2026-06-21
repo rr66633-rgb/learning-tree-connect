@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronRight, ChevronLeft, Calendar as CalIcon } from "lucide-react";
+import { ChevronRight, ChevronLeft, Calendar as CalIcon, Clock, MapPin, Package, Shirt } from "lucide-react";
 import { useState, useMemo } from "react";
 
 const CATEGORIES = [
@@ -84,6 +84,18 @@ export default function ParentCalendar() {
   }, [filteredEvents]);
 
   const todayStr = new Date().toISOString().split("T")[0];
+
+  // Calculate days until event
+  function getDaysUntil(eventDate: string): string {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const evDate = new Date(eventDate + "T00:00:00");
+    const diff = Math.ceil((evDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 0) return "اليوم";
+    if (diff === 1) return "غداً";
+    if (diff < 0) return "انتهى";
+    return `بعد ${diff} أيام`;
+  }
 
   return (
     <div className="space-y-6">
@@ -182,65 +194,115 @@ export default function ParentCalendar() {
             <div className="text-center py-8 text-muted-foreground">لا توجد أحداث في هذا الشهر</div>
           ) : (
             <div className="space-y-3">
-              {filteredEvents.map((ev: any) => (
-                <div
-                  key={ev.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-sm transition-shadow cursor-pointer"
-                  onClick={() => setViewEvent(ev)}
-                >
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${getCategoryStyle(ev.category)}`}>
-                    <CalIcon className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">{ev.titleAr}</span>
-                      <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(ev.category)}`}>
-                        {getCategoryLabel(ev.category)}
-                      </Badge>
+              {filteredEvents.map((ev: any) => {
+                const daysUntil = getDaysUntil(ev.eventDate);
+                return (
+                  <div
+                    key={ev.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-sm transition-shadow cursor-pointer"
+                    onClick={() => setViewEvent(ev)}
+                  >
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${getCategoryStyle(ev.category)}`}>
+                      <CalIcon className="h-4 w-4" />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(ev.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long" })}
-                      {ev.endDate && ` — ${new Date(ev.endDate + "T00:00:00").toLocaleDateString("ar-SA", { day: "numeric", month: "long" })}`}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{ev.titleAr}</span>
+                        <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(ev.category)}`}>
+                          {getCategoryLabel(ev.category)}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(ev.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long" })}
+                        {ev.eventTime && ` - ${ev.eventTime}`}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0 text-xs">
+                      {daysUntil}
+                    </Badge>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Event Details Dialog */}
+      {/* Event Details Dialog - Enhanced */}
       <Dialog open={!!viewEvent} onOpenChange={(o) => { if (!o) setViewEvent(null); }}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{viewEvent?.titleAr}</DialogTitle>
+            <DialogTitle className="text-lg">{viewEvent?.titleAr}</DialogTitle>
           </DialogHeader>
           {viewEvent && (
             <div className="space-y-4">
-              {viewEvent.titleEn && <p className="text-muted-foreground" dir="ltr">{viewEvent.titleEn}</p>}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">التاريخ:</span>
-                  <p className="font-medium">
-                    {new Date(viewEvent.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-                  </p>
-                </div>
-                {viewEvent.endDate && (
+              {viewEvent.titleEn && <p className="text-muted-foreground text-sm" dir="ltr">{viewEvent.titleEn}</p>}
+              
+              {/* Event info cards */}
+              <div className="grid gap-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <CalIcon className="h-5 w-5 text-primary shrink-0" />
                   <div>
-                    <span className="text-muted-foreground">حتى:</span>
-                    <p className="font-medium">{new Date(viewEvent.endDate + "T00:00:00").toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</p>
+                    <p className="text-xs text-muted-foreground">التاريخ</p>
+                    <p className="font-medium text-sm">
+                      {new Date(viewEvent.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                    {viewEvent.endDate && (
+                      <p className="text-xs text-muted-foreground">حتى {new Date(viewEvent.endDate + "T00:00:00").toLocaleDateString("ar-SA", { day: "numeric", month: "long" })}</p>
+                    )}
+                  </div>
+                </div>
+
+                {viewEvent.eventTime && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <Clock className="h-5 w-5 text-blue-600 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">الوقت</p>
+                      <p className="font-medium text-sm">{viewEvent.eventTime}</p>
+                    </div>
                   </div>
                 )}
-                <div>
-                  <span className="text-muted-foreground">التصنيف:</span>
-                  <Badge className={`mt-1 ${getCategoryStyle(viewEvent.category)}`}>{getCategoryLabel(viewEvent.category)}</Badge>
-                </div>
+
+                {viewEvent.location && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <MapPin className="h-5 w-5 text-green-600 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">الموقع</p>
+                      <p className="font-medium text-sm">{viewEvent.location}</p>
+                    </div>
+                  </div>
+                )}
+
+                {viewEvent.requiredMaterials && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                    <Package className="h-5 w-5 text-amber-600 shrink-0" />
+                    <div>
+                      <p className="text-xs text-amber-700 font-medium">المواد المطلوبة</p>
+                      <p className="text-sm">{viewEvent.requiredMaterials}</p>
+                    </div>
+                  </div>
+                )}
+
+                {viewEvent.dressCode && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
+                    <Shirt className="h-5 w-5 text-purple-600 shrink-0" />
+                    <div>
+                      <p className="text-xs text-purple-700 font-medium">الزي المطلوب</p>
+                      <p className="text-sm">{viewEvent.dressCode}</p>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              <div className="flex items-center gap-2">
+                <Badge className={getCategoryStyle(viewEvent.category)}>{getCategoryLabel(viewEvent.category)}</Badge>
+                <Badge variant="outline" className="text-xs">{getDaysUntil(viewEvent.eventDate)}</Badge>
+              </div>
+
               {viewEvent.description && (
-                <div>
-                  <span className="text-sm text-muted-foreground">التفاصيل:</span>
-                  <p className="mt-1 text-sm whitespace-pre-wrap">{viewEvent.description}</p>
+                <div className="border-t pt-3">
+                  <p className="text-xs text-muted-foreground mb-1">التفاصيل</p>
+                  <p className="text-sm whitespace-pre-wrap">{viewEvent.description}</p>
                 </div>
               )}
             </div>

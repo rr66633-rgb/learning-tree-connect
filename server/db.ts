@@ -1,6 +1,6 @@
 import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
 import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
@@ -1076,6 +1076,55 @@ export async function deleteCalendarEvent(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
   return { success: true };
+}
+
+// ============ EVENT REMINDERS ============
+export async function createEventReminder(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(eventReminders).values(data);
+  return { id: result[0].insertId, ...data };
+}
+
+export async function getEventReminders(eventId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(eventReminders).where(eq(eventReminders.eventId, eventId)).orderBy(desc(eventReminders.scheduledAt));
+}
+
+export async function getPendingReminders() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  return db.select().from(eventReminders).where(
+    and(
+      eq(eventReminders.status, "pending"),
+      lte(eventReminders.scheduledAt, now)
+    )
+  );
+}
+
+export async function markReminderSent(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(eventReminders).set({ status: "sent", sentAt: new Date() }).where(eq(eventReminders.id, id));
+}
+
+export async function cancelEventReminders(eventId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(eventReminders).set({ status: "cancelled" }).where(
+    and(
+      eq(eventReminders.eventId, eventId),
+      eq(eventReminders.status, "pending")
+    )
+  );
+}
+
+export async function cancelSingleReminder(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(eventReminders).set({ status: "cancelled" }).where(eq(eventReminders.id, id));
 }
 
 // ============ ANNOUNCEMENTS ============

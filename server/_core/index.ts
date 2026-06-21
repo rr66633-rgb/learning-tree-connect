@@ -208,6 +208,11 @@ async function startServer() {
     await pickupEscalationHandler(req, res);
   });
 
+  app.post('/api/scheduled/event-reminders', async (req, res) => {
+    const { eventRemindersHandler } = await import('../event-reminders-handler');
+    await eventRemindersHandler(req, res);
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

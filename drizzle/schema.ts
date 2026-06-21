@@ -225,6 +225,10 @@ export const calendarEvents = mysqlTable("calendar_events", {
   titleEn: varchar("titleEn", { length: 300 }),
   eventDate: varchar("eventDate", { length: 10 }).notNull(), // YYYY-MM-DD
   endDate: varchar("endDate", { length: 10 }), // optional end date for multi-day events
+  eventTime: varchar("eventTime", { length: 10 }), // HH:MM format
+  location: varchar("location", { length: 300 }),
+  requiredMaterials: text("requiredMaterials"),
+  dressCode: varchar("dressCode", { length: 300 }),
   category: mysqlEnum("category", ["holiday", "event", "meeting", "exam", "activity", "celebration", "other"]).default("event").notNull(),
   description: text("description"),
   audience: mysqlEnum("audience", ["all", "parents", "staff", "admin"]).default("all").notNull(),
@@ -235,6 +239,22 @@ export const calendarEvents = mysqlTable("calendar_events", {
 });
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
 export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+
+export const eventReminders = mysqlTable("event_reminders", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("eventId").notNull(),
+  reminderType: mysqlEnum("reminderType", ["parent_upcoming", "parent_update", "parent_cancellation", "teacher_preparation", "teacher_materials", "teacher_setup", "manual"]).default("parent_upcoming").notNull(),
+  daysBefore: int("daysBefore").notNull().default(0),
+  scheduledAt: timestamp("scheduledAt").notNull(),
+  sentAt: timestamp("sentAt"),
+  status: mysqlEnum("status", ["pending", "sent", "cancelled"]).default("pending").notNull(),
+  audience: mysqlEnum("audience", ["all", "parents", "staff", "admin"]).default("all").notNull(),
+  message: text("message"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EventReminder = typeof eventReminders.$inferSelect;
+export type InsertEventReminder = typeof eventReminders.$inferInsert;
 
 // ============ ANNOUNCEMENTS ============
 export const announcements = mysqlTable("announcements", {

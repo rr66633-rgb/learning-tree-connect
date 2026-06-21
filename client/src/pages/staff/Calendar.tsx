@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, ChevronRight, ChevronLeft, Calendar as CalIcon, Pencil, Trash2, Eye } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, ChevronRight, ChevronLeft, Calendar as CalIcon, Pencil, Trash2, Eye, Bell, BellRing, MapPin, Clock, Shirt, Package, Send } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
@@ -32,6 +33,22 @@ const AUDIENCES = [
 const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 const DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
+const REMINDER_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  pending: { label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-700" },
+  sent: { label: "تم الإرسال", color: "bg-green-100 text-green-700" },
+  cancelled: { label: "ملغي", color: "bg-red-100 text-red-700" },
+};
+
+const REMINDER_TYPE_MAP: Record<string, string> = {
+  parent_upcoming: "تذكير ولي أمر",
+  parent_update: "تحديث للأهل",
+  parent_cancellation: "إلغاء",
+  teacher_preparation: "تحضير معلمة",
+  teacher_materials: "تجهيز مواد",
+  teacher_setup: "إعداد المكان",
+  manual: "يدوي",
+};
+
 function getCategoryStyle(cat: string) {
   return CATEGORIES.find(c => c.value === cat)?.color || "bg-gray-100 text-gray-700";
 }
@@ -45,6 +62,9 @@ export default function StaffCalendar() {
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [viewEvent, setViewEvent] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [reminderDialog, setReminderDialog] = useState<any>(null);
+  const [manualReminderMsg, setManualReminderMsg] = useState("");
+  const [manualReminderAudience, setManualReminderAudience] = useState<"all" | "parents" | "staff">("parents");
 
   // Form state
   const [form, setForm] = useState({
@@ -52,10 +72,15 @@ export default function StaffCalendar() {
     titleEn: "",
     eventDate: "",
     endDate: "",
+    eventTime: "",
+    location: "",
+    requiredMaterials: "",
+    dressCode: "",
     category: "event" as string,
     description: "",
     audience: "all" as string,
     status: "draft" as string,
+    autoReminders: true,
   });
 
   const month = currentDate.getMonth() + 1;
@@ -63,6 +88,12 @@ export default function StaffCalendar() {
 
   const { data: events, isLoading } = trpc.calendar.list.useQuery({ month, year });
   const utils = trpc.useUtils();
+
+  // Reminder history query (only when viewing an event)
+  const { data: reminderHistory } = trpc.calendar.reminderHistory.useQuery(
+    { eventId: reminderDialog?.id || 0 },
+    { enabled: !!reminderDialog }
+  );
 
   const createMutation = trpc.calendar.create.useMutation({
     onSuccess: () => {
@@ -97,13 +128,30 @@ export default function StaffCalendar() {
   const publishMutation = trpc.calendar.publish.useMutation({
     onSuccess: (data: any) => {
       utils.calendar.list.invalidate();
-      toast.success(data.status === "published" ? "تم نشر الحدث" : "تم إلغاء نشر الحدث");
+      toast.success(data.status === "published" ? "تم نشر الحدث وجدولة التذكيرات" : "تم إلغاء نشر الحدث");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const sendReminderMutation = trpc.calendar.sendReminder.useMutation({
+    onSuccess: (data: any) => {
+      utils.calendar.reminderHistory.invalidate();
+      toast.success(`تم إرسال التذكير إلى ${data.sentTo} مستخدم`);
+      setManualReminderMsg("");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const cancelRemindersMutation = trpc.calendar.cancelReminders.useMutation({
+    onSuccess: () => {
+      utils.calendar.reminderHistory.invalidate();
+      toast.success("تم إلغاء التذكيرات المعلقة");
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   function resetForm() {
-    setForm({ titleAr: "", titleEn: "", eventDate: "", endDate: "", category: "event", description: "", audience: "all", status: "draft" });
+    setForm({ titleAr: "", titleEn: "", eventDate: "", endDate: "", eventTime: "", location: "", requiredMaterials: "", dressCode: "", category: "event", description: "", audience: "all", status: "draft", autoReminders: true });
   }
 
   function openCreate(dateStr?: string) {
@@ -120,10 +168,15 @@ export default function StaffCalendar() {
       titleEn: ev.titleEn || "",
       eventDate: ev.eventDate || "",
       endDate: ev.endDate || "",
+      eventTime: ev.eventTime || "",
+      location: ev.location || "",
+      requiredMaterials: ev.requiredMaterials || "",
+      dressCode: ev.dressCode || "",
       category: ev.category || "event",
       description: ev.description || "",
       audience: ev.audience || "all",
       status: ev.status || "draft",
+      autoReminders: true,
     });
     setDialogOpen(true);
   }
@@ -138,10 +191,15 @@ export default function StaffCalendar() {
       titleEn: form.titleEn || undefined,
       eventDate: form.eventDate,
       endDate: form.endDate || undefined,
+      eventTime: form.eventTime || undefined,
+      location: form.location || undefined,
+      requiredMaterials: form.requiredMaterials || undefined,
+      dressCode: form.dressCode || undefined,
       category: form.category as any,
       description: form.description || undefined,
       audience: form.audience as any,
       status: form.status as any,
+      autoReminders: form.autoReminders,
     };
 
     if (editingEvent) {
@@ -151,16 +209,24 @@ export default function StaffCalendar() {
     }
   }
 
+  function handleSendManualReminder() {
+    if (!manualReminderMsg.trim() || !reminderDialog) return;
+    sendReminderMutation.mutate({
+      eventId: reminderDialog.id,
+      audience: manualReminderAudience,
+      message: manualReminderMsg,
+    });
+  }
+
   // Calendar grid calculation
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month - 1, 1);
     const lastDay = new Date(year, month, 0);
-    const startDayOfWeek = firstDay.getDay(); // 0=Sun
+    const startDayOfWeek = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
 
     const days: { date: number; dateStr: string; isCurrentMonth: boolean }[] = [];
     
-    // Previous month padding
     const prevMonthLast = new Date(year, month - 1, 0).getDate();
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
       const d = prevMonthLast - i;
@@ -169,12 +235,10 @@ export default function StaffCalendar() {
       days.push({ date: d, dateStr: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, isCurrentMonth: false });
     }
     
-    // Current month
     for (let d = 1; d <= daysInMonth; d++) {
       days.push({ date: d, dateStr: `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`, isCurrentMonth: true });
     }
     
-    // Next month padding
     const remaining = 42 - days.length;
     for (let d = 1; d <= remaining; d++) {
       const m = month + 1 > 12 ? 1 : month + 1;
@@ -298,6 +362,7 @@ export default function StaffCalendar() {
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {new Date(ev.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long" })}
+                      {ev.eventTime && ` - ${ev.eventTime}`}
                       {ev.endDate && ` — ${new Date(ev.endDate + "T00:00:00").toLocaleDateString("ar-SA", { day: "numeric", month: "long" })}`}
                     </p>
                   </div>
@@ -310,6 +375,9 @@ export default function StaffCalendar() {
                       />
                       <span className="text-[10px] text-muted-foreground">{ev.status === "published" ? "منشور" : "مسودة"}</span>
                     </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReminderDialog(ev)} title="التذكيرات">
+                      <Bell className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewEvent(ev)}>
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -329,7 +397,7 @@ export default function StaffCalendar() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) { setEditingEvent(null); resetForm(); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>{editingEvent ? "تعديل الحدث" : "إضافة حدث جديد"}</DialogTitle>
           </DialogHeader>
@@ -354,6 +422,16 @@ export default function StaffCalendar() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <Label className="flex items-center gap-1"><Clock className="h-3 w-3" />الوقت</Label>
+                <Input type="time" value={form.eventTime} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, eventTime: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="flex items-center gap-1"><MapPin className="h-3 w-3" />الموقع</Label>
+                <Input value={form.location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, location: e.target.value }))} placeholder="مثال: القاعة الرئيسية" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
                 <Label>التصنيف</Label>
                 <Select value={form.category} onValueChange={(v) => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -373,12 +451,26 @@ export default function StaffCalendar() {
               </div>
             </div>
             <div>
+              <Label className="flex items-center gap-1"><Package className="h-3 w-3" />المواد المطلوبة</Label>
+              <Input value={form.requiredMaterials} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, requiredMaterials: e.target.value }))} placeholder="مثال: ملابس رياضية، قبعة شمسية" />
+            </div>
+            <div>
+              <Label className="flex items-center gap-1"><Shirt className="h-3 w-3" />الزي المطلوب</Label>
+              <Input value={form.dressCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, dressCode: e.target.value }))} placeholder="مثال: ملابس بيضاء" />
+            </div>
+            <div>
               <Label>الوصف</Label>
               <Textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="تفاصيل إضافية عن الحدث..." />
             </div>
-            <div className="flex items-center gap-3">
-              <Label>نشر مباشرة</Label>
-              <Switch checked={form.status === "published"} onCheckedChange={(c) => setForm(f => ({ ...f, status: c ? "published" : "draft" }))} />
+            <div className="flex items-center justify-between border-t pt-3">
+              <div className="flex items-center gap-3">
+                <Label>نشر مباشرة</Label>
+                <Switch checked={form.status === "published"} onCheckedChange={(c) => setForm(f => ({ ...f, status: c ? "published" : "draft" }))} />
+              </div>
+              <div className="flex items-center gap-3">
+                <Label className="flex items-center gap-1"><BellRing className="h-3 w-3" />تذكيرات تلقائية</Label>
+                <Switch checked={form.autoReminders} onCheckedChange={(c) => setForm(f => ({ ...f, autoReminders: c }))} />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -392,9 +484,9 @@ export default function StaffCalendar() {
         </DialogContent>
       </Dialog>
 
-      {/* View Event Dialog */}
+      {/* View Event Dialog - Enhanced with full details */}
       <Dialog open={!!viewEvent} onOpenChange={(o) => { if (!o) setViewEvent(null); }}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{viewEvent?.titleAr}</DialogTitle>
           </DialogHeader>
@@ -414,6 +506,24 @@ export default function StaffCalendar() {
                     <p className="font-medium">{new Date(viewEvent.endDate + "T00:00:00").toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</p>
                   </div>
                 )}
+                {viewEvent.eventTime && (
+                  <div className="flex items-start gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <span className="text-muted-foreground">الوقت:</span>
+                      <p className="font-medium">{viewEvent.eventTime}</p>
+                    </div>
+                  </div>
+                )}
+                {viewEvent.location && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <span className="text-muted-foreground">الموقع:</span>
+                      <p className="font-medium">{viewEvent.location}</p>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <span className="text-muted-foreground">التصنيف:</span>
                   <Badge className={`mt-1 ${getCategoryStyle(viewEvent.category)}`}>{getCategoryLabel(viewEvent.category)}</Badge>
@@ -429,6 +539,24 @@ export default function StaffCalendar() {
                   </Badge>
                 </div>
               </div>
+              {viewEvent.requiredMaterials && (
+                <div className="flex items-start gap-2 text-sm">
+                  <Package className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <span className="text-muted-foreground">المواد المطلوبة:</span>
+                    <p className="font-medium">{viewEvent.requiredMaterials}</p>
+                  </div>
+                </div>
+              )}
+              {viewEvent.dressCode && (
+                <div className="flex items-start gap-2 text-sm">
+                  <Shirt className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <span className="text-muted-foreground">الزي المطلوب:</span>
+                    <p className="font-medium">{viewEvent.dressCode}</p>
+                  </div>
+                </div>
+              )}
               {viewEvent.description && (
                 <div>
                   <span className="text-sm text-muted-foreground">الوصف:</span>
@@ -436,6 +564,9 @@ export default function StaffCalendar() {
                 </div>
               )}
               <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => { setViewEvent(null); setReminderDialog(viewEvent); }}>
+                  <Bell className="h-4 w-4 ml-2" />التذكيرات
+                </Button>
                 <Button variant="outline" className="flex-1" onClick={() => { setViewEvent(null); openEdit(viewEvent); }}>
                   <Pencil className="h-4 w-4 ml-2" />تعديل
                 </Button>
@@ -448,13 +579,108 @@ export default function StaffCalendar() {
         </DialogContent>
       </Dialog>
 
+      {/* Reminder Management Dialog */}
+      <Dialog open={!!reminderDialog} onOpenChange={(o) => { if (!o) setReminderDialog(null); }}>
+        <DialogContent className="max-w-lg max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BellRing className="h-5 w-5" />
+              تذكيرات: {reminderDialog?.titleAr}
+            </DialogTitle>
+          </DialogHeader>
+          {reminderDialog && (
+            <Tabs defaultValue="send" className="w-full">
+              <TabsList className="w-full">
+                <TabsTrigger value="send" className="flex-1">إرسال تذكير</TabsTrigger>
+                <TabsTrigger value="history" className="flex-1">سجل التذكيرات</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="send" className="space-y-4 mt-4">
+                <div>
+                  <Label>الرسالة</Label>
+                  <Textarea
+                    value={manualReminderMsg}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setManualReminderMsg(e.target.value)}
+                    placeholder={`مثال: ${reminderDialog.titleAr} غداً - لا تنسوا إحضار...`}
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label>إرسال إلى</Label>
+                  <Select value={manualReminderAudience} onValueChange={(v: any) => setManualReminderAudience(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="parents">أولياء الأمور</SelectItem>
+                      <SelectItem value="staff">الموظفين</SelectItem>
+                      <SelectItem value="all">الجميع</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSendManualReminder} disabled={!manualReminderMsg.trim() || sendReminderMutation.isPending} className="flex-1">
+                    <Send className="h-4 w-4 ml-2" />
+                    {sendReminderMutation.isPending ? "جاري الإرسال..." : "إرسال الآن"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => cancelRemindersMutation.mutate({ eventId: reminderDialog.id })}
+                    disabled={cancelRemindersMutation.isPending}
+                    className="text-destructive"
+                  >
+                    إلغاء المعلقة
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="history" className="mt-4">
+                <div className="max-h-[40vh] overflow-y-auto space-y-2">
+                  {!reminderHistory || reminderHistory.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">لا توجد تذكيرات مجدولة</p>
+                  ) : (
+                    reminderHistory.map((r: any) => (
+                      <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border text-sm">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className={REMINDER_STATUS_MAP[r.status]?.color || ""}>
+                              {REMINDER_STATUS_MAP[r.status]?.label || r.status}
+                            </Badge>
+                            <span className="text-muted-foreground text-xs">
+                              {REMINDER_TYPE_MAP[r.reminderType] || r.reminderType}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate">{r.message}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            مجدول: {new Date(r.scheduledAt).toLocaleDateString("ar-SA", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            {r.sentAt && ` | أُرسل: ${new Date(r.sentAt).toLocaleDateString("ar-SA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
+                          </p>
+                        </div>
+                        {r.status === "pending" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive shrink-0"
+                            onClick={() => cancelRemindersMutation.mutate({ eventId: reminderDialog.id, reminderId: r.id })}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation */}
       <Dialog open={deleteConfirm !== null} onOpenChange={(o) => { if (!o) setDeleteConfirm(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>تأكيد الحذف</DialogTitle>
           </DialogHeader>
-          <p className="text-muted-foreground">هل أنت متأكد من حذف هذا الحدث؟ لا يمكن التراجع عن هذا الإجراء.</p>
+          <p className="text-muted-foreground">هل أنت متأكد من حذف هذا الحدث؟ سيتم إلغاء جميع التذكيرات المرتبطة به. لا يمكن التراجع عن هذا الإجراء.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirm(null)}>إلغاء</Button>
             <Button variant="destructive" onClick={() => deleteConfirm && deleteMutation.mutate({ id: deleteConfirm })} disabled={deleteMutation.isPending}>

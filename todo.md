@@ -980,3 +980,41 @@
 - [x] Add "التقويم السنوي" to teacher sidebar
 - [x] Add "التقويم السنوي" to parent sidebar
 - [x] Register routes in App.tsx
+
+## Event Notifications System (Phase 2)
+
+### Database
+- [x] Add event detail fields to calendar_events (eventTime, location, requiredMaterials, dressCode)
+- [x] Create event_reminders table (id, eventId, reminderType, daysBefore, scheduledAt, sentAt, status, audience, createdBy)
+- [x] Run migration SQL
+
+### Server (tRPC)
+- [x] calendar.sendReminder - admin sends manual reminder
+- [x] calendar.scheduleReminders - auto-schedule reminders for event (7/3/1/0 days)
+- [x] calendar.cancelReminders - cancel pending reminders
+- [x] calendar.reminderHistory - view notification history for an event
+- [x] calendar.updateEventDetails - update event with time/location/materials/dressCode
+
+### Notification Logic
+- [x] Parent notifications: silent push + in-app for upcoming events
+- [x] Teacher notifications: preparation/material/setup reminders
+- [x] Notification messages in Arabic (e.g. "يوم المرح المائي بعد 3 أيام")
+- [x] Event day notification
+
+### Admin UI
+- [x] Send manual reminder button on event details
+- [x] Schedule reminders interface
+- [x] Cancel reminders option
+- [x] View notification history per event
+
+### Enhanced Event Details
+- [x] Add time field to event form
+- [x] Add location field to event form
+- [x] Add required materials field
+- [x] Add dress code field
+- [x] Display all details in event view dialog
+
+### Periodic Job
+- [x] Heartbeat handler created (event-reminders-handler.ts)
+- [x] Mounted at /api/scheduled/event-reminders
+- [ ] Create heartbeat cron job (hourly) after deploy
