@@ -946,3 +946,37 @@
 - [x] إضافة واجهة اختيار القالب في صفحة إنشاء الخطة (Staff WeeklyPlan)
 - [x] ملء النموذج تلقائياً عند اختيار قالب مع اقتراحات مخصصة حسب الفئة العمرية
 - [x] إضافة أيقونات ورسوم لكل قالب لتسهيل التصفح
+
+## Annual Calendar Module
+
+### Database
+- [x] Create calendar_events table (id, titleAr, titleEn, eventDate, category, description, audience, status, createdBy, createdAt, updatedAt)
+- [x] Run migration SQL
+
+### Server (tRPC calendarRouter)
+- [x] calendar.list - list events with month/year filter
+- [x] calendar.get - get single event details
+- [x] calendar.create - admin creates event
+- [x] calendar.update - admin edits event
+- [x] calendar.delete - admin deletes event
+- [x] calendar.publish - admin publishes event
+- [x] calendar.parentList - parents view published events (via list with role filter)
+
+### Admin/Staff UI
+- [x] Monthly calendar grid view with events
+- [x] Add Event dialog with all fields
+- [x] Edit Event dialog
+- [x] Delete Event confirmation
+- [x] Publish/Unpublish toggle
+- [x] Event category color coding
+
+### Parent UI
+- [x] Monthly calendar view (read-only)
+- [x] Event details modal
+- [x] Category filter
+
+### Navigation
+- [x] Add "التقويم السنوي" to admin sidebar
+- [x] Add "التقويم السنوي" to teacher sidebar
+- [x] Add "التقويم السنوي" to parent sidebar
+- [x] Register routes in App.tsx

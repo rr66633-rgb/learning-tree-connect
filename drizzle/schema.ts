@@ -221,17 +221,20 @@ export const eyfsAssessments = mysqlTable("eyfs_assessments", {
 // ============ CALENDAR EVENTS ============
 export const calendarEvents = mysqlTable("calendar_events", {
   id: int("id").autoincrement().primaryKey(),
-  title: varchar("title", { length: 200 }).notNull(),
-  titleAr: varchar("titleAr", { length: 200 }),
+  titleAr: varchar("titleAr", { length: 300 }).notNull(),
+  titleEn: varchar("titleEn", { length: 300 }),
+  eventDate: varchar("eventDate", { length: 10 }).notNull(), // YYYY-MM-DD
+  endDate: varchar("endDate", { length: 10 }), // optional end date for multi-day events
+  category: mysqlEnum("category", ["holiday", "event", "meeting", "exam", "activity", "celebration", "other"]).default("event").notNull(),
   description: text("description"),
-  startDate: timestamp("startDate").notNull(),
-  endDate: timestamp("endDate"),
-  type: mysqlEnum("type", ["holiday", "event", "trip", "meeting", "deadline"]).default("event").notNull(),
-  classId: int("classId"),
-  isAllDay: boolean("isAllDay").default(true).notNull(),
+  audience: mysqlEnum("audience", ["all", "parents", "staff", "admin"]).default("all").notNull(),
+  status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
 
 // ============ ANNOUNCEMENTS ============
 export const announcements = mysqlTable("announcements", {

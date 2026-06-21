@@ -8,6 +8,7 @@ import * as db from "./db";
 import * as authService from "./_core/authService";
 import { aiRouter } from "./aiRouter";
 import { weeklyPlanRouter } from "./weeklyPlanRouter";
+import { calendarRouter } from "./calendarRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -1802,29 +1803,7 @@ export const appRouter = router({
       };
     }),
   }),
-  calendar: router({
-    events: protectedProcedure.input(z.object({ classId: z.number().optional() }).optional()).query(async ({ input }) => {
-      return db.getCalendarEvents(input?.classId);
-    }),
-    create: adminProcedure.input(z.object({
-      title: z.string().min(1),
-      titleAr: z.string().optional(),
-      description: z.string().optional(),
-      startDate: z.string(),
-      endDate: z.string().optional(),
-      type: z.enum(['holiday', 'event', 'meeting', 'deadline', 'other']),
-      classId: z.number().optional(),
-    })).mutation(async ({ input }) => {
-      return db.createCalendarEvent({
-        ...input,
-        startDate: new Date(input.startDate),
-        endDate: input.endDate ? new Date(input.endDate) : null,
-      });
-    }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.deleteCalendarEvent(input.id);
-    }),
-  }),
+  calendar: calendarRouter,
 
   announcements: router({
     list: protectedProcedure.query(async ({ ctx }) => {

@@ -1027,15 +1027,34 @@ export async function createDailyActivity(data: any) {
 }
 
 // ============ CALENDAR EVENTS ============
-export async function getCalendarEvents(classId?: number) {
+export async function getCalendarEvents(filters?: { month?: number; year?: number; audience?: string; status?: string }) {
   const db = await getDb();
   if (!db) return [];
-  if (classId) {
-    return db.select().from(calendarEvents).where(
-      or(eq(calendarEvents.classId, classId), isNull(calendarEvents.classId))
-    ).orderBy(calendarEvents.startDate);
+  const conditions: any[] = [];
+  if (filters?.status) {
+    conditions.push(eq(calendarEvents.status, filters.status as any));
   }
-  return db.select().from(calendarEvents).orderBy(calendarEvents.startDate);
+  if (filters?.audience) {
+    conditions.push(
+      or(eq(calendarEvents.audience, filters.audience as any), eq(calendarEvents.audience, "all"))
+    );
+  }
+  if (filters?.year && filters?.month) {
+    const monthStr = String(filters.month).padStart(2, "0");
+    const prefix = `${filters.year}-${monthStr}`;
+    conditions.push(sql`${calendarEvents.eventDate} LIKE ${prefix + '%'}`);
+  }
+  const query = conditions.length > 0
+    ? db.select().from(calendarEvents).where(and(...conditions)).orderBy(calendarEvents.eventDate)
+    : db.select().from(calendarEvents).orderBy(calendarEvents.eventDate);
+  return query;
+}
+
+export async function getCalendarEvent(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(calendarEvents).where(eq(calendarEvents.id, id)).limit(1);
+  return rows[0] || null;
 }
 
 export async function createCalendarEvent(data: any) {
@@ -1043,6 +1062,13 @@ export async function createCalendarEvent(data: any) {
   if (!db) throw new Error("Database not available");
   const result = await db.insert(calendarEvents).values(data);
   return { id: result[0].insertId, ...data };
+}
+
+export async function updateCalendarEvent(id: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(calendarEvents).set(data).where(eq(calendarEvents.id, id));
+  return { id, ...data };
 }
 
 export async function deleteCalendarEvent(id: number) {

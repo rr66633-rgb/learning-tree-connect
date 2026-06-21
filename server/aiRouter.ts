@@ -698,7 +698,7 @@ ${CULTURAL_GUIDELINES}
       
       // Fetch recent events and announcements
       const recentEvents = await db.select().from(calendarEvents)
-        .orderBy(desc(calendarEvents.startDate)).limit(5);
+        .orderBy(desc(calendarEvents.eventDate)).limit(5);
       const recentAnnouncements = await db.select().from(announcements)
         .orderBy(desc(announcements.createdAt)).limit(5);
 
