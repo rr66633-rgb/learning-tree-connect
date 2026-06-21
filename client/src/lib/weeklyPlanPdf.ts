@@ -262,53 +262,69 @@ function buildHtmlForPdf(plan: any): string {
 }
 
 /**
- * Generates and downloads a PDF of the weekly plan using html2pdf.js.
- * The browser's native Arabic text rendering handles RTL, letter connections,
- * and bidirectional text correctly.
+ * Generates and downloads a PDF of the weekly plan using jsPDF directly.
+ * Uses jsPDF's html() method with an iframe to completely isolate from
+ * the page's oklch CSS variables that html2canvas cannot parse.
  */
 export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
-  // Dynamically import html2pdf.js
   const html2pdf = (await import("html2pdf.js")).default;
 
   // Build the HTML content
   const htmlContent = buildHtmlForPdf(plan);
 
-  // Create a temporary container isolated from page's oklch CSS variables
-  const container = document.createElement("div");
-  container.innerHTML = htmlContent;
-  container.style.position = "absolute";
-  container.style.left = "-9999px";
-  container.style.top = "0";
-  container.style.width = "210mm"; // A4 width
-  container.style.direction = "rtl";
-  container.style.fontFamily = "'Noto Sans Arabic', 'Arial', sans-serif";
-  container.style.backgroundColor = "#ffffff";
-  container.style.color = "#1a1a1a";
-  // Reset all CSS custom properties that might use oklch
-  container.style.setProperty("--background", "#ffffff");
-  container.style.setProperty("--foreground", "#1a1a1a");
-  container.style.setProperty("--border", "#e5e7eb");
-  container.style.setProperty("--ring", "#1B5E20");
-  container.style.setProperty("color-scheme", "light");
-  // Prevent inheriting oklch colors from parent
-  container.setAttribute("data-theme", "light");
-  container.classList.add("pdf-export-container");
-  document.body.appendChild(container);
-
-  // Ensure the Noto Sans Arabic font is loaded
-  await loadArabicFont();
-
-  // Small delay to ensure font rendering
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
   const theme = plan.theme || "خطة";
   const weekStart = plan.weekStartDate || plan.weekStart || "";
   const filename = `خطة-${theme}-${weekStart}.pdf`;
 
+  // Create a hidden iframe to completely isolate from page CSS (oklch issue)
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "0";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
+
   try {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) throw new Error("Cannot access iframe document");
+
+    // Write a clean HTML document inside the iframe with NO oklch colors
+    iframeDoc.open();
+    iframeDoc.write(`<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans Arabic', 'Arial', sans-serif;
+      direction: rtl;
+      text-align: right;
+      color: #1a1a1a;
+      background: #ffffff;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>${htmlContent}</body>
+</html>`);
+    iframeDoc.close();
+
+    // Wait for fonts to load in the iframe
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Get the content element from the iframe
+    const content = iframeDoc.body.firstElementChild as HTMLElement;
+    if (!content) throw new Error("No content in iframe");
+
+    // Use html2pdf on the iframe's content (which has no oklch)
     await html2pdf()
       .set({
-        margin: [10, 12, 10, 12], // top, left, bottom, right in mm
+        margin: [10, 12, 10, 12],
         filename: filename,
         image: { type: "jpeg", quality: 0.95 },
         html2canvas: {
@@ -316,43 +332,19 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
           useCORS: true,
           letterRendering: true,
           logging: false,
+          windowWidth: iframeDoc.body.scrollWidth,
+          windowHeight: iframeDoc.body.scrollHeight,
         },
         jsPDF: {
           unit: "mm",
           format: "a4",
           orientation: "portrait",
         },
-
       })
-      .from(container)
+      .from(content)
       .save();
   } finally {
-    // Clean up the temporary container
-    document.body.removeChild(container);
-  }
-}
-
-/**
- * Loads the Noto Sans Arabic font if not already loaded.
- */
-async function loadArabicFont(): Promise<void> {
-  // Check if font is already loaded
-  if (document.fonts) {
-    const loaded = await document.fonts.ready;
-    const hasFont = Array.from(loaded as any).some(
-      (f: any) => f.family?.includes("Noto Sans Arabic") || f.family?.includes("Noto+Sans+Arabic")
-    );
-    if (hasFont) return;
-  }
-
-  // Add the font link if not present
-  if (!document.querySelector('link[href*="Noto+Sans+Arabic"]')) {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap";
-    document.head.appendChild(link);
-
-    // Wait for font to load
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Clean up the iframe
+    document.body.removeChild(iframe);
   }
 }
