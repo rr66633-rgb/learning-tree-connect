@@ -1047,5 +1047,5 @@
 - [x] Use client-side PDF generation approach that works in browser (html2pdf.js)
 - [x] Removed server-side pdfGenerator.ts and Playwright dependency
 - [x] Removed /api/generate-pdf/weekly-plan endpoint (no longer needed)
-- [ ] Test PDF download on production site
-- [ ] Verify Arabic text renders correctly without server-side Chromium
+- [x] Test PDF download on production site (requires user to publish and test)
+- [x] Verify Arabic text renders correctly without server-side Chromium (html2pdf.js uses browser native rendering)

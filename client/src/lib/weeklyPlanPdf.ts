@@ -273,7 +273,7 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
   // Build the HTML content
   const htmlContent = buildHtmlForPdf(plan);
 
-  // Create a temporary container
+  // Create a temporary container isolated from page's oklch CSS variables
   const container = document.createElement("div");
   container.innerHTML = htmlContent;
   container.style.position = "absolute";
@@ -282,6 +282,17 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
   container.style.width = "210mm"; // A4 width
   container.style.direction = "rtl";
   container.style.fontFamily = "'Noto Sans Arabic', 'Arial', sans-serif";
+  container.style.backgroundColor = "#ffffff";
+  container.style.color = "#1a1a1a";
+  // Reset all CSS custom properties that might use oklch
+  container.style.setProperty("--background", "#ffffff");
+  container.style.setProperty("--foreground", "#1a1a1a");
+  container.style.setProperty("--border", "#e5e7eb");
+  container.style.setProperty("--ring", "#1B5E20");
+  container.style.setProperty("color-scheme", "light");
+  // Prevent inheriting oklch colors from parent
+  container.setAttribute("data-theme", "light");
+  container.classList.add("pdf-export-container");
   document.body.appendChild(container);
 
   // Ensure the Noto Sans Arabic font is loaded

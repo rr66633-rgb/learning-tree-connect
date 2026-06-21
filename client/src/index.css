@@ -178,3 +178,27 @@
     }
   }
 }
+
+/* PDF Export Container - Override oklch colors with hex equivalents for html2canvas compatibility */
+.pdf-export-container,
+.pdf-export-container * {
+  --background: #fafbfc !important;
+  --foreground: #1a2332 !important;
+  --card: #ffffff !important;
+  --card-foreground: #1a2332 !important;
+  --popover: #ffffff !important;
+  --popover-foreground: #1a2332 !important;
+  --primary: #1B5E20 !important;
+  --primary-foreground: #f8faf9 !important;
+  --secondary: #e8f5e9 !important;
+  --secondary-foreground: #2E7D32 !important;
+  --muted: #f1f5f9 !important;
+  --muted-foreground: #64748b !important;
+  --accent: #e8f5e9 !important;
+  --accent-foreground: #1B5E20 !important;
+  --destructive: #ef4444 !important;
+  --destructive-foreground: #fafafa !important;
+  --border: #e2e8f0 !important;
+  --input: #e2e8f0 !important;
+  --ring: #1B5E20 !important;
+}
