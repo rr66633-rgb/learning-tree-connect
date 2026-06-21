@@ -4,14 +4,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useState } from "react";
 import { toast } from "sonner";
-import { MapPin, Clock, LogIn, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
+import { MapPin, Clock, LogIn, LogOut, CheckCircle2, AlertCircle, UserX } from "lucide-react";
 
 export default function StaffStaffAttendance() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal";
   const today = new Date().toISOString().split("T")[0];
 
   const { data: todayAttendance, isLoading: todayLoading } = trpc.staffAttendance.today.useQuery();
@@ -21,6 +25,12 @@ export default function StaffStaffAttendance() {
 
   const utils = trpc.useUtils();
   const [gpsLoading, setGpsLoading] = useState(false);
+
+  // Admin check-out dialog state
+  const [adminCheckOutDialog, setAdminCheckOutDialog] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [adminCheckOutTime, setAdminCheckOutTime] = useState("");
+  const [adminCheckOutNotes, setAdminCheckOutNotes] = useState("");
 
   const checkIn = trpc.staffAttendance.checkIn.useMutation({
     onSuccess: () => {
@@ -38,6 +48,18 @@ export default function StaffStaffAttendance() {
       utils.staffAttendance.today.invalidate();
       utils.staffAttendance.myHistory.invalidate();
       if (isAdmin) utils.staffAttendance.byDate.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const adminCheckOut = trpc.staffAttendance.adminCheckOut.useMutation({
+    onSuccess: () => {
+      toast.success("تم تسجيل انصراف الموظف بنجاح");
+      utils.staffAttendance.byDate.invalidate();
+      setAdminCheckOutDialog(false);
+      setSelectedRecord(null);
+      setAdminCheckOutTime("");
+      setAdminCheckOutNotes("");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -84,6 +106,32 @@ export default function StaffStaffAttendance() {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  const handleAdminCheckOut = (record: any) => {
+    setSelectedRecord(record);
+    // Default time to current time
+    const now = new Date();
+    setAdminCheckOutTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+    setAdminCheckOutNotes("");
+    setAdminCheckOutDialog(true);
+  };
+
+  const confirmAdminCheckOut = () => {
+    if (!selectedRecord) return;
+    // Build the checkout time from the date of the record + the time input
+    let checkOutTimeStr: string | undefined;
+    if (adminCheckOutTime) {
+      const recordDate = selectedRecord.date ? new Date(selectedRecord.date) : new Date();
+      const [hours, minutes] = adminCheckOutTime.split(':').map(Number);
+      recordDate.setHours(hours, minutes, 0, 0);
+      checkOutTimeStr = recordDate.toISOString();
+    }
+    adminCheckOut.mutate({
+      id: selectedRecord.id,
+      checkOutTime: checkOutTimeStr,
+      notes: adminCheckOutNotes || undefined,
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -186,13 +234,14 @@ export default function StaffStaffAttendance() {
                 <TableHead>وقت الحضور</TableHead>
                 <TableHead>وقت الانصراف</TableHead>
                 <TableHead>الحالة</TableHead>
+                {isAdmin && <TableHead>إجراءات</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}><TableCell colSpan={isAdmin ? 5 : 4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                <TableRow key={i}><TableCell colSpan={isAdmin ? 6 : 4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
               )) : !records || (records as any[]).length === 0 ? (
-                <TableRow><TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-muted-foreground">لا توجد سجلات</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isAdmin ? 6 : 4} className="text-center py-8 text-muted-foreground">لا توجد سجلات</TableCell></TableRow>
               ) : (records as any[]).map((r: any) => (
                 <TableRow key={r.id}>
                   {isAdmin && <TableCell className="font-medium">{r.userName || "-"}</TableCell>}
@@ -200,12 +249,76 @@ export default function StaffStaffAttendance() {
                   <TableCell>{r.checkInTime ? new Date(r.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}</TableCell>
                   <TableCell>{r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}</TableCell>
                   <TableCell>{getStatusBadge(r.status)}</TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      {r.status === "checked_in" && !r.checkOutTime && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-orange-300 text-orange-600 hover:bg-orange-50 gap-1 text-xs"
+                          onClick={() => handleAdminCheckOut(r)}
+                        >
+                          <UserX className="h-3 w-3" />
+                          تسجيل خروج
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Admin Check-Out Dialog */}
+      <Dialog open={adminCheckOutDialog} onOpenChange={setAdminCheckOutDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>تسجيل خروج يدوي</DialogTitle>
+            <DialogDescription>
+              تسجيل انصراف الموظف {selectedRecord?.userName || ""} الذي نسي تسجيل خروجه
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="checkout-time">وقت الانصراف</Label>
+              <Input
+                id="checkout-time"
+                type="time"
+                value={adminCheckOutTime}
+                onChange={(e) => setAdminCheckOutTime(e.target.value)}
+                className="text-right"
+              />
+              <p className="text-xs text-muted-foreground">اترك الوقت الافتراضي أو عدّله لوقت الانصراف الفعلي</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-notes">ملاحظات (اختياري)</Label>
+              <Textarea
+                id="checkout-notes"
+                placeholder="مثال: نسي الموظف تسجيل الخروج"
+                value={adminCheckOutNotes}
+                onChange={(e) => setAdminCheckOutNotes(e.target.value)}
+                className="text-right"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setAdminCheckOutDialog(false)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={confirmAdminCheckOut}
+              disabled={adminCheckOut.isPending}
+              className="bg-orange-600 hover:bg-orange-700 gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              {adminCheckOut.isPending ? "جاري التسجيل..." : "تأكيد الخروج"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

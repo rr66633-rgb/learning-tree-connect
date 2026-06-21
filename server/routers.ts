@@ -1526,6 +1526,18 @@ export const appRouter = router({
       });
       return { success: true };
     }),
+    adminCheckOut: adminProcedure.input(z.object({
+      id: z.number(),
+      checkOutTime: z.string().optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const checkOutTime = input.checkOutTime ? new Date(input.checkOutTime) : new Date();
+      await db.staffCheckOut(input.id, {
+        checkOutTime,
+        notes: input.notes ? `[تسجيل خروج يدوي بواسطة الإدارة] ${input.notes}` : '[تسجيل خروج يدوي بواسطة الإدارة]',
+      });
+      return { success: true };
+    }),
   }),
 
   centerSettings: router({

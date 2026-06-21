@@ -1053,3 +1053,10 @@
 ## Bug: اسم الموظف لا يظهر في سجل حضور الموظفين
 
 - [x] Fix staff name not showing in staff attendance records (added JOIN with users table in getStaffAttendanceByDate)
+
+## Feature: Admin/Supervisor can check-out staff who forgot to check out
+
+- [x] Backend: Add adminCheckOut procedure for admin to manually check-out a staff member
+- [x] Frontend: Add check-out button next to each staff member who is still "checked_in" in the admin view
+- [x] Add confirmation dialog before manual check-out with time picker and notes
+- [x] Record that the check-out was done by admin (notes field with prefix)
