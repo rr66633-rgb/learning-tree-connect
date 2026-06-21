@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { 
   Sparkles, Eye, CalendarDays, Lightbulb, BarChart3, 
-  MessageSquare, Newspaper, BookOpen, Library, ArrowLeft
+  MessageSquare, Newspaper, BookOpen, Library, ArrowLeft, Megaphone
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -75,6 +75,16 @@ const aiFeatures = [
     color: "from-teal-500 to-emerald-600",
     bgColor: "bg-teal-50",
     iconColor: "text-teal-600",
+  },
+  {
+    id: "marketing",
+    title: "التسويق الذكي",
+    titleEn: "AI Marketing",
+    description: "إنشاء محتوى تسويقي احترافي للفعاليات والسوشال ميديا والبوسترات",
+    icon: Megaphone,
+    color: "from-pink-500 to-red-600",
+    bgColor: "bg-pink-50",
+    iconColor: "text-pink-600",
   },
   {
     id: "library",
