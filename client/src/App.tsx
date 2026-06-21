@@ -50,6 +50,12 @@ const AINewsletter = lazy(() => import("./pages/ai/AINewsletter"));
 const AIStory = lazy(() => import("./pages/ai/AIStory"));
 const AILibrary = lazy(() => import("./pages/ai/AILibrary"));
 const AIAssistant = lazy(() => import("./pages/ai/AIAssistant"));
+const AIMarketing = lazy(() => import("./pages/ai/AIMarketing"));
+const AIMarketingEventContent = lazy(() => import("./pages/ai/AIMarketingEventContent"));
+const AIMarketingEventSummary = lazy(() => import("./pages/ai/AIMarketingEventSummary"));
+const AIMarketingPoster = lazy(() => import("./pages/ai/AIMarketingPoster"));
+const AIMarketingSocial = lazy(() => import("./pages/ai/AIMarketingSocial"));
+const AIMarketingMediaCaption = lazy(() => import("./pages/ai/AIMarketingMediaCaption"));
 
 // Legal Pages (public, no auth required)
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
@@ -327,6 +333,24 @@ function RoleRouter() {
         </Route>
         <Route path="/ai/assistant">
           <AIAssistant />
+        </Route>
+        <Route path="/ai/marketing">
+          {isStaffRole(userRole) ? <AIMarketing /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/marketing/event-content">
+          {isStaffRole(userRole) ? <AIMarketingEventContent /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/marketing/event-summary">
+          {isStaffRole(userRole) ? <AIMarketingEventSummary /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/marketing/poster">
+          {isStaffRole(userRole) ? <AIMarketingPoster /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/marketing/social">
+          {isStaffRole(userRole) ? <AIMarketingSocial /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/marketing/media-caption">
+          {isStaffRole(userRole) ? <AIMarketingMediaCaption /> : <Redirect to={basePath} />}
         </Route>
 
         {/* Staff routes - protected for staff roles only */}

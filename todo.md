@@ -1060,3 +1060,24 @@
 - [x] Frontend: Add check-out button next to each staff member who is still "checked_in" in the admin view
 - [x] Add confirmation dialog before manual check-out with time picker and notes
 - [x] Record that the check-out was done by admin (notes field with prefix)
+
+## Phase 4: AI Marketing & Content Generator
+
+- [x] Backend: aiMarketingRouter with LLM integration for content generation
+- [x] Backend: generateEventContent procedure (announcement, notification, WhatsApp, SMS, social captions)
+- [x] Backend: generateEventSummary procedure (report, parent summary, achievement summary)
+- [x] Backend: generatePoster procedure (AI image generation with Learning Tree branding)
+- [x] Backend: generateSocialContent procedure (Instagram, TikTok, Snapchat captions)
+- [x] Backend: generateMediaCaption procedure (captions from uploaded photos/videos)
+- [x] Frontend: AI Marketing Hub page with navigation to all features
+- [x] Frontend: Event Content Generator page with form and multi-section output
+- [x] Frontend: Event Summary Generator page
+- [x] Frontend: Poster Generator page with templates
+- [x] Frontend: Social Media Content Library page
+- [x] Frontend: Media Caption Generator page (upload + AI caption)
+- [x] Register all routes in App.tsx
+- [x] Add navigation link in DashboardLayout sidebar
+- [x] Multi-language support (Arabic, English, Both)
+- [x] Auto-branding (Learning Tree name, colors, logo)
+- [x] Copy-to-clipboard for all generated content
+- [x] Professional parent-friendly tone in all generated content

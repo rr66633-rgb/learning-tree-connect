@@ -9,6 +9,7 @@ import * as authService from "./_core/authService";
 import { aiRouter } from "./aiRouter";
 import { weeklyPlanRouter } from "./weeklyPlanRouter";
 import { calendarRouter } from "./calendarRouter";
+import { aiMarketingRouter } from "./aiMarketingRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -2615,5 +2616,7 @@ export const appRouter = router({
   ai: aiRouter,
   // ============ WEEKLY PLAN GENERATOR ============
   weeklyPlan: weeklyPlanRouter,
+  // ============ AI MARKETING ============
+  aiMarketing: aiMarketingRouter,
 });
 export type AppRouter = typeof appRouter;
