@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { 
   CalendarDays, Sparkles, Copy, Download, Save, Loader2, BookOpen, 
   Clock, FileText, Trash2, Send, Plus, ChevronLeft, Edit3, Eye,
   BookMarked, Palette, FlaskConical, Music, Home, MessageSquare,
-  Calculator, Dumbbell, Hand, Moon
+  Calculator, Dumbbell, Hand, Moon, LayoutGrid, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { WEEKLY_PLAN_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesForAgeGroup, type WeeklyPlanTemplate } from "@/lib/weeklyPlanTemplates";
 
 const SECTION_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
   theme_overview: { label: "نظرة عامة على الموضوع", icon: BookOpen, color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
@@ -129,6 +130,29 @@ function SectionEditor({ content, onChange }: { content: any; onChange: (val: st
   );
 }
 
+function TemplateCard({ template, onSelect }: { template: WeeklyPlanTemplate; onSelect: (t: WeeklyPlanTemplate) => void }) {
+  return (
+    <button
+      onClick={() => onSelect(template)}
+      className={`p-3 rounded-xl border-2 text-right transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] ${template.color}`}
+    >
+      <div className="text-2xl mb-2">{template.icon}</div>
+      <h4 className="font-bold text-sm text-gray-800 mb-1 line-clamp-1">{template.titleAr}</h4>
+      <p className="text-xs text-gray-500 line-clamp-2">{template.description}</p>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {template.ageGroups.slice(0, 2).map(ag => (
+          <span key={ag} className="text-[10px] bg-white/70 rounded px-1.5 py-0.5 text-gray-600">
+            {ag === 'nursery' ? 'حضانة' : ag.toUpperCase()}
+          </span>
+        ))}
+        {template.ageGroups.length > 2 && (
+          <span className="text-[10px] bg-white/70 rounded px-1.5 py-0.5 text-gray-600">+{template.ageGroups.length - 2}</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
 export default function WeeklyPlanPage() {
   const [view, setView] = useState<"list" | "generate" | "preview">("list");
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -142,6 +166,8 @@ export default function WeeklyPlanPage() {
   const [weekEnd, setWeekEnd] = useState<string>("");
   const [theme, setTheme] = useState<string>("");
   const [language, setLanguage] = useState<string>("ar");
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState<string>("");
 
   // Queries
   const classesQuery = trpc.classes.list.useQuery();
@@ -327,6 +353,71 @@ export default function WeeklyPlanPage() {
             <p className="text-sm text-gray-500 mt-1">سيقوم الذكاء الاصطناعي بإنشاء خطة كاملة من 14 قسماً</p>
           </div>
         </div>
+
+        {/* Template Selector */}
+        <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="h-5 w-5 text-emerald-600" />
+                <h3 className="font-bold text-gray-800">قوالب المواضيع الجاهزة</h3>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+              >
+                {showTemplates ? "إخفاء" : "عرض القوالب"}
+              </Button>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">اختر قالباً جاهزاً لملء الموضوع تلقائياً أو اكتب موضوعك الخاص</p>
+            
+            {showTemplates && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Category Filter */}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={templateCategory === "" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setTemplateCategory("")}
+                    className={templateCategory === "" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                  >
+                    الكل
+                  </Button>
+                  {TEMPLATE_CATEGORIES.map(cat => (
+                    <Button
+                      key={cat.id}
+                      variant={templateCategory === cat.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTemplateCategory(cat.id)}
+                      className={templateCategory === cat.id ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                    >
+                      {cat.labelAr}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Templates Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-1">
+                  {getTemplatesForAgeGroup(ageGroup || undefined)
+                    .filter(t => !templateCategory || t.category === templateCategory)
+                    .map(template => (
+                      <TemplateCard 
+                        key={template.id} 
+                        template={template} 
+                        onSelect={(t) => {
+                          setTheme(t.suggestedThemes[0].ar);
+                          setShowTemplates(false);
+                          toast.success(`تم اختيار قالب: ${t.titleAr}`);
+                        }}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardContent className="p-6 space-y-6">
