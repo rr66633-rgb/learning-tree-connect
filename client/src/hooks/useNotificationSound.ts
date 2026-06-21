@@ -235,11 +235,36 @@ export function useNotificationSound() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const repeatTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
+  const audioUnlockedRef = useRef(false);
 
   // Save settings whenever they change
   useEffect(() => {
     saveSettings(settings);
   }, [settings]);
+
+  // Unlock AudioContext on first user interaction (browser requirement)
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (audioUnlockedRef.current) return;
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Create a silent buffer and play it to unlock
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        audioUnlockedRef.current = true;
+        // Store this context for reuse
+        audioCtxRef.current = ctx;
+      } catch {}
+    };
+    const events = ['touchstart', 'touchend', 'click', 'keydown'];
+    events.forEach(e => document.addEventListener(e, unlockAudio, { once: true }));
+    return () => {
+      events.forEach(e => document.removeEventListener(e, unlockAudio));
+    };
+  }, []);
 
   const updateSettings = useCallback((partial: Partial<NotificationSoundSettings>) => {
     setSettings((prev) => ({ ...prev, ...partial }));

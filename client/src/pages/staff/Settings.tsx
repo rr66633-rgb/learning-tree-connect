@@ -6,9 +6,45 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { MapPin, Clock, Building2, Save } from "lucide-react";
+import { MapPin, Clock, Building2, Save, Bell, Send, CheckCircle2, XCircle } from "lucide-react";
 import ChangePassword from "@/components/ChangePassword";
 import { NotificationSoundSettings } from "@/components/NotificationSoundSettings";
+import { PushNotificationToggle } from "@/components/PushNotificationBanner";
+import { useAuth } from "@/_core/hooks/useAuth";
+
+function TestNotificationSection() {
+  const testPush = trpc.push.test.useMutation({
+    onSuccess: (data) => {
+      if (data.sent > 0) {
+        toast.success(`تم إرسال إشعار تجريبي بنجاح (${data.sent} جهاز)`);
+      } else {
+        toast.error('لم يتم إرسال أي إشعار. تأكد من تفعيل الإشعارات أولاً.');
+      }
+    },
+    onError: () => toast.error('فشل إرسال الإشعار التجريبي'),
+  });
+
+  return (
+    <div className="pt-4 border-t space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">اختبار الإشعارات</p>
+          <p className="text-xs text-muted-foreground">إرسال إشعار تجريبي للتأكد من عمل الصوت والاهتزاز</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => testPush.mutate()}
+          disabled={testPush.isPending}
+          className="gap-2"
+        >
+          <Send className="h-4 w-4" />
+          {testPush.isPending ? 'جاري الإرسال...' : 'إرسال إشعار تجريبي'}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function StaffSettings() {
   const { data: settings, isLoading } = trpc.centerSettings.get.useQuery();
@@ -159,6 +195,21 @@ export default function StaffSettings() {
           {update.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
         </Button>
       </div>
+
+      {/* Push Notification Status */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            <CardTitle>إشعارات الدفع الفورية</CardTitle>
+          </div>
+          <CardDescription>تفعيل أو إيقاف إشعارات الدفع لتلقي التنبيهات الفورية</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <PushNotificationToggle />
+          <TestNotificationSection />
+        </CardContent>
+      </Card>
 
       {/* Notification Sound Settings */}
       <NotificationSoundSettings />

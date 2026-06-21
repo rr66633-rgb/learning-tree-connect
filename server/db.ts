@@ -2190,3 +2190,19 @@ export async function getStaffUsers() {
       eq(users.isActive, true)
     ));
 }
+
+export async function getUsersByRoles(roles: string[]) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    role: users.role,
+    phone: users.phone,
+  })
+    .from(users)
+    .where(and(
+      inArray(users.role, roles as any),
+      eq(users.isActive, true)
+    ));
+}

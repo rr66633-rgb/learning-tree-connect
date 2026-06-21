@@ -845,4 +845,17 @@
 - [x] Mark escalated requests visually (red badge/highlight)
 - [x] Add escalation timestamp to pickup_requests table
 - [x] Test escalation workflow end-to-end
-- [ ] Deploy and register Heartbeat cron job (every 1 minute): manus-heartbeat create --name pickup-escalation --cron "0 */1 * * * *" --path /api/scheduled/pickup-escalation
+- [x] Deploy and register Heartbeat cron job (every 1 minute): task_uid: EsPJiJkFtNMVMyrKFeaeT3
+
+## Critical Fix: Pickup Notification Sound Not Working (COMPLETED)
+- [x] Verify push notifications are triggered on pickup request
+- [x] Ensure notifications work when user is on another page (Service Worker + in-app polling)
+- [x] Ensure notifications work when app is in background (Web Push via Service Worker)
+- [x] Add notification sound that plays automatically (Web Audio API with AudioContext unlock)
+- [x] Add notification settings (sound on/off, volume, tone, vibration) in Settings page
+- [x] Add "Send Test Notification" button for admins (push.test with targetUserId)
+- [x] Add push subscription status view for admins (push.staffStatus)
+- [x] PushNotificationRequired component blocks staff until push enabled
+- [x] Verify notifications reach: classroom teacher, assistant, reception staff
+- [x] Add notification event logging for troubleshooting (IndexedDB + server-side createNotification)
+- [x] Test on mobile and desktop

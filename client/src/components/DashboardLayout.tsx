@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
+import { PushNotificationRequired } from "@/components/PushNotificationRequired";
+import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
@@ -294,6 +296,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  // Initialize in-app notification sounds (plays sound on new notifications)
+  useInAppNotifications();
   const menuItems = getMenuItems(user?.role);
   const isMobile = useIsMobile();
 
@@ -446,6 +450,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
+        <PushNotificationRequired />
         <PushNotificationBanner />
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>

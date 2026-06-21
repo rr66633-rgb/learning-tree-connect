@@ -49,28 +49,27 @@ self.addEventListener('push', (event) => {
     renotify: isUrgentPickup,
   };
 
-  // For urgent pickup alerts, also post a message to all open clients
-  // so the in-app full-screen alert can show immediately
+  // Show the notification
   const notificationPromise = self.registration.showNotification(
     payload.title || 'Learning Tree',
     options
   );
 
-  const clientMessagePromise = isUrgentPickup
-    ? self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({
-            type: 'PARENT_ARRIVAL_ALERT',
-            payload: {
-              pickupRequestId: data.pickupRequestId,
-              childId: data.childId,
-              title: payload.title,
-              body: payload.body,
-            },
-          });
-        });
-      })
-    : Promise.resolve();
+  // ALWAYS post message to all open clients so in-app sound plays
+  const clientMessagePromise = self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({
+        type: isUrgentPickup ? 'PARENT_ARRIVAL_ALERT' : 'PUSH_RECEIVED',
+        payload: {
+          pickupRequestId: data.pickupRequestId,
+          childId: data.childId,
+          title: payload.title,
+          body: payload.body,
+          tag: payload.tag,
+        },
+      });
+    });
+  });
 
   event.waitUntil(Promise.all([notificationPromise, clientMessagePromise]));
 });

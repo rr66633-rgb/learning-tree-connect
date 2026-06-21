@@ -2472,15 +2472,18 @@ export const appRouter = router({
       return { success: true };
     }),
     // Test push notification (for debugging)
-    test: protectedProcedure.mutation(async ({ ctx }) => {
+    test: protectedProcedure.input(z.object({
+      targetUserId: z.number().optional(),
+    }).optional()).mutation(async ({ ctx, input }) => {
       const { sendPushToUser } = await import('./_core/webPush');
+      const targetId = input?.targetUserId || ctx.user!.id;
       const result = await sendPushToUser(
-        ctx.user!.id,
+        targetId,
         {
           title: '\u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',
-          body: '\u0645\u0631\u062d\u0628\u0627\u064b! \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u062f\u0641\u0639 \u062a\u0639\u0645\u0644 \u0628\u0646\u062c\u0627\u062d \ud83c\udf89',
+          body: '\u0645\u0631\u062d\u0628\u0627\u064b! \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u062f\u0641\u0639 \u062a\u0639\u0645\u0644 \u0628\u0646\u062c\u0627\u062d. \u0627\u0644\u0635\u0648\u062a \u0648\u0627\u0644\u0627\u0647\u062a\u0632\u0627\u0632 \u064a\u0639\u0645\u0644\u0627\u0646 \u0628\u0634\u0643\u0644 \u0635\u062d\u064a\u062d.',
           tag: 'test',
-          data: { url: '/' },
+          data: { url: '/', type: 'parent_arrival', priority: 'urgent' },
         },
         db.getPushSubscriptionsForUser
       );
@@ -2488,7 +2491,36 @@ export const appRouter = router({
       if (result.expired.length > 0) {
         await db.removeExpiredSubscriptions(result.expired);
       }
-      return { sent: result.sent, failed: result.failed };
+      // Log the test notification event
+      try {
+        await db.createNotification({
+          userId: targetId,
+          title: '\u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',
+          body: '\u0625\u0634\u0639\u0627\u0631 \u062a\u062c\u0631\u064a\u0628\u064a \u0645\u0646 \u0627\u0644\u0625\u062f\u0627\u0631\u0629',
+          type: 'general',
+        });
+      } catch {}
+      return { sent: result.sent, failed: result.failed, targetUserId: targetId };
+    }),
+    // Get push subscription status for all staff (admin only)
+    staffStatus: protectedProcedure.query(async ({ ctx }) => {
+      if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      const staffUsers = await db.getUsersByRoles(['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'super_admin']);
+      const statuses = await Promise.all(
+        staffUsers.map(async (u) => {
+          const subs = await db.getPushSubscriptionsForUser(u.id);
+          return {
+            userId: u.id,
+            name: u.name || '',
+            role: u.role,
+            subscriptionCount: subs.length,
+            hasActiveSubscription: subs.length > 0,
+          };
+        })
+      );
+      return statuses;
     }),
   }),
   // ============ AI TEACHER ASSISTANT ============
