@@ -213,6 +213,36 @@ async function startServer() {
     await eventRemindersHandler(req, res);
   });
 
+  // PDF Generation API
+  app.post('/api/generate-pdf/weekly-plan', async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try {
+        user = await sdk.authenticateRequest(req);
+      } catch (e) {
+        res.status(401).json({ error: 'يجب تسجيل الدخول' });
+        return;
+      }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      const { generateWeeklyPlanPdf } = await import('../pdfGenerator');
+      const planData = req.body;
+      if (!planData || !planData.theme || !planData.sections) {
+        res.status(400).json({ error: 'بيانات الخطة غير مكتملة' });
+        return;
+      }
+      const pdfBuffer = await generateWeeklyPlanPdf(planData);
+      const filename = encodeURIComponent(`\u062e\u0637\u0629-${planData.theme}-${planData.weekStart}.pdf`);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+    } catch (err: any) {
+      console.error('[PDF Generation Error]', err);
+      res.status(500).json({ error: 'فشل في إنشاء ملف PDF' });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

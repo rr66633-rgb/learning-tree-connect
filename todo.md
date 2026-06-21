@@ -1028,3 +1028,15 @@
 - [x] Support Arabic-only, English-only, and mixed content PDF export
 - [x] Professional A4 layout with proper margins and section colors
 - [x] PDF preview matches downloaded file (same generation code)
+
+## PDF Arabic Text Fix v2 (Playwright Server-Side)
+
+- [x] Replaced html2pdf.js client-side approach with server-side Playwright (headless Chromium)
+- [x] Full Arabic RTL support with proper letter connections (browser-native shaping)
+- [x] Numbers display correctly in mixed Arabic/English text (proper bidi algorithm)
+- [x] Professional HTML template with Noto Sans Arabic font from Google Fonts CDN
+- [x] Color-coded section headers with icons
+- [x] Cover page with plan details and table of contents
+- [x] Client calls /api/generate-pdf/weekly-plan endpoint (authenticated)
+- [x] Removed pdfkit dependency (no longer needed)
+- [x] Server caches browser instance for performance
