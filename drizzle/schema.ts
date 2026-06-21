@@ -737,3 +737,35 @@ export const aiLibrary = mysqlTable("ai_library", {
 });
 export type AiLibrary = typeof aiLibrary.$inferSelect;
 export type InsertAiLibrary = typeof aiLibrary.$inferInsert;
+
+
+// ============ STAFF DUTY STATUS ============
+export const staffDutyStatus = mysqlTable("staff_duty_status", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  isOnDuty: boolean("isOnDuty").default(true).notNull(),
+  lastToggleAt: timestamp("lastToggleAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StaffDutyStatus = typeof staffDutyStatus.$inferSelect;
+export type InsertStaffDutyStatus = typeof staffDutyStatus.$inferInsert;
+
+// ============ PICKUP ALERT SETTINGS ============
+export const pickupAlertSettings = mysqlTable("pickup_alert_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  volume: int("volume").default(80).notNull(), // 0-100
+  tone: mysqlEnum("tone", ["urgent", "gentle", "alarm", "chime"]).default("urgent").notNull(),
+  repeatIntervalSeconds: int("repeatIntervalSeconds").default(5).notNull(),
+  escalationMinutes: int("escalationMinutes").default(2).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PickupAlertSettings = typeof pickupAlertSettings.$inferSelect;
+
+// ============ PICKUP ALERT ACKNOWLEDGMENTS ============
+export const pickupAlertAcknowledgments = mysqlTable("pickup_alert_acknowledgments", {
+  id: int("id").autoincrement().primaryKey(),
+  pickupRequestId: int("pickupRequestId").notNull(),
+  userId: int("userId").notNull(),
+  acknowledgedAt: timestamp("acknowledgedAt").defaultNow().notNull(),
+});
+export type PickupAlertAcknowledgment = typeof pickupAlertAcknowledgments.$inferSelect;

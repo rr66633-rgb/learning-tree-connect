@@ -2,7 +2,7 @@ import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
-import { parentChildren, media, mediaChildren, authorizedPickupPersons } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2205,4 +2205,122 @@ export async function getUsersByRoles(roles: string[]) {
       inArray(users.role, roles as any),
       eq(users.isActive, true)
     ));
+}
+
+
+// ============ STAFF DUTY STATUS ============
+export async function getStaffDutyStatus(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(staffDutyStatus).where(eq(staffDutyStatus.userId, userId)).limit(1);
+  return rows[0] || null;
+}
+
+export async function setStaffDutyStatus(userId: number, isOnDuty: boolean) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await getStaffDutyStatus(userId);
+  if (existing) {
+    await db.update(staffDutyStatus)
+      .set({ isOnDuty, lastToggleAt: new Date() })
+      .where(eq(staffDutyStatus.userId, userId));
+  } else {
+    await db.insert(staffDutyStatus).values({ userId, isOnDuty, lastToggleAt: new Date() });
+  }
+}
+
+export async function getOnDutyStaffIds(): Promise<number[]> {
+  const db = await getDb();
+  if (!db) return [];
+  // Staff who are ON DUTY (either explicitly set or have no record = default on duty)
+  const allStaff = await db.select({ id: users.id }).from(users).where(
+    and(
+      inArray(users.role, ['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'super_admin'] as any),
+      eq(users.isActive, true)
+    )
+  );
+  const offDutyRows = await db.select({ userId: staffDutyStatus.userId }).from(staffDutyStatus).where(eq(staffDutyStatus.isOnDuty, false));
+  const offDutyIds = new Set(offDutyRows.map(r => r.userId));
+  return allStaff.filter(s => !offDutyIds.has(s.id)).map(s => s.id);
+}
+
+// ============ PICKUP ALERT SETTINGS ============
+export async function getPickupAlertSettings() {
+  const db = await getDb();
+  if (!db) return { volume: 80, tone: 'urgent' as const, repeatIntervalSeconds: 5, escalationMinutes: 2 };
+  const rows = await db.select().from(pickupAlertSettings).limit(1);
+  return rows[0] || { volume: 80, tone: 'urgent' as const, repeatIntervalSeconds: 5, escalationMinutes: 2 };
+}
+
+export async function updatePickupAlertSettings(data: { volume?: number; tone?: string; repeatIntervalSeconds?: number; escalationMinutes?: number }) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(pickupAlertSettings).limit(1);
+  if (existing.length > 0) {
+    await db.update(pickupAlertSettings).set(data as any).where(eq(pickupAlertSettings.id, existing[0].id));
+  } else {
+    await db.insert(pickupAlertSettings).values(data as any);
+  }
+}
+
+// ============ PICKUP ALERT ACKNOWLEDGMENTS ============
+export async function acknowledgePickupAlert(pickupRequestId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Check if already acknowledged
+  const existing = await db.select().from(pickupAlertAcknowledgments)
+    .where(and(
+      eq(pickupAlertAcknowledgments.pickupRequestId, pickupRequestId),
+      eq(pickupAlertAcknowledgments.userId, userId)
+    )).limit(1);
+  if (existing.length === 0) {
+    await db.insert(pickupAlertAcknowledgments).values({ pickupRequestId, userId });
+  }
+}
+
+export async function isPickupAlertAcknowledged(pickupRequestId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db.select().from(pickupAlertAcknowledgments)
+    .where(eq(pickupAlertAcknowledgments.pickupRequestId, pickupRequestId)).limit(1);
+  return rows.length > 0;
+}
+
+export async function getUnacknowledgedPickupAlerts(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get active pickup requests that this user hasn't acknowledged
+  const activeRequests = await db.select().from(pickupRequests)
+    .where(and(
+      eq(pickupRequests.status, 'waiting_teacher'),
+      isNull(pickupRequests.escalatedAt)
+    ));
+  
+  if (activeRequests.length === 0) return [];
+  
+  const ackRows = await db.select().from(pickupAlertAcknowledgments)
+    .where(and(
+      inArray(pickupAlertAcknowledgments.pickupRequestId, activeRequests.map(r => r.id)),
+      eq(pickupAlertAcknowledgments.userId, userId)
+    ));
+  const ackedIds = new Set(ackRows.map(r => r.pickupRequestId));
+  
+  const unacked = activeRequests.filter(r => !ackedIds.has(r.id));
+  
+  // Enrich with child info
+  const result = await Promise.all(unacked.map(async (req) => {
+    const child = await getChildById(req.childId);
+    const classInfo = child?.classId ? await getClassById(child.classId) : null;
+    return {
+      id: req.id,
+      childId: req.childId,
+      childName: child ? `${child.firstName} ${child.lastName}` : 'طفل',
+      childPhoto: child?.photo || null,
+      className: classInfo?.nameAr || classInfo?.name || '',
+      requestedAt: req.requestedAt,
+      parentId: req.parentId,
+    };
+  }));
+  
+  return result;
 }

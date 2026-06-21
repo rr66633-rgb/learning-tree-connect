@@ -11,6 +11,129 @@ import ChangePassword from "@/components/ChangePassword";
 import { NotificationSoundSettings } from "@/components/NotificationSoundSettings";
 import { PushNotificationToggle } from "@/components/PushNotificationBanner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+
+function PickupAlertSettingsSection() {
+  const { user } = useAuth();
+  const isAdmin = user?.role && ['super_admin', 'admin', 'principal'].includes(user.role);
+  const { data: settings, isLoading } = trpc.pickup.alertSettings.useQuery();
+  const updateSettings = trpc.pickup.updateAlertSettings.useMutation({
+    onSuccess: () => toast.success('تم حفظ إعدادات التنبيه'),
+  });
+  const testAlert = trpc.pickup.testAlert.useMutation({
+    onSuccess: (data) => toast.success(`تم إرسال تنبيه تجريبي إلى ${data.onDutyCount} موظف (${data.sent} تم الإرسال)`),
+    onError: () => toast.error('فشل إرسال التنبيه التجريبي'),
+  });
+
+  const [volume, setVolume] = useState(80);
+  const [tone, setTone] = useState('urgent');
+  const [repeatInterval, setRepeatInterval] = useState(5);
+  const [escalationMinutes, setEscalationMinutes] = useState(2);
+
+  useEffect(() => {
+    if (settings) {
+      setVolume(settings.volume ?? 80);
+      setTone(settings.tone ?? 'urgent');
+      setRepeatInterval(settings.repeatIntervalSeconds ?? 5);
+      setEscalationMinutes(settings.escalationMinutes ?? 2);
+    }
+  }, [settings]);
+
+  if (!isAdmin) return null;
+  if (isLoading) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="h-5 w-5 text-amber-500" />
+          إعدادات تنبيهات الاستلام التشغيلية
+        </CardTitle>
+        <CardDescription>
+          تحكم في صوت التنبيه، التكرار، ووقت التصعيد
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Volume */}
+        <div className="space-y-2">
+          <Label>مستوى الصوت: {volume}%</Label>
+          <Slider
+            value={[volume]}
+            onValueChange={([v]) => setVolume(v)}
+            min={0}
+            max={100}
+            step={5}
+          />
+        </div>
+
+        {/* Tone */}
+        <div className="space-y-2">
+          <Label>نغمة التنبيه</Label>
+          <Select value={tone} onValueChange={setTone}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="urgent">عاجل (صوت قوي)</SelectItem>
+              <SelectItem value="alarm">إنذار (صوت تحذيري)</SelectItem>
+              <SelectItem value="gentle">هادئ (صوت لطيف)</SelectItem>
+              <SelectItem value="chime">رنين (صوت موسيقي)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Repeat Interval */}
+        <div className="space-y-2">
+          <Label>تكرار الصوت كل: {repeatInterval} ثوانٍ</Label>
+          <Slider
+            value={[repeatInterval]}
+            onValueChange={([v]) => setRepeatInterval(v)}
+            min={2}
+            max={30}
+            step={1}
+          />
+        </div>
+
+        {/* Escalation Time */}
+        <div className="space-y-2">
+          <Label>وقت التصعيد: {escalationMinutes} دقائق</Label>
+          <Slider
+            value={[escalationMinutes]}
+            onValueChange={([v]) => setEscalationMinutes(v)}
+            min={1}
+            max={10}
+            step={1}
+          />
+          <p className="text-xs text-muted-foreground">
+            إذا لم يتم الاستجابة خلال هذا الوقت، يتم تصعيد التنبيه للمشرف
+          </p>
+        </div>
+
+        <Separator />
+
+        <div className="flex gap-3">
+          <Button
+            onClick={() => updateSettings.mutate({ volume, tone: tone as any, repeatIntervalSeconds: repeatInterval, escalationMinutes })}
+            disabled={updateSettings.isPending}
+          >
+            <Save className="ml-2 h-4 w-4" />
+            حفظ الإعدادات
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => testAlert.mutate()}
+            disabled={testAlert.isPending}
+            className="border-amber-500 text-amber-700 hover:bg-amber-50"
+          >
+            <Bell className="ml-2 h-4 w-4" />
+            تجربة تنبيه الاستلام
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function TestNotificationSection() {
   const testPush = trpc.push.test.useMutation({
@@ -213,6 +336,9 @@ export default function StaffSettings() {
 
       {/* Notification Sound Settings */}
       <NotificationSoundSettings />
+
+      {/* Operational Alert Settings (Admin only) */}
+      <PickupAlertSettingsSection />
 
       {/* Change Password */}
       <ChangePassword />

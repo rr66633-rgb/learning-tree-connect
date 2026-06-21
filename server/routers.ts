@@ -2231,33 +2231,52 @@ export const appRouter = router({
         teacherId: teacherId || null,
       });
 
-      // Notify classroom teacher
+      // Notify ON DUTY staff only (operational alert)
       try {
-        if (teacherId) {
+        const onDutyIds = await db.getOnDutyStaffIds();
+        // Notify classroom teacher (if on duty)
+        if (teacherId && onDutyIds.includes(teacherId)) {
           await db.createNotification({
             userId: teacherId,
-            title: 'طلب استلام جديد',
-            titleAr: 'طلب استلام جديد',
-            body: `ولي أمر ${childName} وصل لاستلامه`,
-            bodyAr: `ولي أمر ${childName} وصل لاستلامه`,
+            title: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
+            titleAr: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
+            body: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647 - \u064a\u0631\u062c\u0649 \u0627\u0644\u0627\u0633\u062a\u062c\u0627\u0628\u0629 \u0641\u0648\u0631\u0627\u064b`,
+            bodyAr: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647 - \u064a\u0631\u062c\u0649 \u0627\u0644\u0627\u0633\u062a\u062c\u0627\u0628\u0629 \u0641\u0648\u0631\u0627\u064b`,
             type: 'attendance',
-            metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId, step: 'request' }),
+            metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId, step: 'request', isOperationalAlert: true }),
           });
         }
-        // Notify reception staff
+        // Notify reception staff (if on duty)
         const receptionStaff = await db.getUsersByRole('receptionist');
         for (const staff of receptionStaff) {
-          await db.createNotification({
-            userId: staff.id,
-            title: 'طلب استلام جديد',
-            titleAr: 'طلب استلام جديد',
-            body: `ولي أمر ${childName} وصل لاستلامه`,
-            bodyAr: `ولي أمر ${childName} وصل لاستلامه`,
-            type: 'attendance',
-            metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId, step: 'request' }),
-          });
+          if (onDutyIds.includes(staff.id)) {
+            await db.createNotification({
+              userId: staff.id,
+              title: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
+              titleAr: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
+              body: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647`,
+              bodyAr: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647`,
+              type: 'attendance',
+              metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId, step: 'request', isOperationalAlert: true }),
+            });
+          }
         }
-        // Push notifications
+        // Also notify class assistant if on duty
+        if (child?.classId) {
+          const classInfo = await db.getClassById(child.classId);
+          if (classInfo?.assistantId && onDutyIds.includes(classInfo.assistantId)) {
+            await db.createNotification({
+              userId: classInfo.assistantId,
+              title: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
+              titleAr: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
+              body: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647`,
+              bodyAr: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647`,
+              type: 'attendance',
+              metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId, step: 'request', isOperationalAlert: true }),
+            });
+          }
+        }
+        // Push notifications to on-duty staff only
         const { notifyStaffPickupRequest } = await import('./_core/pushTriggers');
         await notifyStaffPickupRequest(childName, id, input.childId);
       } catch (e) { /* notification failure shouldn't block */ }
@@ -2441,6 +2460,83 @@ export const appRouter = router({
       limit: z.number().min(1).max(500).default(100),
     }).optional()).query(async ({ input }) => {
       return db.getPickupHistory(input?.limit || 100);
+    }),
+
+    // ===== OPERATIONAL ALERTS =====
+    
+    // Acknowledge pickup alert (stops repeating sound)
+    acknowledge: protectedProcedure.input(z.object({
+      pickupRequestId: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      await db.acknowledgePickupAlert(input.pickupRequestId, ctx.user!.id);
+      return { success: true };
+    }),
+
+    // Get unacknowledged alerts for current user
+    unacknowledgedAlerts: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUnacknowledgedPickupAlerts(ctx.user!.id);
+    }),
+
+    // Get alert settings
+    alertSettings: protectedProcedure.query(async () => {
+      return db.getPickupAlertSettings();
+    }),
+
+    // Update alert settings (admin only)
+    updateAlertSettings: protectedProcedure.input(z.object({
+      volume: z.number().min(0).max(100).optional(),
+      tone: z.enum(['urgent', 'gentle', 'alarm', 'chime']).optional(),
+      repeatIntervalSeconds: z.number().min(2).max(30).optional(),
+      escalationMinutes: z.number().min(1).max(10).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      await db.updatePickupAlertSettings(input);
+      return { success: true };
+    }),
+
+    // Test pickup alert (admin only)
+    testAlert: protectedProcedure.mutation(async ({ ctx }) => {
+      if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      // Send a test operational alert push to all on-duty staff
+      const { sendPushToUser } = await import('./_core/webPush');
+      const onDutyIds = await db.getOnDutyStaffIds();
+      let sent = 0;
+      for (const userId of onDutyIds) {
+        try {
+          const result = await sendPushToUser(
+            userId,
+            {
+              title: '\u062a\u062c\u0631\u0628\u0629 \u062a\u0646\u0628\u064a\u0647 \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645',
+              body: '\u0647\u0630\u0627 \u062a\u0646\u0628\u064a\u0647 \u062a\u062c\u0631\u064a\u0628\u064a - \u0627\u0644\u0635\u0648\u062a \u0648\u0627\u0644\u0627\u0647\u062a\u0632\u0627\u0632 \u064a\u0639\u0645\u0644\u0627\u0646',
+              tag: 'test-pickup-alert',
+              data: { url: '/staff/pickup', type: 'pickup_alert', priority: 'urgent', isTest: true },
+            },
+            db.getPushSubscriptionsForUser
+          );
+          sent += result.sent;
+        } catch {}
+      }
+      return { sent, onDutyCount: onDutyIds.length };
+    }),
+
+    // ===== DUTY STATUS =====
+    
+    // Get current user's duty status
+    dutyStatus: protectedProcedure.query(async ({ ctx }) => {
+      const status = await db.getStaffDutyStatus(ctx.user!.id);
+      return { isOnDuty: status?.isOnDuty ?? true };
+    }),
+
+    // Toggle duty status
+    toggleDuty: protectedProcedure.input(z.object({
+      isOnDuty: z.boolean(),
+    })).mutation(async ({ ctx, input }) => {
+      await db.setStaffDutyStatus(ctx.user!.id, input.isOnDuty);
+      return { isOnDuty: input.isOnDuty };
     }),
   }),
 

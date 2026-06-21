@@ -859,3 +859,42 @@
 - [x] Verify notifications reach: classroom teacher, assistant, reception staff
 - [x] Add notification event logging for troubleshooting (IndexedDB + server-side createNotification)
 - [x] Test on mobile and desktop
+
+## Redesign: Pickup Alerts as Operational Alerts (COMPLETED)
+
+### Database Schema
+- [x] Add staff_duty_status table (userId, isOnDuty, lastToggle)
+- [x] Add alert_settings table (volume, tone, repeatInterval, escalationMinutes)
+- [x] Add pickup_alert_acknowledgments table (requestId, userId, acknowledgedAt)
+
+### Server-Side
+- [x] Duty toggle procedure (ON DUTY / OFF DUTY)
+- [x] Alert targeting: only send to ON DUTY staff who are logged in
+- [x] Escalation: if no acknowledgment within 2 minutes, alert supervisor
+- [x] Test alert procedure for admin
+- [x] Alert settings CRUD for admin
+
+### Operational Alert UI
+- [x] Persistent full-screen alert banner on pickup request
+- [x] Display: child photo, child name, class name, time waiting
+- [x] Repeating loud alert sound every few seconds until acknowledged
+- [x] "Request Received" button to acknowledge and stop alert
+- [x] Alert stops ONLY when acknowledged
+- [x] Time waiting counter (live updating)
+
+### ON DUTY / OFF DUTY Toggle
+- [x] Staff presence toggle in sidebar/header
+- [x] Only ON DUTY staff receive pickup alerts
+- [x] Visual indicator of current duty status
+
+### Alert Settings (Admin)
+- [x] Alert volume control
+- [x] Alert tone selection
+- [x] Repeat interval configuration
+- [x] Escalation timing configuration
+- [x] Test Pickup Alert button
+
+### Escalation
+- [x] If no response within 2 minutes, increase priority
+- [x] Send additional alert to supervisor/admin
+- [x] Visual escalation indicator
