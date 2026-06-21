@@ -825,3 +825,14 @@
 - [x] Volume control (increase/decrease)
 - [x] Tone change option
 - [x] Vibration toggle
+
+## Critical Bug Fix: Pickup Authorization (COMPLETED)
+- [x] Verify authorized_pickup_persons table exists and is correctly structured
+- [x] Fix getAuthorizedPickupPersons to auto-include linked parents from parent_children
+- [x] Handle legacy parentId fallback for children not in parent_children
+- [x] Fix relationship mapping (parent → father/mother)
+- [x] Add Authorized Pickup Persons section in Child Profile (nursery tab)
+- [x] Add dialog to add new authorized persons (name, relationship, phone, nationalId)
+- [x] Show linked parents automatically with "ولي أمر مرتبط" badge
+- [x] Allow removal of manually added persons (not auto-linked parents)
+- [x] Verify dropdown in pickup completion shows all authorized persons

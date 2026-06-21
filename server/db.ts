@@ -2029,12 +2029,67 @@ export async function getPickupStats() {
 export async function getAuthorizedPickupPersons(childId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select()
+  
+  // Get explicitly registered authorized persons
+  const registeredPersons = await db.select()
     .from(authorizedPickupPersons)
     .where(and(
       eq(authorizedPickupPersons.childId, childId),
       eq(authorizedPickupPersons.isActive, true)
     ));
+  
+  // Auto-include linked parents from parent_children junction table
+  const links = await db.select().from(parentChildren).where(eq(parentChildren.childId, childId));
+  if (links.length > 0) {
+    const parentIds = links.map(l => l.parentId);
+    const linkedParents = await db.select().from(users).where(inArray(users.id, parentIds));
+    for (const parent of linkedParents) {
+      const link = links.find(l => l.parentId === parent.id);
+      // Check if this parent is already explicitly registered
+      const alreadyRegistered = registeredPersons.some(
+        (p) => (p.phone && p.phone === parent.phone) || p.name === parent.name
+      );
+      if (!alreadyRegistered) {
+        const relMap: Record<string, string> = { mother: 'mother', father: 'father', guardian: 'father', parent: 'father' };
+        const rel = (relMap[link?.relationship || ''] || 'father') as 'father' | 'mother';
+        registeredPersons.unshift({
+          id: -(parent.id * 1000 + childId), // unique negative ID for virtual entry
+          childId,
+          name: parent.name || '\u0648\u0644\u064a \u0627\u0644\u0623\u0645\u0631',
+          relationship: rel,
+          phone: parent.phone || null,
+          nationalId: parent.nationalId || null,
+          isActive: true,
+          createdAt: parent.createdAt || new Date(),
+        });
+      }
+    }
+  } else {
+    // Fallback: use legacy children.parentId
+    const child = await getChildById(childId);
+    if (child?.parentId) {
+      const parent = await getUserById(child.parentId);
+      if (parent) {
+        const alreadyRegistered = registeredPersons.some(
+          (p) => (p.phone && p.phone === parent.phone) || p.name === parent.name
+        );
+        if (!alreadyRegistered) {
+          registeredPersons.unshift({
+            id: -(parent.id * 1000 + childId),
+            childId,
+            name: parent.name || '\u0648\u0644\u064a \u0627\u0644\u0623\u0645\u0631',
+            relationship: 'father' as const,
+            phone: parent.phone || null,
+            nationalId: parent.nationalId || null,
+            isActive: true,
+            createdAt: parent.createdAt || new Date(),
+          });
+        }
+      }
+    }
+  }
+  
+  return registeredPersons;
 }
 
 export async function addAuthorizedPickupPerson(data: InsertAuthorizedPickupPerson) {

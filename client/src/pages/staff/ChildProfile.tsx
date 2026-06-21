@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, Edit, UserPlus, Unlink, Calendar, Phone, Heart, AlertTriangle, Bus, Shield, User, FileText, Upload, CheckCircle, XCircle, Download, Trash2, Camera } from "lucide-react";
+import { ArrowRight, Edit, UserPlus, Unlink, Calendar, Phone, Heart, AlertTriangle, Bus, Shield, User, FileText, Upload, CheckCircle, XCircle, Download, Trash2, Camera, Plus, IdCard } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ChildProfile() {
@@ -40,6 +40,20 @@ export default function ChildProfile() {
   const docInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<string>("other");
+
+  // Authorized Pickup Persons
+  const { data: authorizedPersons = [], refetch: refetchAuthorized } = trpc.pickup.authorizedPersons.useQuery({ childId });
+  const addAuthorizedPerson = trpc.pickup.addAuthorizedPerson.useMutation({
+    onSuccess: () => { refetchAuthorized(); toast.success("تم إضافة الشخص المخول"); setAddPersonDialog(false); resetPersonForm(); },
+    onError: (err) => toast.error(err.message),
+  });
+  const removeAuthorizedPerson = trpc.pickup.removeAuthorizedPerson.useMutation({
+    onSuccess: () => { refetchAuthorized(); toast.success("تم إزالة الشخص المخول"); },
+    onError: (err) => toast.error(err.message),
+  });
+  const [addPersonDialog, setAddPersonDialog] = useState(false);
+  const [personForm, setPersonForm] = useState({ name: "", relationship: "father" as string, phone: "", nationalId: "" });
+  const resetPersonForm = () => setPersonForm({ name: "", relationship: "father", phone: "", nationalId: "" });
 
   const updateChild = trpc.children.update.useMutation({
     onSuccess: () => {
@@ -448,7 +462,6 @@ export default function ChildProfile() {
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 gap-4">
-                  <div><Label>المصرح لهم بالاستلام</Label><Textarea value={form.pickupAuthorization} onChange={(e) => setForm({ ...form, pickupAuthorization: e.target.value })} rows={4} placeholder="أسماء وأرقام المصرح لهم" /></div>
                   <div className="flex items-center gap-3">
                     <Switch checked={form.busRequired} onCheckedChange={(v) => setForm({ ...form, busRequired: v })} />
                     <Label>يحتاج نقل بالباص</Label>
@@ -466,8 +479,65 @@ export default function ChildProfile() {
                     <span className="text-sm text-muted-foreground">نقل بالباص:</span>
                     <Badge variant={c.busRequired ? "default" : "secondary"}>{c.busRequired ? "نعم" : "لا"}</Badge>
                   </div>
-                  <InfoRow label="المصرح لهم بالاستلام" value={c.pickupAuthorization || "لم يتم التحديد"} />
                   <InfoRow label="ملاحظات" value={c.notes || "—"} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Authorized Pickup Persons Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+                <span className="flex items-center gap-2"><UserPlus className="h-5 w-5" /> الأشخاص المصرح لهم بالاستلام</span>
+                <Button size="sm" onClick={() => setAddPersonDialog(true)}>
+                  <Plus className="h-4 w-4 ml-1" /> إضافة شخص
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {authorizedPersons.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Shield className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>لا يوجد أشخاص مصرح لهم بالاستلام</p>
+                  <p className="text-xs mt-1">أضف الأشخاص المخولين باستلام الطفل</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {authorizedPersons.map((person: any) => {
+                    const isAutoParent = person.id < 0;
+                    const relLabels: Record<string, string> = { father: "الأب", mother: "الأم", grandfather: "الجد", grandmother: "الجدة", driver: "السائق", relative: "قريب", other: "آخر" };
+                    return (
+                      <div key={person.id} className={`flex items-center gap-3 p-3 rounded-lg border ${isAutoParent ? 'bg-primary/5 border-primary/20' : 'bg-card'}`}>
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{person.name}</p>
+                            {isAutoParent && <Badge variant="secondary" className="text-xs">ولي أمر مرتبط</Badge>}
+                            <Badge className="bg-green-100 text-green-800 text-xs">مصرح</Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                            <span>{relLabels[person.relationship] || person.relationship}</span>
+                            {person.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{person.phone}</span>}
+                            {person.nationalId && <span className="flex items-center gap-1"><IdCard className="h-3 w-3" />{person.nationalId}</span>}
+                          </div>
+                        </div>
+                        {!isAutoParent && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => removeAuthorizedPerson.mutate({ id: person.id })}
+                            disabled={removeAuthorizedPerson.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -547,6 +617,64 @@ export default function ChildProfile() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Authorized Pickup Person Dialog */}
+      <Dialog open={addPersonDialog} onOpenChange={(open) => { if (!open) { setAddPersonDialog(false); resetPersonForm(); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" /> إضافة شخص مخول بالاستلام
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>الاسم الكامل *</Label>
+              <Input value={personForm.name} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} placeholder="اسم الشخص المخول" />
+            </div>
+            <div>
+              <Label>صلة القرابة *</Label>
+              <Select value={personForm.relationship} onValueChange={(v) => setPersonForm({ ...personForm, relationship: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="father">الأب</SelectItem>
+                  <SelectItem value="mother">الأم</SelectItem>
+                  <SelectItem value="grandfather">الجد</SelectItem>
+                  <SelectItem value="grandmother">الجدة</SelectItem>
+                  <SelectItem value="driver">السائق</SelectItem>
+                  <SelectItem value="relative">قريب مخول</SelectItem>
+                  <SelectItem value="other">شخص مخول آخر</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>رقم الجوال</Label>
+              <Input value={personForm.phone} onChange={(e) => setPersonForm({ ...personForm, phone: e.target.value })} placeholder="05xxxxxxxx" dir="ltr" />
+            </div>
+            <div>
+              <Label>رقم الهوية (اختياري)</Label>
+              <Input value={personForm.nationalId} onChange={(e) => setPersonForm({ ...personForm, nationalId: e.target.value })} placeholder="رقم الهوية الوطنية" dir="ltr" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddPersonDialog(false); resetPersonForm(); }}>إلغاء</Button>
+            <Button
+              onClick={() => {
+                if (!personForm.name.trim()) { toast.error("يرجى إدخال اسم الشخص"); return; }
+                addAuthorizedPerson.mutate({
+                  childId,
+                  name: personForm.name.trim(),
+                  relationship: personForm.relationship as any,
+                  phone: personForm.phone.trim() || undefined,
+                  nationalId: personForm.nationalId.trim() || undefined,
+                });
+              }}
+              disabled={addAuthorizedPerson.isPending || !personForm.name.trim()}
+            >
+              {addAuthorizedPerson.isPending ? "جارٍ الإضافة..." : "إضافة"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Link Parent Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
