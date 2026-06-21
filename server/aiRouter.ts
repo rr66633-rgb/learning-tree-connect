@@ -1,4 +1,5 @@
 import { protectedProcedure, router } from "./_core/trpc";
+import { safeJsonParse, validateWeeklyPlan } from "./jsonParser";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
@@ -102,7 +103,12 @@ Write the response in JSON format with this structure:
         response_format: { type: "json_object" },
       });
 
-      const content = JSON.parse((response.choices[0].message.content as string) || "{}");
+      const rawContent = (response.choices[0].message.content as string) || "{}";
+      const parsed = safeJsonParse(rawContent);
+      if (!parsed.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'حدث خطأ في معالجة الاستجابة. يرجى المحاولة مرة أخرى.' });
+      }
+      const content = parsed.data;
       
       // Save to database
       const [saved] = await db.insert(aiGeneratedContent).values({
@@ -259,15 +265,49 @@ Write the response in JSON format exactly as follows:
 
 Create a detailed complete plan for 5 days (Sunday, Monday, Tuesday, Wednesday, Thursday). Each day must be different and progressively build on the previous day. Do NOT leave any field empty.`;
 
-      const response = await invokeLLM({
-        messages: [
-          { role: "system", content: "You are an expert early years curriculum planner. Always respond with valid JSON only." },
-          { role: "user", content: prompt }
-        ],
-        response_format: { type: "json_object" },
-      });
+      // Attempt generation with retry on JSON failure
+      let content: any = null;
+      let attempts = 0;
+      const maxAttempts = 2;
+      
+      while (attempts < maxAttempts) {
+        attempts++;
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are an expert early years curriculum planner. You MUST respond with valid JSON only. Do not include any text outside the JSON object. Ensure all strings are properly escaped and all brackets are closed." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+        });
 
-      const content = JSON.parse((response.choices[0].message.content as string) || "{}");
+        const rawContent = (response.choices[0].message.content as string) || "{}";
+        const parsed = safeJsonParse(rawContent);
+        
+        if (parsed.success) {
+          const validation = validateWeeklyPlan(parsed.data);
+          if (validation.valid || attempts >= maxAttempts) {
+            content = parsed.data;
+            break;
+          }
+          // If validation failed on first attempt, retry
+          continue;
+        }
+        
+        // If parsing failed on last attempt, throw error
+        if (attempts >= maxAttempts) {
+          throw new TRPCError({ 
+            code: 'INTERNAL_SERVER_ERROR', 
+            message: 'حدث خطأ في إنشاء الخطة الأسبوعية. يرجى المحاولة مرة أخرى.' 
+          });
+        }
+      }
+      
+      if (!content) {
+        throw new TRPCError({ 
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: 'فشل في إنشاء الخطة الأسبوعية. يرجى المحاولة مرة أخرى.' 
+        });
+      }
       
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "weekly_plan",
@@ -352,7 +392,12 @@ Write the response in JSON format:
         response_format: { type: "json_object" },
       });
 
-      const content = JSON.parse((response.choices[0].message.content as string) || "{}");
+      const rawContent = (response.choices[0].message.content as string) || "{}";
+      const parsed = safeJsonParse(rawContent);
+      if (!parsed.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'حدث خطأ في معالجة الاستجابة. يرجى المحاولة مرة أخرى.' });
+      }
+      const content = parsed.data;
       
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "activity",
@@ -477,7 +522,12 @@ Make the report positive and encouraging.`;
         response_format: { type: "json_object" },
       });
 
-      const content = JSON.parse((response.choices[0].message.content as string) || "{}");
+      const rawContent = (response.choices[0].message.content as string) || "{}";
+      const parsed = safeJsonParse(rawContent);
+      if (!parsed.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'حدث خطأ في معالجة الاستجابة. يرجى المحاولة مرة أخرى.' });
+      }
+      const content = parsed.data;
       
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "progress_report",
@@ -528,7 +578,12 @@ ${CULTURAL_GUIDELINES}
         response_format: { type: "json_object" },
       });
 
-      const content = JSON.parse((response.choices[0].message.content as string) || "{}");
+      const rawContent = (response.choices[0].message.content as string) || "{}";
+      const parsed = safeJsonParse(rawContent);
+      if (!parsed.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'حدث خطأ في معالجة الاستجابة. يرجى المحاولة مرة أخرى.' });
+      }
+      const content = parsed.data;
       
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "parent_message",
@@ -619,7 +674,12 @@ Write the response in JSON format:
         response_format: { type: "json_object" },
       });
 
-      const content = JSON.parse((response.choices[0].message.content as string) || "{}");
+      const rawContent = (response.choices[0].message.content as string) || "{}";
+      const parsed = safeJsonParse(rawContent);
+      if (!parsed.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'حدث خطأ في معالجة الاستجابة. يرجى المحاولة مرة أخرى.' });
+      }
+      const content = parsed.data;
       
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "newsletter",
@@ -694,7 +754,12 @@ Write the response in JSON format:
         response_format: { type: "json_object" },
       });
 
-      const content = JSON.parse((response.choices[0].message.content as string) || "{}");
+      const rawContent = (response.choices[0].message.content as string) || "{}";
+      const parsed = safeJsonParse(rawContent);
+      if (!parsed.success) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'حدث خطأ في معالجة الاستجابة. يرجى المحاولة مرة أخرى.' });
+      }
+      const content = parsed.data;
       
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "story",

@@ -748,3 +748,10 @@
 - [ ] AI Assistant: Child-friendly conversational interface
 - [ ] AI Assistant: Proper loading states and error handling
 - [ ] AI Assistant: Add to parent navigation menu
+
+## Bug Fix: JSON Parsing Crash in Weekly Planner
+- [x] Fix JSON parsing crash - "Unterminated string in JSON"
+- [x] Add robust JSON validation and auto-repair for all AI procedures
+- [x] Add retry logic when JSON is malformed
+- [x] Add user-friendly error messages instead of raw JSON errors on frontend
+- [x] Test with Arabic text, long descriptions, special characters

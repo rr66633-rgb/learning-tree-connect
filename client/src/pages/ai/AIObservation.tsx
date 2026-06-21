@@ -23,7 +23,8 @@ export default function AIObservation() {
       toast.success("تم إنشاء الملاحظة بنجاح");
     },
     onError: (err) => {
-      toast.error(err.message || "حدث خطأ أثناء الإنشاء");
+      const msg = err.message || "حدث خطأ";
+      toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg);
     },
   });
 

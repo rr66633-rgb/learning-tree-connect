@@ -195,7 +195,15 @@ export default function AIPlanner() {
       setContentId(data.id ? Number(data.id) : null);
       toast.success("تم إنشاء الخطة الأسبوعية بنجاح");
     },
-    onError: (err) => toast.error(err.message || "حدث خطأ"),
+    onError: (err) => {
+      const msg = err.message || "حدث خطأ";
+      // Show user-friendly error - never show raw JSON/technical errors
+      if (msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") || msg.includes("Unexpected")) {
+        toast.error("حدث خطأ أثناء إنشاء الخطة. يرجى المحاولة مرة أخرى.");
+      } else {
+        toast.error(msg);
+      }
+    },
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({

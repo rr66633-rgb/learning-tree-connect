@@ -19,7 +19,7 @@ export default function AIActivity() {
 
   const generateMutation = trpc.ai.generateActivity.useMutation({
     onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success("تم إنشاء النشاط بنجاح"); },
-    onError: (err) => toast.error(err.message || "حدث خطأ"),
+    onError: (err) => { const msg = err.message || "حدث خطأ"; toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
