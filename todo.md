@@ -1017,4 +1017,4 @@
 ### Periodic Job
 - [x] Heartbeat handler created (event-reminders-handler.ts)
 - [x] Mounted at /api/scheduled/event-reminders
-- [ ] Create heartbeat cron job (hourly) after deploy
+- [x] Create heartbeat cron job (hourly) after deploy (task_uid: k8g5Lqfh8bgf9Ln99E27PN)

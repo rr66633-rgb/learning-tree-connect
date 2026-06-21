@@ -221,39 +221,52 @@ export const weeklyPlanRouter = router({
 
       let sections: any = null;
       let attempts = 0;
+      let lastError: string = '';
 
-      while (attempts < 2 && !sections) {
+      while (attempts < 3 && !sections) {
         attempts++;
         try {
+          console.log(`[WeeklyPlan] Generate attempt ${attempts}/3 for theme: ${input.theme}, ageGroup: ${input.ageGroup}`);
           const response = await invokeLLM({
             messages: [
-              { role: "system", content: "You are an expert curriculum planner. You MUST respond with valid JSON only. No text outside JSON. The JSON must contain all 14 required section keys." },
+              { role: "system", content: "You are an expert curriculum planner for kindergartens in Saudi Arabia. You MUST respond with valid JSON only. No markdown, no code fences, no text outside JSON. The JSON object must contain all 14 required section keys as string values." },
               { role: "user", content: prompt }
             ],
             response_format: { type: "json_object" },
+            max_tokens: 8000,
           });
 
-          const rawContent = (response.choices[0].message.content as string) || "{}";
+          const rawContent = (response.choices[0]?.message?.content as string) || "{}";
+          console.log(`[WeeklyPlan] LLM response received, length: ${rawContent.length}`);
           const parsed = safeJsonParse(rawContent);
 
           if (parsed.success && parsed.data) {
             // Validate that we have most sections
             const data = parsed.data;
             const presentSections = SECTION_TYPES.filter(s => data[s] !== undefined && data[s] !== null && data[s] !== "");
-            if (presentSections.length >= 10) {
+            console.log(`[WeeklyPlan] Parsed sections: ${presentSections.length}/14`);
+            if (presentSections.length >= 8) {
               // Fill in any missing sections with empty content
               sections = {};
               for (const sType of SECTION_TYPES) {
                 sections[sType] = data[sType] || (input.language === "ar" ? "لم يتم إنشاء هذا القسم. يرجى التعديل يدوياً." : "This section was not generated. Please edit manually.");
               }
+            } else {
+              lastError = `Only ${presentSections.length} sections generated (need 8+). Present: ${presentSections.join(', ')}`;
+              console.warn(`[WeeklyPlan] ${lastError}`);
             }
+          } else {
+            lastError = `JSON parse failed: ${parsed.error || 'unknown'}`;
+            console.warn(`[WeeklyPlan] ${lastError}`);
           }
-        } catch (e) {
-          // Retry
+        } catch (e: any) {
+          lastError = e?.message || String(e);
+          console.error(`[WeeklyPlan] Attempt ${attempts} error:`, lastError);
         }
       }
 
       if (!sections) {
+        console.error(`[WeeklyPlan] All ${attempts} attempts failed. Last error: ${lastError}`);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: input.language === "ar" 
