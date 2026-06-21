@@ -703,51 +703,51 @@
 ## AI Teacher Assistant - Learning Tree AI
 
 ### Database & Schema
-- [ ] Create ai_generated_content table for all AI outputs
-- [ ] Create ai_library table for saved/reusable content
-- [ ] Run migration SQL
+- [x] Create ai_generated_content table for all AI outputs
+- [x] Create ai_library table for saved/reusable content
+- [x] Run migration SQL
 
 ### Server-Side AI Procedures
-- [ ] AI Observation Writer - generate professional EYFS observation from short note
-- [ ] AI Weekly Planner - generate weekly plan with daily activities
-- [ ] AI Activity Generator - generate activity with objectives and materials
-- [ ] AI Child Progress Report - aggregate data and generate parent report
-- [ ] AI Parent Message Generator - generate bilingual professional message
-- [ ] AI Newsletter Generator - generate monthly newsletter from activities/events
-- [ ] AI Story Creator - generate educational story with questions and vocabulary
-- [ ] AI Library - save/search/reuse generated content
+- [x] AI Observation Writer - generate professional EYFS observation from short note
+- [x] AI Weekly Planner - generate weekly plan with daily activities
+- [x] AI Activity Generator - generate activity with objectives and materials
+- [x] AI Child Progress Report - aggregate data and generate parent report
+- [x] AI Parent Message Generator - generate bilingual professional message
+- [x] AI Newsletter Generator - generate monthly newsletter from activities/events
+- [x] AI Story Creator - generate educational story with questions and vocabulary
+- [x] AI Library - save/search/reuse generated content
 
 ### Frontend - Learning Tree AI Section
-- [ ] Create dedicated Learning Tree AI section with premium design
-- [ ] AI Observation Writer page with one-click generation
-- [ ] AI Weekly Planner page with age group and theme selection
-- [ ] AI Activity Generator page with topic input
-- [ ] AI Progress Report page with child data aggregation
-- [ ] AI Parent Message Generator page
-- [ ] AI Newsletter Generator page
-- [ ] AI Story Creator page
-- [ ] AI Library page with search and filters
-- [ ] PDF export for plans, reports, and newsletters
+- [x] Create dedicated Learning Tree AI section with premium design
+- [x] AI Observation Writer page with one-click generation
+- [x] AI Weekly Planner page with age group and theme selection
+- [x] AI Activity Generator page with topic input
+- [x] AI Progress Report page with child data aggregation
+- [x] AI Parent Message Generator page
+- [x] AI Newsletter Generator page
+- [x] AI Story Creator page
+- [x] AI Library page with search and filters
+- [x] PDF export for plans, reports, and newsletters
 
 ### Permissions & Access
-- [ ] Restrict AI features to teacher and admin roles
-- [ ] Arabic-first output with English option
+- [x] Restrict AI features to teacher and admin roles
+- [x] Arabic-first output with English option
 
 ### Integration
-- [ ] Add AI section to staff navigation menu
-- [ ] Connect all features to LLM provider
-- [ ] Test all 8 AI generation workflows
-- [ ] Fix: AI Assistant 404 - Create child-friendly AI Assistant page at /ai/assistant
-- [ ] AI Assistant: Quran memorization help
-- [ ] AI Assistant: Daily revision
-- [ ] AI Assistant: Islamic questions for children
-- [ ] AI Assistant: Daily motivation
-- [ ] AI Assistant: Memorization plans
-- [ ] AI Assistant: Encouragement messages
-- [ ] AI Assistant: Quick actions (Help me memorize, Test me, Review today, Daily challenge, Ask a question)
-- [ ] AI Assistant: Child-friendly conversational interface
-- [ ] AI Assistant: Proper loading states and error handling
-- [ ] AI Assistant: Add to parent navigation menu
+- [x] Add AI section to staff navigation menu
+- [x] Connect all features to LLM provider
+- [x] Test all 8 AI generation workflows
+- [x] Fix: AI Assistant 404 - Create child-friendly AI Assistant page at /ai/assistant
+- [x] AI Assistant: Quran memorization help
+- [x] AI Assistant: Daily revision
+- [x] AI Assistant: Islamic questions for children
+- [x] AI Assistant: Daily motivation
+- [x] AI Assistant: Memorization plans
+- [x] AI Assistant: Encouragement messages
+- [x] AI Assistant: Quick actions (Help me memorize, Test me, Review today, Daily challenge, Ask a question)
+- [x] AI Assistant: Child-friendly conversational interface
+- [x] AI Assistant: Proper loading states and error handling
+- [x] AI Assistant: Add to parent navigation menu
 
 ## Bug Fix: JSON Parsing Crash in Weekly Planner
 - [x] Fix JSON parsing crash - "Unterminated string in JSON"
@@ -762,3 +762,9 @@
 - [x] Add server-side validation: reject plan with fewer than 5 days
 - [x] Add auto-regeneration logic when plan is incomplete (retry per day)
 - [x] Frontend completeness check before displaying results
+
+## Bug Fix: Navigation 404 on most pages
+- [x] Fix DashboardLayout path resolution: only /ai* paths treated as absolute, all others relative to basePath
+- [x] Fix sidebar active state detection to match corrected path logic
+- [x] Verify all staff pages load correctly (/staff, /staff/children, /staff/attendance, etc.)
+- [x] Verify AI pages load correctly (/ai, /ai/planner, /ai/observation, etc.)

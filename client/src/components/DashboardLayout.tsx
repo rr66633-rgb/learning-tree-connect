@@ -298,10 +298,10 @@ function DashboardLayoutContent({
   const isMobile = useIsMobile();
 
   // Determine active item by matching location against basePath + item.path
-  // Paths starting with "/" are absolute (e.g., /ai/assistant), others are relative to basePath
+  // Only /ai paths are absolute (top-level AI routes), all others are relative to basePath
   const activeMenuItem = menuItems.find((item: MenuItem) => {
-    const fullPath = item.path.startsWith("/") ? item.path : basePath + item.path;
-    return location === fullPath || (item.path === "" && location === basePath);
+    const fullPath = item.path.startsWith("/ai") ? item.path : basePath + item.path;
+    return location === fullPath || location.startsWith(fullPath + "/") || (item.path === "" && location === basePath);
   });
 
   useEffect(() => {
@@ -369,7 +369,7 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map((item: MenuItem) => {
-                const fullPath = item.path.startsWith("/") ? item.path : basePath + item.path;
+                const fullPath = item.path.startsWith("/ai") ? item.path : basePath + item.path;
                 const isActive = location === fullPath || (item.path === "" && location === basePath);
                 return (
                   <SidebarMenuItem key={item.path}>
