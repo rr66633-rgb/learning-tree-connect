@@ -210,7 +210,7 @@ export default function StaffPickup() {
 
       {/* Live Status Dashboard */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Card className="border-amber-200 bg-amber-50/50">
             <CardContent className="p-4 text-center">
               <div className="text-3xl font-bold text-amber-700">{stats.pendingCount}</div>
@@ -239,6 +239,14 @@ export default function StaffPickup() {
               <p className="text-xs text-purple-600 mt-1">متوسط وقت الاستلام</p>
             </CardContent>
           </Card>
+          {stats.escalatedCount > 0 && (
+            <Card className="border-red-300 bg-red-50/50 animate-pulse">
+              <CardContent className="p-4 text-center">
+                <div className="text-3xl font-bold text-red-700">{stats.escalatedCount}</div>
+                <p className="text-xs text-red-600 mt-1">تنبيهات تصعيدية</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -346,6 +354,12 @@ export default function StaffPickup() {
                               <StatusIcon className="h-3.5 w-3.5 ml-1" />
                               {config.label}
                             </Badge>
+                            {req.escalatedAt && (
+                              <Badge className="bg-red-600 text-white text-xs animate-pulse">
+                                <AlertCircle className="h-3 w-3 ml-1" />
+                                تنبيه تصعيدي
+                              </Badge>
+                            )}
                           </div>
                         </div>
 

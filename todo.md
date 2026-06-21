@@ -836,3 +836,13 @@
 - [x] Show linked parents automatically with "ولي أمر مرتبط" badge
 - [x] Allow removal of manually added persons (not auto-linked parents)
 - [x] Verify dropdown in pickup completion shows all authorized persons
+
+## Feature: Escalation Alert for Pickup Requests (COMPLETED)
+- [x] Add escalation logic: if teacher doesn't respond within 5 minutes, notify admin
+- [x] Create server-side check for unresponded pickup requests
+- [x] Send push notification to admin/principal when escalation triggers
+- [x] Add escalation status indicator in pickup dashboard
+- [x] Mark escalated requests visually (red badge/highlight)
+- [x] Add escalation timestamp to pickup_requests table
+- [x] Test escalation workflow end-to-end
+- [ ] Deploy and register Heartbeat cron job (every 1 minute): manus-heartbeat create --name pickup-escalation --cron "0 */1 * * * *" --path /api/scheduled/pickup-escalation

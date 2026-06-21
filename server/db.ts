@@ -1829,6 +1829,7 @@ export async function getActivePickupRequests() {
     pickedUpByRelationship: pickupRequests.pickedUpByRelationship,
     teacherId: pickupRequests.teacherId,
     receptionStaffId: pickupRequests.receptionStaffId,
+    escalatedAt: pickupRequests.escalatedAt,
     notes: pickupRequests.notes,
     childFirstName: children.firstName,
     childLastName: children.lastName,
@@ -2017,11 +2018,21 @@ export async function getPickupStats() {
       gte(pickupRequests.pickedUpAt, sql`CURDATE()`)
     ));
 
+  // Count escalated requests (waiting_teacher + escalatedAt not null)
+  const escalated = await db!.select({ count: sql<number>`count(*)` })
+    .from(pickupRequests)
+    .where(and(
+      eq(pickupRequests.status, 'waiting_teacher'),
+      sql`escalatedAt IS NOT NULL`,
+      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
+    ));
+
   return {
     pendingCount: pending[0]?.count || 0,
     completedToday: completedToday[0]?.count || 0,
     avgResponseSeconds: avgResponse[0]?.avgSeconds || 0,
     avgTotalSeconds: avgTotal[0]?.avgSeconds || 0,
+    escalatedCount: escalated[0]?.count || 0,
   };
 }
 

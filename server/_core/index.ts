@@ -203,6 +203,11 @@ async function startServer() {
     await dailyBackupHandler(req, res);
   });
 
+  app.post('/api/scheduled/pickup-escalation', async (req, res) => {
+    const { pickupEscalationHandler } = await import('../pickup-escalation');
+    await pickupEscalationHandler(req, res);
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

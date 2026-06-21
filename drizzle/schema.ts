@@ -650,6 +650,8 @@ export const pickupRequests = mysqlTable("pickup_requests", {
   // Staff handling
   teacherId: int("teacherId"),
   receptionStaffId: int("receptionStaffId"),
+  // Escalation
+  escalatedAt: timestamp("escalatedAt"),
   // Additional info
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
