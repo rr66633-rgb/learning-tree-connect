@@ -632,23 +632,45 @@ export const loginAttempts = mysqlTable("login_attempts", {
 export type LoginAttempt = typeof loginAttempts.$inferSelect;
 export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;
 
-// ============ PICKUP REQUESTS ============
+// ============ PICKUP REQUESTS (6-Step Workflow) ============
 export const pickupRequests = mysqlTable("pickup_requests", {
   id: int("id").autoincrement().primaryKey(),
   childId: int("childId").notNull(),
   parentId: int("parentId").notNull(),
-  status: mysqlEnum("status", ["waiting", "called", "ready", "picked_up", "cancelled"]).default("waiting").notNull(),
+  // Workflow statuses: waiting_teacher → sent_to_reception → waiting_at_reception → picked_up → cancelled
+  status: mysqlEnum("status", ["waiting_teacher", "sent_to_reception", "waiting_at_reception", "picked_up", "cancelled"]).default("waiting_teacher").notNull(),
+  // Timestamps for each step
   requestedAt: timestamp("requestedAt").defaultNow().notNull(),
-  calledAt: timestamp("calledAt"),
-  readyAt: timestamp("readyAt"),
+  teacherResponseAt: timestamp("teacherResponseAt"),
+  arrivedReceptionAt: timestamp("arrivedReceptionAt"),
   pickedUpAt: timestamp("pickedUpAt"),
+  // Pickup person details
   pickedUpBy: varchar("pickedUpBy", { length: 255 }),
-  handledBy: int("handledBy"),
+  pickedUpByRelationship: varchar("pickedUpByRelationship", { length: 100 }),
+  // Staff handling
+  teacherId: int("teacherId"),
+  receptionStaffId: int("receptionStaffId"),
+  // Additional info
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type PickupRequest = typeof pickupRequests.$inferSelect;
 export type InsertPickupRequest = typeof pickupRequests.$inferInsert;
+
+// ============ AUTHORIZED PICKUP PERSONS ============
+export const authorizedPickupPersons = mysqlTable("authorized_pickup_persons", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  relationship: mysqlEnum("relationship", ["father", "mother", "grandfather", "grandmother", "driver", "relative", "other"]).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  nationalId: varchar("nationalId", { length: 20 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AuthorizedPickupPerson = typeof authorizedPickupPersons.$inferSelect;
+export type InsertAuthorizedPickupPerson = typeof authorizedPickupPersons.$inferInsert;
 
 // ============ LEARNING OBSERVATIONS ============
 export const learningObservations = mysqlTable("learning_observations", {

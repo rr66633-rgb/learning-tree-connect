@@ -49,17 +49,17 @@ export function ParentArrivalAlert() {
     };
   }, [refetch]);
 
-  const acknowledgeMutation = trpc.pickup.acknowledge.useMutation({
+  const sendToReceptionMutation = trpc.pickup.teacherSendToReception.useMutation({
     onSuccess: () => {
       refetch();
     },
   });
 
-  // Filter for new 'waiting' requests that haven't been dismissed
+  // Filter for new 'waiting_teacher' requests that haven't been dismissed
   useEffect(() => {
     if (!activeRequests) return;
     const waitingRequests = activeRequests.filter(
-      (r: any) => r.status === "waiting" && !dismissed.has(r.id)
+      (r: any) => r.status === "waiting_teacher" && !dismissed.has(r.id)
     );
     setAlerts(waitingRequests as ArrivalAlert[]);
   }, [activeRequests, dismissed]);
@@ -96,8 +96,8 @@ export function ParentArrivalAlert() {
     stopRepeating();
     // Dismiss this alert
     setDismissed((prev) => new Set(Array.from(prev).concat(requestId)));
-    // Call the acknowledge endpoint (moves status to 'called')
-    acknowledgeMutation.mutate({ id: requestId });
+    // Send child to reception (Step 2)
+    sendToReceptionMutation.mutate({ id: requestId });
   };
 
   const handleDismissOnly = (requestId: number) => {
@@ -175,12 +175,12 @@ export function ParentArrivalAlert() {
                 <Button
                   className="w-full py-6 text-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg transition-transform active:scale-[0.97]"
                   onClick={() => handleAcknowledge(alert.id)}
-                  disabled={acknowledgeMutation.isPending}
+                  disabled={sendToReceptionMutation.isPending}
                 >
                   <CheckCircle2 className="h-6 w-6 ml-2" />
-                  {acknowledgeMutation.isPending
-                    ? "جاري المعالجة..."
-                    : "تم - سأحضر الطفل"}
+                  {sendToReceptionMutation.isPending
+                    ? "جاري الإرسال..."
+                    : "تم إرسال الطفل للاستقبال"}
                 </Button>
               </div>
             </div>

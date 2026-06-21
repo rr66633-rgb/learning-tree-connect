@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { MapPin, Clock, CheckCircle2, UserCheck, Bell, History, Car, Timer } from "lucide-react";
+import { Clock, CheckCircle2, UserCheck, Bell, History, Car, Timer, Send, Building2 } from "lucide-react";
 
 const STATUS_STEPS = [
-  { key: "waiting", label: "تم الإرسال", description: "تم إرسال طلبك، بانتظار استجابة المعلمة", icon: Clock, color: "text-amber-600" },
-  { key: "called", label: "تم الاستلام", description: "المعلمة استلمت طلبك وجاري تجهيز طفلك", icon: Bell, color: "text-blue-600" },
-  { key: "ready", label: "جاهز", description: "طفلك جاهز للاستلام، يرجى التوجه للاستقبال", icon: CheckCircle2, color: "text-green-600" },
-  { key: "picked_up", label: "تم التسليم", description: "تم تسليم طفلك بنجاح", icon: UserCheck, color: "text-primary" },
+  { key: "waiting_teacher", label: "تم إرسال الطلب", description: "بانتظار استجابة المعلمة", icon: Clock, color: "text-amber-600" },
+  { key: "sent_to_reception", label: "طفلك في الطريق", description: "المعلمة أرسلت طفلك إلى الاستقبال", icon: Send, color: "text-blue-600" },
+  { key: "waiting_at_reception", label: "طفلك بالاستقبال", description: "طفلك وصل الاستقبال وينتظرك", icon: Building2, color: "text-purple-600" },
+  { key: "picked_up", label: "تم التسليم", description: "تم تسليم طفلك بنجاح", icon: UserCheck, color: "text-green-600" },
 ];
 
 // Live timer showing how long the parent has been waiting
@@ -41,13 +41,13 @@ function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
 export default function ParentPickup() {
   const { data: children, isLoading: loadingChildren } = trpc.children.list.useQuery();
   const { data: myRequests, refetch: refetchRequests } = trpc.pickup.myRequests.useQuery(undefined, {
-    refetchInterval: 5000, // Poll every 5 seconds for real-time status updates
+    refetchInterval: 5000,
   });
   const [showHistory, setShowHistory] = useState(false);
 
   const requestPickup = trpc.pickup.request.useMutation({
     onSuccess: () => {
-      toast.success("تم إرسال طلب الاستلام بنجاح - ستصلك إشعارات بكل تحديث");
+      toast.success("تم إرسال طلب الاستلام - ستصلك إشعارات بكل تحديث");
       refetchRequests();
     },
     onError: (err) => {
@@ -63,7 +63,7 @@ export default function ParentPickup() {
   });
 
   // Get active requests (not picked_up or cancelled)
-  const activeRequests = myRequests?.filter((r: any) => ["waiting", "called", "ready"].includes(r.status)) || [];
+  const activeRequests = myRequests?.filter((r: any) => ["waiting_teacher", "sent_to_reception", "waiting_at_reception"].includes(r.status)) || [];
   const historyRequests = myRequests?.filter((r: any) => ["picked_up", "cancelled"].includes(r.status)) || [];
 
   // Check if child has active request
@@ -98,7 +98,7 @@ export default function ParentPickup() {
               {activeRequests.map((req: any) => {
                 const currentStepIndex = STATUS_STEPS.findIndex(s => s.key === req.status);
                 return (
-                  <Card key={req.id} className={`border-2 ${req.status === 'ready' ? 'border-green-300 bg-green-50/30' : 'border-primary/20'}`}>
+                  <Card key={req.id} className={`border-2 ${req.status === 'waiting_at_reception' ? 'border-green-300 bg-green-50/30' : 'border-primary/20'}`}>
                     <CardContent className="p-5">
                       {/* Child info */}
                       <div className="flex items-center gap-4 mb-4">
@@ -113,7 +113,7 @@ export default function ParentPickup() {
                           <p className="font-bold text-lg">{req.childFirstName} {req.childLastName}</p>
                           <ParentWaitTimer requestedAt={req.requestedAt} />
                         </div>
-                        {req.status === 'waiting' && (
+                        {req.status === 'waiting_teacher' && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -127,11 +127,19 @@ export default function ParentPickup() {
                       </div>
 
                       {/* Current status message */}
-                      {req.status === 'ready' && (
+                      {req.status === 'waiting_at_reception' && (
                         <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4 text-center">
-                          <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-1" />
-                          <p className="font-bold text-green-800">طفلك جاهز للاستلام!</p>
-                          <p className="text-sm text-green-700">يرجى التوجه إلى الاستقبال</p>
+                          <Building2 className="h-8 w-8 text-green-600 mx-auto mb-1" />
+                          <p className="font-bold text-green-800">طفلك بالاستقبال!</p>
+                          <p className="text-sm text-green-700">يرجى التوجه إلى الاستقبال لاستلام طفلك</p>
+                        </div>
+                      )}
+
+                      {req.status === 'sent_to_reception' && (
+                        <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 mb-4 text-center">
+                          <Send className="h-8 w-8 text-blue-600 mx-auto mb-1" />
+                          <p className="font-bold text-blue-800">طفلك في الطريق للاستقبال</p>
+                          <p className="text-sm text-blue-700">المعلمة أرسلت طفلك إلى الاستقبال</p>
                         </div>
                       )}
 
@@ -143,7 +151,6 @@ export default function ParentPickup() {
                           const StepIcon = step.icon;
                           return (
                             <div key={step.key} className="flex items-start gap-3">
-                              {/* Vertical line connector */}
                               <div className="flex flex-col items-center">
                                 <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
                                   isCompleted ? 'bg-primary border-primary text-white' :
@@ -155,7 +162,6 @@ export default function ParentPickup() {
                                   <div className={`w-0.5 h-8 ${i < currentStepIndex ? 'bg-primary' : 'bg-muted'}`} />
                                 )}
                               </div>
-                              {/* Step label */}
                               <div className={`pt-1 ${isCurrent ? 'font-bold' : ''}`}>
                                 <p className={`text-sm ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
                                   {step.label}
@@ -163,20 +169,19 @@ export default function ParentPickup() {
                                 {isCurrent && (
                                   <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
                                 )}
-                                {/* Show timestamps for completed steps */}
                                 {isCompleted && i === 0 && req.requestedAt && (
                                   <p className="text-[10px] text-muted-foreground">
                                     {new Date(req.requestedAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 )}
-                                {isCompleted && i === 1 && req.calledAt && (
+                                {isCompleted && i === 1 && req.teacherResponseAt && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    {new Date(req.calledAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(req.teacherResponseAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 )}
-                                {isCompleted && i === 2 && req.readyAt && (
+                                {isCompleted && i === 2 && req.arrivedReceptionAt && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    {new Date(req.readyAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(req.arrivedReceptionAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 )}
                               </div>
@@ -218,13 +223,14 @@ export default function ParentPickup() {
                       {hasActive ? (
                         <div className="text-center py-2">
                           <Badge className={
-                            activeReq?.status === 'waiting' ? "bg-amber-100 text-amber-800 border-amber-200" :
-                            activeReq?.status === 'called' ? "bg-blue-100 text-blue-800 border-blue-200" :
-                            "bg-green-100 text-green-800 border-green-200"
+                            activeReq?.status === 'waiting_teacher' ? "bg-amber-100 text-amber-800 border-amber-200" :
+                            activeReq?.status === 'sent_to_reception' ? "bg-blue-100 text-blue-800 border-blue-200" :
+                            activeReq?.status === 'waiting_at_reception' ? "bg-green-100 text-green-800 border-green-200" :
+                            "bg-gray-100 text-gray-800 border-gray-200"
                           }>
-                            {activeReq?.status === 'waiting' && "بانتظار الاستجابة"}
-                            {activeReq?.status === 'called' && "جاري التجهيز"}
-                            {activeReq?.status === 'ready' && "جاهز للاستلام"}
+                            {activeReq?.status === 'waiting_teacher' && "بانتظار المعلمة"}
+                            {activeReq?.status === 'sent_to_reception' && "طفلك في الطريق للاستقبال"}
+                            {activeReq?.status === 'waiting_at_reception' && "طفلك بالاستقبال"}
                           </Badge>
                         </div>
                       ) : (

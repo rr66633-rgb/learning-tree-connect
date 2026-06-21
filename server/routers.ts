@@ -2204,38 +2204,174 @@ export const appRouter = router({
     }),
   }),
 
-  // ============ PICKUP REQUESTS ============
+  // ============ PICKUP WORKFLOW (6-Step) ============
   pickup: router({
-    // Parent creates a pickup request
+    // STEP 1: Parent requests pickup
     request: parentProcedure.input(z.object({
       childId: z.number(),
     })).mutation(async ({ ctx, input }) => {
-      // Check if there's already an active request for this child
       const existing = await db.getActivePickupForChild(input.childId);
       if (existing) {
         throw new TRPCError({ code: 'CONFLICT', message: 'يوجد طلب استلام نشط لهذا الطفل بالفعل' });
       }
+      const child = await db.getChildById(input.childId);
+      const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
+      
+      // Find the teacher for this child's class
+      let teacherId: number | undefined;
+      if (child?.classId) {
+        const classInfo = await db.getClassById(child.classId);
+        teacherId = classInfo?.teacherId || undefined;
+      }
+
       const id = await db.createPickupRequest({
         childId: input.childId,
         parentId: ctx.user!.id,
-        status: 'waiting',
+        status: 'waiting_teacher',
+        teacherId: teacherId || null,
       });
-      // Notify all staff about the pickup request
-      const child = await db.getChildById(input.childId);
-      const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
+
+      // Notify classroom teacher
       try {
-        await db.createNotification({
-          userId: 0, // Will be sent to all staff
-          title: 'طلب استلام جديد',
-          body: `ولي أمر ${childName} وصل لاستلامه`,
-          type: 'general',
-          metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId }),
-        });
-        // Send push notification to all staff
+        if (teacherId) {
+          await db.createNotification({
+            userId: teacherId,
+            title: 'طلب استلام جديد',
+            titleAr: 'طلب استلام جديد',
+            body: `ولي أمر ${childName} وصل لاستلامه`,
+            bodyAr: `ولي أمر ${childName} وصل لاستلامه`,
+            type: 'attendance',
+            metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId, step: 'request' }),
+          });
+        }
+        // Notify reception staff
+        const receptionStaff = await db.getUsersByRole('receptionist');
+        for (const staff of receptionStaff) {
+          await db.createNotification({
+            userId: staff.id,
+            title: 'طلب استلام جديد',
+            titleAr: 'طلب استلام جديد',
+            body: `ولي أمر ${childName} وصل لاستلامه`,
+            bodyAr: `ولي أمر ${childName} وصل لاستلامه`,
+            type: 'attendance',
+            metadata: JSON.stringify({ pickupRequestId: id, childId: input.childId, step: 'request' }),
+          });
+        }
+        // Push notifications
         const { notifyStaffPickupRequest } = await import('./_core/pushTriggers');
         await notifyStaffPickupRequest(childName, id, input.childId);
       } catch (e) { /* notification failure shouldn't block */ }
-      return { id, status: 'waiting' };
+      return { id, status: 'waiting_teacher' };
+    }),
+
+    // STEP 2: Teacher sends child to reception
+    teacherSendToReception: protectedProcedure.input(z.object({
+      id: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      await db.updatePickupRequestStatus(input.id, 'sent_to_reception', { teacherId: ctx.user!.id });
+      
+      // Get request details for notifications
+      try {
+        const dbConn = await (await import('./db')).getDb();
+        const { pickupRequests: pr } = await import('../drizzle/schema');
+        const { eq: eqOp } = await import('drizzle-orm');
+        const rows = await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+        const req = rows[0];
+        if (req) {
+          const child = await db.getChildById(req.childId);
+          const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
+          // Notify parent
+          await db.createNotification({
+            userId: req.parentId,
+            title: 'طفلك في الطريق',
+            titleAr: 'طفلك في الطريق',
+            body: `${childName} في طريقه إلى الاستقبال`,
+            bodyAr: `${childName} في طريقه إلى الاستقبال`,
+            type: 'attendance',
+            metadata: JSON.stringify({ pickupRequestId: input.id, step: 'sent_to_reception' }),
+          });
+          // Notify reception
+          const receptionStaff = await db.getUsersByRole('receptionist');
+          for (const staff of receptionStaff) {
+            await db.createNotification({
+              userId: staff.id,
+              title: 'طفل في الطريق للاستقبال',
+              titleAr: 'طفل في الطريق للاستقبال',
+              body: `${childName} تم إرساله من الفصل إلى الاستقبال`,
+              bodyAr: `${childName} تم إرساله من الفصل إلى الاستقبال`,
+              type: 'attendance',
+              metadata: JSON.stringify({ pickupRequestId: input.id, step: 'sent_to_reception' }),
+            });
+          }
+          // Push notification to parent
+          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
+          await notifyParentPickupStatus(req.parentId, childName, 'sent_to_reception', input.id);
+        }
+      } catch (e) { /* notification failure shouldn't block */ }
+      return { success: true };
+    }),
+
+    // STEP 3: Reception marks child as waiting
+    markWaitingAtReception: protectedProcedure.input(z.object({
+      id: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      await db.updatePickupRequestStatus(input.id, 'waiting_at_reception', { receptionStaffId: ctx.user!.id });
+      return { success: true };
+    }),
+
+    // STEP 4 & 5: Reception completes pickup with authorized person
+    completePickup: protectedProcedure.input(z.object({
+      id: z.number(),
+      pickedUpBy: z.string(),
+      pickedUpByRelationship: z.string(),
+    })).mutation(async ({ ctx, input }) => {
+      if (!input.pickedUpBy || !input.pickedUpByRelationship) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'يجب تحديد شخص الاستلام المخول' });
+      }
+      await db.updatePickupRequestStatus(input.id, 'picked_up', {
+        pickedUpBy: input.pickedUpBy,
+        pickedUpByRelationship: input.pickedUpByRelationship,
+        receptionStaffId: ctx.user!.id,
+      });
+
+      // Notify parent and teacher
+      try {
+        const dbConn = await (await import('./db')).getDb();
+        const { pickupRequests: pr } = await import('../drizzle/schema');
+        const { eq: eqOp } = await import('drizzle-orm');
+        const rows = await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+        const req = rows[0];
+        if (req) {
+          const child = await db.getChildById(req.childId);
+          const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
+          // Notify parent
+          await db.createNotification({
+            userId: req.parentId,
+            title: 'تم الاستلام بنجاح',
+            titleAr: 'تم الاستلام بنجاح',
+            body: `تم تسليم ${childName} بنجاح`,
+            bodyAr: `تم تسليم ${childName} بنجاح`,
+            type: 'attendance',
+            metadata: JSON.stringify({ pickupRequestId: input.id, step: 'picked_up' }),
+          });
+          // Notify teacher
+          if (req.teacherId) {
+            await db.createNotification({
+              userId: req.teacherId,
+              title: 'تم استلام الطفل',
+              titleAr: 'تم استلام الطفل',
+              body: `تم استلام ${childName} بنجاح`,
+              bodyAr: `تم استلام ${childName} بنجاح`,
+              type: 'attendance',
+              metadata: JSON.stringify({ pickupRequestId: input.id, step: 'picked_up' }),
+            });
+          }
+          // Push notification
+          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
+          await notifyParentPickupStatus(req.parentId, childName, 'picked_up', input.id);
+        }
+      } catch (e) { /* notification failure shouldn't block */ }
+      return { success: true };
     }),
 
     // Parent cancels their pickup request
@@ -2263,95 +2399,40 @@ export const appRouter = router({
       return db.getActivePickupRequests();
     }),
 
+    // Teacher views pickup requests for their classes
+    teacherRequests: protectedProcedure.query(async ({ ctx }) => {
+      return db.getPickupRequestsForTeacher(ctx.user!.id);
+    }),
+
     // Staff gets pickup dashboard stats
     stats: protectedProcedure.query(async () => {
       return db.getPickupStats();
     }),
 
-    // Staff gets authorized pickup persons for a child
+    // Get authorized pickup persons for a child
     authorizedPersons: protectedProcedure.input(z.object({
       childId: z.number(),
     })).query(async ({ input }) => {
       return db.getAuthorizedPickupPersons(input.childId);
     }),
 
-    // Staff updates pickup status (4-step workflow)
-    updateStatus: protectedProcedure.input(z.object({
-      id: z.number(),
-      status: z.enum(['called', 'ready', 'picked_up', 'cancelled']),
-      pickedUpBy: z.string().optional(),
-      notes: z.string().optional(),
-    })).mutation(async ({ ctx, input }) => {
-      const extra: Record<string, any> = {};
-      if (input.pickedUpBy) extra.pickedUpBy = input.pickedUpBy;
-      if (input.notes) extra.notes = input.notes;
-      extra.handledBy = ctx.user!.id;
-      await db.updatePickupRequestStatus(input.id, input.status, extra);
-
-      // Send specific notification to parent for each step
-      const statusMessages: Record<string, { title: string; body: string }> = {
-        called: { title: 'تم استلام طلبك', body: 'المعلمة استلمت طلبك وجاري تجهيز طفلك' },
-        ready: { title: 'طفلك جاهز', body: 'طفلك جاهز للاستلام، يرجى التوجه للاستقبال' },
-        picked_up: { title: 'تم الاستلام بنجاح', body: 'تم تسليم طفلك بنجاح. شكراً لك!' },
-        cancelled: { title: 'تم إلغاء الطلب', body: 'تم إلغاء طلب الاستلام' },
-      };
-      try {
-        // Get the pickup request to find parentId - search in all active + just-completed
-        const allActive = await db.getActivePickupRequests();
-        let req = allActive.find((r: any) => r.id === input.id);
-        // If just picked_up, it won't be in active anymore, fetch directly
-        if (!req) {
-          const direct = await db.getActivePickupForChild(0); // fallback
-          // Use a direct query instead
-          const dbConn = await (await import('./db')).getDb();
-          const { pickupRequests: pr } = await import('../drizzle/schema');
-          const { eq: eqOp } = await import('drizzle-orm');
-          const rows = await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
-          req = rows[0] as any;
-        }
-        if (req) {
-          const msg = statusMessages[input.status];
-          await db.createNotification({
-            userId: req.parentId,
-            title: msg.title,
-            body: msg.body,
-            type: 'general',
-            metadata: JSON.stringify({ pickupRequestId: input.id, status: input.status }),
-          });
-          // Send push notification to parent
-          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
-          const child = await db.getChildById(req.childId);
-          const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
-          await notifyParentPickupStatus(req.parentId, childName, input.status, input.id);
-        }
-      } catch (e) { /* notification failure shouldn't block */ }
-      return { success: true };
+    // Add authorized pickup person
+    addAuthorizedPerson: protectedProcedure.input(z.object({
+      childId: z.number(),
+      name: z.string(),
+      relationship: z.enum(['father', 'mother', 'grandfather', 'grandmother', 'driver', 'relative', 'other']),
+      phone: z.string().optional(),
+      nationalId: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const id = await db.addAuthorizedPickupPerson(input);
+      return { id };
     }),
 
-    // Staff acknowledges a pickup request (dismisses the alert)
-    acknowledge: protectedProcedure.input(z.object({
+    // Remove authorized pickup person
+    removeAuthorizedPerson: protectedProcedure.input(z.object({
       id: z.number(),
-    })).mutation(async ({ ctx, input }) => {
-      // Move from 'waiting' to 'called' when teacher acknowledges
-      await db.updatePickupRequestStatus(input.id, 'called', { handledBy: ctx.user!.id });
-      // Notify parent that teacher received the request
-      try {
-        const allActive = await db.getActivePickupRequests();
-        const req = allActive.find((r: any) => r.id === input.id);
-        if (req) {
-          await db.createNotification({
-            userId: req.parentId,
-            title: 'تم استلام طلبك',
-            body: 'المعلمة استلمت طلبك وجاري تجهيز طفلك',
-            type: 'general',
-            metadata: JSON.stringify({ pickupRequestId: input.id, status: 'called' }),
-          });
-          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
-          const child = await db.getChildById(req.childId);
-          const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
-          await notifyParentPickupStatus(req.parentId, childName, 'called', input.id);
-        }
-      } catch (e) { /* notification failure shouldn't block */ }
+    })).mutation(async ({ input }) => {
+      await db.removeAuthorizedPickupPerson(input.id);
       return { success: true };
     }),
 

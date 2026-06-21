@@ -775,3 +775,53 @@
 - [x] Increase default radius or make it configurable from admin settings
 - [x] Fix centerSettings.update field mapping (gpsLat→latitude, gpsLng→longitude, gpsRadius→allowedRadius)
 - [x] Update database: correct coordinates (26.2532715, 50.0716915) and radius (200m)
+
+## Redesign: Child Pickup Workflow (Complete Overhaul)
+
+### Database Schema
+- [x] Create pickup_requests table with full workflow statuses
+- [x] Add authorized_pickup_persons to child profile
+- [x] Add pickup timestamps (request, teacher_response, reception_arrival, completion)
+- [x] Run migration SQL
+
+### Server-Side Procedures
+- [x] Parent: requestPickup - creates request, notifies teacher + reception
+- [x] Teacher: childSentToReception - updates status, notifies parent + reception
+- [x] Reception: markWaitingAtReception - updates status
+- [x] Reception: completePickup - validates authorized person, completes handover
+- [x] Pickup history query for dashboard and records
+- [x] Notification integration for each step
+
+### Parent UI
+- [x] Child selection with "I'm Here" / "Request Pickup" button
+- [x] Real-time status tracking of pickup progress
+- [x] Notification when child is on the way to reception
+- [x] Notification when pickup is completed
+
+### Teacher UI
+- [x] Incoming pickup request notification with child details
+- [x] "Child Sent to Reception" button
+- [x] Notification when pickup is completed
+
+### Reception UI
+- [x] Live pickup queue with statuses
+- [x] Child photo, name, classroom, parent name, request time
+- [x] Authorized pickup person dropdown (from child profile)
+- [x] "Child Picked Up" button (requires authorized person selection)
+- [x] Cannot complete without selecting authorized person
+
+### Live Dashboard
+- [x] Display live statuses: Waiting for Teacher, Child Sent to Reception, Waiting at Reception, Picked Up
+- [x] Real-time updates
+
+### Security
+- [x] Display child photo throughout pickup process
+- [x] Only authorized pickup persons can be selected
+- [x] Complete pickup history maintained
+- [x] Prevent completion without authorized person
+
+### Notification Sound Settings
+- [x] Medium volume by default
+- [x] Volume control (increase/decrease)
+- [x] Tone change option
+- [x] Vibration toggle

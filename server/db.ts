@@ -2,7 +2,8 @@ import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
-import { parentChildren, media, mediaChildren } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren, authorizedPickupPersons } from "../drizzle/schema";
+import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1806,7 +1807,7 @@ export async function activateUser(userId: number) {
 }
 
 
-// ============ PICKUP REQUESTS ============
+// ============ PICKUP WORKFLOW (6-Step) ============
 export async function createPickupRequest(data: InsertPickupRequest) {
   const db = await getDb();
   const result = await db!.insert(pickupRequests).values(data);
@@ -1821,11 +1822,13 @@ export async function getActivePickupRequests() {
     parentId: pickupRequests.parentId,
     status: pickupRequests.status,
     requestedAt: pickupRequests.requestedAt,
-    calledAt: pickupRequests.calledAt,
-    readyAt: pickupRequests.readyAt,
+    teacherResponseAt: pickupRequests.teacherResponseAt,
+    arrivedReceptionAt: pickupRequests.arrivedReceptionAt,
     pickedUpAt: pickupRequests.pickedUpAt,
     pickedUpBy: pickupRequests.pickedUpBy,
-    handledBy: pickupRequests.handledBy,
+    pickedUpByRelationship: pickupRequests.pickedUpByRelationship,
+    teacherId: pickupRequests.teacherId,
+    receptionStaffId: pickupRequests.receptionStaffId,
     notes: pickupRequests.notes,
     childFirstName: children.firstName,
     childLastName: children.lastName,
@@ -1842,13 +1845,13 @@ export async function getActivePickupRequests() {
   .leftJoin(classes, eq(children.classId, classes.id))
   .where(
     and(
-      inArray(pickupRequests.status, ["waiting", "called", "ready"]),
+      inArray(pickupRequests.status, ["waiting_teacher", "sent_to_reception", "waiting_at_reception"]),
       gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
     )
   )
   .orderBy(desc(pickupRequests.requestedAt));
 
-  // Enrich with teacher name from classes
+  // Enrich with teacher name
   const enriched = await Promise.all(results.map(async (r) => {
     let teacherName = '';
     if (r.childClassId) {
@@ -1870,10 +1873,11 @@ export async function getPickupRequestsByParent(parentId: number) {
     childId: pickupRequests.childId,
     status: pickupRequests.status,
     requestedAt: pickupRequests.requestedAt,
-    calledAt: pickupRequests.calledAt,
-    readyAt: pickupRequests.readyAt,
+    teacherResponseAt: pickupRequests.teacherResponseAt,
+    arrivedReceptionAt: pickupRequests.arrivedReceptionAt,
     pickedUpAt: pickupRequests.pickedUpAt,
     pickedUpBy: pickupRequests.pickedUpBy,
+    pickedUpByRelationship: pickupRequests.pickedUpByRelationship,
     notes: pickupRequests.notes,
     childFirstName: children.firstName,
     childLastName: children.lastName,
@@ -1893,7 +1897,7 @@ export async function getActivePickupForChild(childId: number) {
     .where(
       and(
         eq(pickupRequests.childId, childId),
-        inArray(pickupRequests.status, ["waiting", "called", "ready"]),
+        inArray(pickupRequests.status, ["waiting_teacher", "sent_to_reception", "waiting_at_reception"]),
         gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
       )
     )
@@ -1904,10 +1908,47 @@ export async function getActivePickupForChild(childId: number) {
 export async function updatePickupRequestStatus(id: number, status: string, extra: Record<string, any> = {}) {
   const db = await getDb();
   const updateData: any = { status, ...extra };
-  if (status === "called") updateData.calledAt = new Date();
-  if (status === "ready") updateData.readyAt = new Date();
+  if (status === "sent_to_reception") updateData.teacherResponseAt = new Date();
+  if (status === "waiting_at_reception") updateData.arrivedReceptionAt = new Date();
   if (status === "picked_up") updateData.pickedUpAt = new Date();
   await db!.update(pickupRequests).set(updateData).where(eq(pickupRequests.id, id));
+}
+
+export async function getPickupRequestsForTeacher(teacherId: number) {
+  const db = await getDb();
+  // Get classes taught by this teacher
+  const teacherClasses = await db!.select({ id: classes.id }).from(classes).where(eq(classes.teacherId, teacherId));
+  const classIds = teacherClasses.map(c => c.id);
+  if (classIds.length === 0) return [];
+  
+  return db!.select({
+    id: pickupRequests.id,
+    childId: pickupRequests.childId,
+    parentId: pickupRequests.parentId,
+    status: pickupRequests.status,
+    requestedAt: pickupRequests.requestedAt,
+    teacherResponseAt: pickupRequests.teacherResponseAt,
+    notes: pickupRequests.notes,
+    childFirstName: children.firstName,
+    childLastName: children.lastName,
+    childPhoto: children.photo,
+    childClassId: children.classId,
+    parentName: users.name,
+    className: classes.name,
+    classNameAr: classes.nameAr,
+  })
+  .from(pickupRequests)
+  .leftJoin(children, eq(pickupRequests.childId, children.id))
+  .leftJoin(users, eq(pickupRequests.parentId, users.id))
+  .leftJoin(classes, eq(children.classId, classes.id))
+  .where(
+    and(
+      inArray(children.classId, classIds),
+      inArray(pickupRequests.status, ["waiting_teacher", "sent_to_reception"]),
+      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
+    )
+  )
+  .orderBy(desc(pickupRequests.requestedAt));
 }
 
 export async function getPickupHistory(limit = 100) {
@@ -1918,11 +1959,12 @@ export async function getPickupHistory(limit = 100) {
     parentId: pickupRequests.parentId,
     status: pickupRequests.status,
     requestedAt: pickupRequests.requestedAt,
-    calledAt: pickupRequests.calledAt,
-    readyAt: pickupRequests.readyAt,
+    teacherResponseAt: pickupRequests.teacherResponseAt,
+    arrivedReceptionAt: pickupRequests.arrivedReceptionAt,
     pickedUpAt: pickupRequests.pickedUpAt,
     pickedUpBy: pickupRequests.pickedUpBy,
-    handledBy: pickupRequests.handledBy,
+    pickedUpByRelationship: pickupRequests.pickedUpByRelationship,
+    receptionStaffId: pickupRequests.receptionStaffId,
     notes: pickupRequests.notes,
     childFirstName: children.firstName,
     childLastName: children.lastName,
@@ -1942,14 +1984,10 @@ export async function getPickupHistory(limit = 100) {
 
 export async function getPickupStats() {
   const db = await getDb();
-  // Get today's stats
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
   const pending = await db!.select({ count: sql<number>`count(*)` })
     .from(pickupRequests)
     .where(and(
-      inArray(pickupRequests.status, ['waiting', 'called', 'ready']),
+      inArray(pickupRequests.status, ['waiting_teacher', 'sent_to_reception', 'waiting_at_reception']),
       gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
     ));
   
@@ -1960,18 +1998,16 @@ export async function getPickupStats() {
       gte(pickupRequests.pickedUpAt, sql`CURDATE()`)
     ));
   
-  // Average response time (requestedAt to calledAt) for today's completed pickups
   const avgResponse = await db!.select({
-    avgSeconds: sql<number>`AVG(TIMESTAMPDIFF(SECOND, requestedAt, calledAt))`
+    avgSeconds: sql<number>`AVG(TIMESTAMPDIFF(SECOND, requestedAt, teacherResponseAt))`
   })
     .from(pickupRequests)
     .where(and(
       eq(pickupRequests.status, 'picked_up'),
       gte(pickupRequests.pickedUpAt, sql`CURDATE()`),
-      sql`calledAt IS NOT NULL`
+      sql`teacherResponseAt IS NOT NULL`
     ));
   
-  // Average total pickup time (requestedAt to pickedUpAt) for today
   const avgTotal = await db!.select({
     avgSeconds: sql<number>`AVG(TIMESTAMPDIFF(SECOND, requestedAt, pickedUpAt))`
   })
@@ -1989,14 +2025,37 @@ export async function getPickupStats() {
   };
 }
 
+// ============ AUTHORIZED PICKUP PERSONS ============
 export async function getAuthorizedPickupPersons(childId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select()
-    .from(emergencyContacts)
+    .from(authorizedPickupPersons)
     .where(and(
-      eq(emergencyContacts.childId, childId),
-      eq(emergencyContacts.isAuthorizedPickup, true)
+      eq(authorizedPickupPersons.childId, childId),
+      eq(authorizedPickupPersons.isActive, true)
+    ));
+}
+
+export async function addAuthorizedPickupPerson(data: InsertAuthorizedPickupPerson) {
+  const db = await getDb();
+  const result = await db!.insert(authorizedPickupPersons).values(data);
+  return result[0].insertId;
+}
+
+export async function removeAuthorizedPickupPerson(id: number) {
+  const db = await getDb();
+  await db!.update(authorizedPickupPersons).set({ isActive: false }).where(eq(authorizedPickupPersons.id, id));
+}
+
+export async function getAllAuthorizedPickupPersonsForChildren(childIds: number[]) {
+  const db = await getDb();
+  if (!db || childIds.length === 0) return [];
+  return db.select()
+    .from(authorizedPickupPersons)
+    .where(and(
+      inArray(authorizedPickupPersons.childId, childIds),
+      eq(authorizedPickupPersons.isActive, true)
     ));
 }
 

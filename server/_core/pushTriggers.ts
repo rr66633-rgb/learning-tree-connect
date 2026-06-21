@@ -8,23 +8,23 @@ import * as db from '../db';
  */
 export async function notifyStaffPickupRequest(childName: string, pickupRequestId: number, childId: number) {
   const payload: PushPayload = {
-    title: '🚨 ولي أمر وصل للاستلام',
-    body: `ولي أمر ${childName} وصل وينتظر - يرجى الاستجابة فوراً`,
-    tag: `pickup-urgent-${pickupRequestId}`,
+    title: 'طلب استلام جديد',
+    body: `ولي أمر ${childName} وصل ويطلب الاستلام`,
+    tag: `pickup-${pickupRequestId}`,
     requireInteraction: true,
     urgency: 'high',
-    vibrate: [500, 200, 500, 200, 500, 200, 500],
+    vibrate: [200, 100, 200],
     data: {
       url: '/staff/pickup',
       pickupRequestId,
       childId,
       type: 'parent_arrival',
-      priority: 'urgent',
+      priority: 'normal',
       fullScreenAlert: true,
-      sound: 'urgent',
+      sound: 'gentle',
     },
     actions: [
-      { action: 'acknowledge', title: 'تم الاستلام ✓' },
+      { action: 'acknowledge', title: 'تم إرسال الطفل للاستقبال' },
       { action: 'view', title: 'عرض التفاصيل' },
     ],
   };
@@ -55,9 +55,9 @@ export async function notifyStaffPickupRequest(childName: string, pickupRequestI
  */
 export async function notifyParentPickupStatus(parentId: number, childName: string, status: string, pickupRequestId: number) {
   const statusMessages: Record<string, string> = {
-    called: `تم استدعاء ${childName}، يرجى الانتظار 📢`,
-    ready: `${childName} جاهز للاستلام ✅`,
-    picked_up: `تم تسليم ${childName} بنجاح 🎉`,
+    sent_to_reception: `${childName} في الطريق إلى الاستقبال`,
+    waiting_at_reception: `${childName} وصل الاستقبال وينتظرك`,
+    picked_up: `تم تسليم ${childName} بنجاح`,
     cancelled: 'تم إلغاء طلب الاستلام',
   };
 
