@@ -7,6 +7,7 @@ import { z } from "zod";
 import * as db from "./db";
 import * as authService from "./_core/authService";
 import { aiRouter } from "./aiRouter";
+import { weeklyPlanRouter } from "./weeklyPlanRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -2621,5 +2622,7 @@ export const appRouter = router({
   }),
   // ============ AI TEACHER ASSISTANT ============
   ai: aiRouter,
+  // ============ WEEKLY PLAN GENERATOR ============
+  weeklyPlan: weeklyPlanRouter,
 });
 export type AppRouter = typeof appRouter;

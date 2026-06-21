@@ -127,6 +127,13 @@
       "when": 1782031236315,
       "tag": "0017_aberrant_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1782060619005,
+      "tag": "0018_lucky_patch",
+      "breakpoints": true
     }
   ]
 }

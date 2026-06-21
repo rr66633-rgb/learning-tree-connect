@@ -898,3 +898,44 @@
 - [x] If no response within 2 minutes, increase priority
 - [x] Send additional alert to supervisor/admin
 - [x] Visual escalation indicator
+
+## AI Weekly Plan Generator (New Standalone Feature)
+
+### Database & Schema
+- [x] Add weekly_plans table (id, classId, teacherId, ageGroup, weekStart, weekEnd, theme, language, status draft/published, sections JSON, createdAt)
+- [x] Run migration SQL
+
+### Server-Side (tRPC weeklyPlanRouter)
+- [x] weeklyPlan.generate - AI generates complete 14-section plan
+- [x] weeklyPlan.save - save/update draft plan
+- [x] weeklyPlan.list - list plans for teacher/class with filters
+- [x] weeklyPlan.get - get single plan with all sections
+- [x] weeklyPlan.update - edit sections before publishing
+- [x] weeklyPlan.publish - publish plan and notify parents
+- [x] weeklyPlan.duplicate - duplicate existing plan as new draft
+- [x] weeklyPlan.delete - delete draft plan
+- [x] weeklyPlan.parentList - parents view published plans for their child's class
+
+### Staff UI (Teacher/Admin)
+- [x] Plan generator form: classroom, age group, week dates, theme, language selector
+- [x] Generate Weekly Plan button with loading state (AI takes 10-30s)
+- [x] Preview all 14 sections with editable content
+- [x] Save draft / Publish buttons
+- [x] List of previous plans with duplicate/delete options
+- [x] PDF download/print button with Learning Tree branding
+
+### Parent UI
+- [x] View published weekly plans for child's class
+- [x] Download PDF / Print button
+- [x] Auto-notification when new plan is published
+
+### PDF Generation
+- [x] Professional PDF with Learning Tree branding and logo
+- [x] Arabic RTL support in PDF
+- [x] Child-friendly design with color-coded sections
+- [x] Print-ready layout
+
+### Navigation & Routes
+- [x] Add "الخطة الأسبوعية" to staff sidebar (teacher/admin)
+- [x] Add "الخطة الأسبوعية" to parent sidebar
+- [x] Register /staff/weekly-plan and /parent/weekly-plan routes in App.tsx

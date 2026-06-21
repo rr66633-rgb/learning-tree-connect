@@ -769,3 +769,22 @@ export const pickupAlertAcknowledgments = mysqlTable("pickup_alert_acknowledgmen
   acknowledgedAt: timestamp("acknowledgedAt").defaultNow().notNull(),
 });
 export type PickupAlertAcknowledgment = typeof pickupAlertAcknowledgments.$inferSelect;
+
+// ============ WEEKLY PLANS ============
+export const weeklyPlans = mysqlTable("weekly_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  classId: int("classId"),
+  teacherId: int("teacherId").notNull(),
+  ageGroup: mysqlEnum("ageGroup", ["nursery", "kg1", "kg2", "kg3"]).notNull(),
+  weekStartDate: varchar("weekStartDate", { length: 10 }).notNull(), // YYYY-MM-DD
+  weekEndDate: varchar("weekEndDate", { length: 10 }).notNull(), // YYYY-MM-DD
+  theme: varchar("theme", { length: 300 }).notNull(),
+  language: mysqlEnum("language", ["ar", "en", "bilingual"]).default("ar").notNull(),
+  status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
+  sections: json("sections").notNull(), // JSON object with all 14 sections
+  publishedAt: timestamp("publishedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WeeklyPlan = typeof weeklyPlans.$inferSelect;
+export type InsertWeeklyPlan = typeof weeklyPlans.$inferInsert;

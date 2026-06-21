@@ -9,6 +9,7 @@ import { ParentArrivalAlert } from "./components/ParentArrivalAlert";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { useNativeInit } from "./hooks/useNativeInit";
+import { useWeeklyPlanPdf } from "./hooks/useWeeklyPlanPdf";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -36,6 +37,7 @@ const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
 const StaffPickup = lazy(() => import("./pages/staff/Pickup"));
 const StaffAssessments = lazy(() => import("./pages/staff/Assessments"));
 const StaffAuditLog = lazy(() => import("./pages/staff/AuditLog"));
+const StaffWeeklyPlan = lazy(() => import("./pages/staff/WeeklyPlan"));
 
 // AI Pages
 const AIHub = lazy(() => import("./pages/ai/AIHub"));
@@ -75,6 +77,7 @@ const ParentMedical = lazy(() => import("./pages/parent/Medical"));
 const ParentPhotos = lazy(() => import("./pages/parent/Photos"));
 const ParentPickup = lazy(() => import("./pages/parent/Pickup"));
 const ParentObservations = lazy(() => import("./pages/parent/Observations"));
+const ParentWeeklyPlan = lazy(() => import("./pages/parent/WeeklyPlan"));
 
 function PageLoader() {
   return (
@@ -132,6 +135,7 @@ function StaffRouter() {
         <Route path="/staff/pickup" component={StaffPickup} />
         <Route path="/staff/assessments" component={StaffAssessments} />
         <Route path="/staff/audit-log" component={StaffAuditLog} />
+        <Route path="/staff/weekly-plan" component={StaffWeeklyPlan} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -158,6 +162,7 @@ function ParentRouter() {
         <Route path="/parent/medical" component={ParentMedical} />
         <Route path="/parent/pickup" component={ParentPickup} />
         <Route path="/parent/observations" component={ParentObservations} />
+        <Route path="/parent/weekly-plan" component={ParentWeeklyPlan} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -220,6 +225,7 @@ function RoleRouter() {
   const [location] = useLocation();
   useSessionTimeout();
   useNativeInit();
+  useWeeklyPlanPdf();
 
   // Public legal pages - always accessible without auth or dashboard
   if (location === "/privacy" || location === "/terms") {
