@@ -9,14 +9,14 @@ export function useWeeklyPlanPdf() {
         toast.error("لا توجد بيانات الخطة لتحميل PDF");
         return;
       }
+      const toastId = toast.loading("جاري تحميل الخطوط العربية وإنشاء ملف PDF...");
       try {
-        toast.info("جاري إنشاء ملف PDF...");
         const { generateWeeklyPlanPdf } = await import("@/lib/weeklyPlanPdf");
         await generateWeeklyPlanPdf(detail.plan);
-        toast.success("تم تحميل PDF بنجاح");
+        toast.success("تم تحميل PDF بنجاح", { id: toastId });
       } catch (err) {
         console.error("PDF generation failed:", err);
-        toast.error("فشل في إنشاء ملف PDF");
+        toast.error("فشل في إنشاء ملف PDF. يرجى المحاولة مرة أخرى.", { id: toastId });
       }
     };
 

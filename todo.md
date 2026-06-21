@@ -1018,3 +1018,12 @@
 - [x] Heartbeat handler created (event-reminders-handler.ts)
 - [x] Mounted at /api/scheduled/event-reminders
 - [x] Create heartbeat cron job (hourly) after deploy (task_uid: k8g5Lqfh8bgf9Ln99E27PN)
+
+## PDF Arabic Text Fix (Critical Bug)
+
+- [x] Download Noto Sans Arabic font (Regular + Bold) - uploaded to /manus-storage/
+- [x] Embed font via fetch at runtime in PDF generator
+- [x] Fix RTL text rendering with arabic-reshaper + character reversal
+- [x] Support Arabic-only, English-only, and mixed content PDF export
+- [x] Professional A4 layout with proper margins and section colors
+- [x] PDF preview matches downloaded file (same generation code)
