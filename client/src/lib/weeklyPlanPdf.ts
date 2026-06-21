@@ -1,8 +1,8 @@
 /**
  * Weekly Plan PDF Generator (Client-side)
- * Uses html2pdf.js which leverages the browser's native Arabic text rendering.
+ * Opens a new window with clean HTML and uses the browser's native print-to-PDF.
  * This approach works on all devices including iOS Safari without needing
- * server-side Chromium/Playwright.
+ * any external libraries (no html2canvas, no oklch issues).
  */
 
 // Section colors matching the app UI
@@ -262,40 +262,25 @@ function buildHtmlForPdf(plan: any): string {
 }
 
 /**
- * Generates and downloads a PDF of the weekly plan using jsPDF directly.
- * Uses jsPDF's html() method with an iframe to completely isolate from
- * the page's oklch CSS variables that html2canvas cannot parse.
+ * Generates and downloads a PDF of the weekly plan.
+ * Opens a new browser window with clean HTML (no oklch CSS) and triggers
+ * the browser's native print dialog which allows saving as PDF.
+ * This approach works on all devices and completely avoids html2canvas/oklch issues.
  */
 export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
-  const html2pdf = (await import("html2pdf.js")).default;
-
   // Build the HTML content
   const htmlContent = buildHtmlForPdf(plan);
 
   const theme = plan.theme || "خطة";
   const weekStart = plan.weekStartDate || plan.weekStart || "";
-  const filename = `خطة-${theme}-${weekStart}.pdf`;
 
-  // Create a hidden iframe to completely isolate from page CSS (oklch issue)
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.left = "-9999px";
-  iframe.style.top = "0";
-  iframe.style.width = "210mm";
-  iframe.style.height = "297mm";
-  iframe.style.border = "none";
-  document.body.appendChild(iframe);
-
-  try {
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) throw new Error("Cannot access iframe document");
-
-    // Write a clean HTML document inside the iframe with NO oklch colors
-    iframeDoc.open();
-    iframeDoc.write(`<!DOCTYPE html>
+  // Build a complete standalone HTML page with print styles
+  const fullHtml = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خطة-${escapeHtml(theme)}-${escapeHtml(weekStart)}</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -307,44 +292,77 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
       background: #ffffff;
       font-size: 12px;
       line-height: 1.6;
+      padding: 20px;
+    }
+    @media print {
+      body { padding: 0; margin: 0; }
+      @page { size: A4; margin: 15mm; }
+    }
+    /* Print button styles */
+    .print-controls {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1000;
+      display: flex;
+      gap: 8px;
+      direction: ltr;
+    }
+    .print-btn {
+      background: #1B5E20;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Noto Sans Arabic', sans-serif;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .print-btn:hover { background: #2E7D32; }
+    .close-btn {
+      background: #666;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Noto Sans Arabic', sans-serif;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .close-btn:hover { background: #444; }
+    @media print {
+      .print-controls { display: none !important; }
     }
   </style>
 </head>
-<body>${htmlContent}</body>
-</html>`);
-    iframeDoc.close();
+<body>
+  <div class="print-controls">
+    <button class="print-btn" onclick="window.print()">طباعة / حفظ PDF ⬇️</button>
+    <button class="close-btn" onclick="window.close()">إغلاق</button>
+  </div>
+  ${htmlContent}
+</body>
+</html>`;
 
-    // Wait for fonts to load in the iframe
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Get the content element from the iframe
-    const content = iframeDoc.body.firstElementChild as HTMLElement;
-    if (!content) throw new Error("No content in iframe");
-
-    // Use html2pdf on the iframe's content (which has no oklch)
-    await html2pdf()
-      .set({
-        margin: [10, 12, 10, 12],
-        filename: filename,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          logging: false,
-          windowWidth: iframeDoc.body.scrollWidth,
-          windowHeight: iframeDoc.body.scrollHeight,
-        },
-        jsPDF: {
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait",
-        },
-      })
-      .from(content)
-      .save();
-  } finally {
-    // Clean up the iframe
-    document.body.removeChild(iframe);
+  // Open a new window with the clean HTML
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    // Fallback: if popup blocked, use a Blob download
+    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `خطة-${theme}-${weekStart}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
   }
+
+  printWindow.document.open();
+  printWindow.document.write(fullHtml);
+  printWindow.document.close();
 }

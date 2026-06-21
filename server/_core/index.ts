@@ -214,7 +214,7 @@ async function startServer() {
   });
 
   // PDF Generation API
-  // PDF generation is now handled client-side using html2pdf.js
+  // PDF generation is now handled client-side using browser's native print-to-PDF
   // No server-side endpoint needed
 
   // tRPC API
