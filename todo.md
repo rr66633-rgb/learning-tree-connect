@@ -1040,3 +1040,12 @@
 - [x] Client calls /api/generate-pdf/weekly-plan endpoint (authenticated)
 - [x] Removed pdfkit dependency (no longer needed)
 - [x] Server caches browser instance for performance
+
+## PDF Fix v3: Production Deployment (Playwright Not Available)
+
+- [x] Replace Playwright with serverless-compatible PDF solution (no Chromium needed)
+- [x] Use client-side PDF generation approach that works in browser (html2pdf.js)
+- [x] Removed server-side pdfGenerator.ts and Playwright dependency
+- [x] Removed /api/generate-pdf/weekly-plan endpoint (no longer needed)
+- [ ] Test PDF download on production site
+- [ ] Verify Arabic text renders correctly without server-side Chromium

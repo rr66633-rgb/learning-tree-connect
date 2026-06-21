@@ -9,7 +9,7 @@ export function useWeeklyPlanPdf() {
         toast.error("لا توجد بيانات الخطة لتحميل PDF");
         return;
       }
-      const toastId = toast.loading("جاري إنشاء ملف PDF...");
+      const toastId = toast.loading("جاري إنشاء ملف PDF... قد يستغرق بضع ثوانٍ");
       try {
         const { generateWeeklyPlanPdf } = await import("@/lib/weeklyPlanPdf");
         await generateWeeklyPlanPdf(detail.plan);
