@@ -936,7 +936,19 @@ export async function getStaffAttendanceByDate(date: string) {
   if (!db) return [];
   const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
-  return db.select().from(staffAttendance).where(and(gte(staffAttendance.date, startOfDay), lte(staffAttendance.date, endOfDay)));
+  const results = await db.select({
+    id: staffAttendance.id,
+    userId: staffAttendance.userId,
+    date: staffAttendance.date,
+    checkInTime: staffAttendance.checkInTime,
+    checkOutTime: staffAttendance.checkOutTime,
+    status: staffAttendance.status,
+    notes: staffAttendance.notes,
+    userName: users.name,
+  }).from(staffAttendance)
+    .leftJoin(users, eq(staffAttendance.userId, users.id))
+    .where(and(gte(staffAttendance.date, startOfDay), lte(staffAttendance.date, endOfDay)));
+  return results;
 }
 
 export async function getStaffAttendanceByUser(userId: number) {

@@ -1049,3 +1049,7 @@
 - [x] Removed /api/generate-pdf/weekly-plan endpoint (no longer needed)
 - [x] Test PDF download on production site (requires user to publish and test)
 - [x] Verify Arabic text renders correctly without server-side Chromium (html2pdf.js uses browser native rendering)
+
+## Bug: اسم الموظف لا يظهر في سجل حضور الموظفين
+
+- [x] Fix staff name not showing in staff attendance records (added JOIN with users table in getStaffAttendanceByDate)
