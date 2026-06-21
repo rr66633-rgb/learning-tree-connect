@@ -1540,7 +1540,14 @@ export const appRouter = router({
       workingHoursEnd: z.string().optional(),
       timezone: z.string().optional(),
     })).mutation(async ({ input }) => {
-      return db.updateCenterSettings(input);
+      const mapped: any = {};
+      if (input.name) mapped.centerName = input.name;
+      if (input.gpsLat) mapped.latitude = input.gpsLat;
+      if (input.gpsLng) mapped.longitude = input.gpsLng;
+      if (input.gpsRadius) mapped.allowedRadius = input.gpsRadius;
+      if (input.workingHoursStart) mapped.workingHoursStart = input.workingHoursStart;
+      if (input.workingHoursEnd) mapped.workingHoursEnd = input.workingHoursEnd;
+      return db.updateCenterSettings(mapped);
     }),
   }),
 

@@ -768,3 +768,10 @@
 - [x] Fix sidebar active state detection to match corrected path logic
 - [x] Verify all staff pages load correctly (/staff, /staff/children, /staff/attendance, etc.)
 - [x] Verify AI pages load correctly (/ai, /ai/planner, /ai/observation, etc.)
+
+## Bug Fix: GPS Staff Attendance always shows "outside range"
+- [x] Investigate center GPS coordinates and radius settings
+- [x] Fix geofence validation logic to allow check-in from actual center location
+- [x] Increase default radius or make it configurable from admin settings
+- [x] Fix centerSettings.update field mapping (gpsLat→latitude, gpsLng→longitude, gpsRadius→allowedRadius)
+- [x] Update database: correct coordinates (26.2532715, 50.0716915) and radius (200m)
