@@ -1,12 +1,8 @@
 /**
  * Weekly Plan PDF Generator
- * Uses jsPDF with embedded Noto Sans Arabic font for proper Arabic rendering.
- * Arabic text is shaped using arabic-reshaper and reversed for RTL display.
+ * Uses html2pdf.js which leverages the browser's native text rendering
+ * for proper Arabic shaping, RTL support, and connected letters.
  */
-import { convertArabic } from "arabic-reshaper";
-
-const FONT_REGULAR_URL = "/manus-storage/NotoSansArabic-Regular_a2ec4241.ttf";
-const FONT_BOLD_URL = "/manus-storage/NotoSansArabic-Bold_941a7de6.ttf";
 
 const SECTION_LABELS: Record<string, { ar: string; en: string }> = {
   theme_overview: { ar: "نظرة عامة على الموضوع", en: "Theme Overview" },
@@ -32,473 +28,267 @@ const AGE_GROUP_LABELS: Record<string, { ar: string; en: string }> = {
   kg3: { ar: "تمهيدي ثالث (٥-٦ سنوات)", en: "KG3 (5-6 years)" },
 };
 
-const SECTION_COLORS: Record<string, [number, number, number]> = {
-  theme_overview: [16, 185, 129],
-  learning_objectives: [59, 130, 246],
-  arabic_activities: [245, 158, 11],
-  english_activities: [99, 102, 241],
-  math_activities: [168, 85, 247],
-  science_activities: [20, 184, 166],
-  art_activities: [236, 72, 153],
-  sensory_activities: [249, 115, 22],
-  physical_activities: [239, 68, 68],
-  quran_islamic: [16, 185, 129],
-  story_of_week: [139, 92, 246],
-  song_of_week: [14, 165, 233],
-  home_activity: [132, 204, 22],
-  parent_notes: [6, 182, 212],
+const SECTION_COLORS: Record<string, string> = {
+  theme_overview: "#10b981",
+  learning_objectives: "#3b82f6",
+  arabic_activities: "#f59e0b",
+  english_activities: "#6366f1",
+  math_activities: "#a855f7",
+  science_activities: "#14b8a6",
+  art_activities: "#ec4899",
+  sensory_activities: "#f97316",
+  physical_activities: "#ef4444",
+  quran_islamic: "#10b981",
+  story_of_week: "#8b5cf6",
+  song_of_week: "#0ea5e9",
+  home_activity: "#84cc16",
+  parent_notes: "#06b6d4",
 };
 
-// Cache for loaded fonts
-let fontCache: { regular: ArrayBuffer | null; bold: ArrayBuffer | null } = {
-  regular: null,
-  bold: null,
+const SECTION_ICONS: Record<string, string> = {
+  theme_overview: "🌟",
+  learning_objectives: "🎯",
+  arabic_activities: "📖",
+  english_activities: "🔤",
+  math_activities: "🔢",
+  science_activities: "🔬",
+  art_activities: "🎨",
+  sensory_activities: "🖐️",
+  physical_activities: "⚽",
+  quran_islamic: "🕌",
+  story_of_week: "📚",
+  song_of_week: "🎵",
+  home_activity: "🏠",
+  parent_notes: "💬",
 };
 
-/**
- * Load font file from URL and return as ArrayBuffer
- */
-async function loadFont(url: string): Promise<ArrayBuffer> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Failed to load font: ${url}`);
-  return response.arrayBuffer();
-}
-
-/**
- * Load both font variants (cached)
- */
-async function loadFonts() {
-  if (!fontCache.regular) {
-    const [regular, bold] = await Promise.all([
-      loadFont(FONT_REGULAR_URL),
-      loadFont(FONT_BOLD_URL),
-    ]);
-    fontCache.regular = regular;
-    fontCache.bold = bold;
+function flattenContentToHtml(content: any, isArabic: boolean): string {
+  if (!content) return "<p>—</p>";
+  if (typeof content === "string") {
+    return `<p>${escapeHtml(content).replace(/\n/g, "<br>")}</p>`;
   }
-  return fontCache;
-}
-
-/**
- * Check if text contains Arabic characters
- */
-function hasArabic(text: string): boolean {
-  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
-}
-
-/**
- * Process Arabic text for PDF rendering:
- * 1. Shape Arabic letters (connect them properly)
- * 2. Reverse the text for RTL display in jsPDF (which is LTR-only)
- */
-function processArabicText(text: string): string {
-  if (!text) return "";
-  
-  // Split into lines and process each
-  return text.split("\n").map(line => {
-    if (!hasArabic(line)) return line;
-    
-    // Split by spaces to handle mixed Arabic/English words
-    const words = line.split(/(\s+)/);
-    const processedWords = words.map(word => {
-      if (!word.trim()) return word;
-      if (hasArabic(word)) {
-        // Shape Arabic characters and reverse for RTL
-        const shaped = convertArabic(word);
-        return shaped.split("").reverse().join("");
-      }
-      return word;
-    });
-    
-    // Reverse word order for RTL
-    const nonSpaceWords: string[] = [];
-    const spaces: string[] = [];
-    for (const w of processedWords) {
-      if (/^\s+$/.test(w)) {
-        spaces.push(w);
-      } else {
-        nonSpaceWords.push(w);
-      }
-    }
-    
-    // Reverse the word order for proper RTL display
-    nonSpaceWords.reverse();
-    
-    // Reconstruct with spaces
-    let result = "";
-    for (let i = 0; i < nonSpaceWords.length; i++) {
-      result += nonSpaceWords[i];
-      if (i < nonSpaceWords.length - 1) result += " ";
-    }
-    return result;
-  }).join("\n");
-}
-
-/**
- * Flatten complex content objects into readable text
- */
-function flattenContent(content: any): string {
-  if (!content) return "";
-  if (typeof content === "string") return content;
   if (Array.isArray(content)) {
-    return content.map((item, i) => {
-      if (typeof item === "string") return `${i + 1}. ${item}`;
+    const items = content.map((item, i) => {
+      if (typeof item === "string") {
+        return `<li>${escapeHtml(item)}</li>`;
+      }
       if (typeof item === "object") {
         const parts: string[] = [];
-        if (item.title) parts.push(item.title);
-        if (item.name) parts.push(item.name);
-        if (item.description) parts.push(item.description);
-        if (item.materials) parts.push(`${hasArabic(item.materials?.toString() || "") ? "المواد:" : "Materials:"} ${Array.isArray(item.materials) ? item.materials.join("، ") : item.materials}`);
-        if (item.duration) parts.push(`${hasArabic(item.duration) ? "المدة:" : "Duration:"} ${item.duration}`);
-        if (item.implementation) parts.push(item.implementation);
-        if (item.steps) {
-          const stepsStr = Array.isArray(item.steps) ? item.steps.join(" ← ") : item.steps;
-          parts.push(stepsStr);
+        if (item.title || item.name) {
+          parts.push(`<strong>${escapeHtml(item.title || item.name)}</strong>`);
         }
-        if (item.concept || item.math_concept) parts.push(item.concept || item.math_concept);
-        if (item.experiment) parts.push(item.experiment);
+        if (item.description) parts.push(escapeHtml(item.description));
+        if (item.materials) {
+          const mats = Array.isArray(item.materials) ? item.materials.join("، ") : item.materials;
+          parts.push(`<span style="color:#666">${isArabic ? "المواد:" : "Materials:"} ${escapeHtml(mats)}</span>`);
+        }
+        if (item.duration) {
+          parts.push(`<span style="color:#666">${isArabic ? "المدة:" : "Duration:"} ${escapeHtml(item.duration)}</span>`);
+        }
+        if (item.implementation) parts.push(escapeHtml(item.implementation));
+        if (item.steps) {
+          const stepsStr = Array.isArray(item.steps) ? item.steps.join(isArabic ? " ← " : " → ") : item.steps;
+          parts.push(`<span style="color:#555">${escapeHtml(stepsStr)}</span>`);
+        }
+        if (item.concept || item.math_concept) {
+          parts.push(`<em>${escapeHtml(item.concept || item.math_concept)}</em>`);
+        }
+        if (item.experiment) parts.push(escapeHtml(item.experiment));
         if (item.targeted_senses) {
           const senses = Array.isArray(item.targeted_senses) ? item.targeted_senses.join("، ") : item.targeted_senses;
-          parts.push(senses);
+          parts.push(`<span style="color:#666">${escapeHtml(senses)}</span>`);
         }
         if (item.targeted_skills) {
           const skills = Array.isArray(item.targeted_skills) ? item.targeted_skills.join("، ") : item.targeted_skills;
-          parts.push(skills);
+          parts.push(`<span style="color:#666">${escapeHtml(skills)}</span>`);
         }
-        if (item.surah || item.verse) parts.push(`${item.surah || ""} ${item.verse || ""}`);
-        if (item.dua) parts.push(item.dua);
-        return `${i + 1}. ${parts.join("\n   ")}`;
+        if (item.surah || item.verse) {
+          parts.push(`<em>${escapeHtml((item.surah || "") + " " + (item.verse || ""))}</em>`);
+        }
+        if (item.dua) parts.push(`<em>${escapeHtml(item.dua)}</em>`);
+        return `<li>${parts.join("<br>")}</li>`;
       }
-      return String(item);
-    }).join("\n\n");
+      return `<li>${escapeHtml(String(item))}</li>`;
+    });
+    return `<ol style="padding-${isArabic ? "right" : "left"}:20px;margin:0">${items.join("")}</ol>`;
   }
   if (typeof content === "object") {
-    return Object.entries(content).map(([key, value]) => {
+    const entries = Object.entries(content).map(([key, value]) => {
       if (!value) return "";
       const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
-      if (Array.isArray(value)) return `${label}: ${(value as string[]).join("، ")}`;
-      if (typeof value === "object") return `${label}: ${flattenContent(value)}`;
-      return `${label}: ${String(value)}`;
-    }).filter(Boolean).join("\n");
+      if (Array.isArray(value)) return `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml((value as string[]).join("، "))}</p>`;
+      if (typeof value === "object") return `<p><strong>${escapeHtml(label)}:</strong> ${flattenContentToHtml(value, isArabic)}</p>`;
+      return `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(value))}</p>`;
+    }).filter(Boolean);
+    return entries.join("");
   }
-  return String(content);
+  return `<p>${escapeHtml(String(content))}</p>`;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildPdfHtml(plan: any): string {
+  const sections = plan.sections as Record<string, any>;
+  if (!sections) return "";
+
+  const isArabic = plan.language === "ar" || plan.language === "bilingual";
+  const dir = isArabic ? "rtl" : "ltr";
+  const textAlign = isArabic ? "right" : "left";
+  const ageLabel = AGE_GROUP_LABELS[plan.ageGroup] || { ar: plan.ageGroup, en: plan.ageGroup };
+  const langLabel = plan.language === "ar" ? "عربي" : plan.language === "en" ? "English" : "ثنائي اللغة";
+  const statusLabel = plan.status === "published" ? (isArabic ? "منشورة" : "Published") : (isArabic ? "مسودة" : "Draft");
+
+  // Build sections HTML
+  const sectionKeys = Object.keys(SECTION_LABELS);
+  let sectionsHtml = "";
+
+  for (const key of sectionKeys) {
+    const label = SECTION_LABELS[key];
+    const color = SECTION_COLORS[key] || "#1e4632";
+    const icon = SECTION_ICONS[key] || "📋";
+    const content = sections[key];
+
+    sectionsHtml += `
+      <div style="page-break-inside:avoid;margin-bottom:20px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+        <div style="background:${color};color:white;padding:12px 16px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">${icon}</span>
+          <div>
+            <div style="font-size:14px;font-weight:bold">${isArabic ? escapeHtml(label.ar) : escapeHtml(label.en)}</div>
+            ${!isArabic ? `<div style="font-size:10px;opacity:0.85">${escapeHtml(label.ar)}</div>` : ""}
+          </div>
+        </div>
+        <div style="padding:14px 16px;font-size:11px;line-height:1.8;color:#333">
+          ${flattenContentToHtml(content, isArabic)}
+        </div>
+      </div>
+    `;
+  }
+
+  // Sections list for cover
+  let sectionsList = "";
+  for (let i = 0; i < sectionKeys.length; i++) {
+    const key = sectionKeys[i];
+    const label = SECTION_LABELS[key];
+    const icon = SECTION_ICONS[key] || "📋";
+    const color = SECTION_COLORS[key];
+    sectionsList += `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+      <span style="font-size:14px">${icon}</span>
+      <span style="color:${color};font-weight:500">${i + 1}.</span>
+      <span>${isArabic ? escapeHtml(label.ar) : escapeHtml(label.en)}</span>
+    </div>`;
+  }
+
+  return `
+    <div id="pdf-content" dir="${dir}" style="font-family:'Noto Sans Arabic','Cairo','Tajawal','IBM Plex Sans Arabic',sans-serif;direction:${dir};text-align:${textAlign};color:#1a1a1a;width:190mm;margin:0 auto">
+      
+      <!-- COVER PAGE -->
+      <div style="page-break-after:always;min-height:270mm;display:flex;flex-direction:column">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1e4632,#2d6b4a);color:white;padding:30px;border-radius:12px;text-align:center;margin-bottom:24px">
+          <div style="font-size:24px;font-weight:bold;margin-bottom:8px">${isArabic ? "مركز شجرة التعلم" : "Learning Tree Kids Center"}</div>
+          <div style="font-size:18px;margin-bottom:12px">${isArabic ? "الخطة الأسبوعية" : "Weekly Learning Plan"}</div>
+          <div style="font-size:14px;opacity:0.9;margin-bottom:6px">${isArabic ? "الموضوع:" : "Theme:"} ${escapeHtml(plan.theme)}</div>
+          <div style="font-size:12px;opacity:0.8">${plan.weekStartDate} — ${plan.weekEndDate}</div>
+        </div>
+
+        <!-- Plan Info -->
+        <div style="background:#f8faf9;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin-bottom:24px">
+          <div style="font-size:14px;font-weight:bold;margin-bottom:12px;color:#1e4632">${isArabic ? "تفاصيل الخطة" : "Plan Details"}</div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse">
+            <tr>
+              <td style="padding:6px 0;color:#666">${isArabic ? "الفئة العمرية:" : "Age Group:"}</td>
+              <td style="padding:6px 0;font-weight:500">${isArabic ? escapeHtml(ageLabel.ar) : escapeHtml(ageLabel.en)}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#666">${isArabic ? "الأسبوع:" : "Week:"}</td>
+              <td style="padding:6px 0;font-weight:500">${plan.weekStartDate} ${isArabic ? "إلى" : "to"} ${plan.weekEndDate}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#666">${isArabic ? "لغة الخطة:" : "Language:"}</td>
+              <td style="padding:6px 0;font-weight:500">${escapeHtml(langLabel)}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#666">${isArabic ? "الحالة:" : "Status:"}</td>
+              <td style="padding:6px 0;font-weight:500">${escapeHtml(statusLabel)}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Sections Overview -->
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:20px">
+          <div style="font-size:13px;font-weight:bold;margin-bottom:12px;color:#1e4632">${isArabic ? "أقسام الخطة (١٤ مجالاً)" : "Plan Sections (14 Areas)"}</div>
+          <div style="font-size:11px;line-height:1.8">
+            ${sectionsList}
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top:auto;padding-top:20px;text-align:center;font-size:9px;color:#999">
+          ${isArabic ? "تم إنشاؤها بواسطة مولد الخطة الأسبوعية الذكي — مركز شجرة التعلم" : "Generated by Learning Tree AI Weekly Plan Generator"}
+          <br>
+          ${isArabic ? "إطار EYFS | القيم السعودية | القيم الإسلامية" : "EYFS Framework | Saudi Cultural Values | Islamic Values"}
+        </div>
+      </div>
+
+      <!-- CONTENT PAGES -->
+      ${sectionsHtml}
+
+      <!-- Final Footer -->
+      <div style="text-align:center;font-size:9px;color:#aaa;padding:20px 0;border-top:1px solid #eee;margin-top:20px">
+        ${isArabic ? `شجرة التعلم | ${escapeHtml(plan.theme)} | ${plan.weekStartDate}` : `Learning Tree | ${escapeHtml(plan.theme)} | ${plan.weekStartDate}`}
+      </div>
+    </div>
+  `;
 }
 
 export async function generateWeeklyPlanPdf(plan: any) {
-  const { default: jsPDF } = await import("jspdf");
-  
-  // Load Arabic fonts
-  const fonts = await loadFonts();
-  
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 15;
-  const contentWidth = pageWidth - margin * 2;
-  let y = 0;
+  const html2pdf = (await import("html2pdf.js")).default;
 
-  // Register Arabic fonts
-  const regularFontBytes = new Uint8Array(fonts.regular!);
-  const boldFontBytes = new Uint8Array(fonts.bold!);
-  
-  doc.addFileToVFS("NotoSansArabic-Regular.ttf", arrayBufferToBase64(regularFontBytes));
-  doc.addFileToVFS("NotoSansArabic-Bold.ttf", arrayBufferToBase64(boldFontBytes));
-  doc.addFont("NotoSansArabic-Regular.ttf", "NotoSansArabic", "normal");
-  doc.addFont("NotoSansArabic-Bold.ttf", "NotoSansArabic", "bold");
+  // Create a temporary container
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-9999px";
+  container.style.top = "0";
+  container.style.width = "210mm";
+  container.innerHTML = buildPdfHtml(plan);
+  document.body.appendChild(container);
 
-  const sections = plan.sections as Record<string, any>;
-  if (!sections) return;
+  // Wait for fonts to load
+  await document.fonts.ready;
+  // Small delay to ensure rendering is complete
+  await new Promise(resolve => setTimeout(resolve, 300));
 
   const isArabic = plan.language === "ar" || plan.language === "bilingual";
-
-  // Helper to set Arabic font
-  const setArabicFont = (style: "normal" | "bold" = "normal") => {
-    doc.setFont("NotoSansArabic", style);
-  };
-
-  // Helper to write text with proper Arabic handling
-  const writeText = (text: string, x: number, yPos: number, options?: any) => {
-    if (hasArabic(text)) {
-      setArabicFont(options?.fontStyle || "normal");
-      const processed = processArabicText(text);
-      doc.text(processed, x, yPos, { align: options?.align || "left", ...options });
-    } else {
-      doc.setFont("NotoSansArabic", options?.fontStyle || "normal");
-      doc.text(text, x, yPos, options);
-    }
-  };
-
-  // Helper to write RTL text aligned right
-  const writeRtlText = (text: string, yPos: number, options?: { fontStyle?: "normal" | "bold"; fontSize?: number }) => {
-    setArabicFont(options?.fontStyle || "normal");
-    if (options?.fontSize) doc.setFontSize(options.fontSize);
-    const processed = processArabicText(text);
-    doc.text(processed, pageWidth - margin, yPos, { align: "right" });
-  };
-
-  // ============ COVER PAGE ============
-  // Background gradient header
-  doc.setFillColor(30, 70, 50); // Forest Green
-  doc.rect(0, 0, pageWidth, 85, "F");
-
-  // Decorative accent
-  doc.setFillColor(134, 239, 172); // Sage Green accent
-  doc.rect(0, 80, pageWidth, 8, "F");
-
-  // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(26);
-  setArabicFont("bold");
-  
-  if (isArabic) {
-    const titleAr = processArabicText("مركز شجرة التعلم");
-    doc.text(titleAr, pageWidth / 2, 25, { align: "center" });
-    
-    doc.setFontSize(20);
-    const subtitleAr = processArabicText("الخطة الأسبوعية");
-    doc.text(subtitleAr, pageWidth / 2, 40, { align: "center" });
-    
-    doc.setFontSize(14);
-    setArabicFont("normal");
-    const themeAr = processArabicText(`الموضوع: ${plan.theme}`);
-    doc.text(themeAr, pageWidth / 2, 55, { align: "center" });
-    
-    doc.setFontSize(11);
-    const dateAr = processArabicText(`${plan.weekStartDate} - ${plan.weekEndDate}`);
-    doc.text(dateAr, pageWidth / 2, 68, { align: "center" });
-  } else {
-    doc.setFont("NotoSansArabic", "bold");
-    doc.text("Learning Tree Kids Center", pageWidth / 2, 25, { align: "center" });
-    
-    doc.setFontSize(20);
-    doc.text("Weekly Learning Plan", pageWidth / 2, 40, { align: "center" });
-    
-    doc.setFontSize(14);
-    doc.setFont("NotoSansArabic", "normal");
-    doc.text(`Theme: ${plan.theme}`, pageWidth / 2, 55, { align: "center" });
-    
-    doc.setFontSize(11);
-    doc.text(`${plan.weekStartDate} - ${plan.weekEndDate}`, pageWidth / 2, 68, { align: "center" });
-  }
-
-  // Info section below header
-  doc.setTextColor(50, 50, 50);
-  y = 105;
-
-  const ageLabel = AGE_GROUP_LABELS[plan.ageGroup] || { ar: plan.ageGroup, en: plan.ageGroup };
-  
-  if (isArabic) {
-    doc.setFontSize(13);
-    setArabicFont("bold");
-    writeRtlText("تفاصيل الخطة", y, { fontStyle: "bold", fontSize: 13 });
-    y += 12;
-
-    doc.setFontSize(11);
-    setArabicFont("normal");
-    writeRtlText(`الفئة العمرية: ${ageLabel.ar}`, y, { fontSize: 11 });
-    y += 8;
-    writeRtlText(`الأسبوع: ${plan.weekStartDate} إلى ${plan.weekEndDate}`, y, { fontSize: 11 });
-    y += 8;
-    const langLabel = plan.language === "ar" ? "عربي" : plan.language === "en" ? "إنجليزي" : "ثنائي اللغة";
-    writeRtlText(`لغة الخطة: ${langLabel}`, y, { fontSize: 11 });
-    y += 8;
-    const statusLabel = plan.status === "published" ? "منشورة" : "مسودة";
-    writeRtlText(`الحالة: ${statusLabel}`, y, { fontSize: 11 });
-    y += 18;
-
-    // Sections overview
-    doc.setFontSize(12);
-    writeRtlText("أقسام الخطة (١٤ مجالاً):", y, { fontStyle: "bold", fontSize: 12 });
-    y += 10;
-
-    doc.setFontSize(10);
-    const sectionKeys = Object.keys(SECTION_LABELS);
-    for (let i = 0; i < sectionKeys.length; i++) {
-      const key = sectionKeys[i];
-      const label = SECTION_LABELS[key];
-      const num = `${i + 1}`;
-      writeRtlText(`${num}. ${label.ar}`, y, { fontSize: 10 });
-      y += 7;
-    }
-  } else {
-    doc.setFontSize(13);
-    doc.setFont("NotoSansArabic", "bold");
-    doc.text("Plan Details", margin, y);
-    y += 12;
-
-    doc.setFont("NotoSansArabic", "normal");
-    doc.setFontSize(11);
-    doc.text(`Age Group: ${ageLabel.en}`, margin, y);
-    y += 8;
-    doc.text(`Week: ${plan.weekStartDate} to ${plan.weekEndDate}`, margin, y);
-    y += 8;
-    doc.text(`Language: ${plan.language === "ar" ? "Arabic" : plan.language === "en" ? "English" : "Bilingual"}`, margin, y);
-    y += 8;
-    doc.text(`Status: ${plan.status === "published" ? "Published" : "Draft"}`, margin, y);
-    y += 18;
-
-    doc.setFont("NotoSansArabic", "bold");
-    doc.setFontSize(12);
-    doc.text("Plan Sections (14 Areas):", margin, y);
-    y += 10;
-
-    doc.setFont("NotoSansArabic", "normal");
-    doc.setFontSize(10);
-    const sectionKeys = Object.keys(SECTION_LABELS);
-    for (let i = 0; i < sectionKeys.length; i++) {
-      const key = sectionKeys[i];
-      const label = SECTION_LABELS[key];
-      doc.text(`${i + 1}. ${label.en}`, margin + 5, y);
-      y += 7;
-    }
-  }
-
-  // Footer on cover
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  setArabicFont("normal");
-  if (isArabic) {
-    const footer1 = processArabicText("تم إنشاؤها بواسطة مولد الخطة الأسبوعية الذكي - مركز شجرة التعلم");
-    doc.text(footer1, pageWidth / 2, pageHeight - 15, { align: "center" });
-    const footer2 = processArabicText("إطار EYFS | القيم السعودية | القيم الإسلامية");
-    doc.text(footer2, pageWidth / 2, pageHeight - 10, { align: "center" });
-  } else {
-    doc.text("Generated by Learning Tree AI Weekly Plan Generator", pageWidth / 2, pageHeight - 15, { align: "center" });
-    doc.text("EYFS Framework | Saudi Cultural Values | Islamic Values", pageWidth / 2, pageHeight - 10, { align: "center" });
-  }
-
-  // ============ CONTENT PAGES ============
-  const sectionKeys = Object.keys(SECTION_LABELS);
-  
-  for (const key of sectionKeys) {
-    doc.addPage();
-    y = margin;
-
-    const label = SECTION_LABELS[key];
-    const color = SECTION_COLORS[key] || [30, 70, 50];
-    const content = sections[key];
-
-    // Section header bar
-    doc.setFillColor(color[0], color[1], color[2]);
-    doc.rect(0, 0, pageWidth, 22, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    setArabicFont("bold");
-    
-    if (isArabic) {
-      const headerAr = processArabicText(label.ar);
-      doc.text(headerAr, pageWidth / 2, 14, { align: "center" });
-    } else {
-      doc.text(label.en, pageWidth / 2, 10, { align: "center" });
-      // Arabic subtitle
-      doc.setFontSize(10);
-      setArabicFont("normal");
-      const subAr = processArabicText(label.ar);
-      doc.text(subAr, pageWidth / 2, 18, { align: "center" });
-    }
-
-    y = 32;
-
-    // Content
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(10);
-    setArabicFont("normal");
-
-    const textContent = flattenContent(content);
-    const lines = textContent.split("\n");
-
-    for (const rawLine of lines) {
-      if (!rawLine.trim()) {
-        y += 3;
-        continue;
-      }
-      
-      // Split long lines to fit page width
-      const maxCharsPerLine = isArabic ? 70 : 85;
-      const wrappedLines = wrapText(rawLine, maxCharsPerLine);
-      
-      for (const line of wrappedLines) {
-        if (y > pageHeight - 25) {
-          doc.addPage();
-          y = margin;
-          // Mini header on continuation pages
-          doc.setFillColor(color[0], color[1], color[2]);
-          doc.rect(0, 0, pageWidth, 10, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(8);
-          setArabicFont("normal");
-          if (isArabic) {
-            const contAr = processArabicText(`${label.ar} (تابع)`);
-            doc.text(contAr, pageWidth / 2, 7, { align: "center" });
-          } else {
-            doc.text(`${label.en} (continued)`, pageWidth / 2, 7, { align: "center" });
-          }
-          y = 18;
-          doc.setTextColor(40, 40, 40);
-          doc.setFontSize(10);
-        }
-
-        setArabicFont("normal");
-        if (hasArabic(line)) {
-          const processed = processArabicText(line);
-          doc.text(processed, pageWidth - margin, y, { align: "right" });
-        } else {
-          doc.text(line, margin, y);
-        }
-        y += 6;
-      }
-      y += 2; // Extra spacing between paragraphs
-    }
-
-    // Page footer
-    doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
-    setArabicFont("normal");
-    if (isArabic) {
-      const footerText = processArabicText(`شجرة التعلم | ${plan.theme} | ${plan.weekStartDate}`);
-      doc.text(footerText, pageWidth / 2, pageHeight - 8, { align: "center" });
-    } else {
-      doc.text(`Learning Tree | ${plan.theme} | ${plan.weekStartDate}`, pageWidth / 2, pageHeight - 8, { align: "center" });
-    }
-  }
-
-  // Save
   const filename = `Weekly-Plan-${plan.theme.replace(/\s+/g, "-")}-${plan.weekStartDate}.pdf`;
-  doc.save(filename);
-}
 
-/**
- * Convert ArrayBuffer/Uint8Array to base64 string
- */
-function arrayBufferToBase64(buffer: Uint8Array): string {
-  let binary = "";
-  const len = buffer.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(buffer[i]);
-  }
-  return btoa(binary);
-}
+  try {
+    await html2pdf()
+      .set({
+        margin: [10, 10, 10, 10],
+        filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: false,
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
 
-/**
- * Simple text wrapping by character count
- */
-function wrapText(text: string, maxChars: number): string[] {
-  if (text.length <= maxChars) return [text];
-  
-  const lines: string[] = [];
-  let remaining = text;
-  
-  while (remaining.length > maxChars) {
-    // Find a good break point (space)
-    let breakPoint = remaining.lastIndexOf(" ", maxChars);
-    if (breakPoint === -1 || breakPoint < maxChars * 0.4) {
-      breakPoint = maxChars;
-    }
-    lines.push(remaining.substring(0, breakPoint));
-    remaining = remaining.substring(breakPoint).trimStart();
+      })
+      .from(container.querySelector("#pdf-content") as HTMLElement)
+      .save();
+  } finally {
+    document.body.removeChild(container);
   }
-  
-  if (remaining) lines.push(remaining);
-  return lines;
 }

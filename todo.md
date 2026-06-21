@@ -1021,9 +1021,10 @@
 
 ## PDF Arabic Text Fix (Critical Bug)
 
-- [x] Download Noto Sans Arabic font (Regular + Bold) - uploaded to /manus-storage/
-- [x] Embed font via fetch at runtime in PDF generator
-- [x] Fix RTL text rendering with arabic-reshaper + character reversal
+- [x] Switched from jsPDF to html2pdf.js (uses browser's native Arabic rendering)
+- [x] Added Noto Sans Arabic font via Google Fonts CDN
+- [x] Full RTL support via native browser direction:rtl
+- [x] Arabic letters connect properly (browser handles OpenType shaping)
 - [x] Support Arabic-only, English-only, and mixed content PDF export
 - [x] Professional A4 layout with proper margins and section colors
 - [x] PDF preview matches downloaded file (same generation code)
