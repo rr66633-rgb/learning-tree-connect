@@ -945,3 +945,165 @@ export const organizationMembers = mysqlTable("organization_members", {
 });
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type InsertOrganizationMember = typeof organizationMembers.$inferInsert;
+
+
+// ============ GROWTH & DEVELOPMENT CENTER ============
+
+// Development Areas (7 EYFS Prime + Specific areas with sub-areas)
+export const developmentAreas = mysqlTable("development_areas", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  nameEn: varchar("nameEn", { length: 200 }).notNull(),
+  nameAr: varchar("nameAr", { length: 200 }).notNull(),
+  category: mysqlEnum("category", ["prime", "specific"]).notNull(),
+  parentAreaId: int("parentAreaId"), // for sub-areas
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  ageRangeMonths: varchar("ageRangeMonths", { length: 20 }), // e.g. "0-60"
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DevelopmentArea = typeof developmentAreas.$inferSelect;
+
+// Development Milestones (age-appropriate expectations per area)
+export const developmentMilestones = mysqlTable("development_milestones", {
+  id: int("id").autoincrement().primaryKey(),
+  areaId: int("areaId").notNull(),
+  ageRangeStart: int("ageRangeStart").notNull(), // months
+  ageRangeEnd: int("ageRangeEnd").notNull(), // months
+  titleEn: varchar("titleEn", { length: 300 }).notNull(),
+  titleAr: varchar("titleAr", { length: 300 }).notNull(),
+  descriptionEn: text("descriptionEn"),
+  descriptionAr: text("descriptionAr"),
+  expectedLevel: mysqlEnum("expectedLevel", ["emerging", "developing", "secure", "exceeding"]).default("developing").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DevelopmentMilestone = typeof developmentMilestones.$inferSelect;
+
+// Development Observations (detailed teacher observations linked to areas)
+export const developmentObservations = mysqlTable("development_observations", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  areaId: int("areaId").notNull(),
+  observedBy: int("observedBy").notNull(),
+  level: mysqlEnum("level", ["emerging", "developing", "secure", "exceeding"]).default("emerging").notNull(),
+  confidenceLevel: mysqlEnum("confidenceLevel", ["low", "medium", "high"]).default("medium").notNull(),
+  context: mysqlEnum("context", ["free_play", "guided_activity", "group_work", "outdoor", "routine", "assessment", "other"]).default("guided_activity").notNull(),
+  observation: text("observation").notNull(),
+  evidence: text("evidence"), // photo/video URLs (JSON array)
+  nextSteps: text("nextSteps"),
+  linkedMilestoneId: int("linkedMilestoneId"),
+  observedAt: timestamp("observedAt").defaultNow().notNull(),
+  termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
+  academicYear: varchar("academicYear", { length: 10 }), // e.g. "2025-2026"
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DevelopmentObservation = typeof developmentObservations.$inferSelect;
+
+// School Readiness Scores (6 dimensions + overall)
+export const schoolReadinessScores = mysqlTable("school_readiness_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  assessedBy: int("assessedBy").notNull(),
+  languageReadiness: int("languageReadiness").default(0).notNull(), // 0-100
+  socialReadiness: int("socialReadiness").default(0).notNull(),
+  emotionalReadiness: int("emotionalReadiness").default(0).notNull(),
+  cognitiveReadiness: int("cognitiveReadiness").default(0).notNull(),
+  physicalReadiness: int("physicalReadiness").default(0).notNull(),
+  overallReadiness: int("overallReadiness").default(0).notNull(),
+  aiGenerated: boolean("aiGenerated").default(false).notNull(),
+  notes: text("notes"),
+  termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
+  academicYear: varchar("academicYear", { length: 10 }),
+  organizationId: int("organizationId").default(1),
+  assessedAt: timestamp("assessedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SchoolReadinessScore = typeof schoolReadinessScores.$inferSelect;
+
+// AI Development Analysis (AI-generated insights per child)
+export const aiDevelopmentAnalysis = mysqlTable("ai_development_analysis", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  analysisType: mysqlEnum("analysisType", ["strengths", "concerns", "recommendations", "full_report", "school_readiness", "intervention"]).notNull(),
+  content: text("content").notNull(), // JSON structured content
+  contentAr: text("contentAr"), // Arabic version
+  confidence: decimal("confidence", { precision: 3, scale: 2 }), // 0.00-1.00
+  basedOnObservations: int("basedOnObservations").default(0).notNull(), // count of observations analyzed
+  termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
+  academicYear: varchar("academicYear", { length: 10 }),
+  organizationId: int("organizationId").default(1),
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"), // analysis should be regenerated after this
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AiDevelopmentAnalysis = typeof aiDevelopmentAnalysis.$inferSelect;
+
+// Development Recommendations (personalized activities for classroom & home)
+export const developmentRecommendations = mysqlTable("development_recommendations", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  areaId: int("areaId").notNull(),
+  type: mysqlEnum("type", ["classroom_activity", "home_activity", "intervention", "enrichment", "parent_tip"]).notNull(),
+  titleEn: varchar("titleEn", { length: 300 }).notNull(),
+  titleAr: varchar("titleAr", { length: 300 }).notNull(),
+  descriptionEn: text("descriptionEn"),
+  descriptionAr: text("descriptionAr"),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "urgent"]).default("medium").notNull(),
+  status: mysqlEnum("status", ["pending", "in_progress", "completed", "dismissed"]).default("pending").notNull(),
+  aiGenerated: boolean("aiGenerated").default(true).notNull(),
+  completedAt: timestamp("completedAt"),
+  completedBy: int("completedBy"),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DevelopmentRecommendation = typeof developmentRecommendations.$inferSelect;
+
+// Development Alerts (intelligent alerts for developmental concerns)
+export const developmentAlerts = mysqlTable("development_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  areaId: int("areaId"),
+  alertType: mysqlEnum("alertType", ["limited_progress", "below_expectations", "follow_up_needed", "multiple_concerns", "regression", "milestone_delayed"]).notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("warning").notNull(),
+  titleEn: varchar("titleEn", { length: 300 }).notNull(),
+  titleAr: varchar("titleAr", { length: 300 }).notNull(),
+  descriptionEn: text("descriptionEn"),
+  descriptionAr: text("descriptionAr"),
+  suggestedAction: text("suggestedAction"),
+  status: mysqlEnum("status", ["active", "acknowledged", "resolved", "dismissed"]).default("active").notNull(),
+  acknowledgedBy: int("acknowledgedBy"),
+  acknowledgedAt: timestamp("acknowledgedAt"),
+  resolvedBy: int("resolvedBy"),
+  resolvedAt: timestamp("resolvedAt"),
+  resolutionNotes: text("resolutionNotes"),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DevelopmentAlert = typeof developmentAlerts.$inferSelect;
+
+// Child Development Summary (cached summary for quick access)
+export const childDevelopmentSummary = mysqlTable("child_development_summary", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  totalObservations: int("totalObservations").default(0).notNull(),
+  lastObservationDate: timestamp("lastObservationDate"),
+  averageLevel: decimal("averageLevel", { precision: 3, scale: 2 }), // numeric avg of levels
+  strongestAreaId: int("strongestAreaId"),
+  weakestAreaId: int("weakestAreaId"),
+  schoolReadinessScore: int("schoolReadinessScore"), // 0-100 overall
+  alertCount: int("alertCount").default(0).notNull(),
+  lastAnalysisDate: timestamp("lastAnalysisDate"),
+  termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
+  academicYear: varchar("academicYear", { length: 10 }),
+  organizationId: int("organizationId").default(1),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ChildDevelopmentSummary = typeof childDevelopmentSummary.$inferSelect;

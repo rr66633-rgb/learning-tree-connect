@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown
+  Building2, Palette, Crown, Brain
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -58,6 +58,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: Heart, label: "المعلومات الطبية", path: "/medical" },
   { icon: MapPin, label: "طلب الاستلام", path: "/pickup" },
   { icon: BookOpen, label: "الملاحظات والتقييمات", path: "/observations" },
+  { icon: Brain, label: "نمو وتطور طفلي", path: "/development" },
   { icon: Calendar, label: "التقويم السنوي", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
@@ -80,6 +81,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: MapPin, label: "الاستلام", path: "/pickup" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments" },
+  { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
   { icon: Calendar, label: "التقويم السنوي", path: "/calendar" },
@@ -110,6 +112,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
   { icon: MapPin, label: "الاستلام", path: "/pickup" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments" },
+  { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
@@ -138,6 +141,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments" },
+  { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },

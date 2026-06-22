@@ -39,6 +39,11 @@ const StaffAssessments = lazy(() => import("./pages/staff/Assessments"));
 const StaffAuditLog = lazy(() => import("./pages/staff/AuditLog"));
 const StaffWeeklyPlan = lazy(() => import("./pages/staff/WeeklyPlan"));
 
+// Development Center Pages
+const DevelopmentDashboard = lazy(() => import("./pages/staff/DevelopmentDashboard"));
+const ChildDevelopmentProfile = lazy(() => import("./pages/staff/ChildDevelopmentProfile"));
+const NewObservation = lazy(() => import("./pages/staff/NewObservation"));
+
 // Super Admin Pages
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
 const OrganizationDetail = lazy(() => import("./pages/superadmin/OrganizationDetail"));
@@ -91,6 +96,7 @@ const ParentPhotos = lazy(() => import("./pages/parent/Photos"));
 const ParentPickup = lazy(() => import("./pages/parent/Pickup"));
 const ParentObservations = lazy(() => import("./pages/parent/Observations"));
 const ParentWeeklyPlan = lazy(() => import("./pages/parent/WeeklyPlan"));
+const ParentDevelopment = lazy(() => import("./pages/parent/Development"));
 
 function PageLoader() {
   return (
@@ -156,6 +162,9 @@ function StaffRouter() {
         <Route path="/staff/assessments" component={StaffAssessments} />
         <Route path="/staff/audit-log" component={StaffAuditLog} />
         <Route path="/staff/weekly-plan" component={StaffWeeklyPlan} />
+        <Route path="/staff/development/observations/new" component={NewObservation} />
+        <Route path="/staff/development/child/:id" component={ChildDevelopmentProfile} />
+        <Route path="/staff/development" component={DevelopmentDashboard} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -185,6 +194,7 @@ function ParentRouter() {
         <Route path="/parent/pickup" component={ParentPickup} />
         <Route path="/parent/observations" component={ParentObservations} />
         <Route path="/parent/weekly-plan" component={ParentWeeklyPlan} />
+        <Route path="/parent/development" component={ParentDevelopment} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
