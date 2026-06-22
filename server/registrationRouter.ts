@@ -163,6 +163,23 @@ export const registrationRouter = router({
           `يرجى مراجعة الطلب من لوحة تحكم المشرف.`,
       });
 
+      // In-app notification for super admin
+      try {
+        const { ENV } = await import('./_core/env');
+        const ownerUser = await db.getUserByOpenId(ENV.ownerOpenId);
+        if (ownerUser) {
+          await db.createNotification({
+            userId: ownerUser.id,
+            title: 'طلب تسجيل حضانة جديدة',
+            titleAr: 'طلب تسجيل حضانة جديدة',
+            body: `${input.nurseryNameAr} - ${input.city} - ${input.ownerName}`,
+            bodyAr: `${input.nurseryNameAr} - ${input.city} - ${input.ownerName}`,
+            type: 'registration',
+            link: '/super-admin/registrations',
+          });
+        }
+      } catch (e) { /* non-critical */ }
+
       return {
         success: true,
         registrationId,

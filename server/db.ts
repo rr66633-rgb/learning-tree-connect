@@ -724,6 +724,26 @@ export async function markAllNotificationsRead(userId: number) {
   await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
 }
 
+export async function deleteNotification(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(notifications).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+}
+
+export async function deleteAllNotifications(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(notifications).where(eq(notifications.userId, userId));
+}
+
+export async function createBatchNotifications(data: InsertNotification[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (data.length === 0) return [];
+  const result = await db.insert(notifications).values(data);
+  return result;
+}
+
 // ============ ANALYTICS ============
 export async function getDashboardStats() {
   const db = await getDb();

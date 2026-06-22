@@ -1485,3 +1485,23 @@
 - [x] Update web manifest with new icon paths and Naashah branding
 - [x] Update service worker with Naashah branding and icon paths
 - [x] Replace all Learning Tree branding with Naashah across codebase
+## SEO Fixes for Landing Page (/)
+- [x] Update page title to 30-60 characters with relevant Arabic keywords (47 chars)
+- [x] Add meta keywords tag with Arabic/English nursery management keywords
+- [x] Update meta description to 150-160 characters with target keywords
+- [x] Set document.title dynamically in Landing.tsx via useEffect
+- [x] Add Open Graph meta tags for social sharing
+
+## Custom In-App Notifications System
+- [x] Create notifications table in database schema (id, userId, tenantId, type, title, body, isRead, link, createdAt)
+- [x] Generate and apply database migration (added link column + registration/system types)
+- [x] Create notification database helpers (create, list, markRead, markAllRead, getUnreadCount, delete, deleteAll, createBatch)
+- [x] Create notificationsRouter with tRPC procedures (list, markRead, markAllRead, unreadCount, delete, deleteAll)
+- [x] Create NotificationBell component with unread badge count and popover dropdown
+- [x] Create NotificationsPanel with notification list, type icons, time formatting, delete
+- [x] Integrate NotificationBell into DashboardLayout header (desktop + mobile)
+- [x] Trigger notifications from attendance events (check-in/check-out) with link
+- [x] Trigger notifications from new daily reports with link
+- [x] Trigger notifications from new messages with link
+- [x] Trigger notifications from new nursery registrations (for super admin) with link
+- [x] Write vitest tests for notification system (10 tests passing)

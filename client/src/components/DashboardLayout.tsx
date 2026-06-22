@@ -37,6 +37,7 @@ import { DutyToggle } from "@/components/DutyToggle";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
 
 type MenuItem = { icon: any; label: string; path: string; color?: string };
 
@@ -496,6 +497,20 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset className="overflow-y-auto bg-background">
+        {/* Desktop top bar */}
+        {!isMobile && (
+          <div className="flex border-b border-border/50 h-12 items-center justify-between bg-background/80 px-4 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40">
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-foreground text-sm">
+                {activeMenuItem?.label ?? "القائمة"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+            </div>
+          </div>
+        )}
+        {/* Mobile top bar */}
         {isMobile && (
           <div className="flex border-b border-border/50 h-14 items-center justify-between bg-background/80 px-3 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40">
             <div className="flex items-center gap-3">
@@ -505,6 +520,9 @@ function DashboardLayoutContent({
                   {activeMenuItem?.label ?? "القائمة"}
                 </span>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
             </div>
           </div>
         )}

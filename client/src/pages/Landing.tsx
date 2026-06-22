@@ -6,13 +6,17 @@ import {
   Calendar, CreditCard, BookOpen, CheckCircle2,
   ArrowLeft, Sparkles, Menu, X
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    document.title = "نشأة - منصة إدارة الحضانات ورياض الأطفال الذكية";
+  }, []);
 
   const features = [
     { icon: Users, title: "إدارة الأطفال", desc: "ملفات شاملة لكل طفل مع متابعة النمو والتطور", color: "#00C9B7" },

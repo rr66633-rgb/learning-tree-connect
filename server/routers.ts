@@ -604,6 +604,7 @@ export const appRouter = router({
           body: `${child.firstName} has arrived at the center`,
           bodyAr: `وصل ${child.firstName} ${child.lastName} إلى المركز`,
           type: 'attendance',
+          link: '/parent/attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkin' },
         });
         // Send push notification
@@ -644,6 +645,7 @@ export const appRouter = router({
           body: `${child.firstName} has left the center`,
           bodyAr: `غادر ${child.firstName} ${child.lastName} المركز`,
           type: 'attendance',
+          link: '/parent/attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkout', pickedUpBy: input.pickedUpBy },
         });
         // Send push notification
@@ -799,7 +801,23 @@ export const appRouter = router({
       photos: z.array(z.string()).optional(),
       isPublished: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createDailyReport({ ...input, date: new Date(input.date), teacherId: ctx.user!.id });
+      const report = await db.createDailyReport({ ...input, date: new Date(input.date), teacherId: ctx.user!.id });
+      // Notify parent about new daily report
+      try {
+        const child = await db.getChildById(input.childId);
+        if (child?.parentId) {
+          await db.createNotification({
+            userId: child.parentId,
+            title: 'تقرير يومي جديد',
+            titleAr: 'تقرير يومي جديد',
+            body: `A new daily report has been added for ${child.firstName}`,
+            bodyAr: `تم إضافة تقرير يومي جديد لـ ${child.firstName} ${child.lastName}`,
+            type: 'report',
+            link: '/parent/timeline',
+          });
+        }
+      } catch (e) { /* non-critical */ }
+      return report;
     }),
     update: teacherProcedure.input(z.object({
       id: z.number(),
@@ -865,8 +883,11 @@ export const appRouter = router({
         await db.createNotification({
           userId: recipientId,
           title: 'رسالة جديدة',
+          titleAr: 'رسالة جديدة',
           body: `${ctx.user!.name || 'مستخدم'}: ${input.content.slice(0, 100)}`,
+          bodyAr: `${ctx.user!.name || 'مستخدم'}: ${input.content.slice(0, 100)}`,
           type: 'message',
+          link: '/messages',
         });
       } catch (e) { /* non-critical */ }
       // Web push notification
@@ -1457,6 +1478,14 @@ export const appRouter = router({
     }),
     markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
       await db.markAllNotificationsRead(ctx.user!.id);
+      return { success: true };
+    }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      await db.deleteNotification(input.id, ctx.user!.id);
+      return { success: true };
+    }),
+    deleteAll: protectedProcedure.mutation(async ({ ctx }) => {
+      await db.deleteAllNotifications(ctx.user!.id);
       return { success: true };
     }),
   }),
