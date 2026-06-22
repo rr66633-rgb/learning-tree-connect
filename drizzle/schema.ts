@@ -1107,3 +1107,209 @@ export const childDevelopmentSummary = mysqlTable("child_development_summary", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type ChildDevelopmentSummary = typeof childDevelopmentSummary.$inferSelect;
+
+// ============ PARENT ENGAGEMENT CENTER ============
+
+// Home Learning Activities (AI-generated personalized activities)
+export const homeLearningActivities = mysqlTable("home_learning_activities", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  parentId: int("parentId").notNull(),
+  category: mysqlEnum("category", ["language", "fine_motor", "gross_motor", "social_emotional", "early_math", "literacy", "creative", "outdoor"]).notNull(),
+  titleEn: varchar("titleEn", { length: 300 }).notNull(),
+  titleAr: varchar("titleAr", { length: 300 }).notNull(),
+  descriptionEn: text("descriptionEn").notNull(),
+  descriptionAr: text("descriptionAr").notNull(),
+  materialsEn: text("materialsEn"),
+  materialsAr: text("materialsAr"),
+  stepsEn: text("stepsEn"),
+  stepsAr: text("stepsAr"),
+  duration: int("duration"),
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "challenging"]).default("easy").notNull(),
+  ageGroupMonths: int("ageGroupMonths"),
+  eyfsAreaId: int("eyfsAreaId"),
+  status: mysqlEnum("status", ["pending", "completed", "skipped"]).default("pending").notNull(),
+  completedAt: timestamp("completedAt"),
+  parentFeedback: text("parentFeedback"),
+  rating: int("rating"),
+  weekNumber: int("weekNumber"),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type HomeLearningActivity = typeof homeLearningActivities.$inferSelect;
+
+// Family Challenges (weekly engagement challenges)
+export const familyChallenges = mysqlTable("family_challenges", {
+  id: int("id").autoincrement().primaryKey(),
+  titleEn: varchar("titleEn", { length: 300 }).notNull(),
+  titleAr: varchar("titleAr", { length: 300 }).notNull(),
+  descriptionEn: text("descriptionEn").notNull(),
+  descriptionAr: text("descriptionAr").notNull(),
+  category: mysqlEnum("category", ["reading", "kindness", "creativity", "outdoor", "stem", "social", "health", "cultural"]).notNull(),
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("easy").notNull(),
+  durationDays: int("durationDays").default(7).notNull(),
+  pointsReward: int("pointsReward").default(10).notNull(),
+  badgeId: int("badgeId"),
+  weekNumber: int("weekNumber"),
+  academicYear: varchar("academicYear", { length: 10 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FamilyChallenge = typeof familyChallenges.$inferSelect;
+
+// Challenge Participations (family completion tracking)
+export const challengeParticipations = mysqlTable("challenge_participations", {
+  id: int("id").autoincrement().primaryKey(),
+  challengeId: int("challengeId").notNull(),
+  parentId: int("parentId").notNull(),
+  childId: int("childId").notNull(),
+  status: mysqlEnum("status", ["enrolled", "in_progress", "completed", "expired"]).default("enrolled").notNull(),
+  progressPercent: int("progressPercent").default(0).notNull(),
+  completedAt: timestamp("completedAt"),
+  evidenceUrl: text("evidenceUrl"),
+  notes: text("notes"),
+  pointsEarned: int("pointsEarned").default(0),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ChallengeParticipation = typeof challengeParticipations.$inferSelect;
+
+// Home Journal Entries (parent photos, videos, notes, achievements)
+export const homeJournalEntries = mysqlTable("home_journal_entries", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  parentId: int("parentId").notNull(),
+  entryType: mysqlEnum("entryType", ["photo", "video", "note", "achievement", "milestone"]).notNull(),
+  title: varchar("title", { length: 300 }),
+  description: text("description"),
+  mediaUrl: text("mediaUrl"),
+  mediaType: varchar("mediaType", { length: 50 }),
+  eyfsAreaId: int("eyfsAreaId"),
+  developmentAreaId: int("developmentAreaId"),
+  status: mysqlEnum("status", ["pending_review", "approved", "needs_revision", "rejected"]).default("pending_review").notNull(),
+  teacherReviewNotes: text("teacherReviewNotes"),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  isHighlighted: boolean("isHighlighted").default(false).notNull(),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type HomeJournalEntry = typeof homeJournalEntries.$inferSelect;
+
+// Parent Observations (parent-submitted observations with AI analysis)
+export const parentObservations = mysqlTable("parent_observations", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  parentId: int("parentId").notNull(),
+  observationText: text("observationText").notNull(),
+  context: mysqlEnum("context", ["home_play", "outdoor", "social", "mealtime", "bedtime", "learning", "creative", "other"]).default("home_play").notNull(),
+  mediaUrl: text("mediaUrl"),
+  aiAnalysis: json("aiAnalysis"),
+  aiSuggestedAreaIds: json("aiSuggestedAreaIds"),
+  significance: mysqlEnum("significance", ["routine", "notable", "significant", "concern"]).default("routine").notNull(),
+  teacherStatus: mysqlEnum("teacherStatus", ["pending", "reviewed", "flagged", "linked_to_assessment"]).default("pending").notNull(),
+  teacherNotes: text("teacherNotes"),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  linkedObservationId: int("linkedObservationId"),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ParentObservation = typeof parentObservations.$inferSelect;
+
+// Monthly Growth Goals (personalized goals per child)
+export const monthlyGrowthGoals = mysqlTable("monthly_growth_goals", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  parentId: int("parentId").notNull(),
+  titleEn: varchar("titleEn", { length: 300 }).notNull(),
+  titleAr: varchar("titleAr", { length: 300 }).notNull(),
+  descriptionEn: text("descriptionEn"),
+  descriptionAr: text("descriptionAr"),
+  category: mysqlEnum("category", ["vocabulary", "fine_motor", "gross_motor", "social", "independence", "literacy", "numeracy", "creativity"]).notNull(),
+  targetMonth: int("targetMonth").notNull(),
+  targetYear: int("targetYear").notNull(),
+  progressPercent: int("progressPercent").default(0).notNull(),
+  status: mysqlEnum("status", ["active", "completed", "partially_completed", "not_started"]).default("not_started").notNull(),
+  completedAt: timestamp("completedAt"),
+  suggestedActivities: json("suggestedActivities"),
+  parentNotes: text("parentNotes"),
+  teacherNotes: text("teacherNotes"),
+  basedOnAreaId: int("basedOnAreaId"),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MonthlyGrowthGoal = typeof monthlyGrowthGoals.$inferSelect;
+
+// Engagement Scores (monthly/term/annual family engagement)
+export const engagementScores = mysqlTable("engagement_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  parentId: int("parentId").notNull(),
+  childId: int("childId").notNull(),
+  period: mysqlEnum("period", ["weekly", "monthly", "term", "annual"]).notNull(),
+  periodValue: varchar("periodValue", { length: 20 }).notNull(),
+  activitiesCompleted: int("activitiesCompleted").default(0).notNull(),
+  challengesCompleted: int("challengesCompleted").default(0).notNull(),
+  journalEntries: int("journalEntries").default(0).notNull(),
+  observationsSubmitted: int("observationsSubmitted").default(0).notNull(),
+  goalsCompleted: int("goalsCompleted").default(0).notNull(),
+  totalPoints: int("totalPoints").default(0).notNull(),
+  score: int("score").default(0).notNull(),
+  level: mysqlEnum("level", ["inactive", "emerging", "developing", "active", "highly_engaged", "champion"]).default("inactive").notNull(),
+  streak: int("streak").default(0).notNull(),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EngagementScore = typeof engagementScores.$inferSelect;
+
+// Achievement Badges (gamification)
+export const achievementBadges = mysqlTable("achievement_badges", {
+  id: int("id").autoincrement().primaryKey(),
+  nameEn: varchar("nameEn", { length: 200 }).notNull(),
+  nameAr: varchar("nameAr", { length: 200 }).notNull(),
+  descriptionEn: text("descriptionEn"),
+  descriptionAr: text("descriptionAr"),
+  icon: varchar("icon", { length: 100 }).notNull(),
+  category: mysqlEnum("category", ["activity", "challenge", "journal", "observation", "goal", "streak", "milestone"]).notNull(),
+  criteria: json("criteria"),
+  pointsRequired: int("pointsRequired").default(0),
+  tier: mysqlEnum("tier", ["bronze", "silver", "gold", "platinum"]).default("bronze").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AchievementBadge = typeof achievementBadges.$inferSelect;
+
+// Parent Earned Badges
+export const parentBadges = mysqlTable("parent_badges", {
+  id: int("id").autoincrement().primaryKey(),
+  parentId: int("parentId").notNull(),
+  badgeId: int("badgeId").notNull(),
+  childId: int("childId"),
+  earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+  organizationId: int("organizationId").default(1),
+});
+export type ParentBadge = typeof parentBadges.$inferSelect;
+
+// Family Engagement Config (per-org module settings)
+export const familyEngagementConfig = mysqlTable("family_engagement_config", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  activitiesPerWeek: int("activitiesPerWeek").default(3).notNull(),
+  challengesEnabled: boolean("challengesEnabled").default(true).notNull(),
+  journalEnabled: boolean("journalEnabled").default(true).notNull(),
+  parentObservationsEnabled: boolean("parentObservationsEnabled").default(true).notNull(),
+  chatbotEnabled: boolean("chatbotEnabled").default(true).notNull(),
+  gamificationEnabled: boolean("gamificationEnabled").default(true).notNull(),
+  autoGenerateGoals: boolean("autoGenerateGoals").default(true).notNull(),
+  defaultLanguage: mysqlEnum("defaultLanguage", ["ar", "en", "both"]).default("both").notNull(),
+  customBranding: json("customBranding"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FamilyEngagementConfig = typeof familyEngagementConfig.$inferSelect;

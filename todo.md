@@ -1225,3 +1225,54 @@
 - [x] White-label ready (organizationId on all tables)
 - [x] API architecture for future Ynmo integration
 - [x] Mobile responsive design
+
+## Parent Engagement Center Module
+
+### Database Schema
+- [x] Create home_learning_activities table (AI-generated activities per child)
+- [x] Create family_challenges table (weekly challenges with tracking)
+- [x] Create challenge_participations table (family completion tracking)
+- [x] Create home_journal_entries table (parent photos, videos, notes, achievements)
+- [x] Create parent_observations table (parent-submitted observations with AI analysis)
+- [x] Create monthly_growth_goals table (personalized goals per child)
+- [x] Create goal_progress table (goal completion tracking)
+- [x] Create engagement_scores table (monthly/term/annual scores)
+- [x] Create achievement_badges table (gamification badges)
+- [x] Create parent_badges table (earned badges per parent)
+- [x] Create family_engagement_config table (per-org module settings)
+
+### Backend Routers
+- [x] AI home activity generation (personalized per child based on EYFS/development data)
+- [x] Weekly family challenges CRUD (auto-generate, track participation)
+- [x] Home journal entries CRUD (upload photos/videos, teacher review/approve)
+- [x] Parent observations submission (AI analysis, EYFS linking, teacher flagging)
+- [x] Monthly growth goals (auto-generate, track progress)
+- [x] Engagement scoring engine (calculate monthly/term/annual scores)
+- [ ] AI Parenting Assistant chatbot (Arabic/English, development Q&A)
+- [x] Gamification engine (badges, levels, streaks)
+- [x] Smart notifications (new observations, reports, goals, activities)
+- [ ] Family reports generation (weekly/monthly/term/annual)
+
+### Parent Mobile-First UI
+- [x] Parent engagement dashboard (progress summary, latest observations, readiness score)
+- [x] Home learning activities page (categorized: language, motor, social, math, literacy)
+- [x] Weekly challenges page (current challenge, history, completion tracking)
+- [x] Home achievement journal (photo/video upload, notes, timeline)
+- [ ] Parent observation submission form (with AI suggestions)
+- [ ] Monthly goals page (current goals, progress rings, history)
+- [ ] Family engagement score display (monthly/term/annual with charts)
+- [ ] AI Parenting Assistant chatbot interface (Arabic/English)
+- [ ] Achievement badges & rewards page (earned badges, levels, streaks)
+
+### Teacher/Admin UI
+- [x] Staff engagement analytics dashboard (rates, trends, most/least active)
+- [ ] Parent submissions review page (approve/reject journal entries & observations)
+- [ ] Engagement reports generation (per family, per class, per organization)
+
+### Integration & Multi-Tenant
+- [ ] Full integration with EYFS Assessment module
+- [ ] Full integration with Growth & Development Center
+- [ ] Full integration with School Readiness module
+- [ ] White-label support (per-org enable/disable, branding)
+- [x] Mobile-first responsive design
+- [x] Navigation: Added engagement menu item to all role sidebars (staff, admin, parent)

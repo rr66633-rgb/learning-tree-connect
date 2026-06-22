@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain
+  Building2, Palette, Crown, Brain, HandHeart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -59,6 +59,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: MapPin, label: "طلب الاستلام", path: "/pickup" },
   { icon: BookOpen, label: "الملاحظات والتقييمات", path: "/observations" },
   { icon: Brain, label: "نمو وتطور طفلي", path: "/development" },
+  { icon: HandHeart, label: "مشاركة الأسرة", path: "/engagement" },
   { icon: Calendar, label: "التقويم السنوي", path: "/calendar" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
@@ -82,6 +83,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: MapPin, label: "الاستلام", path: "/pickup" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
+  { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
   { icon: Calendar, label: "التقويم السنوي", path: "/calendar" },
@@ -113,6 +115,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: MapPin, label: "الاستلام", path: "/pickup" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
+  { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },

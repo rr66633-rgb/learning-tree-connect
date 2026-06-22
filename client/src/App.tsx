@@ -43,6 +43,7 @@ const StaffWeeklyPlan = lazy(() => import("./pages/staff/WeeklyPlan"));
 const DevelopmentDashboard = lazy(() => import("./pages/staff/DevelopmentDashboard"));
 const ChildDevelopmentProfile = lazy(() => import("./pages/staff/ChildDevelopmentProfile"));
 const NewObservation = lazy(() => import("./pages/staff/NewObservation"));
+const EngagementAnalytics = lazy(() => import("./pages/staff/EngagementAnalytics"));
 
 // Super Admin Pages
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
@@ -97,6 +98,10 @@ const ParentPickup = lazy(() => import("./pages/parent/Pickup"));
 const ParentObservations = lazy(() => import("./pages/parent/Observations"));
 const ParentWeeklyPlan = lazy(() => import("./pages/parent/WeeklyPlan"));
 const ParentDevelopment = lazy(() => import("./pages/parent/Development"));
+const ParentEngagement = lazy(() => import("./pages/parent/EngagementDashboard"));
+const ParentEngagementActivities = lazy(() => import("./pages/parent/EngagementActivities"));
+const ParentEngagementChallenges = lazy(() => import("./pages/parent/EngagementChallenges"));
+const ParentEngagementJournal = lazy(() => import("./pages/parent/EngagementJournal"));
 
 function PageLoader() {
   return (
@@ -165,6 +170,7 @@ function StaffRouter() {
         <Route path="/staff/development/observations/new" component={NewObservation} />
         <Route path="/staff/development/child/:id" component={ChildDevelopmentProfile} />
         <Route path="/staff/development" component={DevelopmentDashboard} />
+        <Route path="/staff/engagement" component={EngagementAnalytics} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -195,6 +201,10 @@ function ParentRouter() {
         <Route path="/parent/observations" component={ParentObservations} />
         <Route path="/parent/weekly-plan" component={ParentWeeklyPlan} />
         <Route path="/parent/development" component={ParentDevelopment} />
+        <Route path="/parent/engagement" component={ParentEngagement} />
+        <Route path="/parent/engagement/activities" component={ParentEngagementActivities} />
+        <Route path="/parent/engagement/challenges" component={ParentEngagementChallenges} />
+        <Route path="/parent/engagement/journal" component={ParentEngagementJournal} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
