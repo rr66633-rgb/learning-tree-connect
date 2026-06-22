@@ -1361,12 +1361,12 @@
 ## Phase 6 — Nasha'a SaaS Rebranding & Deployment
 
 ### Platform Rebranding
-- [ ] Change platform name from Learning Tree to Nasha'a (نشأة)
-- [ ] Update VITE_APP_TITLE to نشأة
-- [ ] Update login page branding
-- [ ] Update DashboardLayout branding
-- [ ] Update HTML meta tags and title
-- [ ] Keep Learning Tree as Organization/Customer #1
+- [x] Change platform name from Learning Tree to Nasha'a (نشأة)
+- [x] Update VITE_APP_TITLE to نشأة
+- [x] Update login page branding
+- [x] Update DashboardLayout branding
+- [x] Update HTML meta tags and title
+- [x] Keep Learning Tree as Organization/Customer #1
 
 ### Public Landing Page
 - [x] Create Nasha'a SaaS landing page (hero, features, pricing, CTA)
