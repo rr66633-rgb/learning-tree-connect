@@ -1476,3 +1476,12 @@
 - [x] Color-coded modules and cards throughout platform - sidebar icons color-coded
 - [x] Maintain professional enterprise appearance - slate-800 text, brand accents
 - [x] Modern, child-friendly SaaS experience - vibrant gradients and color-coded UI
+
+## Replace Favicon and PWA Icons with Naashah Logo
+- [x] Generate all icon sizes from Naashah logo (16, 32, 64, 128, 180, 192, 256, 384, 512)
+- [x] Generate favicon.ico (multi-size: 16, 32, 48, 64)
+- [x] Upload all icons via manus-upload-file --webdev (10 files)
+- [x] Update index.html with new icon references
+- [x] Update web manifest with new icon paths and Naashah branding
+- [x] Update service worker with Naashah branding and icon paths
+- [x] Replace all Learning Tree branding with Naashah across codebase

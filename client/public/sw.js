@@ -1,4 +1,4 @@
-// Learning Tree Connect - Service Worker for Push Notifications
+// Naashah - Service Worker for Push Notifications
 const CACHE_NAME = 'learning-tree-v1';
 
 // Install event
@@ -20,7 +20,7 @@ self.addEventListener('push', (event) => {
     payload = event.data.json();
   } catch (e) {
     payload = {
-      title: 'Learning Tree',
+      title: '0646063406230629',
       body: event.data.text(),
     };
   }
@@ -30,8 +30,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: payload.body || '',
-    icon: payload.icon || '/favicon.ico',
-    badge: payload.badge || '/favicon.ico',
+    icon: payload.icon || '/manus-storage/android-chrome-192x192_9b956363.png',
+    badge: payload.badge || '/manus-storage/favicon-32x32_30a255a6.png',
     tag: payload.tag || 'default',
     data: data,
     dir: 'rtl',
@@ -51,7 +51,7 @@ self.addEventListener('push', (event) => {
 
   // Show the notification
   const notificationPromise = self.registration.showNotification(
-    payload.title || 'Learning Tree',
+    payload.title || '0646063406230629',
     options
   );
 

@@ -1,39 +1,59 @@
 {
-  "name": "Learning Tree Kids Center",
-  "short_name": "Learning Tree",
-  "description": "منصة إدارة حضانة Learning Tree - نظام متكامل لإدارة الأطفال والحضور والتقارير اليومية",
+  "name": "نشأة - منصة إدارة الحضانات",
+  "short_name": "نشأة",
+  "description": "نشأة - منصة متكاملة لإدارة الحضانات ورياض الأطفال في المملكة العربية السعودية",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1a5276",
+  "theme_color": "#00C9B7",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "ar",
   "dir": "rtl",
   "icons": [
     {
-      "src": "/manus-storage/favicon-16x16_c2763060.png",
+      "src": "/manus-storage/favicon-16x16_b64663dc.png",
       "sizes": "16x16",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/favicon-32x32_386a93d1.png",
+      "src": "/manus-storage/favicon-32x32_30a255a6.png",
       "sizes": "32x32",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/apple-touch-icon-180x180_809d0db6.png",
+      "src": "/manus-storage/icon-64x64_00f8750a.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/manus-storage/icon-128x128_1e6d58ac.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/manus-storage/apple-touch-icon_a0a3de8c.png",
       "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/icon-192x192_a214848c.png",
+      "src": "/manus-storage/android-chrome-192x192_9b956363.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/manus-storage/icon-512x512_36f7ac70.png",
+      "src": "/manus-storage/icon-256x256_0b0020a6.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/manus-storage/icon-384x384_f30ca280.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "/manus-storage/android-chrome-512x512_17fcc301.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

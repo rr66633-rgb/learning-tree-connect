@@ -993,7 +993,7 @@ Write the response in JSON format:
       })).optional().default([]),
     }))
     .mutation(async ({ input }) => {
-      const systemPrompt = `أنت مساعد ذكي ودود مخصص للأطفال في حضانة Learning Tree.
+      const systemPrompt = `أنت مساعد ذكي ودود مخصص للأطفال في حضانة نشأة.
 مهمتك الأساسية:
 - مساعدة الأطفال في حفظ القرآن الكريم بطريقة ممتعة ومشجعة
 - المراجعة اليومية للسور المحفوظة

@@ -18,7 +18,7 @@ export const brandingRouter = router({
   getMyBranding: publicProcedure.query(async ({ ctx }) => {
     const db = await getDb();
 
-    // Default to organization 1 (Learning Tree) if no user or no org membership
+    // Default to organization 1 (Naashah) if no user or no org membership
     let orgId = 1;
 
     if (ctx.user) {
@@ -45,7 +45,7 @@ export const brandingRouter = router({
 
     return {
       organizationId: org?.id || 1,
-      organizationName: org?.name || "Learning Tree Nursery",
+      organizationName: org?.name || "نشأة",
       organizationNameAr: org?.nameAr || "حضانة شجرة التعلم",
       edition: org?.edition || "learning_tree",
       primaryColor: branding?.primaryColor || "#10b981",

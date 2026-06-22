@@ -108,7 +108,7 @@ function createTextOverlaySvg(input: PosterInput, width: number, height: number)
   
   <!-- Brand banner at top -->
   <rect x="0" y="0" width="${width}" height="80" fill="rgba(15,76,92,0.8)" />
-  <text x="${logoX}" y="52" text-anchor="${logoAnchor}" font-family="Arial, sans-serif" font-size="24" fill="${COLORS.secondary}" font-weight="bold">🌳 Learning Tree</text>
+  <text x="${logoX}" y="52" text-anchor="${logoAnchor}" font-family="Arial, sans-serif" font-size="24" fill="${COLORS.secondary}" font-weight="bold">نشأة</text>
   
   <!-- Title area - centered -->
   <rect x="40" y="${height/2 - 80}" width="${width - 80}" height="140" rx="16" fill="rgba(15,76,92,0.85)" />
@@ -123,7 +123,7 @@ function createTextOverlaySvg(input: PosterInput, width: number, height: number)
   
   <!-- Bottom brand bar -->
   <rect x="0" y="${height - 50}" width="${width}" height="50" fill="${COLORS.secondary}" />
-  <text x="${width / 2}" y="${height - 20}" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="${COLORS.white}" font-weight="bold">شجرة التعلم | Learning Tree</text>
+  <text x="${width / 2}" y="${height - 20}" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="${COLORS.white}" font-weight="bold">نشأة | Naashah</text>
 </svg>`;
 }
 

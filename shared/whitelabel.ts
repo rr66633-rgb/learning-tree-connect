@@ -2,7 +2,7 @@
  * White-Label Architecture Configuration
  * 
  * This file defines the two editions of the platform:
- * 1. Learning Tree Edition - Private branded version for Learning Tree nursery
+ * 1. Naashah Edition - Private branded version for Naashah nursery platform
  * 2. Naashah Edition - Multi-tenant SaaS platform for nurseries and kindergartens
  * 
  * Both editions share the same:
@@ -40,7 +40,7 @@ export interface WhiteLabelConfig {
 export const EDITIONS: Record<Edition, WhiteLabelConfig> = {
   learning_tree: {
     edition: "learning_tree",
-    name: "Learning Tree Kids Center",
+    name: "نشأة",
     nameAr: "مركز شجرة التعلم",
     domain: "learningtree.sa",
     defaultColors: {
