@@ -31,6 +31,11 @@ export const onboardingRouter = router({
   checkSlug: publicProcedure
     .input(z.object({ slug: z.string().min(2).regex(/^[a-z0-9-]+$/) }))
     .query(async ({ input }) => {
+      // Reserved words that cannot be used as slugs
+      const reserved = ['api', 'admin', 'super-admin', 'superadmin', 'app', 'www', 'mail', 'ftp', 'cdn', 'static', 'assets', 'login', 'register', 'auth', 'oauth', 'dashboard', 'system', 'platform', 'nashaa', 'learning-tree', 'learningtree', 'support', 'help', 'docs', 'blog'];
+      if (reserved.includes(input.slug)) {
+        return { available: false, reason: 'هذا الاسم محجوز للنظام' };
+      }
       const db = await getDb();
       const [existing] = await db
         .select()

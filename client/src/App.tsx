@@ -129,6 +129,7 @@ function getBasePathForRole(role?: string): string {
 
 function StaffRouter() {
   return (
+    <ErrorBoundary>
     <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/staff" component={StaffDashboard} />
@@ -158,11 +159,13 @@ function StaffRouter() {
         <Route component={NotFound} />
       </Switch>
     </Suspense>
+    </ErrorBoundary>
   );
 }
 
 function ParentRouter() {
   return (
+    <ErrorBoundary>
     <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/parent" component={ParentDashboard} />
@@ -185,6 +188,7 @@ function ParentRouter() {
         <Route component={NotFound} />
       </Switch>
     </Suspense>
+    </ErrorBoundary>
   );
 }
 

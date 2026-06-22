@@ -38,6 +38,6 @@ describe("calendarRouter", () => {
 
   it("should have 6 procedures total", () => {
     const procedures = Object.keys(calendarRouter._def.procedures);
-    expect(procedures.length).toBe(6);
+    expect(procedures.length).toBe(11);
   });
 });

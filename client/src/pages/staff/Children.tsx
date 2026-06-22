@@ -54,7 +54,7 @@ export default function StaffChildren() {
   const [editingChild, setEditingChild] = useState<any>(null);
   const [form, setForm] = useState(initialFormState);
 
-  const { data: children = [], refetch } = trpc.children.list.useQuery();
+  const { data: children = [], refetch, isLoading } = trpc.children.list.useQuery();
   const { data: classes = [] } = trpc.classes.list.useQuery();
   const createChild = trpc.children.create.useMutation({
     onSuccess: () => { refetch(); setShowAddDialog(false); setForm(initialFormState); toast.success("\u062A\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0637\u0641\u0644 \u0628\u0646\u062C\u0627\u062D"); },
@@ -414,6 +414,9 @@ export default function StaffChildren() {
                 </tr>
               </thead>
               <tbody>
+                {isLoading && [1,2,3,4,5].map(i => (
+                  <tr key={`skel-${i}`} className="border-t"><td className="p-3" colSpan={7}><div className="h-4 bg-muted animate-pulse rounded w-full" /></td></tr>
+                ))}
                 {filtered.map((child: any) => (
                   <tr key={child.id} className="border-t hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-medium">

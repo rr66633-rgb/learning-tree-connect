@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Megaphone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function StaffAnnouncements() {
-  const { data: announcements } = trpc.announcements.list.useQuery();
+  const { data: announcements, isLoading } = trpc.announcements.list.useQuery();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -44,25 +45,35 @@ export default function StaffAnnouncements() {
         </Dialog>
       </div>
 
-      <div className="space-y-3">
-        {announcements?.map((a: any) => (
-          <Card key={a.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0"><Megaphone className="h-5 w-5 text-amber-600" /></div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">{a.title}</span>
-                    <Badge variant="secondary">{audienceLabels[a.audience] || a.audience}</Badge>
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <Card key={i}><CardContent className="p-4"><div className="flex items-start gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/3" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-1/4" /></div></div></CardContent></Card>
+          ))}
+        </div>
+      ) : announcements?.length === 0 ? (
+        <Card><CardContent className="p-8 text-center"><Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" /><p className="text-muted-foreground">لا توجد إعلانات حالياً</p></CardContent></Card>
+      ) : (
+        <div className="space-y-3">
+          {announcements?.map((a: any) => (
+            <Card key={a.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0"><Megaphone className="h-5 w-5 text-amber-600" /></div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium">{a.title}</span>
+                      <Badge variant="secondary">{audienceLabels[a.audience] || a.audience}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{a.content}</p>
+                    <p className="text-xs text-muted-foreground mt-2">{new Date(a.createdAt).toLocaleDateString('ar-SA')}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{a.content}</p>
-                  <p className="text-xs text-muted-foreground mt-2">{new Date(a.createdAt).toLocaleDateString('ar-SA')}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

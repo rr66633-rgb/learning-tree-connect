@@ -383,8 +383,8 @@ export const appRouter = router({
           return db.getChildrenByClass(teacherClass.id);
         }
       }
-      // Admin or teacher without class: return all children
-      return db.getChildren(input?.parentId);
+      // Admin or teacher without class: return children for their organization
+      return db.getChildren(input?.parentId, ctx.user?.organizationId ?? undefined);
     }),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       // Parents can only view their own children's details
@@ -2116,8 +2116,8 @@ export const appRouter = router({
   }),
 
   users: router({
-    list: adminProcedure.input(z.object({ role: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input }) => {
-      return db.getUsersByRole(input?.role, input?.search);
+    list: adminProcedure.input(z.object({ role: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
+      return db.getUsersByRole(input?.role, input?.search, ctx.user?.organizationId ?? undefined);
     }),
     getById: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
       return db.getUserById(input.id);

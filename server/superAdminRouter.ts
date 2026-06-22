@@ -19,9 +19,9 @@ async function getDb() {
   return drizzle(process.env.DATABASE_URL);
 }
 
-// Super Admin procedure - only super_admin role can access
+// Super Admin procedure - ONLY super_admin role can access (not regular admin)
 const superAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user?.role !== "super_admin" && ctx.user?.role !== "admin") {
+  if (ctx.user?.role !== "super_admin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "صلاحيات المدير العام مطلوبة" });
   }
   return next({ ctx });

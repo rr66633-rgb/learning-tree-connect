@@ -3,6 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { rateLimit } from "express-rate-limit";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
@@ -34,6 +35,32 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Rate limiting for auth-related tRPC procedures
+  const authRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // max 20 login attempts per 15 min per IP
+    message: { error: "تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار 15 دقيقة." },
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Use default keyGenerator (req.ip) which handles IPv6 properly
+  });
+
+  // Apply rate limit to auth endpoints
+  app.use('/api/trpc/auth.login', authRateLimit);
+  app.use('/api/trpc/auth.register', authRateLimit);
+  app.use('/api/trpc/auth.requestPasswordReset', authRateLimit);
+  app.use('/api/trpc/auth.verifyOtp', authRateLimit);
+
+  // General API rate limit (more permissive)
+  const generalRateLimit = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 200, // 200 requests per minute per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api/', generalRateLimit);
+
   registerStorageProxy(app);
   registerOAuthRoutes(app);
 

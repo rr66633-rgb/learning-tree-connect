@@ -109,9 +109,12 @@ export async function updateUserOpenId(userId: number, newOpenId: string) {
   await db.update(users).set({ openId: newOpenId, lastSignedIn: new Date() }).where(eq(users.id, userId));
 }
 
-export async function getAllUsers() {
+export async function getAllUsers(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    return db.select().from(users).where(eq(users.organizationId, organizationId)).orderBy(desc(users.createdAt));
+  }
   return db.select().from(users).orderBy(desc(users.createdAt));
 }
 
@@ -124,11 +127,14 @@ export async function getChildIdsForParent(parentId: number): Promise<number[]> 
 }
 
 // ============ CHILDREN ============
-export async function getChildren(parentId?: number) {
+export async function getChildren(parentId?: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  if (parentId) {
-    return db.select().from(children).where(eq(children.parentId, parentId)).orderBy(desc(children.createdAt));
+  const conditions = [];
+  if (parentId) conditions.push(eq(children.parentId, parentId));
+  if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  if (conditions.length > 0) {
+    return db.select().from(children).where(conditions.length === 1 ? conditions[0] : and(...conditions)).orderBy(desc(children.createdAt));
   }
   return db.select().from(children).orderBy(desc(children.createdAt));
 }
@@ -729,7 +735,7 @@ export async function getDashboardStats() {
 }
 
 // ============ USER MANAGEMENT (Admin) ============
-export async function getUsersByRole(role?: string, search?: string) {
+export async function getUsersByRole(role?: string, search?: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
@@ -747,6 +753,9 @@ export async function getUsersByRole(role?: string, search?: string) {
         like(users.phone, `%${search}%`)
       )!
     );
+  }
+  if (organizationId) {
+    conditions.push(eq(users.organizationId, organizationId));
   }
   return db.select().from(users).where(and(...conditions)).orderBy(desc(users.createdAt));
 }
