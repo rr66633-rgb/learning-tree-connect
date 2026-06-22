@@ -273,10 +273,10 @@ export default function DashboardLayout({
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-center text-foreground">
-              نشأة
+              نشأة <span className="text-[#00C9B7]">Naashah</span>
             </h1>
             <p className="text-base text-muted-foreground text-center max-w-sm leading-relaxed">
-              المنصة السعودية الأولى لإدارة الحضانات
+              منصة متكاملة لإدارة الحضانات ورياض الأطفال
             </p>
           </div>
           <Button
@@ -397,14 +397,14 @@ function DashboardLayoutContent({
                         <Crown className="w-4 h-4 text-white" />
                       </div>
                       <span className="font-bold tracking-tight truncate text-foreground">
-                        نشأة - الإدارة
+                        Naashah - الإدارة
                       </span>
                     </>
                   ) : (
                     <>
                       <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp" alt="نشأة" className="w-8 h-8 object-contain rounded-lg" />
                       <span className="font-bold tracking-tight truncate text-foreground">
-                        نشأة
+                        Naashah
                       </span>
                     </>
                   )}

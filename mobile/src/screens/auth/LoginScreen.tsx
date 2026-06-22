@@ -23,7 +23,7 @@ export default function LoginScreen() {
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <View style={styles.logo}><Text style={styles.logoText}>🌳</Text></View>
-          <Text style={styles.title}>Learning Tree Connect</Text>
+          <Text style={styles.title}>Naashah</Text>
           <Text style={styles.subtitle}>{isRTL ? 'منصة إدارة الحضانات' : 'Nursery Management Platform'}</Text>
         </View>
         <View style={styles.form}>

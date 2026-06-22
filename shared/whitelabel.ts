@@ -3,7 +3,7 @@
  * 
  * This file defines the two editions of the platform:
  * 1. Learning Tree Edition - Private branded version for Learning Tree nursery
- * 2. Nasha'a Edition - Multi-tenant SaaS platform for nurseries and kindergartens
+ * 2. Naashah Edition - Multi-tenant SaaS platform for nurseries and kindergartens
  * 
  * Both editions share the same:
  * - Backend codebase
@@ -60,9 +60,9 @@ export const EDITIONS: Record<Edition, WhiteLabelConfig> = {
   },
   nashaa: {
     edition: "nashaa",
-    name: "Nasha'a Platform",
-    nameAr: "منصة نشأة",
-    domain: "nashaa.sa",
+    name: "Naashah",
+    nameAr: "نشأة",
+    domain: "naashah.com",
     defaultColors: {
       primary: "#10b981",
       secondary: "#059669",

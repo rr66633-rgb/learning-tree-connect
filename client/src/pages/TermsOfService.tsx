@@ -8,7 +8,7 @@ export default function TermsOfService() {
             alt="نشأة"
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1a3a5c]">نشأة</h1>
+          <h1 className="text-2xl font-bold text-[#1A1F36]">Naashah</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="ltr">
@@ -16,8 +16,8 @@ export default function TermsOfService() {
           <p className="text-sm text-gray-500 mb-8">Last Updated: June 20, 2026</p>
 
           <p>
-            These Terms of Service ("Terms") govern your use of the نشأة mobile
-            application ("App") operated by نشأة ("we," "our," or "us").
+            These Terms of Service ("Terms") govern your use of the Naashah mobile
+            application ("App") operated by Naashah ("we," "our," or "us").
           </p>
           <p>
             By using the App, you agree to be bound by these Terms. If you do not agree, do not use

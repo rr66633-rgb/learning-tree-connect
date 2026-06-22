@@ -46,9 +46,9 @@ export default function Login() {
             alt="نشأة"
             className="w-20 h-20 mx-auto mb-3 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1a3a5c]">تسجيل الدخول</h1>
+          <h1 className="text-2xl font-bold text-[#1A1F36]">تسجيل الدخول</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            أدخل بياناتك للوصول إلى حسابك
+            مرحباً بك في نشأة Naashah
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -112,7 +112,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white font-medium h-11"
+              className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] text-white font-medium h-11"
               disabled={isLoading}
             >
               {isLoading ? (

@@ -119,7 +119,7 @@ export default function CreateOrganization() {
                   placeholder="happy-nursery"
                   dir="ltr"
                 />
-                <p className="text-xs text-slate-500 mt-1">يستخدم في الرابط: {form.slug || "xxx"}.nashaa.sa</p>
+                <p className="text-xs text-slate-500 mt-1">يستخدم في الرابط: {form.slug || "xxx"}.naashah.com</p>
               </div>
               <div>
                 <Label className="text-slate-300">النسخة</Label>

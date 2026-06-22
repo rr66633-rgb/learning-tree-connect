@@ -91,17 +91,16 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00C9B7]/10 text-[#00C9B7] text-sm font-medium mb-8">
             <Sparkles className="w-4 h-4" />
-            <span>منصة ذكية لتنمية الطفولة</span>
+            <span>منصة متكاملة لإدارة الحضانات ورياض الأطفال</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6" style={{ color: '#1A1F36' }}>
-            أدر حضانتك بذكاء مع
-            <span className="block mt-2" style={{ color: '#00C9B7' }}>نشأة</span>
+            منصة متكاملة لإدارة الحضانات
+            <span className="block mt-2" style={{ color: '#00C9B7' }}>ورياض الأطفال</span>
           </h1>
           
           <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            المنصة السعودية الأولى لإدارة الحضانات ورياض الأطفال بالذكاء الاصطناعي. 
-            من الحضور إلى التقييم، كل ما تحتاجه في مكان واحد.
+            إدارة الحضور والانصراف، التواصل مع الأهالي، التقييمات، الخطط التعليمية، والذكاء الاصطناعي في منصة واحدة.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -251,7 +250,7 @@ export default function Landing() {
             جاهز لتحويل حضانتك رقمياً؟
           </h2>
           <p className="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
-            انضم لأكثر من ١٥٠ حضانة في المملكة تستخدم نشأة لإدارة عملياتها اليومية بكفاءة وذكاء
+            انضم لأكثر من ١٥٠ حضانة في المملكة تستخدم Naashah لإدارة عملياتها اليومية بكفاءة وذكاء
           </p>
           <Button 
             size="lg"
@@ -273,7 +272,7 @@ export default function Landing() {
                 <span className="text-xl font-bold" style={{ color: '#1A1F36' }}>نشأة</span>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed max-w-sm">
-                منصة ذكية لتنمية الطفولة. نساعد الحضانات ورياض الأطفال في المملكة العربية السعودية على تقديم أفضل تجربة تعليمية ورعاية للأطفال.
+                منصة متكاملة لإدارة الحضانات ورياض الأطفال. نساعد المراكز التعليمية في المملكة العربية السعودية على إدارة عملياتها اليومية بكفاءة وذكاء.
               </p>
             </div>
             <div>
@@ -288,14 +287,15 @@ export default function Landing() {
             <div>
               <h4 className="font-bold mb-4" style={{ color: '#1A1F36' }}>تواصل معنا</h4>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li>البريد: info@nashaa.sa</li>
-                <li>الهاتف: ٩٦٦-١١-٤٥٦-٧٨٩٠</li>
-                <li>الرياض، المملكة العربية السعودية</li>
+                <li>البريد: info@naashah.com</li>
+                <li>الهاتف: +966 53 378 4686</li>
+                <li><a href="https://naashah.com" className="hover:text-[#00C9B7]">naashah.com</a></li>
+                <li>المملكة العربية السعودية</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-100 mt-8 pt-8 text-center text-sm text-gray-500">
-            <p>جميع الحقوق محفوظة لمنصة نشأة ٢٠٢٦</p>
+            <p>جميع الحقوق محفوظة لمنصة نشأة Naashah ٢٠٢٦ | <a href="https://naashah.com" className="hover:text-[#00C9B7]">naashah.com</a></p>
           </div>
         </div>
       </footer>

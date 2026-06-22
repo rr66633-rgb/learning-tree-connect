@@ -30,8 +30,8 @@ async function bootstrap() {
 
   // Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('Learning Tree Connect API')
-    .setDescription('API documentation for Learning Tree Connect - Nursery & Preschool Management Platform')
+    .setTitle('Naashah API')
+    .setDescription('API documentation for Naashah - Nursery & Kindergarten Management Platform')
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('auth', 'Authentication endpoints')
@@ -53,7 +53,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🌳 Learning Tree Connect API running on port ${port}`);
+  console.log(`🌳 Naashah API running on port ${port}`);
   console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
 }
 

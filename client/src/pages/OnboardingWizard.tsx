@@ -102,7 +102,7 @@ export default function OnboardingWizard() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Sparkles className="w-6 h-6 text-emerald-400" />
-            <h1 className="text-2xl font-bold text-white">إعداد حضانتك على نشأة</h1>
+            <h1 className="text-2xl font-bold text-white">إعداد حضانتك على Naashah</h1>
           </div>
           <p className="text-slate-400">أكمل الخطوات التالية لبدء استخدام المنصة</p>
         </div>
@@ -174,7 +174,7 @@ export default function OnboardingWizard() {
                     dir="ltr"
                   />
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-slate-500">{form.slug || "xxx"}.nashaa.sa</p>
+                    <p className="text-xs text-slate-500">{form.slug || "xxx"}.naashah.com</p>
                     {form.slug.length >= 2 && (
                       <span className={`text-xs ${slugCheck?.available ? "text-emerald-400" : "text-red-400"}`}>
                         {slugCheck?.available ? "✓ متاح" : "✗ غير متاح"}
@@ -358,7 +358,7 @@ export default function OnboardingWizard() {
                     <h3 className="text-sm font-medium text-slate-400 mb-2">معلومات الحضانة</h3>
                     <p className="text-white font-medium">{form.nameAr}</p>
                     <p className="text-slate-400 text-sm">{form.name}</p>
-                    <p className="text-slate-500 text-xs mt-1">{form.slug}.nashaa.sa</p>
+                    <p className="text-slate-500 text-xs mt-1">{form.slug}.naashah.com</p>
                   </div>
 
                   <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700">

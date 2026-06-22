@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
             alt="نشأة"
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1a3a5c]">نشأة</h1>
+          <h1 className="text-2xl font-bold text-[#1A1F36]">Naashah</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="ltr">
@@ -16,7 +16,7 @@ export default function PrivacyPolicy() {
           <p className="text-sm text-gray-500 mb-8">Last Updated: June 20, 2026</p>
 
           <p>
-            نشأة ("we," "our," or "us") operates the نشأة
+            Naashah ("we," "our," or "us") operates the Naashah
             mobile application (the "App"). This Privacy Policy explains how we collect, use,
             disclose, and safeguard your information when you use our App.
           </p>

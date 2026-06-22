@@ -43,7 +43,7 @@
 }
 
 :root {
-  /* Nasha'a Official Brand Identity 2026 */
+  /* Naashah Official Brand Identity 2026 */
   /* Primary: Teal #00C9B7 */
   --primary: oklch(0.74 0.12 178);
   --primary-foreground: oklch(0.99 0.002 178);
@@ -146,7 +146,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
+    font-family: 'Cairo', 'Poppins', sans-serif;
     direction: rtl;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

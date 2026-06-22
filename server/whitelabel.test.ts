@@ -15,7 +15,7 @@ describe("White-Label Architecture", () => {
       expect(EDITIONS.learning_tree.features.superAdminDashboard).toBe(false);
     });
 
-    it("Nasha'a edition should be multi-tenant SaaS", () => {
+    it("Naashah edition should be multi-tenant SaaS", () => {
       expect(EDITIONS.nashaa.features.multiTenant).toBe(true);
       expect(EDITIONS.nashaa.features.subscriptionPlans).toBe(true);
       expect(EDITIONS.nashaa.features.whiteLabeling).toBe(true);
@@ -87,8 +87,8 @@ describe("White-Label Architecture", () => {
       expect(EDITIONS.learning_tree.edition).toBe("learning_tree");
     });
 
-    it("Nasha'a organizations start from ID 2+", () => {
-      // New nurseries registered through Nasha'a get IDs >= 2
+    it("Naashah organizations start from ID 2+", () => {
+      // New nurseries registered through Naashah get IDs >= 2
       // This ensures complete data isolation from Learning Tree
       expect(EDITIONS.nashaa.features.multiTenant).toBe(true);
     });

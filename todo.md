@@ -1388,3 +1388,33 @@
 - [x] Save checkpoint and publish
 - [x] Verify all logins work (all 4 accounts tested via API)
 - [x] All 310 tests passing
+
+## Phase 7 — Official Naashah Branding Update (COMPLETED)
+
+### Brand Name Changes
+- [x] Replace all "Nasha'a" / "نشأة" references with "Naashah" / "نشأة" (English name change only)
+- [x] Replace all "LearnConnect" references with "Naashah"
+- [x] Replace all "Learning Tree Connect" / "Learning Tree Platform" with "Naashah"
+- [x] Keep "Learning Tree" as Organization/Customer #1 only
+
+### Contact Information
+- [x] Update email to info@naashah.com everywhere
+- [x] Update phone to +966 53 378 4686 everywhere
+- [x] Update website links to https://naashah.com
+
+### Landing Page
+- [x] Update headline: منصة متكاملة لإدارة الحضانات ورياض الأطفال
+- [x] Update subheadline: إدارة الحضور والانصراف، التواصل مع الأهالي، التقييمات، الخطط التعليمية، والذكاء الاصطناعي في منصة واحدة
+- [x] Update CTA: ابدأ تجربتك المجانية
+
+### Typography
+- [x] Arabic: Cairo Bold (headings) + Cairo Regular (body)
+- [x] English: Poppins SemiBold
+- [x] Apply consistently across all pages
+
+### Verification
+- [x] Verify branding consistency across all pages
+- [x] All 310 tests passing
+- [x] All 4 demo accounts verified working (admin, nursery, teacher, parent)
+- [x] Demo account emails updated to @naashah.com
+- [x] Save checkpoint and deploy
