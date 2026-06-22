@@ -52,6 +52,25 @@ export default function EngagementAnalytics() {
         </Select>
       </div>
 
+      {/* Quick Actions */}
+      <div className="flex gap-3 flex-wrap">
+        <Link href="/staff/engagement/reviews">
+          <Button variant="outline" size="sm">
+            <Eye className="h-4 w-4 ml-1" />
+            مراجعة المشاركات
+            {stats?.pendingJournalReviews || stats?.pendingObservationReviews ? (
+              <Badge className="bg-amber-500 mr-2 text-[10px]">{(stats?.pendingJournalReviews || 0) + (stats?.pendingObservationReviews || 0)}</Badge>
+            ) : null}
+          </Button>
+        </Link>
+        <Link href="/staff/engagement/reports">
+          <Button variant="outline" size="sm">
+            <Calendar className="h-4 w-4 ml-1" />
+            إنشاء تقارير
+          </Button>
+        </Link>
+      </div>
+
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-emerald-200 bg-emerald-50/50">

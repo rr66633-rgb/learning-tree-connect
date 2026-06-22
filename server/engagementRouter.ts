@@ -788,6 +788,104 @@ export const engagementRouter = router({
       }),
   }),
 
+  // ---- FAMILY REPORTS ----
+  
+  reports: router({
+    generate: protectedProcedure
+      .input(z.object({
+        childId: z.number(),
+        period: z.enum(["weekly", "monthly", "term"]).default("monthly"),
+        language: z.enum(["ar", "en"]).default("ar"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = (await getDb())!;
+        const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+        if (!child) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const ageMonths = Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+        const orgId = ctx.user.organizationId || 1;
+
+        // Gather engagement data
+        const activities = await db.select().from(homeLearningActivities)
+          .where(and(eq(homeLearningActivities.childId, input.childId), eq(homeLearningActivities.organizationId, orgId)))
+          .orderBy(desc(homeLearningActivities.createdAt)).limit(20);
+        const journals = await db.select().from(homeJournalEntries)
+          .where(and(eq(homeJournalEntries.childId, input.childId), eq(homeJournalEntries.organizationId, orgId)))
+          .orderBy(desc(homeJournalEntries.createdAt)).limit(10);
+        const observations = await db.select().from(parentObservations)
+          .where(and(eq(parentObservations.childId, input.childId), eq(parentObservations.organizationId, orgId)))
+          .orderBy(desc(parentObservations.createdAt)).limit(10);
+        const goals = await db.select().from(monthlyGrowthGoals)
+          .where(eq(monthlyGrowthGoals.childId, input.childId))
+          .orderBy(desc(monthlyGrowthGoals.createdAt)).limit(5);
+        const now = new Date();
+        const periodValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const [score] = await db.select().from(engagementScores)
+          .where(and(
+            eq(engagementScores.parentId, ctx.user.id),
+            eq(engagementScores.childId, input.childId),
+            eq(engagementScores.period, "monthly"),
+            eq(engagementScores.periodValue, periodValue)
+          ));
+
+        const isArabic = input.language === "ar";
+        const prompt = `Generate a family engagement report in ${isArabic ? "Arabic" : "English"} for a child.
+
+Child: ${child.firstName} ${child.lastName}
+Age: ${ageMonths} months
+Period: ${input.period}
+
+Engagement Data:
+- Activities assigned: ${activities.length}, Completed: ${activities.filter(a => a.status === "completed").length}
+- Journal entries: ${journals.length}
+- Parent observations: ${observations.length}
+- Goals: ${goals.length}, Completed: ${goals.filter(g => g.status === "completed").length}
+- Engagement score: ${score?.score || 0}/100, Level: ${score?.level || "inactive"}
+- Streak: ${score?.streak || 0} weeks
+
+Recent observations: ${observations.slice(0, 5).map(o => o.observationText).join("; ")}
+
+Generate a comprehensive family engagement report with:
+1. Summary of family participation
+2. Home learning highlights
+3. Child's progress through home activities
+4. Areas of strong engagement
+5. Suggestions for improvement
+6. Next month's focus areas
+
+${isArabic ? "Write ENTIRELY in Arabic. Do not include any English words. Use warm, encouraging language." : "Write in clear, encouraging English."}
+
+Return as JSON: {"title": "Report title", "sections": [{"heading": "Section heading", "content": "Section content"}], "summary": "Brief summary"}`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: `You are an early childhood education specialist generating family engagement reports. Return only valid JSON.` },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "engagement_report",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  sections: { type: "array", items: { type: "object", properties: { heading: { type: "string" }, content: { type: "string" } }, required: ["heading", "content"], additionalProperties: false } },
+                  summary: { type: "string" },
+                },
+                required: ["title", "sections", "summary"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const report = JSON.parse(String(response.choices[0].message.content) || "{}");
+        return { report, child: { name: `${child.firstName} ${child.lastName}`, age: ageMonths }, score: score || null };
+      }),
+  }),
+
   // ---- MODULE CONFIG ----
   
   config: router({

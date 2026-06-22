@@ -85,7 +85,8 @@ export default function EngagementDashboard() {
       </div>
 
       {/* Engagement Score Card */}
-      <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200 dark:border-emerald-800">
+      <Link href="/parent/engagement/score">
+      <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200 dark:border-emerald-800 cursor-pointer hover:shadow-md transition-shadow">
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -107,6 +108,7 @@ export default function EngagementDashboard() {
           )}
         </CardContent>
       </Card>
+      </Link>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-2">
@@ -182,6 +184,45 @@ export default function EngagementDashboard() {
               <div>
                 <p className="font-medium text-sm">مستشار التربية</p>
                 <p className="text-xs text-muted-foreground">اسأل الذكاء الاصطناعي</p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+        <Link href="/parent/engagement/observations">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                <Star className="h-5 w-5 text-teal-600" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">ملاحظاتي</p>
+                <p className="text-xs text-muted-foreground">سجل ملاحظاتك</p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+        <Link href="/parent/engagement/goals">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                <Target className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">أهداف الشهر</p>
+                <p className="text-xs text-muted-foreground">تتبع أهدافك</p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+        <Link href="/parent/engagement/badges">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <Award className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">شارات الإنجاز</p>
+                <p className="text-xs text-muted-foreground">اعرض إنجازاتك</p>
               </div>
             </div>
           </Card>

@@ -44,6 +44,8 @@ const DevelopmentDashboard = lazy(() => import("./pages/staff/DevelopmentDashboa
 const ChildDevelopmentProfile = lazy(() => import("./pages/staff/ChildDevelopmentProfile"));
 const NewObservation = lazy(() => import("./pages/staff/NewObservation"));
 const EngagementAnalytics = lazy(() => import("./pages/staff/EngagementAnalytics"));
+const ParentSubmissionsReview = lazy(() => import("./pages/staff/ParentSubmissionsReview"));
+const EngagementReports = lazy(() => import("./pages/staff/EngagementReports"));
 
 // Super Admin Pages
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
@@ -102,6 +104,11 @@ const ParentEngagement = lazy(() => import("./pages/parent/EngagementDashboard")
 const ParentEngagementActivities = lazy(() => import("./pages/parent/EngagementActivities"));
 const ParentEngagementChallenges = lazy(() => import("./pages/parent/EngagementChallenges"));
 const ParentEngagementJournal = lazy(() => import("./pages/parent/EngagementJournal"));
+const ParentEngagementChatbot = lazy(() => import("./pages/parent/EngagementChatbot"));
+const ParentEngagementGoals = lazy(() => import("./pages/parent/EngagementGoals"));
+const ParentEngagementObservations = lazy(() => import("./pages/parent/EngagementObservations"));
+const ParentEngagementScore = lazy(() => import("./pages/parent/EngagementScore"));
+const ParentEngagementBadges = lazy(() => import("./pages/parent/EngagementBadges"));
 
 function PageLoader() {
   return (
@@ -171,6 +178,8 @@ function StaffRouter() {
         <Route path="/staff/development/child/:id" component={ChildDevelopmentProfile} />
         <Route path="/staff/development" component={DevelopmentDashboard} />
         <Route path="/staff/engagement" component={EngagementAnalytics} />
+        <Route path="/staff/engagement/reviews" component={ParentSubmissionsReview} />
+        <Route path="/staff/engagement/reports" component={EngagementReports} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -205,6 +214,11 @@ function ParentRouter() {
         <Route path="/parent/engagement/activities" component={ParentEngagementActivities} />
         <Route path="/parent/engagement/challenges" component={ParentEngagementChallenges} />
         <Route path="/parent/engagement/journal" component={ParentEngagementJournal} />
+        <Route path="/parent/engagement/chatbot" component={ParentEngagementChatbot} />
+        <Route path="/parent/engagement/goals" component={ParentEngagementGoals} />
+        <Route path="/parent/engagement/observations" component={ParentEngagementObservations} />
+        <Route path="/parent/engagement/score" component={ParentEngagementScore} />
+        <Route path="/parent/engagement/badges" component={ParentEngagementBadges} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
