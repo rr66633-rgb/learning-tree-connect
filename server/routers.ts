@@ -16,6 +16,7 @@ import { brandingRouter } from "./brandingRouter";
 import { onboardingRouter } from "./onboardingRouter";
 import { developmentRouter } from "./developmentRouter";
 import { engagementRouter } from "./engagementRouter";
+import { registrationRouter } from "./registrationRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -2644,5 +2645,7 @@ export const appRouter = router({
   development: developmentRouter,
   // ============ PARENT ENGAGEMENT CENTER ============
   engagement: engagementRouter,
+  // ============ NURSERY SELF-REGISTRATION ============
+  registration: registrationRouter,
 });
 export type AppRouter = typeof appRouter;

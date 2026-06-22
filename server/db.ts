@@ -2,7 +2,8 @@ import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
-import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations } from "../drizzle/schema";
+import type { InsertNurseryRegistration } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2426,4 +2427,57 @@ export async function getUnacknowledgedPickupAlerts(userId: number) {
   }));
   
   return result;
+}
+
+
+// ============ NURSERY REGISTRATIONS ============
+
+export async function createNurseryRegistration(data: InsertNurseryRegistration) {
+  const database = await getDb();
+  if (!database) throw new Error('Database not available');
+  const result = await database.insert(nurseryRegistrations).values(data);
+  return result[0].insertId;
+}
+
+export async function getNurseryRegistrations(status?: string) {
+  const database = await getDb();
+  if (!database) return [];
+  if (status) {
+    return database.select().from(nurseryRegistrations).where(eq(nurseryRegistrations.status, status as any)).orderBy(desc(nurseryRegistrations.createdAt));
+  }
+  return database.select().from(nurseryRegistrations).orderBy(desc(nurseryRegistrations.createdAt));
+}
+
+export async function getNurseryRegistrationById(id: number) {
+  const database = await getDb();
+  if (!database) return null;
+  const rows = await database.select().from(nurseryRegistrations).where(eq(nurseryRegistrations.id, id));
+  return rows[0] || null;
+}
+
+export async function updateNurseryRegistrationStatus(id: number, status: string, reviewedBy?: number, notes?: string, rejectionReason?: string) {
+  const database = await getDb();
+  if (!database) throw new Error('Database not available');
+  await database.update(nurseryRegistrations).set({
+    status: status as any,
+    reviewedBy: reviewedBy || null,
+    reviewedAt: new Date(),
+    adminNotes: notes || null,
+    rejectionReason: rejectionReason || null,
+  }).where(eq(nurseryRegistrations.id, id));
+}
+
+export async function checkNurseryRegistrationEmailExists(email: string) {
+  const database = await getDb();
+  if (!database) return false;
+  const rows = await database.select().from(nurseryRegistrations).where(
+    and(
+      eq(nurseryRegistrations.ownerEmail, email),
+      or(
+        eq(nurseryRegistrations.status, 'pending'),
+        eq(nurseryRegistrations.status, 'approved')
+      )
+    )
+  );
+  return rows.length > 0;
 }

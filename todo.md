@@ -1428,3 +1428,16 @@
 - [x] Add note: "جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني"
 - [x] Remove all monthly pricing references from public landing page
 - [x] Verify internal billing cycle dropdowns (Finance, OnboardingWizard, etc.) remain unchanged
+
+## Nursery Self-Registration Form
+- [x] Database: Add nursery_registrations table (nursery name, owner name, email, phone, city, plan, children count, status, created_at)
+- [x] Backend: Add public tRPC procedure for nursery registration submission
+- [x] Backend: Send notification to platform owner on new registration
+- [x] Frontend: Create /register-nursery page with multi-step registration form
+- [x] Frontend: Step 1 - Plan selection (pre-selected from landing page)
+- [x] Frontend: Step 2 - Nursery details (name, city, children count, staff count)
+- [x] Frontend: Step 3 - Owner details (name, email, phone, password)
+- [x] Frontend: Step 4 - Confirmation and success message
+- [x] Landing page: Link pricing "ابدأ الآن" buttons to /register-nursery with plan pre-selected
+- [x] Super Admin: View and manage nursery registration requests (API ready)
+- [x] Tests: Registration form validation and submission (12 tests passing)

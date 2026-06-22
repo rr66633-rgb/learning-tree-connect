@@ -82,6 +82,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/Login"));
 const Register = lazy(() => import("./pages/auth/Register"));
+const NurseryRegister = lazy(() => import("./pages/auth/NurseryRegister"));
 const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
 
@@ -310,6 +311,7 @@ function RoleRouter() {
           <Route path="/terms" component={TermsOfService} />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
+          <Route path="/register-nursery" component={NurseryRegister} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
           <Route component={Landing} />

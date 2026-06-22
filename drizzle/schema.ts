@@ -1313,3 +1313,39 @@ export const familyEngagementConfig = mysqlTable("family_engagement_config", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type FamilyEngagementConfig = typeof familyEngagementConfig.$inferSelect;
+
+
+// ============ NURSERY REGISTRATIONS (Self-Registration Requests) ============
+export const nurseryRegistrations = mysqlTable("nursery_registrations", {
+  id: int("id").autoincrement().primaryKey(),
+  // Nursery Info
+  nurseryName: varchar("nurseryName", { length: 200 }).notNull(),
+  nurseryNameAr: varchar("nurseryNameAr", { length: 200 }).notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  district: varchar("district", { length: 200 }),
+  childrenCount: int("childrenCount").notNull(),
+  staffCount: int("staffCount").notNull(),
+  licenseNumber: varchar("licenseNumber", { length: 100 }),
+  // Owner Info
+  ownerName: varchar("ownerName", { length: 200 }).notNull(),
+  ownerEmail: varchar("ownerEmail", { length: 320 }).notNull(),
+  ownerPhone: varchar("ownerPhone", { length: 20 }).notNull(),
+  ownerPassword: varchar("ownerPassword", { length: 255 }).notNull(),
+  // Plan Selection
+  selectedPlan: mysqlEnum("selectedPlan", ["basic", "professional", "enterprise"]).notNull(),
+  billingCycle: mysqlEnum("billingCycle", ["yearly"]).default("yearly").notNull(),
+  // Status
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "converted"]).default("pending").notNull(),
+  adminNotes: text("adminNotes"),
+  rejectionReason: text("rejectionReason"),
+  convertedOrganizationId: int("convertedOrganizationId"),
+  // Metadata
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewedBy: int("reviewedBy"),
+});
+export type NurseryRegistration = typeof nurseryRegistrations.$inferSelect;
+export type InsertNurseryRegistration = typeof nurseryRegistrations.$inferInsert;
