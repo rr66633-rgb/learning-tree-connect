@@ -38,7 +38,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-type MenuItem = { icon: any; label: string; path: string };
+type MenuItem = { icon: any; label: string; path: string; color?: string };
 
 /**
  * Parent Portal Navigation Items
@@ -46,24 +46,24 @@ type MenuItem = { icon: any; label: string; path: string };
  * Messages, Notifications, Invoices & Payments, Documents, Medical, Profile Settings
  */
 const parentMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "الرئيسية", path: "" },
-  { icon: Users, label: "أطفالي", path: "/children" },
-  { icon: CalendarCheck, label: "الحضور", path: "/attendance" },
-  { icon: ClipboardList, label: "التقرير اليومي", path: "/timeline" },
-  { icon: Camera, label: "الصور والأنشطة", path: "/photos" },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
-  { icon: Bell, label: "الإشعارات", path: "/notifications" },
-  { icon: CreditCard, label: "الفواتير والمدفوعات", path: "/finance" },
-  { icon: FileArchive, label: "المستندات", path: "/documents" },
-  { icon: Heart, label: "المعلومات الطبية", path: "/medical" },
-  { icon: MapPin, label: "طلب الاستلام", path: "/pickup" },
-  { icon: BookOpen, label: "الملاحظات والتقييمات", path: "/observations" },
-  { icon: Brain, label: "نمو وتطور طفلي", path: "/development" },
-  { icon: HandHeart, label: "مشاركة الأسرة", path: "/engagement" },
-  { icon: Calendar, label: "التقويم السنوي", path: "/calendar" },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
-  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
-  { icon: Sparkles, label: "المساعد الذكي", path: "/ai/assistant" },
+  { icon: LayoutDashboard, label: "الرئيسية", path: "", color: "#00C9B7" },
+  { icon: Users, label: "أطفالي", path: "/children", color: "#7C3AED" },
+  { icon: CalendarCheck, label: "الحضور", path: "/attendance", color: "#00C9B7" },
+  { icon: ClipboardList, label: "التقرير اليومي", path: "/timeline", color: "#EC4899" },
+  { icon: Camera, label: "الصور والأنشطة", path: "/photos", color: "#F97316" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages", color: "#00C9B7" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
+  { icon: CreditCard, label: "الفواتير والمدفوعات", path: "/finance", color: "#F97316" },
+  { icon: FileArchive, label: "المستندات", path: "/documents", color: "#7C3AED" },
+  { icon: Heart, label: "المعلومات الطبية", path: "/medical", color: "#EC4899" },
+  { icon: MapPin, label: "طلب الاستلام", path: "/pickup", color: "#7C3AED" },
+  { icon: BookOpen, label: "الملاحظات والتقييمات", path: "/observations", color: "#F97316" },
+  { icon: Brain, label: "نمو وتطور طفلي", path: "/development", color: "#00C9B7" },
+  { icon: HandHeart, label: "مشاركة الأسرة", path: "/engagement", color: "#EC4899" },
+  { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
+  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
+  { icon: Sparkles, label: "المساعد الذكي", path: "/ai/assistant", color: "#F97316" },
 ];
 
 /**
@@ -71,23 +71,23 @@ const parentMenuItems: MenuItem[] = [
  * Includes: Dashboard, Children, Classes, Attendance, Reports, Activities, Messages
  */
 const staffMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
-  { icon: Users, label: "الأطفال", path: "/children" },
-  { icon: GraduationCap, label: "الفصول", path: "/classes" },
-  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance" },
-  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log" },
-  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
-  { icon: Camera, label: "الصور والفيديو", path: "/media" },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
-  { icon: Bell, label: "الإشعارات", path: "/notifications" },
-  { icon: MapPin, label: "الاستلام", path: "/pickup" },
-  { icon: BookOpen, label: "التقييمات", path: "/assessments" },
-  { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
-  { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement" },
-  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
-  { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
-  { icon: Calendar, label: "التقويم السنوي", path: "/calendar" },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
+  { icon: Users, label: "الأطفال", path: "/children", color: "#7C3AED" },
+  { icon: GraduationCap, label: "الفصول", path: "/classes", color: "#F97316" },
+  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance", color: "#00C9B7" },
+  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", color: "#EC4899" },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", color: "#7C3AED" },
+  { icon: Camera, label: "الصور والفيديو", path: "/media", color: "#F97316" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages", color: "#00C9B7" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
+  { icon: MapPin, label: "الاستلام", path: "/pickup", color: "#7C3AED" },
+  { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
+  { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
+  { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },
+  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
+  { icon: Sparkles, label: "المساعد الذكي", path: "/ai", color: "#F97316" },
+  { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
 ];
 
 /**
@@ -96,31 +96,31 @@ const staffMenuItems: MenuItem[] = [
  * Enrollment, Documents, Settings
  */
 const adminMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
-  { icon: Users, label: "الأطفال", path: "/children" },
-  { icon: GraduationCap, label: "الفصول", path: "/classes" },
-  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance" },
-  { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance" },
-  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log" },
-  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },
-  { icon: Camera, label: "الصور والفيديو", path: "/media" },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages" },
-  { icon: CreditCard, label: "المالية والمدفوعات", path: "/finance" },
-  { icon: UserPlus, label: "التسجيل", path: "/enrollment" },
-  { icon: Calendar, label: "التقويم السنوي", path: "/calendar" },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements" },
-  { icon: FileArchive, label: "المستندات", path: "/documents" },
-  { icon: Bell, label: "الإشعارات", path: "/notifications" },
-  { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
-  { icon: MapPin, label: "الاستلام", path: "/pickup" },
-  { icon: BookOpen, label: "التقييمات", path: "/assessments" },
-  { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
-  { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement" },
-  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
-  { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
-  { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
-  { icon: Shield, label: "سجل المراجعة", path: "/audit-log" },
-  { icon: Settings, label: "الإعدادات", path: "/settings" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
+  { icon: Users, label: "الأطفال", path: "/children", color: "#7C3AED" },
+  { icon: GraduationCap, label: "الفصول", path: "/classes", color: "#F97316" },
+  { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance", color: "#00C9B7" },
+  { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance", color: "#EC4899" },
+  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", color: "#EC4899" },
+  { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", color: "#7C3AED" },
+  { icon: Camera, label: "الصور والفيديو", path: "/media", color: "#F97316" },
+  { icon: MessageCircle, label: "الرسائل", path: "/messages", color: "#00C9B7" },
+  { icon: CreditCard, label: "المالية والمدفوعات", path: "/finance", color: "#F97316" },
+  { icon: UserPlus, label: "التسجيل", path: "/enrollment", color: "#7C3AED" },
+  { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
+  { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
+  { icon: FileArchive, label: "المستندات", path: "/documents", color: "#F97316" },
+  { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
+  { icon: UserCog, label: "إدارة المستخدمين", path: "/users", color: "#7C3AED" },
+  { icon: MapPin, label: "الاستلام", path: "/pickup", color: "#7C3AED" },
+  { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
+  { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
+  { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },
+  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
+  { icon: Sparkles, label: "المساعد الذكي", path: "/ai", color: "#F97316" },
+  { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals", color: "#00C9B7" },
+  { icon: Shield, label: "سجل المراجعة", path: "/audit-log", color: "#EC4899" },
+  { icon: Settings, label: "الإعدادات", path: "/settings", color: "#7C3AED" },
 ];
 
 /**
@@ -174,12 +174,12 @@ const receptionistMenuItems: MenuItem[] = [
 ];
 
 const superAdminMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
-  { icon: Building2, label: "المنظمات", path: "/organizations" },
-  { icon: Crown, label: "خطط الاشتراك", path: "/plans" },
-  { icon: Palette, label: "الهوية البصرية", path: "/branding" },
-  { icon: Users, label: "المستخدمون", path: "/users" },
-  { icon: Settings, label: "الإعدادات", path: "/settings" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
+  { icon: Building2, label: "المنظمات", path: "/organizations", color: "#7C3AED" },
+  { icon: Crown, label: "خطط الاشتراك", path: "/plans", color: "#F97316" },
+  { icon: Palette, label: "الهوية البصرية", path: "/branding", color: "#EC4899" },
+  { icon: Users, label: "المستخدمون", path: "/users", color: "#7C3AED" },
+  { icon: Settings, label: "الإعدادات", path: "/settings", color: "#00C9B7" },
 ];
 
 function getMenuItems(role?: string, basePath?: string): MenuItem[] {
@@ -393,7 +393,7 @@ function DashboardLayoutContent({
                 <div className="flex items-center gap-2.5 min-w-0">
                   {basePath === "/super-admin" ? (
                     <>
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-sm">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#7B61FF] to-[#00C9B7] flex items-center justify-center shadow-sm">
                         <Crown className="w-4 h-4 text-white" />
                       </div>
                       <span className="font-bold tracking-tight truncate text-foreground">
@@ -411,7 +411,7 @@ function DashboardLayoutContent({
                 </div>
               ) : (
                 basePath === "/super-admin" ? (
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-sm">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#7B61FF] to-[#00C9B7] flex items-center justify-center shadow-sm">
                     <Crown className="w-4 h-4 text-white" />
                   </div>
                 ) : (
@@ -434,14 +434,14 @@ function DashboardLayoutContent({
                       tooltip={item.label}
                       className={`h-10 rounded-xl transition-all duration-200 font-medium text-[13px] ${
                         isActive 
-                          ? "bg-primary/10 text-primary shadow-sm" 
+                          ? "shadow-sm" 
                           : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
                       }`}
+                      style={isActive && item.color ? { backgroundColor: `${item.color}10`, color: item.color } : undefined}
                     >
                       <item.icon
-                        className={`h-[18px] w-[18px] transition-colors ${
-                          isActive ? "text-primary" : ""
-                        }`}
+                        className="h-[18px] w-[18px] transition-colors"
+                        style={item.color ? { color: isActive ? item.color : undefined } : undefined}
                       />
                       <span>{item.label}</span>
                     </SidebarMenuButton>

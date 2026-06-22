@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -23,6 +23,10 @@ import {
   Edit,
   Ban,
   CheckCircle2,
+  Phone,
+  Mail,
+  MapPin,
+  FileText,
 } from "lucide-react";
 
 export default function OrganizationDetail() {
@@ -54,12 +58,13 @@ export default function OrganizationDetail() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-32 w-full rounded-xl" />
         <div className="grid grid-cols-3 gap-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
         </div>
       </div>
     );
@@ -67,20 +72,21 @@ export default function OrganizationDetail() {
 
   if (!org) {
     return (
-      <div className="text-center py-12 text-slate-400">
-        <p>المنظمة غير موجودة</p>
-        <Button variant="outline" onClick={() => navigate("/super-admin")} className="mt-4">
-          العودة للوحة التحكم
+      <div className="text-center py-20">
+        <Building2 className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+        <p className="text-lg font-medium text-foreground">المنظمة غير موجودة</p>
+        <Button variant="outline" className="mt-4 rounded-xl" onClick={() => navigate("/super-admin/organizations")}>
+          العودة للقائمة
         </Button>
       </div>
     );
   }
 
   const statusColors: Record<string, string> = {
-    active: "bg-emerald-500/20 text-emerald-400",
-    trial: "bg-blue-500/20 text-blue-400",
-    pending: "bg-amber-500/20 text-amber-400",
-    suspended: "bg-red-500/20 text-red-400",
+    active: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    trial: "bg-blue-100 text-blue-700 border-blue-200",
+    pending: "bg-amber-100 text-amber-700 border-amber-200",
+    suspended: "bg-red-100 text-red-700 border-red-200",
   };
 
   const statusLabels: Record<string, string> = {
@@ -91,114 +97,120 @@ export default function OrganizationDetail() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/super-admin")}
-          className="text-slate-400 hover:text-white"
+          onClick={() => navigate("/super-admin/organizations")}
+          className="text-muted-foreground hover:text-foreground rounded-lg"
         >
           <ArrowRight className="w-4 h-4 ml-1" />
           العودة
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-            <Building2 className="w-7 h-7 text-emerald-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">{org.nameAr}</h1>
-            <p className="text-slate-400">{org.name} • {org.city || "غير محدد"}</p>
-          </div>
-          <Badge className={`${statusColors[org.status]} border-0`}>
-            {statusLabels[org.status]}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          {org.status === "active" ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+      {/* Organization Header Card */}
+      <Card className="border-0 shadow-sm overflow-hidden">
+        <div className="h-2 bg-gradient-to-l from-[#7B61FF] via-[#00C9B7] to-[#FF5CA8]" />
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#7B61FF]/10 flex items-center justify-center">
+                <Building2 className="w-7 h-7 text-[#7B61FF]" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">{org.nameAr}</h1>
+                <p className="text-muted-foreground">{org.name} {org.city ? `• ${org.city}` : ""}</p>
+              </div>
+              <Badge variant="outline" className={`${statusColors[org.status]} rounded-lg`}>
+                {statusLabels[org.status]}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              {org.status === "active" ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl"
+                    >
+                      <Ban className="w-4 h-4 ml-1" />
+                      تعليق
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>تأكيد تعليق المنظمة</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        هل أنت متأكد من تعليق هذه المنظمة؟ سيتم منع جميع المستخدمين من الوصول للنظام.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-lg">إلغاء</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700 rounded-lg"
+                        onClick={() => toggleStatus.mutate({ id: orgId, status: "suspended" })}
+                      >
+                        تعليق المنظمة
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                  className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-xl"
+                  onClick={() => toggleStatus.mutate({ id: orgId, status: "active" })}
                 >
-                  <Ban className="w-4 h-4 ml-1" />
-                  تعليق
+                  <CheckCircle2 className="w-4 h-4 ml-1" />
+                  تفعيل
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>تأكيد تعليق المنظمة</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    هل أنت متأكد من تعليق هذه المنظمة؟ سيتم منع جميع المستخدمين من الوصول للنظام.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={() => toggleStatus.mutate({ id: orgId, status: "suspended" })}
-                  >
-                    تعليق المنظمة
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-              onClick={() => toggleStatus.mutate({ id: orgId, status: "active" })}
-            >
-              <CheckCircle2 className="w-4 h-4 ml-1" />
-              تفعيل
-            </Button>
-          )}
-        </div>
-      </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/20">
-              <GraduationCap className="w-5 h-5 text-purple-400" />
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-[#7B61FF]/10 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-[#7B61FF]" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">الأطفال</p>
-              <p className="text-xl font-bold text-white">{org.stats.children}</p>
+              <p className="text-xs text-muted-foreground">الأطفال</p>
+              <p className="text-2xl font-bold text-foreground">{org.stats.children}</p>
             </div>
-            <p className="text-xs text-slate-500 mr-auto">الحد: {org.maxChildren}</p>
+            <p className="text-xs text-muted-foreground mr-auto bg-muted/50 px-2 py-1 rounded-lg">الحد: {org.maxChildren}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20">
-              <Users className="w-5 h-5 text-blue-400" />
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-[#00C9B7]/10 flex items-center justify-center">
+              <Users className="w-6 h-6 text-[#00C9B7]" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">الموظفون</p>
-              <p className="text-xl font-bold text-white">{org.stats.staff}</p>
+              <p className="text-xs text-muted-foreground">الموظفون</p>
+              <p className="text-2xl font-bold text-foreground">{org.stats.staff}</p>
             </div>
-            <p className="text-xs text-slate-500 mr-auto">الحد: {org.maxStaff}</p>
+            <p className="text-xs text-muted-foreground mr-auto bg-muted/50 px-2 py-1 rounded-lg">الحد: {org.maxStaff}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-500/20">
-              <School className="w-5 h-5 text-cyan-400" />
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-[#FF5CA8]/10 flex items-center justify-center">
+              <School className="w-6 h-6 text-[#FF5CA8]" />
             </div>
             <div>
-              <p className="text-xs text-slate-400">الفصول</p>
-              <p className="text-xl font-bold text-white">{org.stats.classes}</p>
+              <p className="text-xs text-muted-foreground">الفصول</p>
+              <p className="text-2xl font-bold text-foreground">{org.stats.classes}</p>
             </div>
           </CardContent>
         </Card>
@@ -207,37 +219,41 @@ export default function OrganizationDetail() {
       {/* Details Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Organization Info */}
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-base flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-emerald-400" />
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-[#00C9B7]/10 flex items-center justify-center">
+                <Building2 className="w-4 h-4 text-[#00C9B7]" />
+              </div>
               معلومات المنظمة
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-0">
             <InfoRow label="الاسم بالعربية" value={org.nameAr} />
             <InfoRow label="الاسم بالإنجليزية" value={org.name} />
             <InfoRow label="المعرف" value={org.slug} />
             <InfoRow label="النسخة" value={org.edition === "learning_tree" ? "شجرة التعلم" : "نشأة"} />
-            <InfoRow label="الهاتف" value={org.phone || "غير محدد"} />
-            <InfoRow label="البريد" value={org.email || "غير محدد"} />
-            <InfoRow label="المدينة" value={org.city || "غير محدد"} />
-            <InfoRow label="رقم الترخيص" value={org.licenseNumber || "غير محدد"} />
+            <InfoRow label="الهاتف" value={org.phone || "غير محدد"} icon={<Phone className="w-3.5 h-3.5" />} />
+            <InfoRow label="البريد" value={org.email || "غير محدد"} icon={<Mail className="w-3.5 h-3.5" />} />
+            <InfoRow label="المدينة" value={org.city || "غير محدد"} icon={<MapPin className="w-3.5 h-3.5" />} />
+            <InfoRow label="رقم الترخيص" value={org.licenseNumber || "غير محدد"} icon={<FileText className="w-3.5 h-3.5" />} />
           </CardContent>
         </Card>
 
         {/* Subscription */}
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white text-base flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-emerald-400" />
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-[#FFB020]/10 flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-[#FFB020]" />
+                </div>
                 الاشتراك
               </CardTitle>
               <Button
                 variant="outline"
                 size="sm"
-                className="border-slate-600 text-slate-300"
+                className="rounded-lg text-xs"
                 onClick={() => setShowPlanDialog(true)}
               >
                 <Edit className="w-3 h-3 ml-1" />
@@ -245,7 +261,7 @@ export default function OrganizationDetail() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-0">
             {org.subscription ? (
               <>
                 <InfoRow label="الخطة" value={plans?.find(p => p.id === org.subscription?.planId)?.nameAr || "غير محدد"} />
@@ -254,16 +270,24 @@ export default function OrganizationDetail() {
                 <InfoRow label="المبلغ" value={`${org.subscription.amount} ${org.subscription.currency}`} />
               </>
             ) : (
-              <p className="text-slate-400 text-sm">لا يوجد اشتراك نشط</p>
+              <div className="text-center py-6">
+                <CreditCard className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+                <p className="text-muted-foreground text-sm">لا يوجد اشتراك نشط</p>
+                <Button size="sm" className="mt-3 rounded-lg" onClick={() => setShowPlanDialog(true)}>
+                  تعيين خطة
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Branding */}
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-base flex items-center gap-2">
-              <Palette className="w-4 h-4 text-emerald-400" />
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-[#FF5CA8]/10 flex items-center justify-center">
+                <Palette className="w-4 h-4 text-[#FF5CA8]" />
+              </div>
               الهوية البصرية
             </CardTitle>
           </CardHeader>
@@ -271,47 +295,55 @@ export default function OrganizationDetail() {
             {org.branding ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-400">الألوان:</span>
+                  <span className="text-sm text-muted-foreground">الألوان:</span>
                   <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded" style={{ backgroundColor: org.branding.primaryColor || "#10b981" }} title="أساسي" />
-                    <div className="w-6 h-6 rounded" style={{ backgroundColor: org.branding.secondaryColor || "#059669" }} title="ثانوي" />
-                    <div className="w-6 h-6 rounded" style={{ backgroundColor: org.branding.accentColor || "#34d399" }} title="مميز" />
+                    <div className="w-7 h-7 rounded-lg border border-border/50 shadow-sm" style={{ backgroundColor: org.branding.primaryColor || "#00C9B7" }} title="أساسي" />
+                    <div className="w-7 h-7 rounded-lg border border-border/50 shadow-sm" style={{ backgroundColor: org.branding.secondaryColor || "#7B61FF" }} title="ثانوي" />
+                    <div className="w-7 h-7 rounded-lg border border-border/50 shadow-sm" style={{ backgroundColor: org.branding.accentColor || "#FF5CA8" }} title="مميز" />
                   </div>
                 </div>
-                <InfoRow label="الخط" value={org.branding.fontFamily || "Noto Sans Arabic"} />
-                <InfoRow label="نمط الشريط الجانبي" value={org.branding.sidebarStyle || "dark"} />
+                <InfoRow label="الخط" value={org.branding.fontFamily || "Cairo"} />
+                <InfoRow label="نمط الشريط الجانبي" value={org.branding.sidebarStyle === "dark" ? "داكن" : org.branding.sidebarStyle === "light" ? "فاتح" : "متدرج"} />
               </div>
             ) : (
-              <p className="text-slate-400 text-sm">لم يتم تخصيص الهوية البصرية</p>
+              <div className="text-center py-6">
+                <Palette className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+                <p className="text-muted-foreground text-sm">لم يتم تخصيص الهوية البصرية</p>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Members */}
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white text-base flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-400" />
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-[#7B61FF]/10 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-[#7B61FF]" />
+              </div>
               الأعضاء ({members?.length || 0})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {members && members.length > 0 ? (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-1 max-h-52 overflow-y-auto">
                 {members.slice(0, 10).map((member) => (
-                  <div key={member.id} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
+                  <div key={member.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors">
                     <div>
-                      <p className="text-sm text-white">{member.userName || "مستخدم"}</p>
-                      <p className="text-xs text-slate-400">{member.userEmail || ""}</p>
+                      <p className="text-sm font-medium text-foreground">{member.userName || "مستخدم"}</p>
+                      <p className="text-xs text-muted-foreground">{member.userEmail || ""}</p>
                     </div>
-                    <Badge variant="outline" className="text-xs border-slate-600 text-slate-300">
+                    <Badge variant="outline" className="text-xs rounded-lg">
                       {roleLabels[member.role] || member.role}
                     </Badge>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-400 text-sm">لا يوجد أعضاء</p>
+              <div className="text-center py-6">
+                <Users className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
+                <p className="text-muted-foreground text-sm">لا يوجد أعضاء</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -319,9 +351,10 @@ export default function OrganizationDetail() {
 
       {/* Assign Plan Dialog */}
       <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
-        <DialogContent className="bg-slate-800 border-slate-700">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">تغيير خطة الاشتراك</DialogTitle>
+            <DialogTitle>تغيير خطة الاشتراك</DialogTitle>
+            <DialogDescription>اختر الخطة ودورة الفوترة المناسبة</DialogDescription>
           </DialogHeader>
           <AssignPlanForm
             plans={plans || []}
@@ -348,11 +381,14 @@ const roleLabels: Record<string, string> = {
   parent: "ولي أمر",
 };
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-slate-700/50 last:border-0">
-      <span className="text-sm text-slate-400">{label}</span>
-      <span className="text-sm text-white">{value}</span>
+    <div className="flex items-center justify-between py-2.5 border-b border-border/40 last:border-0">
+      <span className="text-sm text-muted-foreground flex items-center gap-2">
+        {icon && <span className="text-muted-foreground/60">{icon}</span>}
+        {label}
+      </span>
+      <span className="text-sm font-medium text-foreground">{value}</span>
     </div>
   );
 }
@@ -369,20 +405,20 @@ function AssignPlanForm({
   isLoading: boolean;
 }) {
   const [planId, setPlanId] = useState<string>("");
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
 
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-slate-300">الخطة</Label>
+        <Label>الخطة</Label>
         <Select value={planId} onValueChange={setPlanId}>
-          <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white mt-1">
+          <SelectTrigger className="rounded-lg mt-1.5">
             <SelectValue placeholder="اختر الخطة" />
           </SelectTrigger>
           <SelectContent>
             {plans.map((plan) => (
               <SelectItem key={plan.id} value={plan.id.toString()}>
-                {plan.nameAr} - {plan.priceMonthly} ر.س/شهر
+                {plan.nameAr} - {plan.priceYearly} ر.س/سنة
               </SelectItem>
             ))}
           </SelectContent>
@@ -390,20 +426,20 @@ function AssignPlanForm({
       </div>
 
       <div>
-        <Label className="text-slate-300">دورة الفوترة</Label>
+        <Label>دورة الفوترة</Label>
         <Select value={billingCycle} onValueChange={(v) => setBillingCycle(v as any)}>
-          <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white mt-1">
+          <SelectTrigger className="rounded-lg mt-1.5">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="monthly">شهرية</SelectItem>
             <SelectItem value="yearly">سنوية</SelectItem>
+            <SelectItem value="monthly">شهرية</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <Button
-        className="w-full bg-emerald-600 hover:bg-emerald-700"
+        className="w-full rounded-xl"
         disabled={!planId || isLoading}
         onClick={() => onSubmit(parseInt(planId), billingCycle)}
       >

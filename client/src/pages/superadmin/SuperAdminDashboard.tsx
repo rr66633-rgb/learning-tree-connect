@@ -68,8 +68,8 @@ export default function SuperAdminDashboard() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-emerald-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#00C9B7]/10 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-[#00C9B7]" />
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">إجمالي المنظمات</p>
@@ -86,8 +86,8 @@ export default function SuperAdminDashboard() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#7B61FF]/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-[#7B61FF]" />
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">المنظمات النشطة</p>
@@ -104,8 +104,8 @@ export default function SuperAdminDashboard() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-purple-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#FF5CA8]/10 flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-[#FF5CA8]" />
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">إجمالي الأطفال</p>
@@ -122,8 +122,8 @@ export default function SuperAdminDashboard() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-amber-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#FFB020]/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-[#FFB020]" />
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">إجمالي المستخدمين</p>
@@ -140,8 +140,8 @@ export default function SuperAdminDashboard() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-cyan-100 flex items-center justify-center">
-                <School className="w-5 h-5 text-cyan-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#00C9B7]/10 flex items-center justify-center">
+                <School className="w-5 h-5 text-[#00C9B7]" />
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">إجمالي الفصول</p>

@@ -53,7 +53,7 @@ export default function AILibrary() {
     <div className="min-h-full p-4 md:p-6 lg:p-8" dir="rtl">
       <div className="flex items-center gap-3 mb-6">
         <Link href="/ai"><Button variant="ghost" size="icon" className="shrink-0"><ArrowRight className="h-5 w-5" /></Button></Link>
-        <div className="p-2 rounded-xl bg-slate-100"><Library className="h-5 w-5 text-slate-600" /></div>
+        <div className="p-2 rounded-xl bg-muted"><Library className="h-5 w-5 text-muted-foreground" /></div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">المكتبة</h1>
           <p className="text-sm text-muted-foreground">AI Library</p>
@@ -89,7 +89,7 @@ export default function AILibrary() {
       {/* Content Grid */}
       {libraryQuery.isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (filteredItems as any[]).length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">

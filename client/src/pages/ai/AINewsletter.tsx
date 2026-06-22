@@ -45,7 +45,7 @@ export default function AINewsletter() {
     printWindow.document.write(`
       <html dir="rtl"><head><meta charset="utf-8"><title>النشرة الشهرية</title>
       <style>body{font-family:Arial,sans-serif;padding:40px;line-height:1.8;direction:rtl}
-      h1{color:#1a3a5c;text-align:center}h2{color:#2c5f7c;margin-top:20px}
+      h1{color:#7C3AED;text-align:center}h2{color:#2c5f7c;margin-top:20px}
       .section{margin:15px 0;padding:15px;background:#f8f9fa;border-radius:8px}
       </style></head><body>
       <h1>${result.title || 'النشرة الشهرية'}</h1>

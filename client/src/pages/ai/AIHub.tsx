@@ -78,8 +78,8 @@ const aiFeatures = [
     title: "المكتبة",
     description: "حفظ واسترجاع جميع المحتوى المُنشأ",
     icon: Library,
-    bgColor: "bg-slate-100",
-    iconColor: "text-slate-600",
+    bgColor: "bg-muted",
+    iconColor: "text-muted-foreground",
   },
 ];
 

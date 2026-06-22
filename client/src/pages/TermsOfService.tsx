@@ -8,11 +8,11 @@ export default function TermsOfService() {
             alt="نشأة"
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1A1F36]">Naashah</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Naashah</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="ltr">
-          <h1 className="text-3xl font-bold text-[#1a3a5c] mb-2">Terms of Service</h1>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Terms of Service</h1>
           <p className="text-sm text-gray-500 mb-8">Last Updated: June 20, 2026</p>
 
           <p>
@@ -26,7 +26,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">1. Account Access</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">1. Account Access</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               Accounts are created by the nursery administration for authorized parents and staff
@@ -44,7 +44,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">2. Acceptable Use</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">2. Acceptable Use</h2>
           <p>You agree to use the App only for its intended purposes:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>Communicating with nursery staff about your child's care</li>
@@ -63,7 +63,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">3. Content</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">3. Content</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               Messages and photos shared through the App remain the property of the sender
@@ -80,7 +80,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">
             4. Push Notifications
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -97,7 +97,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">
             5. Biometric Authentication
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -111,7 +111,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">6. Availability</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">6. Availability</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               We strive to maintain App availability but do not guarantee uninterrupted service
@@ -125,7 +125,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">7. Privacy</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">7. Privacy</h2>
           <p>
             Your use of the App is also governed by our Privacy Policy, available at{" "}
             <a href="/privacy" className="text-primary hover:underline">
@@ -136,7 +136,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">
             8. Limitation of Liability
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -154,7 +154,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">9. Termination</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">9. Termination</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>The nursery administration may deactivate your account at any time</li>
             <li>Upon termination, your access to the App will be revoked</li>
@@ -163,7 +163,7 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">
             10. Changes to Terms
           </h2>
           <p>
@@ -173,12 +173,12 @@ export default function TermsOfService() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">11. Governing Law</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">11. Governing Law</h2>
           <p>These Terms are governed by the laws of the Kingdom of Saudi Arabia.</p>
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">12. Contact</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">12. Contact</h2>
           <p>For questions about these Terms, contact:</p>
           <ul className="list-none pl-0 space-y-1">
             <li>

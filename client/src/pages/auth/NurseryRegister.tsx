@@ -188,7 +188,7 @@ export default function NurseryRegister() {
         {step === 1 && (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1A1F36' }}>اختر خطة الاشتراك</h1>
+              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>اختر خطة الاشتراك</h1>
               <p className="text-gray-600">اختر الخطة المناسبة لحجم حضانتك. يمكنك الترقية لاحقاً.</p>
             </div>
 
@@ -217,10 +217,10 @@ export default function NurseryRegister() {
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${plan.color}15` }}>
                           <Icon className="w-5 h-5" style={{ color: plan.color }} />
                         </div>
-                        <h3 className="text-lg font-bold" style={{ color: '#1A1F36' }}>{plan.name}</h3>
+                        <h3 className="text-lg font-bold" style={{ color: '#1e293b' }}>{plan.name}</h3>
                       </div>
                       <div className="flex items-baseline gap-1 mb-4">
-                        <span className="text-2xl font-extrabold" style={{ color: '#1A1F36' }}>{plan.price}</span>
+                        <span className="text-2xl font-extrabold" style={{ color: '#1e293b' }}>{plan.price}</span>
                         <span className="text-xs text-gray-500">ر.س / {plan.period}</span>
                       </div>
                       <ul className="space-y-2">
@@ -260,7 +260,7 @@ export default function NurseryRegister() {
         {step === 2 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1A1F36' }}>بيانات الحضانة</h1>
+              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>بيانات الحضانة</h1>
               <p className="text-gray-600">أدخل المعلومات الأساسية عن حضانتك</p>
             </div>
 
@@ -388,7 +388,7 @@ export default function NurseryRegister() {
         {step === 3 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1A1F36' }}>بيانات المالك</h1>
+              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>بيانات المالك</h1>
               <p className="text-gray-600">أدخل بياناتك الشخصية لإنشاء حساب المدير</p>
             </div>
 
@@ -500,7 +500,7 @@ export default function NurseryRegister() {
         {step === 4 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1A1F36' }}>مراجعة وتأكيد</h1>
+              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>مراجعة وتأكيد</h1>
               <p className="text-gray-600">راجع بياناتك قبل إرسال الطلب</p>
             </div>
 
@@ -513,12 +513,12 @@ export default function NurseryRegister() {
                       <currentPlan.icon className="w-5 h-5" style={{ color: currentPlan.color }} />
                     </div>
                     <div>
-                      <h3 className="font-bold" style={{ color: '#1A1F36' }}>خطة {currentPlan.name}</h3>
+                      <h3 className="font-bold" style={{ color: '#1e293b' }}>خطة {currentPlan.name}</h3>
                       <p className="text-sm text-gray-500">اشتراك سنوي</p>
                     </div>
                   </div>
                   <div className="text-left">
-                    <span className="text-xl font-bold" style={{ color: '#1A1F36' }}>{currentPlan.price}</span>
+                    <span className="text-xl font-bold" style={{ color: '#1e293b' }}>{currentPlan.price}</span>
                     <span className="text-sm text-gray-500 mr-1">ر.س/سنة</span>
                   </div>
                 </div>
@@ -528,7 +528,7 @@ export default function NurseryRegister() {
             {/* Nursery Info Summary */}
             <Card>
               <CardContent className="p-5">
-                <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1A1F36' }}>
+                <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1e293b' }}>
                   <Building2 className="w-4 h-4" style={{ color: '#7B61FF' }} />
                   بيانات الحضانة
                 </h3>
@@ -568,7 +568,7 @@ export default function NurseryRegister() {
             {/* Owner Info Summary */}
             <Card>
               <CardContent className="p-5">
-                <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1A1F36' }}>
+                <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1e293b' }}>
                   <User className="w-4 h-4" style={{ color: '#FF5CA8' }} />
                   بيانات المالك
                 </h3>
@@ -626,7 +626,7 @@ export default function NurseryRegister() {
             <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ background: '#00C9B715' }}>
               <CheckCircle2 className="w-10 h-10" style={{ color: '#00C9B7' }} />
             </div>
-            <h1 className="text-3xl font-bold mb-4" style={{ color: '#1A1F36' }}>تم استلام طلبك بنجاح!</h1>
+            <h1 className="text-3xl font-bold mb-4" style={{ color: '#1e293b' }}>تم استلام طلبك بنجاح!</h1>
             <p className="text-gray-600 mb-3 text-lg">
               شكراً لاهتمامك بمنصة نشأة
             </p>
@@ -636,7 +636,7 @@ export default function NurseryRegister() {
 
             <Card className="bg-gray-50 border-0 mb-8">
               <CardContent className="p-5">
-                <h3 className="font-bold mb-3" style={{ color: '#1A1F36' }}>ماذا بعد؟</h3>
+                <h3 className="font-bold mb-3" style={{ color: '#1e293b' }}>ماذا بعد؟</h3>
                 <ul className="text-sm text-gray-600 space-y-2 text-right">
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs text-white mt-0.5" style={{ background: '#00C9B7' }}>١</span>

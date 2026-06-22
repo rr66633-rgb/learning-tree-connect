@@ -8,11 +8,11 @@ export default function PrivacyPolicy() {
             alt="نشأة"
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1A1F36]">Naashah</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Naashah</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="ltr">
-          <h1 className="text-3xl font-bold text-[#1a3a5c] mb-2">Privacy Policy</h1>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Privacy Policy</h1>
           <p className="text-sm text-gray-500 mb-8">Last Updated: June 20, 2026</p>
 
           <p>
@@ -23,7 +23,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">Information We Collect</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">Information We Collect</h2>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Personal Information</h3>
           <p>
@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">
             How We Use Your Information
           </h2>
           <p>We use the collected information solely for the following purposes:</p>
@@ -80,7 +80,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">Data Sharing</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">Data Sharing</h2>
           <p>
             We do <strong>NOT</strong> share your personal information with any third parties.
             Specifically:
@@ -94,7 +94,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">Data Security</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">Data Security</h2>
           <p>
             We implement appropriate technical and organizational measures to protect your data:
           </p>
@@ -113,7 +113,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">Children's Privacy</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">Children's Privacy</h2>
           <p>Our App handles information about children, but:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>The App is used exclusively by adults (parents and nursery staff)</li>
@@ -124,7 +124,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">Data Retention</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">Data Retention</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>Account data is retained while the account is active</li>
             <li>Attendance and report history is retained for the academic year</li>
@@ -134,7 +134,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">Your Rights</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">Your Rights</h2>
           <p>You have the right to:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>Access your personal data held by us</li>
@@ -148,7 +148,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">
             Changes to This Policy
           </h2>
           <p>
@@ -158,7 +158,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">Contact Us</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">Contact Us</h2>
           <p>If you have questions about this Privacy Policy, please contact:</p>
           <ul className="list-none pl-0 space-y-1">
             <li>
@@ -174,7 +174,7 @@ export default function PrivacyPolicy() {
 
           <hr className="my-6" />
 
-          <h2 className="text-xl font-semibold text-[#1a3a5c] mt-8 mb-4">
+          <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">
             App Tracking Transparency
           </h2>
           <p>

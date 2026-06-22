@@ -156,10 +156,10 @@ export default function StaffDashboard() {
           {/* Children Present */}
           <div className="stat-card" style={{ '--stat-color': 'oklch(0.55 0.16 155)' } as any}>
             <div className="flex items-start justify-between">
-              <div className="h-11 w-11 rounded-2xl bg-green-100 flex items-center justify-center">
-                <Baby className="h-5 w-5 text-green-600" />
+              <div className="h-11 w-11 rounded-2xl bg-[#00C9B7]/10 flex items-center justify-center">
+                <Baby className="h-5 w-5 text-[#00C9B7]" />
               </div>
-              <Badge variant="outline" className="text-[10px] border-green-200 text-green-600 rounded-lg">
+              <Badge variant="outline" className="text-[10px] border-[#00C9B7]/30 text-[#00C9B7] rounded-lg">
                 اليوم
               </Badge>
             </div>
@@ -178,8 +178,8 @@ export default function StaffDashboard() {
           {/* Total Children */}
           <div className="stat-card">
             <div className="flex items-start justify-between">
-              <div className="h-11 w-11 rounded-2xl bg-blue-100 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div className="h-11 w-11 rounded-2xl bg-[#7B61FF]/10 flex items-center justify-center">
+                <Users className="h-5 w-5 text-[#7B61FF]" />
               </div>
             </div>
             <div className="mt-4">
@@ -193,8 +193,8 @@ export default function StaffDashboard() {
           {/* Staff Present */}
           <div className="stat-card">
             <div className="flex items-start justify-between">
-              <div className="h-11 w-11 rounded-2xl bg-purple-100 flex items-center justify-center">
-                <CalendarCheck className="h-5 w-5 text-purple-600" />
+              <div className="h-11 w-11 rounded-2xl bg-[#FF5CA8]/10 flex items-center justify-center">
+                <CalendarCheck className="h-5 w-5 text-[#FF5CA8]" />
               </div>
             </div>
             <div className="mt-4">
@@ -208,8 +208,8 @@ export default function StaffDashboard() {
           {/* Revenue */}
           <div className="stat-card">
             <div className="flex items-start justify-between">
-              <div className="h-11 w-11 rounded-2xl bg-amber-100 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-amber-600" />
+              <div className="h-11 w-11 rounded-2xl bg-[#FFB020]/10 flex items-center justify-center">
+                <CreditCard className="h-5 w-5 text-[#FFB020]" />
               </div>
               <div className="flex items-center gap-1 text-green-600">
                 <TrendingUp className="h-3 w-3" />
@@ -229,40 +229,40 @@ export default function StaffDashboard() {
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Link href={`/${user?.role === 'parent' ? 'parent' : 'staff'}/attendance`}>
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-25">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-[#00C9B7]/5 to-transparent">
             <CardContent className="p-4 text-center">
-              <div className="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center mx-auto mb-2">
-                <CalendarCheck className="h-5 w-5 text-green-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#00C9B7]/10 flex items-center justify-center mx-auto mb-2">
+                <CalendarCheck className="h-5 w-5 text-[#00C9B7]" />
               </div>
               <p className="text-xs font-medium text-foreground">الحضور</p>
             </CardContent>
           </Card>
         </Link>
         <Link href={`/${user?.role === 'parent' ? 'parent' : 'staff'}/daily-reports`}>
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-25">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-[#FFB020]/5 to-transparent">
             <CardContent className="p-4 text-center">
-              <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-2">
-                <FileText className="h-5 w-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#FFB020]/10 flex items-center justify-center mx-auto mb-2">
+                <FileText className="h-5 w-5 text-[#FFB020]" />
               </div>
               <p className="text-xs font-medium text-foreground">التقارير</p>
             </CardContent>
           </Card>
         </Link>
         <Link href={`/${user?.role === 'parent' ? 'parent' : 'staff'}/messages`}>
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-25">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-[#FF5CA8]/5 to-transparent">
             <CardContent className="p-4 text-center">
-              <div className="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center mx-auto mb-2">
-                <MessageCircle className="h-5 w-5 text-purple-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#FF5CA8]/10 flex items-center justify-center mx-auto mb-2">
+                <MessageCircle className="h-5 w-5 text-[#FF5CA8]" />
               </div>
               <p className="text-xs font-medium text-foreground">الرسائل</p>
             </CardContent>
           </Card>
         </Link>
         <Link href="/ai/assistant">
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-violet-50 to-violet-25">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-[#7B61FF]/5 to-transparent">
             <CardContent className="p-4 text-center">
-              <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center mx-auto mb-2">
-                <Sparkles className="h-5 w-5 text-violet-600" />
+              <div className="h-10 w-10 rounded-xl bg-[#7B61FF]/10 flex items-center justify-center mx-auto mb-2">
+                <Sparkles className="h-5 w-5 text-[#7B61FF]" />
               </div>
               <p className="text-xs font-medium text-foreground">المساعد الذكي</p>
             </CardContent>
@@ -291,38 +291,38 @@ export default function StaffDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-l from-green-50/80 to-transparent rounded-xl border border-green-100/50">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-l from-[#00C9B7]/5 to-transparent rounded-xl border border-[#00C9B7]/10">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-green-100 flex items-center justify-center">
-                  <CalendarCheck className="h-4 w-4 text-green-600" />
+                <div className="h-9 w-9 rounded-xl bg-[#00C9B7]/10 flex items-center justify-center">
+                  <CalendarCheck className="h-4 w-4 text-[#00C9B7]" />
                 </div>
                 <span className="text-sm font-medium">نسبة الحضور</span>
               </div>
               {isLoading ? <Skeleton className="h-6 w-14" /> : (
-                <span className="text-lg font-bold text-green-600">{attendanceRate}%</span>
+                <span className="text-lg font-bold text-[#00C9B7]">{attendanceRate}%</span>
               )}
             </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-l from-blue-50/80 to-transparent rounded-xl border border-blue-100/50">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-l from-[#7B61FF]/5 to-transparent rounded-xl border border-[#7B61FF]/10">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-blue-100 flex items-center justify-center">
-                  <Users className="h-4 w-4 text-blue-600" />
+                <div className="h-9 w-9 rounded-xl bg-[#7B61FF]/10 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-[#7B61FF]" />
                 </div>
                 <span className="text-sm font-medium">الأطفال المسجلون</span>
               </div>
               {isLoading ? <Skeleton className="h-6 w-14" /> : (
-                <span className="text-lg font-bold text-blue-600">{stats?.totalChildren ?? 0}</span>
+                <span className="text-lg font-bold text-[#7B61FF]">{stats?.totalChildren ?? 0}</span>
               )}
             </div>
             {isAdmin && (
-              <div className="flex items-center justify-between p-4 bg-gradient-to-l from-amber-50/80 to-transparent rounded-xl border border-amber-100/50">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-l from-[#FFB020]/5 to-transparent rounded-xl border border-[#FFB020]/10">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center">
-                    <CreditCard className="h-4 w-4 text-amber-600" />
+                  <div className="h-9 w-9 rounded-xl bg-[#FFB020]/10 flex items-center justify-center">
+                    <CreditCard className="h-4 w-4 text-[#FFB020]" />
                   </div>
                   <span className="text-sm font-medium">الإيرادات المحصلة</span>
                 </div>
                 {isLoading ? <Skeleton className="h-6 w-20" /> : (
-                  <span className="text-lg font-bold text-amber-600">{(stats?.totalRevenue ?? 0).toLocaleString()} ر.س</span>
+                  <span className="text-lg font-bold text-[#FFB020]">{(stats?.totalRevenue ?? 0).toLocaleString()} ر.س</span>
                 )}
               </div>
             )}
@@ -332,26 +332,26 @@ export default function StaffDashboard() {
         {/* AI Recommendations & Announcements */}
         <div className="space-y-4">
           {/* AI Recommendations */}
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-violet-50/50 to-indigo-50/30">
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-[#7B61FF]/5 to-[#FF5CA8]/5">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-violet-500" />
+                <Sparkles className="h-4 w-4 text-[#7B61FF]" />
                 توصيات ذكية
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="p-3 bg-white/80 rounded-xl border border-violet-100/50">
+              <div className="p-3 bg-white/80 rounded-xl border border-[#7B61FF]/10">
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   بناءً على بيانات الحضور، يُنصح بالتواصل مع أولياء أمور الأطفال الغائبين لأكثر من يومين متتاليين.
                 </p>
               </div>
-              <div className="p-3 bg-white/80 rounded-xl border border-violet-100/50">
+              <div className="p-3 bg-white/80 rounded-xl border border-[#7B61FF]/10">
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   يمكنك إنشاء خطة أسبوعية جديدة باستخدام المساعد الذكي لتوفير الوقت.
                 </p>
               </div>
               <Link href="/ai/assistant">
-                <Button variant="ghost" size="sm" className="w-full text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg mt-1">
+                <Button variant="ghost" size="sm" className="w-full text-xs text-[#7B61FF] hover:text-[#7B61FF] hover:bg-[#7B61FF]/5 rounded-lg mt-1">
                   استكشف المزيد
                   <ArrowUpRight className="h-3 w-3 mr-1" />
                 </Button>
@@ -364,7 +364,7 @@ export default function StaffDashboard() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Megaphone className="h-4 w-4 text-amber-500" />
+                  <Megaphone className="h-4 w-4 text-[#FFB020]" />
                   آخر الإعلانات
                 </CardTitle>
               </div>

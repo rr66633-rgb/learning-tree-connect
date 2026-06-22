@@ -101,10 +101,10 @@ export default function OnboardingWizard() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <Sparkles className="w-6 h-6 text-emerald-400" />
-            <h1 className="text-2xl font-bold text-white">إعداد حضانتك على Naashah</h1>
+            <Sparkles className="w-6 h-6 text-[#00C9B7]" />
+            <h1 className="text-2xl font-bold text-foreground">إعداد حضانتك على Naashah</h1>
           </div>
-          <p className="text-slate-400">أكمل الخطوات التالية لبدء استخدام المنصة</p>
+          <p className="text-muted-foreground">أكمل الخطوات التالية لبدء استخدام المنصة</p>
         </div>
 
         {/* Progress Steps */}
@@ -118,17 +118,17 @@ export default function OnboardingWizard() {
                 <div
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all ${
                     isActive
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      ? "bg-[#00C9B7]/10 text-[#00C9B7] border border-emerald-500/30"
                       : isCompleted
-                      ? "bg-emerald-500/10 text-emerald-500"
-                      : "text-slate-500"
+                      ? "bg-[#00C9B7]/10 text-[#00C9B7]"
+                      : "text-muted-foreground"
                   }`}
                 >
                   <StepIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">{s.title}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-1 ${isCompleted ? "bg-emerald-500" : "bg-slate-700"}`} />
+                  <div className={`w-8 h-0.5 mx-1 ${isCompleted ? "bg-[#00C9B7]" : "bg-muted"}`} />
                 )}
               </div>
             );
@@ -136,28 +136,28 @@ export default function OnboardingWizard() {
         </div>
 
         {/* Step Content */}
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card border-border">
           <CardContent className="p-6">
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-white mb-4">معلومات الحضانة الأساسية</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">معلومات الحضانة الأساسية</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-slate-300">اسم الحضانة بالعربية *</Label>
+                    <Label className="text-foreground">اسم الحضانة بالعربية *</Label>
                     <Input
                       value={form.nameAr}
                       onChange={(e) => setForm((p) => ({ ...p, nameAr: e.target.value }))}
-                      className="bg-slate-900/50 border-slate-600 text-white mt-1"
+                      className="bg-background border-input text-foreground mt-1"
                       placeholder="حضانة السعادة"
                       dir="rtl"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">اسم الحضانة بالإنجليزية *</Label>
+                    <Label className="text-foreground">اسم الحضانة بالإنجليزية *</Label>
                     <Input
                       value={form.name}
                       onChange={(e) => handleNameChange(e.target.value)}
-                      className="bg-slate-900/50 border-slate-600 text-white mt-1"
+                      className="bg-background border-input text-foreground mt-1"
                       placeholder="Happy Nursery"
                       dir="ltr"
                     />
@@ -165,18 +165,18 @@ export default function OnboardingWizard() {
                 </div>
 
                 <div>
-                  <Label className="text-slate-300">المعرف الفريد *</Label>
+                  <Label className="text-foreground">المعرف الفريد *</Label>
                   <Input
                     value={form.slug}
                     onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))}
-                    className="bg-slate-900/50 border-slate-600 text-white mt-1"
+                    className="bg-background border-input text-foreground mt-1"
                     placeholder="happy-nursery"
                     dir="ltr"
                   />
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-slate-500">{form.slug || "xxx"}.naashah.com</p>
+                    <p className="text-xs text-muted-foreground">{form.slug || "xxx"}.naashah.com</p>
                     {form.slug.length >= 2 && (
-                      <span className={`text-xs ${slugCheck?.available ? "text-emerald-400" : "text-red-400"}`}>
+                      <span className={`text-xs ${slugCheck?.available ? "text-[#00C9B7]" : "text-red-400"}`}>
                         {slugCheck?.available ? "✓ متاح" : "✗ غير متاح"}
                       </span>
                     )}
@@ -185,21 +185,21 @@ export default function OnboardingWizard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-slate-300">الهاتف</Label>
+                    <Label className="text-foreground">الهاتف</Label>
                     <Input
                       value={form.phone}
                       onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                      className="bg-slate-900/50 border-slate-600 text-white mt-1"
+                      className="bg-background border-input text-foreground mt-1"
                       placeholder="+966..."
                       dir="ltr"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">البريد الإلكتروني</Label>
+                    <Label className="text-foreground">البريد الإلكتروني</Label>
                     <Input
                       value={form.email}
                       onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                      className="bg-slate-900/50 border-slate-600 text-white mt-1"
+                      className="bg-background border-input text-foreground mt-1"
                       placeholder="info@nursery.com"
                       dir="ltr"
                     />
@@ -208,20 +208,20 @@ export default function OnboardingWizard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-slate-300">المدينة</Label>
+                    <Label className="text-foreground">المدينة</Label>
                     <Input
                       value={form.city}
                       onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-                      className="bg-slate-900/50 border-slate-600 text-white mt-1"
+                      className="bg-background border-input text-foreground mt-1"
                       placeholder="الرياض"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">رقم الترخيص</Label>
+                    <Label className="text-foreground">رقم الترخيص</Label>
                     <Input
                       value={form.licenseNumber}
                       onChange={(e) => setForm((p) => ({ ...p, licenseNumber: e.target.value }))}
-                      className="bg-slate-900/50 border-slate-600 text-white mt-1"
+                      className="bg-background border-input text-foreground mt-1"
                       placeholder="اختياري"
                     />
                   </div>
@@ -231,57 +231,57 @@ export default function OnboardingWizard() {
 
             {step === 2 && (
               <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-white mb-4">تخصيص الهوية البصرية</h2>
-                <p className="text-sm text-slate-400 mb-4">اختر ألوان حضانتك. يمكنك تغييرها لاحقاً من الإعدادات.</p>
+                <h2 className="text-lg font-semibold text-foreground mb-4">تخصيص الهوية البصرية</h2>
+                <p className="text-sm text-muted-foreground mb-4">اختر ألوان حضانتك. يمكنك تغييرها لاحقاً من الإعدادات.</p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-slate-300">اللون الأساسي</Label>
+                    <Label className="text-foreground">اللون الأساسي</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="color"
                         value={form.primaryColor}
                         onChange={(e) => setForm((p) => ({ ...p, primaryColor: e.target.value }))}
-                        className="w-10 h-10 rounded cursor-pointer border border-slate-600"
+                        className="w-10 h-10 rounded cursor-pointer border border-input"
                       />
                       <Input
                         value={form.primaryColor}
                         onChange={(e) => setForm((p) => ({ ...p, primaryColor: e.target.value }))}
-                        className="bg-slate-900/50 border-slate-600 text-white"
+                        className="bg-background border-input text-foreground"
                         dir="ltr"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-slate-300">اللون الثانوي</Label>
+                    <Label className="text-foreground">اللون الثانوي</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="color"
                         value={form.secondaryColor}
                         onChange={(e) => setForm((p) => ({ ...p, secondaryColor: e.target.value }))}
-                        className="w-10 h-10 rounded cursor-pointer border border-slate-600"
+                        className="w-10 h-10 rounded cursor-pointer border border-input"
                       />
                       <Input
                         value={form.secondaryColor}
                         onChange={(e) => setForm((p) => ({ ...p, secondaryColor: e.target.value }))}
-                        className="bg-slate-900/50 border-slate-600 text-white"
+                        className="bg-background border-input text-foreground"
                         dir="ltr"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-slate-300">اللون المميز</Label>
+                    <Label className="text-foreground">اللون المميز</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="color"
                         value={form.accentColor}
                         onChange={(e) => setForm((p) => ({ ...p, accentColor: e.target.value }))}
-                        className="w-10 h-10 rounded cursor-pointer border border-slate-600"
+                        className="w-10 h-10 rounded cursor-pointer border border-input"
                       />
                       <Input
                         value={form.accentColor}
                         onChange={(e) => setForm((p) => ({ ...p, accentColor: e.target.value }))}
-                        className="bg-slate-900/50 border-slate-600 text-white"
+                        className="bg-background border-input text-foreground"
                         dir="ltr"
                       />
                     </div>
@@ -289,18 +289,18 @@ export default function OnboardingWizard() {
                 </div>
 
                 {/* Preview */}
-                <div className="mt-6 p-6 rounded-xl border border-slate-700" style={{ background: `linear-gradient(135deg, ${form.primaryColor}20, ${form.secondaryColor}10)` }}>
+                <div className="mt-6 p-6 rounded-xl border border-border" style={{ background: `linear-gradient(135deg, ${form.primaryColor}20, ${form.secondaryColor}10)` }}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: form.primaryColor }}>
-                      <Building2 className="w-5 h-5 text-white" />
+                      <Building2 className="w-5 h-5 text-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-white">{form.nameAr || "اسم الحضانة"}</h3>
+                      <h3 className="font-bold text-foreground">{form.nameAr || "اسم الحضانة"}</h3>
                       <p className="text-xs" style={{ color: form.accentColor }}>{form.name || "Nursery Name"}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <div className="px-3 py-1.5 rounded text-white text-sm" style={{ backgroundColor: form.primaryColor }}>
+                    <div className="px-3 py-1.5 rounded text-foreground text-sm" style={{ backgroundColor: form.primaryColor }}>
                       زر أساسي
                     </div>
                     <div className="px-3 py-1.5 rounded text-sm border" style={{ borderColor: form.secondaryColor, color: form.secondaryColor }}>
@@ -313,8 +313,8 @@ export default function OnboardingWizard() {
 
             {step === 3 && (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-white mb-4">اختر خطة الاشتراك</h2>
-                <p className="text-sm text-slate-400 mb-4">جميع الخطط تشمل فترة تجريبية مجانية لمدة 14 يوم</p>
+                <h2 className="text-lg font-semibold text-foreground mb-4">اختر خطة الاشتراك</h2>
+                <p className="text-sm text-muted-foreground mb-4">جميع الخطط تشمل فترة تجريبية مجانية لمدة 14 يوم</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {plans?.map((plan) => (
@@ -322,22 +322,22 @@ export default function OnboardingWizard() {
                       key={plan.id}
                       className={`p-4 rounded-lg border cursor-pointer transition-all ${
                         form.planId === plan.id
-                          ? "border-emerald-500 bg-emerald-500/10"
-                          : "border-slate-700 bg-slate-900/50 hover:border-slate-600"
+                          ? "border-emerald-500 bg-[#00C9B7]/10"
+                          : "border-border bg-background hover:border-input"
                       }`}
                       onClick={() => setForm((p) => ({ ...p, planId: plan.id }))}
                     >
-                      <h3 className="font-semibold text-white">{plan.nameAr}</h3>
-                      <p className="text-2xl font-bold text-white mt-2">{plan.priceMonthly} <span className="text-sm text-slate-400">ر.س/شهر</span></p>
-                      <p className="text-xs text-slate-500 mt-1">حتى {plan.maxChildren >= 999 ? "غير محدود" : plan.maxChildren} طفل</p>
+                      <h3 className="font-semibold text-foreground">{plan.nameAr}</h3>
+                      <p className="text-2xl font-bold text-foreground mt-2">{plan.priceMonthly} <span className="text-sm text-muted-foreground">ر.س/شهر</span></p>
+                      <p className="text-xs text-muted-foreground mt-1">حتى {plan.maxChildren >= 999 ? "غير محدود" : plan.maxChildren} طفل</p>
                     </div>
                   ))}
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-slate-300">دورة الفوترة</Label>
+                  <Label className="text-foreground">دورة الفوترة</Label>
                   <Select value={form.billingCycle} onValueChange={(v) => setForm((p) => ({ ...p, billingCycle: v as any }))}>
-                    <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white mt-1 w-48">
+                    <SelectTrigger className="bg-background border-input text-foreground mt-1 w-48">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -351,18 +351,18 @@ export default function OnboardingWizard() {
 
             {step === 4 && (
               <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-white mb-4">مراجعة وتأكيد</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">مراجعة وتأكيد</h2>
                 
                 <div className="space-y-4">
-                  <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700">
-                    <h3 className="text-sm font-medium text-slate-400 mb-2">معلومات الحضانة</h3>
-                    <p className="text-white font-medium">{form.nameAr}</p>
-                    <p className="text-slate-400 text-sm">{form.name}</p>
-                    <p className="text-slate-500 text-xs mt-1">{form.slug}.naashah.com</p>
+                  <div className="p-4 rounded-lg bg-background border border-border">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">معلومات الحضانة</h3>
+                    <p className="text-foreground font-medium">{form.nameAr}</p>
+                    <p className="text-muted-foreground text-sm">{form.name}</p>
+                    <p className="text-muted-foreground text-xs mt-1">{form.slug}.naashah.com</p>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700">
-                    <h3 className="text-sm font-medium text-slate-400 mb-2">الهوية البصرية</h3>
+                  <div className="p-4 rounded-lg bg-background border border-border">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">الهوية البصرية</h3>
                     <div className="flex gap-2">
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: form.primaryColor }} />
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: form.secondaryColor }} />
@@ -370,13 +370,13 @@ export default function OnboardingWizard() {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700">
-                    <h3 className="text-sm font-medium text-slate-400 mb-2">خطة الاشتراك</h3>
-                    <p className="text-white font-medium">{selectedPlan?.nameAr || "غير محدد"}</p>
-                    <p className="text-slate-400 text-sm">
+                  <div className="p-4 rounded-lg bg-background border border-border">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">خطة الاشتراك</h3>
+                    <p className="text-foreground font-medium">{selectedPlan?.nameAr || "غير محدد"}</p>
+                    <p className="text-muted-foreground text-sm">
                       {form.billingCycle === "monthly" ? `${selectedPlan?.priceMonthly} ر.س/شهر` : `${selectedPlan?.priceYearly} ر.س/سنة`}
                     </p>
-                    <p className="text-emerald-400 text-xs mt-1">تشمل فترة تجريبية مجانية 14 يوم</p>
+                    <p className="text-[#00C9B7] text-xs mt-1">تشمل فترة تجريبية مجانية 14 يوم</p>
                   </div>
                 </div>
               </div>
@@ -390,7 +390,7 @@ export default function OnboardingWizard() {
             variant="outline"
             onClick={() => setStep((s) => Math.max(1, s - 1))}
             disabled={step === 1}
-            className="border-slate-600 text-slate-300"
+            className="border-input text-foreground"
           >
             <ArrowRight className="w-4 h-4 ml-1" />
             السابق

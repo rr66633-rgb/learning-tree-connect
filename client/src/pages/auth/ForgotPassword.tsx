@@ -134,7 +134,7 @@ export default function ForgotPassword() {
             alt="نشأة"
             className="w-16 h-16 mx-auto mb-2 object-contain"
           />
-          <h1 className="text-xl font-bold text-[#1a3a5c]">
+          <h1 className="text-xl font-bold text-slate-800">
             {step === "input" && "استعادة كلمة المرور"}
             {step === "otp" && "إدخال رمز التحقق"}
             {step === "newPassword" && "كلمة مرور جديدة"}
@@ -155,7 +155,7 @@ export default function ForgotPassword() {
                   type="button"
                   onClick={() => setMethod("sms")}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                    method === "sms" ? "bg-white shadow text-[#1a3a5c]" : "text-muted-foreground"
+                    method === "sms" ? "bg-white shadow text-slate-800" : "text-muted-foreground"
                   }`}
                 >
                   <Phone className="h-4 w-4" />
@@ -165,7 +165,7 @@ export default function ForgotPassword() {
                   type="button"
                   onClick={() => setMethod("email")}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                    method === "email" ? "bg-white shadow text-[#1a3a5c]" : "text-muted-foreground"
+                    method === "email" ? "bg-white shadow text-slate-800" : "text-muted-foreground"
                   }`}
                 >
                   <Mail className="h-4 w-4" />
@@ -190,7 +190,7 @@ export default function ForgotPassword() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white h-11"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={forgotMutation.isPending}
               >
                 {forgotMutation.isPending ? "جاري الإرسال..." : "إرسال رمز التحقق"}
@@ -246,7 +246,7 @@ export default function ForgotPassword() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white h-11"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={verifyOtpMutation.isPending || otpExpiryCountdown === 0}
               >
                 {verifyOtpMutation.isPending ? "جاري التحقق..." : "تحقق"}
@@ -336,7 +336,7 @@ export default function ForgotPassword() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white h-11"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={resetPasswordMutation.isPending}
               >
                 {resetPasswordMutation.isPending ? "جاري التحديث..." : "تعيين كلمة المرور"}
@@ -348,7 +348,7 @@ export default function ForgotPassword() {
           {step === "success" && (
             <div className="text-center space-y-4 py-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-              <h2 className="text-lg font-semibold text-[#1a3a5c]">
+              <h2 className="text-lg font-semibold text-slate-800">
                 تم تغيير كلمة المرور بنجاح
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -356,7 +356,7 @@ export default function ForgotPassword() {
               </p>
               <Button
                 onClick={() => setLocation("/login")}
-                className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white h-11"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
               >
                 تسجيل الدخول
               </Button>

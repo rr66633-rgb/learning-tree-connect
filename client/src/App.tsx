@@ -54,6 +54,7 @@ const EngagementReports = lazy(() => import("./pages/staff/EngagementReports"));
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
 const OrganizationDetail = lazy(() => import("./pages/superadmin/OrganizationDetail"));
 const CreateOrganization = lazy(() => import("./pages/superadmin/CreateOrganization"));
+const OrganizationsList = lazy(() => import("./pages/superadmin/OrganizationsList"));
 const OnboardingWizard = lazy(() => import("./pages/OnboardingWizard"));
 const SubscriptionPlans = lazy(() => import("./pages/SubscriptionPlans"));
 
@@ -242,7 +243,7 @@ function PendingRolePage() {
           alt="نشأة"
           className="w-24 h-24 object-contain"
         />
-        <h1 className="text-xl font-bold text-[#1a3a5c]">
+        <h1 className="text-xl font-bold text-slate-800">
           مرحباً {user?.name}
         </h1>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -411,6 +412,9 @@ function RoleRouter() {
         </Route>
         <Route path="/super-admin/organizations/:id">
           {isSuperAdminRole(userRole) ? <OrganizationDetail /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/super-admin/organizations">
+          {isSuperAdminRole(userRole) ? <OrganizationsList /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/super-admin/plans">
           {isSuperAdminRole(userRole) ? <SubscriptionPlans /> : <Redirect to={basePath} />}

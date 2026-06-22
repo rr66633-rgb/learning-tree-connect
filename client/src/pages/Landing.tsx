@@ -68,7 +68,7 @@ export default function Landing() {
                 alt="نشأة" 
                 className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" 
               />
-              <span className="text-base sm:text-lg md:text-xl font-bold text-[#1A1F36]">نشأة</span>
+              <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">نشأة</span>
             </div>
 
             {/* Desktop nav links - centered */}
@@ -143,7 +143,7 @@ export default function Landing() {
           </div>
           
           {/* Headline - proper spacing and sizing */}
-          <h1 className="text-[26px] leading-[1.35] sm:text-4xl sm:leading-[1.3] md:text-5xl md:leading-[1.25] lg:text-[56px] lg:leading-[1.2] font-extrabold text-[#1A1F36] mb-4 sm:mb-5 md:mb-6">
+          <h1 className="text-[26px] leading-[1.35] sm:text-4xl sm:leading-[1.3] md:text-5xl md:leading-[1.25] lg:text-[56px] lg:leading-[1.2] font-extrabold text-slate-800 mb-4 sm:mb-5 md:mb-6">
             منصة متكاملة لإدارة الحضانات
             <span className="block mt-1 sm:mt-2 text-[#00C9B7]">ورياض الأطفال</span>
           </h1>
@@ -195,7 +195,7 @@ export default function Landing() {
       <section id="features" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-[#F8FAFB]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#1A1F36] mb-2.5 sm:mb-3 md:mb-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-2.5 sm:mb-3 md:mb-4">
               كل ما تحتاجه لإدارة حضانتك
             </h2>
             <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-2 leading-relaxed">
@@ -213,7 +213,7 @@ export default function Landing() {
                   >
                     <feature.icon className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 lg:w-6 lg:h-6" style={{ color: feature.color }} />
                   </div>
-                  <h3 className="text-[13px] sm:text-sm md:text-base lg:text-lg font-bold text-[#1A1F36] mb-1 sm:mb-1.5 md:mb-2">{feature.title}</h3>
+                  <h3 className="text-[13px] sm:text-sm md:text-base lg:text-lg font-bold text-slate-800 mb-1 sm:mb-1.5 md:mb-2">{feature.title}</h3>
                   <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 leading-relaxed">{feature.desc}</p>
                 </CardContent>
               </Card>
@@ -245,7 +245,7 @@ export default function Landing() {
       <section id="pricing" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#1A1F36] mb-2.5 sm:mb-3 md:mb-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-2.5 sm:mb-3 md:mb-4">
               خطط اشتراك سنوية
             </h2>
             <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-2 leading-relaxed">
@@ -269,9 +269,9 @@ export default function Landing() {
                   </div>
                 )}
                 <CardContent className="p-5 sm:p-6 md:p-7 lg:p-8 flex flex-col flex-1">
-                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-[#1A1F36] mb-2">{plan.name}</h3>
+                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-800 mb-2">{plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1A1F36]">{plan.price}</span>
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-800">{plan.price}</span>
                     <span className="text-[11px] sm:text-xs md:text-sm text-gray-500">ر.س / {plan.period}</span>
                   </div>
                   <p className="text-[10px] sm:text-[11px] md:text-xs text-gray-400 mb-4 sm:mb-5 md:mb-6">SAR {plan.priceEn} / Year</p>
@@ -305,12 +305,12 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-[#1A1F36]">
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 md:mb-6 px-2">
             جاهز لتحويل حضانتك رقمياً؟
           </h2>
-          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-300 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4 leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-purple-100 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4 leading-relaxed">
             انضم لأكثر من ١٥٠ حضانة في المملكة تستخدم نشأة لإدارة عملياتها اليومية بكفاءة وذكاء
           </p>
           <Button 
@@ -330,14 +330,14 @@ export default function Landing() {
             <div className="sm:col-span-2">
               <div className="flex items-center gap-2.5 sm:gap-3 mb-3 sm:mb-4">
                 <img src={LOGO_URL} alt="نشأة" className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" />
-                <span className="text-base sm:text-lg md:text-xl font-bold text-[#1A1F36]">نشأة</span>
+                <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">نشأة</span>
               </div>
               <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 leading-[1.7] max-w-sm">
                 منصة متكاملة لإدارة الحضانات ورياض الأطفال. نساعد المراكز التعليمية في المملكة العربية السعودية على إدارة عملياتها اليومية بكفاءة وذكاء.
               </p>
             </div>
             <div>
-              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-[#1A1F36]">المنصة</h4>
+              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-slate-800">المنصة</h4>
               <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs md:text-sm text-gray-600">
                 <li><a href="#features" className="hover:text-[#00C9B7] transition-colors duration-200">المزايا</a></li>
                 <li><a href="#pricing" className="hover:text-[#00C9B7] transition-colors duration-200">الأسعار</a></li>
@@ -346,7 +346,7 @@ export default function Landing() {
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-[#1A1F36]">تواصل معنا</h4>
+              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-slate-800">تواصل معنا</h4>
               <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs md:text-sm text-gray-600">
                 <li>البريد: info@naashah.com</li>
                 <li>الهاتف: +966 53 378 4686</li>

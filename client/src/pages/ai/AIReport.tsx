@@ -46,7 +46,7 @@ export default function AIReport() {
     printWindow.document.write(`
       <html dir="rtl"><head><meta charset="utf-8"><title>تقرير التقدم</title>
       <style>body{font-family:Arial,sans-serif;padding:40px;line-height:1.8;direction:rtl}
-      h1{color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:10px}
+      h1{color:#7C3AED;border-bottom:2px solid #7C3AED;padding-bottom:10px}
       h2{color:#2c5f7c;margin-top:20px}
       .section{margin:15px 0;padding:15px;background:#f8f9fa;border-radius:8px}
       </style></head><body>

@@ -58,7 +58,7 @@ export default function ResetPassword() {
             alt="نشأة"
             className="w-16 h-16 mx-auto mb-2 object-contain"
           />
-          <h1 className="text-xl font-bold text-[#1a3a5c]">
+          <h1 className="text-xl font-bold text-slate-800">
             {step === "verifying" && "جاري التحقق..."}
             {step === "form" && "تعيين كلمة مرور جديدة"}
             {step === "success" && "تم بنجاح"}
@@ -123,7 +123,7 @@ export default function ResetPassword() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white h-11"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={resetPasswordMutation.isPending}
               >
                 {resetPasswordMutation.isPending ? "جاري التحديث..." : "تعيين كلمة المرور"}
@@ -134,7 +134,7 @@ export default function ResetPassword() {
           {step === "success" && (
             <div className="text-center space-y-4 py-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-              <h2 className="text-lg font-semibold text-[#1a3a5c]">
+              <h2 className="text-lg font-semibold text-slate-800">
                 تم تغيير كلمة المرور بنجاح
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -142,7 +142,7 @@ export default function ResetPassword() {
               </p>
               <Button
                 onClick={() => setLocation("/login")}
-                className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white h-11"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
               >
                 تسجيل الدخول
               </Button>
@@ -152,7 +152,7 @@ export default function ResetPassword() {
           {step === "invalid" && (
             <div className="text-center space-y-4 py-4">
               <XCircle className="h-16 w-16 text-red-500 mx-auto" />
-              <h2 className="text-lg font-semibold text-[#1a3a5c]">
+              <h2 className="text-lg font-semibold text-slate-800">
                 رابط غير صالح
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -160,7 +160,7 @@ export default function ResetPassword() {
               </p>
               <Button
                 onClick={() => setLocation("/forgot-password")}
-                className="w-full bg-[#1a3a5c] hover:bg-[#2d5a7b] text-white h-11"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
               >
                 طلب رابط جديد
               </Button>

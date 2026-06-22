@@ -140,7 +140,7 @@ export default function ChangePassword() {
             <Button
               type="submit"
               disabled={changePasswordMutation.isPending}
-              className="bg-[#1a3a5c] hover:bg-[#2d5a7b]"
+              className="bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6]"
             >
               {changePasswordMutation.isPending ? "جاري التحديث..." : "تغيير كلمة المرور"}
             </Button>

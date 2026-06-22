@@ -46,7 +46,7 @@ export default function Login() {
             alt="نشأة"
             className="w-20 h-20 mx-auto mb-3 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1A1F36]">تسجيل الدخول</h1>
+          <h1 className="text-2xl font-bold text-slate-800">تسجيل الدخول</h1>
           <p className="text-sm text-muted-foreground mt-1">
             مرحباً بك في نشأة Naashah
           </p>
