@@ -1081,3 +1081,13 @@
 - [x] Auto-branding (Learning Tree name, colors, logo)
 - [x] Copy-to-clipboard for all generated content
 - [x] Professional parent-friendly tone in all generated content
+
+## Platform Branding Strategy (Nasha'a / نشأة)
+
+- [x] Document architecture decision for future Nasha'a platform
+- [x] Create ARCHITECTURE_DECISION_NASHAA.md with full guidelines
+- [x] Define migration path from Learning Tree to Nasha'a
+- [x] Establish development guidelines for compatibility
+- [ ] (Future) Fork codebase for Nasha'a platform
+- [ ] (Future) Add multi-tenancy support
+- [ ] (Future) Rebrand to نشأة (Nasha'a)
