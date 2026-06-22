@@ -1091,3 +1091,51 @@
 - [ ] (Future) Fork codebase for Nasha'a platform
 - [ ] (Future) Add multi-tenancy support
 - [ ] (Future) Rebrand to نشأة (Nasha'a)
+
+## Phase 5: White-Label Architecture & Nasha'a Platform
+
+### Multi-Tenant Database Schema
+- [x] Add organizations table (id, name, nameAr, slug, domain, logo, subscription plan, status)
+- [x] Add organization_branding table (colors, fonts, splash, appIcon, theme)
+- [x] Add subscription_plans table (id, name, features, limits, price)
+- [x] Add organization_subscriptions table (orgId, planId, startDate, endDate, status)
+- [x] Add tenantId (organizationId) to all existing data tables
+- [x] Migrate Learning Tree as first organization (preserve all data)
+
+### White-Label Branding System
+- [x] Dynamic logo loading per tenant
+- [x] Dynamic color theme per tenant (CSS variables)
+- [x] Dynamic app name per tenant
+- [x] Splash screen customization
+- [x] Parent app theme customization
+- [x] Reports branding (PDF headers/footers)
+- [x] Certificates branding
+- [x] Notification branding (email/push templates)
+
+### Super Admin Dashboard
+- [x] Super Admin role and authentication
+- [x] All nurseries overview (list, stats, status)
+- [x] Create/edit/suspend nurseries
+- [x] Subscription management per nursery
+- [x] Usage analytics across all nurseries
+- [x] System-wide settings
+
+### Subscription Plans
+- [x] Starter plan (basic features, limited children count)
+- [x] Professional plan (all features, higher limits)
+- [x] Enterprise plan (unlimited, custom branding, priority support)
+- [x] Plan limits enforcement (children, staff, storage)
+- [x] Upgrade/downgrade flow
+
+### Nursery Onboarding Wizard
+- [x] Step 1: Nursery info (name, location, contact)
+- [x] Step 2: Branding (logo, colors, theme)
+- [x] Step 3: Plan selection
+- [x] Step 4: Admin account creation
+- [x] Step 5: Initial setup (classes, staff roles)
+
+### Two Editions
+- [x] Learning Tree Edition (private, hardcoded branding, single tenant)
+- [x] Nasha'a Edition (multi-tenant SaaS, dynamic branding)
+- [x] Edition detection via environment variable or domain
+- [x] Shared backend, database structure, AI engine, feature set

@@ -25,7 +25,8 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Users, CalendarCheck, FileText,
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
-  Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays
+  Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
+  Building2, Palette, Crown
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -165,7 +166,17 @@ const receptionistMenuItems: MenuItem[] = [
   { icon: MessageCircle, label: "الرسائل", path: "/messages" },
 ];
 
-function getMenuItems(role?: string): MenuItem[] {
+const superAdminMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
+  { icon: Building2, label: "المنظمات", path: "/organizations" },
+  { icon: Crown, label: "خطط الاشتراك", path: "/plans" },
+  { icon: Palette, label: "الهوية البصرية", path: "/branding" },
+  { icon: Users, label: "المستخدمون", path: "/users" },
+  { icon: Settings, label: "الإعدادات", path: "/settings" },
+];
+
+function getMenuItems(role?: string, basePath?: string): MenuItem[] {
+  if (basePath === "/super-admin") return superAdminMenuItems;
   switch (role) {
     case "admin":
     case "super_admin":
@@ -190,8 +201,9 @@ function getMenuItems(role?: string): MenuItem[] {
 
 function getRoleDisplayName(role?: string): string {
   switch (role) {
-    case "admin":
     case "super_admin":
+      return "المدير العام";
+    case "admin":
       return "مدير النظام";
     case "principal":
       return "مدير/ة";
@@ -304,7 +316,7 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   // Initialize in-app notification sounds (plays sound on new notifications)
   useInAppNotifications();
-  const menuItems = getMenuItems(user?.role);
+  const menuItems = getMenuItems(user?.role, basePath);
   const isMobile = useIsMobile();
 
   // Determine active item by matching location against basePath + item.path
@@ -365,13 +377,32 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
-                  <span className="font-semibold tracking-tight truncate text-[#1a3a5c]">
-                    Learning Tree
-                  </span>
+                  {basePath === "/super-admin" ? (
+                    <>
+                      <div className="w-7 h-7 rounded bg-emerald-500/20 flex items-center justify-center">
+                        <Crown className="w-4 h-4 text-emerald-500" />
+                      </div>
+                      <span className="font-semibold tracking-tight truncate text-[#1a3a5c]">
+                        نشأة - الإدارة
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
+                      <span className="font-semibold tracking-tight truncate text-[#1a3a5c]">
+                        Learning Tree
+                      </span>
+                    </>
+                  )}
                 </div>
               ) : (
-                <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
+                basePath === "/super-admin" ? (
+                  <div className="w-7 h-7 rounded bg-emerald-500/20 flex items-center justify-center">
+                    <Crown className="w-4 h-4 text-emerald-500" />
+                  </div>
+                ) : (
+                  <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
+                )
               )}
             </div>
           </SidebarHeader>

@@ -20,6 +20,7 @@ export const users = mysqlTable("users", {
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
   accountLockedUntil: timestamp("accountLockedUntil"),
   passwordChangedAt: timestamp("passwordChangedAt"),
+  organizationId: int("organizationId").default(1),
 });
 
 export type User = typeof users.$inferSelect;
@@ -35,6 +36,7 @@ export const classes = mysqlTable("classes", {
   teacherId: int("teacherId"),
   assistantId: int("assistantId"),
   isActive: boolean("isActive").default(true).notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -78,6 +80,7 @@ export const children = mysqlTable("children", {
   notes: text("notes"),
   // Status & Metadata
   status: mysqlEnum("status", ["active", "inactive", "graduated", "waitlist"]).default("active").notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -123,6 +126,7 @@ export const attendance = mysqlTable("attendance", {
   droppedOffBy: varchar("droppedOffBy", { length: 200 }),
   droppedOffRelationship: mysqlEnum("droppedOffRelationship", ["mother", "father", "driver", "grandparent", "other"]),
   notes: text("notes"),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -143,6 +147,7 @@ export const staffAttendance = mysqlTable("staff_attendance", {
   deviceInfo: text("deviceInfo"),
   status: mysqlEnum("status", ["checked_in", "checked_out", "absent", "late"]).default("checked_in").notNull(),
   notes: text("notes"),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -160,6 +165,7 @@ export const centerSettings = mysqlTable("center_settings", {
   email: varchar("email", { length: 320 }),
   workingHoursStart: varchar("workingHoursStart", { length: 10 }).default("07:00"),
   workingHoursEnd: varchar("workingHoursEnd", { length: 10 }).default("17:00"),
+  organizationId: int("organizationId").default(1),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -179,6 +185,7 @@ export const dailyActivities = mysqlTable("daily_activities", {
   photoUrl: text("photoUrl"),
   recordedBy: int("recordedBy").notNull(),
   recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -198,6 +205,7 @@ export const dailyReports = mysqlTable("daily_reports", {
   teacherNotes: text("teacherNotes"),
   photos: json("photos"),
   isPublished: boolean("isPublished").default(false).notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -215,6 +223,7 @@ export const eyfsAssessments = mysqlTable("eyfs_assessments", {
   notes: text("notes"),
   assessedBy: int("assessedBy").notNull(),
   assessedAt: timestamp("assessedAt").defaultNow().notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -234,6 +243,7 @@ export const calendarEvents = mysqlTable("calendar_events", {
   audience: mysqlEnum("audience", ["all", "parents", "staff", "admin"]).default("all").notNull(),
   status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
   createdBy: int("createdBy").notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -265,6 +275,7 @@ export const announcements = mysqlTable("announcements", {
   classId: int("classId"),
   isPinned: boolean("isPinned").default(false).notNull(),
   createdBy: int("createdBy").notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -278,6 +289,7 @@ export const documents = mysqlTable("documents", {
   requiresSignature: boolean("requiresSignature").default(false).notNull(),
   audience: mysqlEnum("audience", ["all", "parents", "staff"]).default("all").notNull(),
   createdBy: int("createdBy").notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -329,6 +341,7 @@ export const conversations = mysqlTable("conversations", {
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
   lastMessagePreview: varchar("lastMessagePreview", { length: 255 }),
   isArchived: boolean("isArchived").default(false).notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -371,6 +384,7 @@ export const invoices = mysqlTable("invoices", {
   tuitionPlanId: int("tuitionPlanId"),
   paidAmount: decimal("paidAmount", { precision: 10, scale: 2 }).default("0.00").notNull(),
   createdBy: int("createdBy"),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -502,6 +516,7 @@ export const notifications = mysqlTable("notifications", {
   type: mysqlEnum("type", ["attendance", "report", "message", "payment", "general", "activity", "announcement"]).default("general").notNull(),
   isRead: boolean("isRead").default(false).notNull(),
   metadata: json("metadata"),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -597,6 +612,7 @@ export const media = mysqlTable("media", {
   classId: int("classId"),
   visibility: mysqlEnum("visibility", ["class", "specific"]).default("class").notNull(),
   isApproved: boolean("isApproved").default(true).notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type Media = typeof media.$inferSelect;
@@ -677,6 +693,7 @@ export const pickupRequests = mysqlTable("pickup_requests", {
   escalatedAt: timestamp("escalatedAt"),
   // Additional info
   notes: text("notes"),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -709,6 +726,7 @@ export const learningObservations = mysqlTable("learning_observations", {
   nextSteps: text("nextSteps"),
   linkedAssessmentId: int("linkedAssessmentId"),
   observedAt: timestamp("observedAt").defaultNow().notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -741,6 +759,7 @@ export const aiGeneratedContent = mysqlTable("ai_generated_content", {
   createdBy: int("createdBy").notNull(),
   isSaved: boolean("isSaved").default(false).notNull(),
   isPublished: boolean("isPublished").default(false).notNull(),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -806,8 +825,123 @@ export const weeklyPlans = mysqlTable("weekly_plans", {
   status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
   sections: json("sections").notNull(), // JSON object with all 14 sections
   publishedAt: timestamp("publishedAt"),
+  organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type WeeklyPlan = typeof weeklyPlans.$inferSelect;
 export type InsertWeeklyPlan = typeof weeklyPlans.$inferInsert;
+
+
+// ============ ORGANIZATIONS (Multi-Tenant) ============
+export const organizations = mysqlTable("organizations", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  nameAr: varchar("nameAr", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  domain: varchar("domain", { length: 255 }),
+  edition: mysqlEnum("edition", ["learning_tree", "nashaa"]).default("nashaa").notNull(),
+  status: mysqlEnum("status", ["active", "suspended", "pending", "trial"]).default("pending").notNull(),
+  logoUrl: text("logoUrl"),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  country: varchar("country", { length: 100 }).default("SA"),
+  licenseNumber: varchar("licenseNumber", { length: 100 }),
+  maxChildren: int("maxChildren").default(50),
+  maxStaff: int("maxStaff").default(20),
+  subscriptionPlanId: int("subscriptionPlanId"),
+  trialEndsAt: timestamp("trialEndsAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
+
+// ============ ORGANIZATION BRANDING ============
+export const organizationBranding = mysqlTable("organization_branding", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull().unique(),
+  primaryColor: varchar("primaryColor", { length: 20 }).default("#10b981"),
+  secondaryColor: varchar("secondaryColor", { length: 20 }).default("#059669"),
+  accentColor: varchar("accentColor", { length: 20 }).default("#34d399"),
+  backgroundColor: varchar("backgroundColor", { length: 20 }).default("#0f172a"),
+  textColor: varchar("textColor", { length: 20 }).default("#f8fafc"),
+  logoUrl: text("logoUrl"),
+  logoLightUrl: text("logoLightUrl"),
+  appIcon: text("appIcon"),
+  splashScreenUrl: text("splashScreenUrl"),
+  fontFamily: varchar("fontFamily", { length: 100 }).default("Noto Sans Arabic"),
+  borderRadius: varchar("borderRadius", { length: 20 }).default("0.5rem"),
+  sidebarStyle: mysqlEnum("sidebarStyle", ["dark", "light", "gradient"]).default("dark"),
+  customCss: text("customCss"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type OrganizationBranding = typeof organizationBranding.$inferSelect;
+export type InsertOrganizationBranding = typeof organizationBranding.$inferInsert;
+
+// ============ SUBSCRIPTION PLANS ============
+export const subscriptionPlans = mysqlTable("subscription_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  nameAr: varchar("nameAr", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  tier: mysqlEnum("tier", ["starter", "professional", "enterprise"]).notNull(),
+  priceMonthly: decimal("priceMonthly", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  priceYearly: decimal("priceYearly", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
+  maxChildren: int("maxChildren").default(30).notNull(),
+  maxStaff: int("maxStaff").default(10).notNull(),
+  maxClasses: int("maxClasses").default(5).notNull(),
+  storageGb: int("storageGb").default(5).notNull(),
+  features: json("features").notNull(), // JSON array of feature keys enabled
+  hasAiTools: boolean("hasAiTools").default(false).notNull(),
+  hasCustomBranding: boolean("hasCustomBranding").default(false).notNull(),
+  hasAdvancedReports: boolean("hasAdvancedReports").default(false).notNull(),
+  hasParentApp: boolean("hasParentApp").default(true).notNull(),
+  hasPushNotifications: boolean("hasPushNotifications").default(true).notNull(),
+  hasApiAccess: boolean("hasApiAccess").default(false).notNull(),
+  prioritySupport: boolean("prioritySupport").default(false).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+
+// ============ ORGANIZATION SUBSCRIPTIONS ============
+export const organizationSubscriptions = mysqlTable("organization_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  planId: int("planId").notNull(),
+  status: mysqlEnum("status", ["active", "expired", "cancelled", "past_due", "trialing"]).default("trialing").notNull(),
+  billingCycle: mysqlEnum("billingCycle", ["monthly", "yearly"]).default("monthly").notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart").notNull(),
+  currentPeriodEnd: timestamp("currentPeriodEnd").notNull(),
+  cancelledAt: timestamp("cancelledAt"),
+  cancelReason: text("cancelReason"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type OrganizationSubscription = typeof organizationSubscriptions.$inferSelect;
+export type InsertOrganizationSubscription = typeof organizationSubscriptions.$inferInsert;
+
+// ============ ORGANIZATION MEMBERS (User-Organization mapping) ============
+export const organizationMembers = mysqlTable("organization_members", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["owner", "admin", "principal", "teacher", "assistant", "accountant", "receptionist", "parent"]).default("parent").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type OrganizationMember = typeof organizationMembers.$inferSelect;
+export type InsertOrganizationMember = typeof organizationMembers.$inferInsert;

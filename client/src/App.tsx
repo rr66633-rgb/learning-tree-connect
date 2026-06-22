@@ -39,6 +39,13 @@ const StaffAssessments = lazy(() => import("./pages/staff/Assessments"));
 const StaffAuditLog = lazy(() => import("./pages/staff/AuditLog"));
 const StaffWeeklyPlan = lazy(() => import("./pages/staff/WeeklyPlan"));
 
+// Super Admin Pages
+const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
+const OrganizationDetail = lazy(() => import("./pages/superadmin/OrganizationDetail"));
+const CreateOrganization = lazy(() => import("./pages/superadmin/CreateOrganization"));
+const OnboardingWizard = lazy(() => import("./pages/OnboardingWizard"));
+const SubscriptionPlans = lazy(() => import("./pages/SubscriptionPlans"));
+
 // AI Pages
 const AIHub = lazy(() => import("./pages/ai/AIHub"));
 const AIObservation = lazy(() => import("./pages/ai/AIObservation"));
@@ -105,8 +112,14 @@ function isStaffRole(role?: string): boolean {
   return staffRoles.includes(role || "");
 }
 
+/** Determine if a role is a "super_admin" type role */
+function isSuperAdminRole(role?: string): boolean {
+  return role === "super_admin";
+}
+
 /** Get the base path for a given role */
 function getBasePathForRole(role?: string): string {
+  if (isSuperAdminRole(role)) return "/super-admin";
   if (isParentRole(role)) return "/parent";
   if (isStaffRole(role)) return "/staff";
   // Default: 'user' role or unknown - show a pending state
@@ -351,6 +364,25 @@ function RoleRouter() {
         </Route>
         <Route path="/ai/marketing/media-caption">
           {isStaffRole(userRole) ? <AIMarketingMediaCaption /> : <Redirect to={basePath} />}
+        </Route>
+
+        {/* Super Admin routes */}
+        <Route path="/super-admin/organizations/new">
+          {isSuperAdminRole(userRole) ? <CreateOrganization /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/super-admin/organizations/:id">
+          {isSuperAdminRole(userRole) ? <OrganizationDetail /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/super-admin/plans">
+          {isSuperAdminRole(userRole) ? <SubscriptionPlans /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/super-admin">
+          {isSuperAdminRole(userRole) ? <SuperAdminDashboard /> : <Redirect to={basePath} />}
+        </Route>
+
+        {/* Onboarding wizard - accessible by authenticated users */}
+        <Route path="/onboarding">
+          <OnboardingWizard />
         </Route>
 
         {/* Staff routes - protected for staff roles only */}
