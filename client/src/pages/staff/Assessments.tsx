@@ -79,13 +79,16 @@ export default function Assessments() {
   const selectedChildData = children?.find((c: any) => c.id === selectedChild);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">التقييمات والملاحظات التعليمية</h1>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">التقييمات والملاحظات التعليمية</h1>
+          <p className="text-sm text-muted-foreground mt-1">تتبع تطور الأطفال وفق إطار EYFS</p>
+        </div>
       </div>
 
       {/* Child Selection */}
-      <Card>
+      <Card className="border-0 shadow-sm">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <label className="font-medium whitespace-nowrap">اختر الطفل:</label>

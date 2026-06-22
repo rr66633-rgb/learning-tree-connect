@@ -119,26 +119,26 @@ export default function AIObservation() {
   };
 
   return (
-    <div className="min-h-full p-4 md:p-6 lg:p-8" dir="rtl">
+    <div className="max-w-6xl mx-auto space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3">
         <Link href="/ai">
-          <Button variant="ghost" size="icon" className="shrink-0">
+          <Button variant="ghost" size="icon" className="shrink-0 rounded-xl">
             <ArrowRight className="h-5 w-5" />
           </Button>
         </Link>
-        <div className="p-2 rounded-xl bg-violet-100">
+        <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center">
           <Eye className="h-5 w-5 text-violet-600" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">كاتب الملاحظات</h1>
-          <p className="text-sm text-muted-foreground">Observation Writer</p>
+          <h1 className="text-xl font-bold text-foreground">كاتب الملاحظات</h1>
+          <p className="text-sm text-muted-foreground">إنشاء ملاحظات مهنية بنقرة واحدة</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Input Section */}
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">المدخلات</CardTitle>
           </CardHeader>
@@ -193,7 +193,7 @@ export default function AIObservation() {
         </Card>
 
         {/* Result Section */}
-        <Card className={result ? "border-violet-200" : "border-dashed"}>
+        <Card className={`border-0 shadow-sm ${result ? "ring-1 ring-violet-200" : ""}`}>
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
               <span>النتيجة</span>

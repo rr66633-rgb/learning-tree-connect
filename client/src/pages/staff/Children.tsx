@@ -346,12 +346,15 @@ export default function StaffChildren() {
   );
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{"\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0623\u0637\u0641\u0627\u0644"}</h1>
+    <div className="space-y-6 max-w-7xl mx-auto" dir="rtl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{"\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0623\u0637\u0641\u0627\u0644"}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} \u0637\u0641\u0644 \u0645\u0633\u062C\u0644</p>
+        </div>
         <Dialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (!open) setForm(initialFormState); }}>
           <DialogTrigger asChild>
-            <Button><Plus className="ml-2 h-4 w-4" /> {"\u0625\u0636\u0627\u0641\u0629 \u0637\u0641\u0644"}</Button>
+            <Button className="rounded-xl shadow-sm btn-press"><Plus className="ml-2 h-4 w-4" /> {"\u0625\u0636\u0627\u0641\u0629 \u0637\u0641\u0644"}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
@@ -369,10 +372,10 @@ export default function StaffChildren() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 flex-wrap">
+      <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={"\u0628\u062D\u062B \u0628\u0627\u0644\u0627\u0633\u0645..."} className="pr-10" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={"\u0628\u062D\u062B \u0628\u0627\u0644\u0627\u0633\u0645..."} className="pr-10 rounded-xl" />
         </div>
         <Select value={classFilter} onValueChange={setClassFilter}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder={"\u062C\u0645\u064A\u0639 \u0627\u0644\u0641\u0635\u0648\u0644"} /></SelectTrigger>
@@ -395,7 +398,7 @@ export default function StaffChildren() {
         </Select>
       </div>
 
-      <p className="text-sm text-muted-foreground">{"\u0625\u062C\u0645\u0627\u0644\u064A:"} {filtered.length} {"\u0637\u0641\u0644"}</p>
+
 
       {/* Children Table */}
       <Card>

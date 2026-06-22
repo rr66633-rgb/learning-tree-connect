@@ -142,22 +142,32 @@ export default function StaffAttendance() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">حضور الأطفال</h1>
-        <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">حضور الأطفال</h1>
+          <p className="text-sm text-muted-foreground mt-1">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <Badge variant="outline" className="w-fit rounded-xl px-4 py-2 text-sm border-primary/20 text-primary bg-primary/5">
+          {children?.length ?? 0} طفل مسجل
+        </Badge>
       </div>
 
       {/* Currently in center */}
       {currentlyInCenter.length > 0 && (
-        <Card className="border-emerald-200 bg-emerald-50">
+        <Card className="border-0 shadow-sm bg-gradient-to-l from-emerald-50/80 to-transparent">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-emerald-700">في المركز الآن ({currentlyInCenter.length})</CardTitle>
+            <CardTitle className="text-sm font-semibold text-emerald-700 flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+              </div>
+              في المركز الآن ({currentlyInCenter.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {currentlyInCenter.map((child: any) => (
-                <Badge key={child.id} variant="secondary" className="bg-emerald-100 text-emerald-800">
+                <Badge key={child.id} variant="secondary" className="bg-emerald-100/80 text-emerald-800 rounded-lg px-3 py-1">
                   {child.firstName} {child.lastName}
                 </Badge>
               ))}
@@ -166,7 +176,7 @@ export default function StaffAttendance() {
         </Card>
       )}
 
-      <Card>
+      <Card className="border-0 shadow-sm overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>

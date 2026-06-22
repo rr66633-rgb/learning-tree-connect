@@ -257,22 +257,26 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd]">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-accent/30 to-primary/5 relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-accent/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-chart-3/5 rounded-full blur-3xl" />
+        
+        <div className="flex flex-col items-center gap-10 p-8 max-w-md w-full relative z-10">
           <div className="flex flex-col items-center gap-6">
-            <img
-              src="/manus-storage/learning-tree-logo-256_58b252d9.png"
-              alt="Learning Tree Kids Center"
-              className="w-32 h-32 object-contain"
-            />
-            <h1 className="text-2xl font-bold tracking-tight text-center text-[#1a3a5c]">
-              Learning Tree Kids Center
+            <div className="w-28 h-28 rounded-3xl bg-white shadow-xl shadow-primary/10 flex items-center justify-center p-3 border border-border/50">
+              <img
+                src="/manus-storage/learning-tree-logo-256_58b252d9.png"
+                alt="Learning Tree Kids Center"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-center text-foreground">
+              Learning Tree
             </h1>
-            <h2 className="text-lg font-semibold text-center text-[#2c5f7c]">
-              Nursery Management System
-            </h2>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              يرجى تسجيل الدخول للوصول إلى منصة إدارة الحضانة
+            <p className="text-base text-muted-foreground text-center max-w-sm leading-relaxed">
+              منصة إدارة الحضانة المتكاملة
             </p>
           </div>
           <Button
@@ -280,10 +284,13 @@ export default function DashboardLayout({
               window.location.href = getLoginUrl();
             }}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all bg-[#1a3a5c] hover:bg-[#0f2a45] text-white"
+            className="w-full h-12 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 bg-primary hover:bg-primary/90 text-primary-foreground text-base font-semibold btn-press"
           >
             تسجيل الدخول
           </Button>
+          <p className="text-xs text-muted-foreground/60 text-center">
+            منصة آمنة ومشفرة لحماية بياناتك
+          </p>
         </div>
       </div>
     );
@@ -370,33 +377,33 @@ function DashboardLayoutContent({
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           collapsible="icon"
-          className="border-r-0"
+          className="border-r-0 sidebar-premium"
           disableTransition={isResizing}
         >
           <SidebarHeader className="h-16 justify-center">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                className="h-8 w-8 flex items-center justify-center hover:bg-primary/10 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
                 aria-label="تبديل القائمة"
               >
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   {basePath === "/super-admin" ? (
                     <>
-                      <div className="w-7 h-7 rounded bg-emerald-500/20 flex items-center justify-center">
-                        <Crown className="w-4 h-4 text-emerald-500" />
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-sm">
+                        <Crown className="w-4 h-4 text-white" />
                       </div>
-                      <span className="font-semibold tracking-tight truncate text-[#1a3a5c]">
+                      <span className="font-bold tracking-tight truncate text-foreground">
                         نشأة - الإدارة
                       </span>
                     </>
                   ) : (
                     <>
-                      <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
-                      <span className="font-semibold tracking-tight truncate text-[#1a3a5c]">
+                      <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-8 h-8 object-contain rounded-lg" />
+                      <span className="font-bold tracking-tight truncate text-foreground">
                         Learning Tree
                       </span>
                     </>
@@ -404,18 +411,18 @@ function DashboardLayoutContent({
                 </div>
               ) : (
                 basePath === "/super-admin" ? (
-                  <div className="w-7 h-7 rounded bg-emerald-500/20 flex items-center justify-center">
-                    <Crown className="w-4 h-4 text-emerald-500" />
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-sm">
+                    <Crown className="w-4 h-4 text-white" />
                   </div>
                 ) : (
-                  <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-7 h-7 object-contain" />
+                  <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-8 h-8 object-contain rounded-lg" />
                 )
               )}
             </div>
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
+            <SidebarMenu className="px-2 py-2 space-y-0.5">
               {menuItems.map((item: MenuItem) => {
                 const fullPath = item.path.startsWith("/ai") ? item.path : basePath + item.path;
                 const isActive = location === fullPath || (item.path === "" && location === basePath);
@@ -425,10 +432,16 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => setLocation(fullPath)}
                       tooltip={item.label}
-                      className="h-10 transition-all font-normal"
+                      className={`h-10 rounded-xl transition-all duration-200 font-medium text-[13px] ${
+                        isActive 
+                          ? "bg-primary/10 text-primary shadow-sm" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                      }`}
                     >
                       <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        className={`h-[18px] w-[18px] transition-colors ${
+                          isActive ? "text-primary" : ""
+                        }`}
                       />
                       <span>{item.label}</span>
                     </SidebarMenuButton>
@@ -439,31 +452,31 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3">
-            <div className="mb-2 flex justify-center">
+            <div className="mb-3 flex justify-center">
               <DutyToggle />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
+                <button className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-accent/60 transition-all duration-200 w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Avatar className="h-9 w-9 border-2 border-primary/20 shrink-0 shadow-sm">
+                    <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-primary/20 to-primary/5 text-primary">
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
+                    <p className="text-sm font-semibold truncate leading-none text-foreground">
                       {user?.name || "-"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
+                    <p className="text-[11px] text-muted-foreground truncate mt-1.5">
                       {getRoleDisplayName(user?.role)}
                     </p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 rounded-xl">
                 <DropdownMenuItem
                   onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
+                  className="cursor-pointer text-destructive focus:text-destructive rounded-lg"
                 >
                   <LogOut className="ml-2 h-4 w-4" />
                   <span>تسجيل الخروج</span>
@@ -482,17 +495,15 @@ function DashboardLayoutContent({
         />
       </div>
 
-      <SidebarInset className="overflow-y-auto">
+      <SidebarInset className="overflow-y-auto bg-background">
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
+          <div className="flex border-b border-border/50 h-14 items-center justify-between bg-background/80 px-3 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="h-9 w-9 rounded-xl bg-accent/50" />
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "القائمة"}
-                  </span>
-                </div>
+                <span className="font-semibold text-foreground text-sm">
+                  {activeMenuItem?.label ?? "القائمة"}
+                </span>
               </div>
             </div>
           </div>
@@ -500,7 +511,7 @@ function DashboardLayoutContent({
         <PushNotificationRequired />
         <PushNotificationBanner />
         <OperationalAlert />
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4 md:p-6 page-enter">{children}</main>
       </SidebarInset>
     </>
   );
