@@ -26,23 +26,23 @@ export default function Landing() {
   const plans = [
     { 
       name: "أساسي", 
-      price: "٤٩٩", 
-      period: "شهرياً",
-      features: ["حتى ٣٠ طفل", "٥ موظفين", "الحضور والتقارير اليومية", "التواصل مع الأهل", "الدعم الفني"],
+      price: "٦,٩٠٠", 
+      period: "سنوياً",
+      features: ["حتى ٥٠ طفل", "حتى ١٠ موظفين", "الحضور وتسجيل الدخول/الخروج", "التقارير اليومية", "التواصل مع الأهالي", "تطبيق الأهل للجوال", "الدعم الفني"],
       popular: false 
     },
     { 
       name: "احترافي", 
-      price: "٩٩٩", 
-      period: "شهرياً",
-      features: ["حتى ١٠٠ طفل", "١٥ موظف", "جميع مزايا الأساسي", "الذكاء الاصطناعي", "التقييمات والمنهج", "التحليلات المتقدمة", "تطبيق الأهل"],
+      price: "١٠,٩٠٠", 
+      period: "سنوياً",
+      features: ["حتى ١٠٠ طفل", "حتى ٢٥ موظف", "جميع مزايا الخطة الأساسية", "المساعد الذكي (AI)", "التقييمات ومتابعة التطور", "أدوات التخطيط التعليمي", "التحليلات والتقارير المتقدمة", "تطبيق الأهل للجوال"],
       popular: true 
     },
     { 
       name: "مؤسسي", 
-      price: "١,٩٩٩", 
-      period: "شهرياً",
-      features: ["عدد غير محدود", "جميع مزايا الاحترافي", "فروع متعددة", "واجهة مخصصة", "مدير حساب مخصص", "تكامل مع الأنظمة", "أولوية الدعم"],
+      price: "١٥,٩٠٠", 
+      period: "سنوياً",
+      features: ["حتى ٢٠٠ طفل", "فروع متعددة", "جميع مزايا الخطة الاحترافية", "صلاحيات وأدوار متقدمة", "مدير حساب مخصص", "أولوية الدعم الفني", "التكامل والوصول عبر API", "خيارات العلامة التجارية المخصصة"],
       popular: false 
     },
   ];
@@ -194,10 +194,10 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#1A1F36' }}>
-              خطط أسعار مرنة
+              خطط اشتراك سنوية
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              اختر الخطة المناسبة لحجم حضانتك. جميع الخطط تشمل تجربة مجانية لمدة ١٤ يوم.
+              اختر الخطة المناسبة لحجم حضانتك. جميع الأسعار بالريال السعودي والفوترة سنوية.
             </p>
           </div>
           
@@ -218,10 +218,11 @@ export default function Landing() {
                 )}
                 <CardContent className="p-8">
                   <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1F36' }}>{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-6">
+                  <div className="flex items-baseline gap-1 mb-2">
                     <span className="text-4xl font-extrabold" style={{ color: '#1A1F36' }}>{plan.price}</span>
                     <span className="text-sm text-gray-500">ر.س / {plan.period}</span>
                   </div>
+                  <p className="text-xs text-gray-400 mb-6">SAR {plan.name === 'أساسي' ? '6,900' : plan.name === 'احترافي' ? '10,900' : '15,900'} / Year</p>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((f, j) => (
                       <li key={j} className="flex items-center gap-2 text-sm text-gray-700">
@@ -240,6 +241,10 @@ export default function Landing() {
               </Card>
             ))}
           </div>
+          
+          <p className="text-center text-sm text-gray-500 mt-10 max-w-2xl mx-auto">
+            جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني.
+          </p>
         </div>
       </section>
 

@@ -1418,3 +1418,13 @@
 - [x] All 4 demo accounts verified working (admin, nursery, teacher, parent)
 - [x] Demo account emails updated to @naashah.com
 - [x] Save checkpoint and deploy
+
+## Pricing Update - Annual SAR Only
+- [x] Update landing page pricing to annual-only SAR pricing
+- [x] Basic plan: SAR 6,900/year (up to 50 children, 10 staff)
+- [x] Professional plan: SAR 10,900/year (up to 100 children, 25 staff) — Most Popular
+- [x] Enterprise plan: SAR 15,900/year (up to 200 children, multiple branches)
+- [x] Section title changed to "خطط اشتراك سنوية"
+- [x] Add note: "جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني"
+- [x] Remove all monthly pricing references from public landing page
+- [x] Verify internal billing cycle dropdowns (Finance, OnboardingWizard, etc.) remain unchanged
