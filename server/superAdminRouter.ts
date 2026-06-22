@@ -12,6 +12,7 @@ import {
   users,
   children,
   classes,
+  auditLog,
 } from "../drizzle/schema";
 
 async function getDb() {
@@ -151,7 +152,7 @@ export const superAdminRouter = router({
       maxStaff: z.number().default(20),
       subscriptionPlanId: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
 
       // Check slug uniqueness
@@ -176,6 +177,15 @@ export const superAdminRouter = router({
         organizationId: orgId,
       });
 
+      // Audit log
+      await db.insert(auditLog).values({
+        userId: ctx.user!.id,
+        action: "create_organization",
+        resource: "organization",
+        resourceId: orgId,
+        details: JSON.stringify({ name: input.name, slug: input.slug, edition: input.edition }),
+      });
+
       return { id: orgId, message: "تم إنشاء المنظمة بنجاح" };
     }),
 
@@ -194,7 +204,7 @@ export const superAdminRouter = router({
       maxStaff: z.number().optional(),
       licenseNumber: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const { id, ...updates } = input;
       
@@ -202,6 +212,15 @@ export const superAdminRouter = router({
         .update(organizations)
         .set(updates)
         .where(eq(organizations.id, id));
+
+      // Audit log
+      await db.insert(auditLog).values({
+        userId: ctx.user!.id,
+        action: "update_organization",
+        resource: "organization",
+        resourceId: id,
+        details: JSON.stringify(updates),
+      });
 
       return { success: true, message: "تم تحديث المنظمة بنجاح" };
     }),
@@ -212,13 +231,22 @@ export const superAdminRouter = router({
       id: z.number(),
       status: z.enum(["active", "suspended"]),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       
       await db
         .update(organizations)
         .set({ status: input.status })
         .where(eq(organizations.id, input.id));
+
+      // Audit log
+      await db.insert(auditLog).values({
+        userId: ctx.user!.id,
+        action: "toggle_organization_status",
+        resource: "organization",
+        resourceId: input.id,
+        details: JSON.stringify({ newStatus: input.status }),
+      });
 
       return { success: true, message: input.status === "active" ? "تم تفعيل المنظمة" : "تم تعليق المنظمة" };
     }),

@@ -1718,7 +1718,8 @@ export const appRouter = router({
       imageUrl: z.string(),
     })).mutation(async ({ input }) => {
       const { invokeLLM } = await import("./_core/llm");
-      const response = await invokeLLM({
+      const { withRetry } = await import("../shared/retry");
+      const response = await withRetry(() => invokeLLM({
         messages: [
           {
             role: "system",
@@ -1732,7 +1733,7 @@ export const appRouter = router({
             ]
           }
         ],
-      });
+      }), { maxRetries: 2, initialDelayMs: 1000 });
       const captionContent = response.choices?.[0]?.message?.content;
       const caption = (typeof captionContent === 'string' ? captionContent.trim() : '') || "";
       return { caption };
@@ -1743,6 +1744,7 @@ export const appRouter = router({
       classId: z.number().optional(),
     })).mutation(async ({ input }) => {
       const { invokeLLM } = await import("./_core/llm");
+      const { withRetry } = await import("../shared/retry");
       // Get children from the class (or all active children)
       let childrenList;
       if (input.classId) {
@@ -1780,7 +1782,7 @@ export const appRouter = router({
         messageContent.push({ type: "text", text: `الصورة أعلاه هي للطفل: ${child.name} (معرف: ${child.id})` });
       }
       
-      const response = await invokeLLM({
+      const response = await withRetry(() => invokeLLM({
         messages: [
           {
             role: "system",
@@ -1791,7 +1793,7 @@ export const appRouter = router({
             content: messageContent
           }
         ],
-      });
+      }), { maxRetries: 2, initialDelayMs: 1000 });
       
       const rawContent = response.choices?.[0]?.message?.content;
       const aiResponse = (typeof rawContent === 'string' ? rawContent.trim() : '') || "";

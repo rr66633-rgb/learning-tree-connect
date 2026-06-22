@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import {
@@ -119,15 +120,35 @@ export default function OrganizationDetail() {
         </div>
         <div className="flex items-center gap-2">
           {org.status === "active" ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-red-500/30 text-red-400 hover:bg-red-500/10"
-              onClick={() => toggleStatus.mutate({ id: orgId, status: "suspended" })}
-            >
-              <Ban className="w-4 h-4 ml-1" />
-              تعليق
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                >
+                  <Ban className="w-4 h-4 ml-1" />
+                  تعليق
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>تأكيد تعليق المنظمة</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    هل أنت متأكد من تعليق هذه المنظمة؟ سيتم منع جميع المستخدمين من الوصول للنظام.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={() => toggleStatus.mutate({ id: orgId, status: "suspended" })}
+                  >
+                    تعليق المنظمة
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           ) : (
             <Button
               variant="outline"

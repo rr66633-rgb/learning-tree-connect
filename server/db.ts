@@ -127,16 +127,20 @@ export async function getChildIdsForParent(parentId: number): Promise<number[]> 
 }
 
 // ============ CHILDREN ============
-export async function getChildren(parentId?: number, organizationId?: number) {
+export async function getChildren(parentId?: number, organizationId?: number, limit?: number, offset?: number) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
   if (parentId) conditions.push(eq(children.parentId, parentId));
   if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  let query = db.select().from(children);
   if (conditions.length > 0) {
-    return db.select().from(children).where(conditions.length === 1 ? conditions[0] : and(...conditions)).orderBy(desc(children.createdAt));
+    query = query.where(conditions.length === 1 ? conditions[0] : and(...conditions)) as any;
   }
-  return db.select().from(children).orderBy(desc(children.createdAt));
+  query = query.orderBy(desc(children.createdAt)) as any;
+  if (limit) query = query.limit(limit) as any;
+  if (offset) query = query.offset(offset) as any;
+  return query;
 }
 
 export async function getChildById(id: number) {
@@ -735,7 +739,7 @@ export async function getDashboardStats() {
 }
 
 // ============ USER MANAGEMENT (Admin) ============
-export async function getUsersByRole(role?: string, search?: string, organizationId?: number) {
+export async function getUsersByRole(role?: string, search?: string, organizationId?: number, limit?: number, offset?: number) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
@@ -757,7 +761,10 @@ export async function getUsersByRole(role?: string, search?: string, organizatio
   if (organizationId) {
     conditions.push(eq(users.organizationId, organizationId));
   }
-  return db.select().from(users).where(and(...conditions)).orderBy(desc(users.createdAt));
+  let query = db.select().from(users).where(and(...conditions)).orderBy(desc(users.createdAt));
+  if (limit) query = query.limit(limit) as any;
+  if (offset) query = query.offset(offset) as any;
+  return query;
 }
 
 export async function getPendingParents() {
