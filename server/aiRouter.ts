@@ -1042,4 +1042,98 @@ Write the response in JSON format:
       await db.delete(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.id));
       return { success: true };
     }),
+
+  generateCertificate: aiProcedure
+    .input(z.object({
+      childId: z.number(),
+      certificateType: z.enum(['completion', 'achievement', 'attendance', 'behavior', 'graduation', 'custom']),
+      customTitle: z.string().optional(),
+      details: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+
+      const typeLabels: Record<string, string> = {
+        completion: 'إتمام مرحلة',
+        achievement: 'إنجاز متميز',
+        attendance: 'انتظام في الحضور',
+        behavior: 'سلوك مثالي',
+        graduation: 'تخرج',
+        custom: input.customTitle || 'شهادة تقدير',
+      };
+
+      const prompt = `أنت مصمم شهادات تقدير للأطفال في حضانة. أنشئ نص شهادة تقدير باللغة العربية للطفل/ة:\n- الاسم: ${child.arabicName || child.firstName + ' ' + child.lastName}\n- نوع الشهادة: ${typeLabels[input.certificateType]}\n${input.details ? '- تفاصيل إضافية: ' + input.details : ''}\n\nأنشئ نصاً رسمياً وجميلاً يتضمن:\n1. عنوان الشهادة\n2. نص التقدير (3-4 أسطر)\n3. عبارة تحفيزية للطفل\n\nأجب بصيغة JSON: { "title": "...", "body": "...", "motivationalQuote": "..." }`;
+
+      const response = await invokeLLM({ messages: [{ role: 'user', content: prompt }] });
+      const content = (response.choices[0]?.message?.content || '{}') as string;
+      let parsed;
+      try {
+        parsed = JSON.parse(content.replace(/```json\n?|```/g, '').trim());
+      } catch {
+        parsed = { title: typeLabels[input.certificateType], body: content, motivationalQuote: '' };
+      }
+
+      // Save to AI content library
+      const [saved] = await db.insert(aiGeneratedContent).values({
+        organizationId: ctx.user!.organizationId!,
+        createdBy: ctx.user!.id,
+        contentType: 'certificate',
+        title: parsed.title || typeLabels[input.certificateType],
+        content: JSON.stringify(parsed),
+        metadata: JSON.stringify({ childId: input.childId, childName: child.arabicName || child.firstName, certificateType: input.certificateType }),
+        createdAt: Date.now(),
+      });
+
+      return { id: saved.insertId, ...parsed };
+    }),
+
+  generateAssessment: aiProcedure
+    .input(z.object({
+      childId: z.number(),
+      assessmentType: z.enum(['developmental', 'academic', 'social', 'language', 'motor', 'comprehensive']),
+      period: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+
+      const typeLabels: Record<string, string> = {
+        developmental: 'تقييم تطوري شامل',
+        academic: 'تقييم أكاديمي',
+        social: 'تقييم اجتماعي عاطفي',
+        language: 'تقييم لغوي',
+        motor: 'تقييم حركي',
+        comprehensive: 'تقييم شامل',
+      };
+
+      const ageMonths = child.dateOfBirth ? Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : null;
+
+      const prompt = `أنت خبير تربوي متخصص في تقييم أطفال الحضانة وفق إطار EYFS. أنشئ تقييماً مفصلاً باللغة العربية:\n- الطفل: ${child.arabicName || child.firstName + ' ' + child.lastName}\n- العمر: ${ageMonths ? ageMonths + ' شهر' : 'غير محدد'}\n- نوع التقييم: ${typeLabels[input.assessmentType]}\n${input.period ? '- الفترة: ' + input.period : ''}\n${input.notes ? '- ملاحظات المعلمة: ' + input.notes : ''}\n\nأنشئ تقييماً يتضمن:\n1. ملخص عام (فقرة واحدة)\n2. نقاط القوة (3-5 نقاط)\n3. مجالات التطوير (2-3 نقاط)\n4. توصيات للمعلمة (3 توصيات)\n5. توصيات للأسرة (3 توصيات)\n6. الخطوات التالية (2-3 خطوات)\n\nأجب بصيغة JSON: { "summary": "...", "strengths": [...], "areasForDevelopment": [...], "teacherRecommendations": [...], "familyRecommendations": [...], "nextSteps": [...] }`;
+
+      const response = await invokeLLM({ messages: [{ role: 'user', content: prompt }] });
+      const content = (response.choices[0]?.message?.content || '{}') as string;
+      let parsed;
+      try {
+        parsed = JSON.parse(content.replace(/```json\n?|```/g, '').trim());
+      } catch {
+        parsed = { summary: content, strengths: [], areasForDevelopment: [], teacherRecommendations: [], familyRecommendations: [], nextSteps: [] };
+      }
+
+      // Save to AI content library
+      const [saved] = await db.insert(aiGeneratedContent).values({
+        organizationId: ctx.user!.organizationId!,
+        createdBy: ctx.user!.id,
+        contentType: 'assessment',
+        title: `${typeLabels[input.assessmentType]} - ${child.arabicName || child.firstName}`,
+        content: JSON.stringify(parsed),
+        metadata: JSON.stringify({ childId: input.childId, childName: child.arabicName || child.firstName, assessmentType: input.assessmentType, period: input.period }),
+        createdAt: Date.now(),
+      });
+
+      return { id: saved.insertId, ...parsed };
+    }),
 });

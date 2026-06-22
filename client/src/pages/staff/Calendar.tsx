@@ -262,11 +262,19 @@ export default function StaffCalendar() {
   const todayStr = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">التقويم السنوي</h1>
-        <Button onClick={() => openCreate()}>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <CalIcon className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">التقويم السنوي</h1>
+            <p className="text-sm text-muted-foreground">إدارة الأحداث والمناسبات والإجازات</p>
+          </div>
+        </div>
+        <Button onClick={() => openCreate()} className="shadow-sm">
           <Plus className="h-4 w-4 ml-2" />
           إضافة حدث
         </Button>

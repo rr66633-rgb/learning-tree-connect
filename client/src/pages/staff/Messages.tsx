@@ -151,12 +151,16 @@ export default function StaffMessages() {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex flex-col">
+    <div className="h-[calc(100vh-6rem)] flex flex-col max-w-7xl mx-auto w-full">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <MessageCircle className="h-6 w-6" />
-          الرسائل
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <div className="h-9 w-9 rounded-xl bg-purple-100 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-purple-600" />
+            </div>
+            الرسائل
+          </h1>
+        </div>
         <Dialog open={showNewConv} onOpenChange={setShowNewConv}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1">

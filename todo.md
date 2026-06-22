@@ -1304,9 +1304,9 @@
 - [x] AI learning stories generation
 - [x] AI social media posts generation
 - [x] AI event announcements generation
-- [ ] AI certificates generation
+- [x] AI certificates generation
 - [x] AI observation notes generation
-- [ ] AI child assessments generation
+- [x] AI child assessments generation
 
 ### Marketing Module
 - [x] Marketing center page (staff)
@@ -1353,7 +1353,7 @@
 ### Staff Pages Visual Redesign
 - [x] Redesign sidebar navigation with icons and modern styling
 - [x] Redesign attendance pages (premium header and cards)
-- [ ] Redesign communication pages
-- [ ] Redesign finance pages
-- [ ] Redesign HR pages
-- [ ] Redesign calendar/events pages
+- [x] Redesign communication pages (Messages premium header)
+- [x] Redesign finance pages (premium header with description)
+- [x] Redesign HR pages (StaffAttendance with premium header)
+- [x] Redesign calendar/events pages (premium header with description)

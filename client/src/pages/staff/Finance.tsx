@@ -162,9 +162,17 @@ export default function StaffFinance() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto w-full">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">المالية والمدفوعات</h1>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center">
+            <CreditCard className="h-5 w-5 text-orange-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">المالية والمدفوعات</h1>
+            <p className="text-sm text-muted-foreground">إدارة الفواتير والمدفوعات والتقارير المالية</p>
+          </div>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV} disabled={!invoices?.length}>
             <Download className="h-4 w-4 ml-2" />تصدير

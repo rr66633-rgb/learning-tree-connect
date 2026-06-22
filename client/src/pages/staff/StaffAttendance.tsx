@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useState } from "react";
 import { toast } from "sonner";
-import { MapPin, Clock, LogIn, LogOut, CheckCircle2, AlertCircle, UserX } from "lucide-react";
+import { MapPin, Clock, LogIn, LogOut, CheckCircle2, AlertCircle, UserX, UserCheck } from "lucide-react";
 
 export default function StaffStaffAttendance() {
   const { user } = useAuth();
@@ -145,9 +145,17 @@ export default function StaffStaffAttendance() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto w-full">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">سجل حضور الموظفين</h1>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
+            <UserCheck className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">سجل حضور الموظفين</h1>
+            <p className="text-sm text-muted-foreground">تسجيل الحضور والانصراف بالموقع الجغرافي</p>
+          </div>
+        </div>
       </div>
 
       {/* GPS Check-in/Check-out Card */}
