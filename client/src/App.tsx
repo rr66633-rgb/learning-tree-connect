@@ -13,6 +13,9 @@ import { useWeeklyPlanPdf } from "./hooks/useWeeklyPlanPdf";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Landing Page
+const Landing = lazy(() => import("./pages/Landing"));
+
 // Staff/Admin Pages
 const StaffDashboard = lazy(() => import("./pages/staff/Dashboard"));
 const StaffChildren = lazy(() => import("./pages/staff/Children"));
@@ -234,8 +237,8 @@ function PendingRolePage() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd]">
       <div className="flex flex-col items-center gap-6 p-8 max-w-md w-full text-center">
         <img
-          src="/manus-storage/learning-tree-logo-256_58b252d9.png"
-          alt="Learning Tree Kids Center"
+          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+          alt="نشأة"
           className="w-24 h-24 object-contain"
         />
         <h1 className="text-xl font-bold text-[#1a3a5c]">
@@ -298,7 +301,7 @@ function RoleRouter() {
 
   if (loading) return <PageLoader />;
 
-  // Not logged in - show auth pages or redirect to login
+  // Not logged in - show auth pages or landing page
   if (!user) {
     return (
       <Suspense fallback={<PageLoader />}>
@@ -309,11 +312,7 @@ function RoleRouter() {
           <Route path="/register" component={Register} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
-          <Route>
-            <DashboardLayout basePath="/staff">
-              <StaffRouter />
-            </DashboardLayout>
-          </Route>
+          <Route component={Landing} />
         </Switch>
       </Suspense>
     );

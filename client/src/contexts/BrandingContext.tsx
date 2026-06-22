@@ -22,9 +22,9 @@ export interface BrandingConfig {
 
 const defaultBranding: BrandingConfig = {
   organizationId: 1,
-  organizationName: "Learning Tree Nursery",
-  organizationNameAr: "حضانة شجرة التعلم",
-  edition: "learning_tree",
+  organizationName: "نشأة",
+  organizationNameAr: "نشأة",
+  edition: "nashaa",
   primaryColor: "#10b981",
   secondaryColor: "#059669",
   accentColor: "#34d399",

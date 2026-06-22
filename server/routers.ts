@@ -1,5 +1,6 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -102,6 +103,14 @@ export const appRouter = router({
         // Successful login - reset failed attempts
         await authService.resetFailedAttempts(user.id);
         await authService.recordLoginAttempt({ userId: user.id, identifier: input.identifier, ip, success: true });
+
+        // Set session cookie
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name || '',
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
         return { success: true, user: { id: user.id, name: user.name, role: user.role, email: user.email } };
       }),

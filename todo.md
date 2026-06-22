@@ -1357,3 +1357,34 @@
 - [x] Redesign finance pages (premium header with description)
 - [x] Redesign HR pages (StaffAttendance with premium header)
 - [x] Redesign calendar/events pages (premium header with description)
+
+## Phase 6 — Nasha'a SaaS Rebranding & Deployment
+
+### Platform Rebranding
+- [ ] Change platform name from Learning Tree to Nasha'a (نشأة)
+- [ ] Update VITE_APP_TITLE to نشأة
+- [ ] Update login page branding
+- [ ] Update DashboardLayout branding
+- [ ] Update HTML meta tags and title
+- [ ] Keep Learning Tree as Organization/Customer #1
+
+### Public Landing Page
+- [x] Create Nasha'a SaaS landing page (hero, features, pricing, CTA)
+- [x] Arabic-first premium design
+- [x] Nursery registration CTA
+
+### Subscription Plans
+- [x] Create subscription plans display page (included in landing page)
+- [x] Show pricing tiers (basic, pro, enterprise)
+
+### Demo Accounts
+- [x] Create Super Admin account (admin@nashaa.sa / Nashaa@2026)
+- [x] Create Demo Nursery admin account (nursery@nashaa.sa / Nashaa@2026)
+- [x] Create Demo Teacher account (teacher@nashaa.sa / Nashaa@2026)
+- [x] Create Demo Parent account (parent@nashaa.sa / Nashaa@2026)
+- [x] Ensure login flow sets session cookie correctly (JWT cookie on successful login)
+
+### Deployment
+- [x] Save checkpoint and publish
+- [x] Verify all logins work (all 4 accounts tested via API)
+- [x] All 310 tests passing

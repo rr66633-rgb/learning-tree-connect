@@ -76,12 +76,12 @@ export default function InvoiceDetail() {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     // Add Arabic font support
     doc.setFont('helvetica');
-    // Header - Learning Tree branding
+    // Header - Nasha'a branding
     doc.setFillColor(30, 70, 50);
     doc.rect(0, 0, 210, 35, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
-    doc.text('Learning Tree Kids Center', 105, 15, { align: 'center' });
+    doc.text('نشأة', 105, 15, { align: 'center' });
     doc.setFontSize(10);
     doc.text('Tax Invoice / Simplified', 105, 25, { align: 'center' });
     // Invoice info
@@ -127,7 +127,7 @@ export default function InvoiceDetail() {
     // Footer
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text('Learning Tree Kids Center - Thank you for your trust', 105, 280, { align: 'center' });
+    doc.text('نشأة - Thank you for your trust', 105, 280, { align: 'center' });
     doc.save(`Invoice-${invoice.invoiceNumber}.pdf`);
     toast.success('تم تحميل الفاتورة بنجاح');
   };

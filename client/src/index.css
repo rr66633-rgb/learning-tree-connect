@@ -43,58 +43,66 @@
 }
 
 :root {
-  /* Nasha'a Premium Design System 2026 */
-  /* Primary: Deep Teal - Modern, trustworthy, childcare-friendly */
-  --primary: oklch(0.45 0.12 195);
-  --primary-foreground: oklch(0.99 0.002 195);
-  --sidebar-primary: oklch(0.45 0.12 195);
-  --sidebar-primary-foreground: oklch(0.99 0.002 195);
+  /* Nasha'a Official Brand Identity 2026 */
+  /* Primary: Teal #00C9B7 */
+  --primary: oklch(0.74 0.12 178);
+  --primary-foreground: oklch(0.99 0.002 178);
+  --sidebar-primary: oklch(0.74 0.12 178);
+  --sidebar-primary-foreground: oklch(0.99 0.002 178);
 
-  /* Module Color System */
-  --chart-1: oklch(0.55 0.15 240); /* Academic - Blue */
-  --chart-2: oklch(0.55 0.15 300); /* Communication - Purple */
-  --chart-3: oklch(0.60 0.16 155); /* Attendance - Green */
-  --chart-4: oklch(0.65 0.15 65);  /* Finance - Orange */
-  --chart-5: oklch(0.55 0.12 195); /* Learning - Teal */
+  /* Brand Colors */
+  --brand-teal: #00C9B7;
+  --brand-purple: #7B61FF;
+  --brand-pink: #FF5CA8;
+  --brand-yellow: #FFB020;
+  --brand-dark: #1A1F36;
+  --brand-light: #F2F4F7;
+
+  /* Chart colors from brand palette */
+  --chart-1: oklch(0.74 0.12 178); /* Teal */
+  --chart-2: oklch(0.55 0.22 285); /* Purple */
+  --chart-3: oklch(0.65 0.20 340); /* Pink */
+  --chart-4: oklch(0.75 0.15 75);  /* Yellow */
+  --chart-5: oklch(0.25 0.03 260); /* Dark */
 
   --radius: 0.875rem;
   --background: oklch(0.985 0.003 250);
-  --foreground: oklch(0.18 0.02 260);
+  --foreground: oklch(0.16 0.03 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 260);
+  --card-foreground: oklch(0.16 0.03 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 260);
-  --secondary: oklch(0.965 0.012 250);
-  --secondary-foreground: oklch(0.35 0.06 250);
+  --popover-foreground: oklch(0.16 0.03 260);
+  --secondary: oklch(0.97 0.005 250);
+  --secondary-foreground: oklch(0.35 0.04 260);
   --muted: oklch(0.965 0.005 250);
   --muted-foreground: oklch(0.50 0.02 260);
-  --accent: oklch(0.955 0.02 195);
-  --accent-foreground: oklch(0.30 0.08 195);
+  --accent: oklch(0.95 0.03 178);
+  --accent-foreground: oklch(0.25 0.08 178);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.935 0.008 250);
   --input: oklch(0.935 0.008 250);
-  --ring: oklch(0.50 0.12 195);
+  --ring: oklch(0.74 0.12 178);
   --sidebar: oklch(0.99 0.003 250);
-  --sidebar-foreground: oklch(0.25 0.02 260);
-  --sidebar-accent: oklch(0.955 0.02 195);
-  --sidebar-accent-foreground: oklch(0.30 0.08 195);
+  --sidebar-foreground: oklch(0.20 0.03 260);
+  --sidebar-accent: oklch(0.95 0.03 178);
+  --sidebar-accent-foreground: oklch(0.25 0.08 178);
   --sidebar-border: oklch(0.94 0.006 250);
-  --sidebar-ring: oklch(0.50 0.12 195);
+  --sidebar-ring: oklch(0.74 0.12 178);
 
   /* Premium easing curves */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
   /* Module semantic colors */
-  --color-academic: oklch(0.55 0.15 240);
-  --color-communication: oklch(0.55 0.15 300);
-  --color-attendance: oklch(0.55 0.16 155);
-  --color-finance: oklch(0.65 0.15 65);
-  --color-learning: oklch(0.50 0.12 195);
-  --color-ai: oklch(0.55 0.18 285);
+  --color-academic: oklch(0.74 0.12 178);
+  --color-communication: oklch(0.55 0.22 285);
+  --color-attendance: oklch(0.60 0.16 155);
+  --color-finance: oklch(0.75 0.15 75);
+  --color-learning: oklch(0.74 0.12 178);
+  --color-ai: oklch(0.55 0.22 285);
   --color-reports: oklch(0.50 0.14 265);
-  --color-calendar: oklch(0.55 0.14 165);
+  --color-calendar: oklch(0.65 0.20 340);
 }
 
 .dark {
@@ -138,7 +146,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', sans-serif;
+    font-family: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
     direction: rtl;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

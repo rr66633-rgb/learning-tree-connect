@@ -4,11 +4,11 @@ export default function TermsOfService() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-8 flex items-center gap-3">
           <img
-            src="/manus-storage/learning-tree-logo-256_58b252d9.png"
-            alt="Learning Tree Kids Center"
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+            alt="نشأة"
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1a3a5c]">Learning Tree Kids Center</h1>
+          <h1 className="text-2xl font-bold text-[#1a3a5c]">نشأة</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="ltr">
@@ -16,8 +16,8 @@ export default function TermsOfService() {
           <p className="text-sm text-gray-500 mb-8">Last Updated: June 20, 2026</p>
 
           <p>
-            These Terms of Service ("Terms") govern your use of the Learning Tree Kids Center mobile
-            application ("App") operated by Learning Tree Kids Center ("we," "our," or "us").
+            These Terms of Service ("Terms") govern your use of the نشأة mobile
+            application ("App") operated by نشأة ("we," "our," or "us").
           </p>
           <p>
             By using the App, you agree to be bound by these Terms. If you do not agree, do not use
@@ -194,7 +194,7 @@ export default function TermsOfService() {
         </article>
 
         <footer className="mt-12 pt-6 border-t text-center text-sm text-gray-500">
-          <p>&copy; 2026 Learning Tree Kids Center. All rights reserved.</p>
+          <p>&copy; 2026 نشأة. All rights reserved.</p>
           <div className="mt-2 space-x-4">
             <a href="/terms" className="text-primary hover:underline font-medium">
               Terms of Service

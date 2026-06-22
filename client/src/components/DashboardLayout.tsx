@@ -267,16 +267,16 @@ export default function DashboardLayout({
           <div className="flex flex-col items-center gap-6">
             <div className="w-28 h-28 rounded-3xl bg-white shadow-xl shadow-primary/10 flex items-center justify-center p-3 border border-border/50">
               <img
-                src="/manus-storage/learning-tree-logo-256_58b252d9.png"
-                alt="Learning Tree Kids Center"
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+                alt="نشأة"
                 className="w-full h-full object-contain"
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-center text-foreground">
-              Learning Tree
+              نشأة
             </h1>
             <p className="text-base text-muted-foreground text-center max-w-sm leading-relaxed">
-              منصة إدارة الحضانة المتكاملة
+              المنصة السعودية الأولى لإدارة الحضانات
             </p>
           </div>
           <Button
@@ -402,9 +402,9 @@ function DashboardLayoutContent({
                     </>
                   ) : (
                     <>
-                      <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-8 h-8 object-contain rounded-lg" />
+                      <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp" alt="نشأة" className="w-8 h-8 object-contain rounded-lg" />
                       <span className="font-bold tracking-tight truncate text-foreground">
-                        Learning Tree
+                        نشأة
                       </span>
                     </>
                   )}
@@ -415,7 +415,7 @@ function DashboardLayoutContent({
                     <Crown className="w-4 h-4 text-white" />
                   </div>
                 ) : (
-                  <img src="/manus-storage/learning-tree-logo-256_58b252d9.png" alt="Logo" className="w-8 h-8 object-contain rounded-lg" />
+                  <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp" alt="نشأة" className="w-8 h-8 object-contain rounded-lg" />
                 )
               )}
             </div>

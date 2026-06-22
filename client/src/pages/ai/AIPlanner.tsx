@@ -685,7 +685,7 @@ export default function AIPlanner() {
         </div>` : ''}
     </div>
     <div class="footer">
-      <p class="logo-text">Learning Tree Kids Center</p>
+      <p class="logo-text">نشأة</p>
       <p>خطة أسبوعية تفصيلية — تم إنشاؤها بواسطة المساعد الذكي | ${today}</p>
       <p>هذه الخطة مُعدّة للاستخدام المباشر في الفصل الدراسي</p>
     </div>

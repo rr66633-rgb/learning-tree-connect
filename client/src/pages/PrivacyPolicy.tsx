@@ -4,11 +4,11 @@ export default function PrivacyPolicy() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-8 flex items-center gap-3">
           <img
-            src="/manus-storage/learning-tree-logo-256_58b252d9.png"
-            alt="Learning Tree Kids Center"
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+            alt="نشأة"
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#1a3a5c]">Learning Tree Kids Center</h1>
+          <h1 className="text-2xl font-bold text-[#1a3a5c]">نشأة</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="ltr">
@@ -16,7 +16,7 @@ export default function PrivacyPolicy() {
           <p className="text-sm text-gray-500 mb-8">Last Updated: June 20, 2026</p>
 
           <p>
-            Learning Tree Kids Center ("we," "our," or "us") operates the Learning Tree Kids Center
+            نشأة ("we," "our," or "us") operates the نشأة
             mobile application (the "App"). This Privacy Policy explains how we collect, use,
             disclose, and safeguard your information when you use our App.
           </p>
@@ -184,7 +184,7 @@ export default function PrivacyPolicy() {
         </article>
 
         <footer className="mt-12 pt-6 border-t text-center text-sm text-gray-500">
-          <p>&copy; 2026 Learning Tree Kids Center. All rights reserved.</p>
+          <p>&copy; 2026 نشأة. All rights reserved.</p>
           <div className="mt-2 space-x-4">
             <a href="/terms" className="text-primary hover:underline">
               Terms of Service
