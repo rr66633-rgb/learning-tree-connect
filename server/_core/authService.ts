@@ -6,6 +6,8 @@ import crypto from 'crypto';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { otpCodes, passwordResetTokens, loginAttempts, users } from '../../drizzle/schema';
 import { getDb as getSharedDb } from '../db';
+import { sendOtpSms, sendPasswordResetSms, isSmsConfigured } from '../services/smsService';
+import { sendOtpEmail, sendPasswordResetEmail as sendResetEmail, isEmailConfigured } from '../services/emailService';
 
 // Wrapper to maintain the non-null return type expected by this module
 async function getDb() {
@@ -340,42 +342,57 @@ export async function updatePassword(userId: number, newPassword: string): Promi
     .where(eq(users.id, userId));
 }
 
-// ============ SMS / EMAIL SENDING (Placeholder) ============
+// ============ SMS / EMAIL SENDING (Twilio + SendGrid) ============
 
 /**
- * Send OTP via SMS (placeholder - will integrate with SMS gateway later)
+ * Send OTP via SMS using Twilio
+ * Falls back to console logging if Twilio is not configured
  */
 export async function sendSmsOtp(phone: string, code: string): Promise<{ sent: boolean; message: string }> {
-  // TODO: Integrate with SMS gateway (e.g., Unifonic, Twilio, etc.)
-  // For now, log the OTP for testing purposes
-  console.log(`[SMS OTP] Sending code ${code} to ${phone}`);
+  console.log(`[SMS OTP] Attempting to send code to ${phone} (configured: ${isSmsConfigured()})`);
   
-  // In production, this would call the SMS API
-  // const response = await fetch('https://api.unifonic.com/rest/Messages/Send', { ... });
+  const result = await sendOtpSms(phone, code);
+  
+  if (!result.sent && isSmsConfigured()) {
+    // If SMS failed but was configured, log the error but still return the code for debugging
+    console.error(`[SMS OTP] Failed to send to ${phone}: ${result.error}`);
+    return { sent: false, message: 'فشل في إرسال رمز التحقق. يرجى المحاولة مرة أخرى.' };
+  }
   
   return { sent: true, message: 'تم إرسال رمز التحقق إلى رقم الجوال' };
 }
 
 /**
- * Send OTP via Email
+ * Send OTP via Email using SendGrid
+ * Falls back to console logging if SendGrid is not configured
  */
 export async function sendEmailOtp(email: string, code: string, userName?: string): Promise<{ sent: boolean; message: string }> {
-  // Use the notification system to send email
-  // For now, log the OTP for testing
-  console.log(`[EMAIL OTP] Sending code ${code} to ${email}`);
+  console.log(`[EMAIL OTP] Attempting to send code to ${email} (configured: ${isEmailConfigured()})`);
   
-  // In production, integrate with email service
+  const result = await sendOtpEmail(email, code, userName);
+  
+  if (!result.sent && isEmailConfigured()) {
+    console.error(`[EMAIL OTP] Failed to send to ${email}: ${result.error}`);
+    return { sent: false, message: 'فشل في إرسال رمز التحقق. يرجى المحاولة مرة أخرى.' };
+  }
+  
   return { sent: true, message: 'تم إرسال رمز التحقق إلى البريد الإلكتروني' };
 }
 
 /**
- * Send password reset link via email
+ * Send password reset OTP via email
  */
-export async function sendPasswordResetEmail(email: string, resetLink: string, userName?: string): Promise<{ sent: boolean; message: string }> {
-  console.log(`[PASSWORD RESET] Sending reset link to ${email}: ${resetLink}`);
+export async function sendPasswordResetEmail(email: string, resetCodeOrLink: string, userName?: string): Promise<{ sent: boolean; message: string }> {
+  console.log(`[PASSWORD RESET] Attempting to send reset code to ${email} (configured: ${isEmailConfigured()})`);
   
-  // In production, send actual email with the reset link
-  return { sent: true, message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني' };
+  const result = await sendResetEmail(email, resetCodeOrLink, userName);
+  
+  if (!result.sent && isEmailConfigured()) {
+    console.error(`[PASSWORD RESET] Failed to send to ${email}: ${result.error}`);
+    return { sent: false, message: 'فشل في إرسال رمز إعادة التعيين. يرجى المحاولة مرة أخرى.' };
+  }
+  
+  return { sent: true, message: 'تم إرسال رمز إعادة تعيين كلمة المرور إلى بريدك الإلكتروني' };
 }
 
 // ============ EXPORTS ============

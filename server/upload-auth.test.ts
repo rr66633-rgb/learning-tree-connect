@@ -1,12 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { sdk } from "./_core/sdk";
 
+// Helper to get CSRF token and cookie for authenticated requests
+async function getCsrfTokenAndCookie(sessionToken: string) {
+  const csrfRes = await fetch("http://localhost:3000/api/csrf-token", {
+    headers: { "Cookie": `app_session_id=${sessionToken}` },
+  });
+  const csrfData = await csrfRes.json();
+  const csrfCookies = csrfRes.headers.getSetCookie?.() || [];
+  const csrfCookieStr = csrfCookies.map(c => c.split(';')[0]).join('; ');
+  return { csrfToken: csrfData.csrfToken, csrfCookie: csrfCookieStr };
+}
+
 describe("Upload Endpoint - Authenticated", () => {
   // Use the actual owner's openId from the database
   const OWNER_OPEN_ID = "SGXEH7dwGiyEYwA2NMZW2A";
 
   it("authenticated user can upload a valid image", async () => {
     const token = await sdk.createSessionToken(OWNER_OPEN_ID, { name: "Admin" });
+    const { csrfToken, csrfCookie } = await getCsrfTokenAndCookie(token);
 
     // Create a minimal 1x1 PNG image
     const pngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
@@ -14,7 +26,8 @@ describe("Upload Endpoint - Authenticated", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cookie": `app_session_id=${token}`,
+        "Cookie": `app_session_id=${token}; ${csrfCookie}`,
+        "x-csrf-token": csrfToken,
       },
       body: JSON.stringify({
         data: pngBase64,
@@ -30,12 +43,14 @@ describe("Upload Endpoint - Authenticated", () => {
 
   it("authenticated user cannot upload unsupported file type", async () => {
     const token = await sdk.createSessionToken(OWNER_OPEN_ID, { name: "Admin" });
+    const { csrfToken, csrfCookie } = await getCsrfTokenAndCookie(token);
 
     const response = await fetch("http://localhost:3000/api/upload", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cookie": `app_session_id=${token}`,
+        "Cookie": `app_session_id=${token}; ${csrfCookie}`,
+        "x-csrf-token": csrfToken,
       },
       body: JSON.stringify({
         data: Buffer.from("test").toString("base64"),
@@ -50,12 +65,14 @@ describe("Upload Endpoint - Authenticated", () => {
 
   it("authenticated user cannot upload without data field", async () => {
     const token = await sdk.createSessionToken(OWNER_OPEN_ID, { name: "Admin" });
+    const { csrfToken, csrfCookie } = await getCsrfTokenAndCookie(token);
 
     const response = await fetch("http://localhost:3000/api/upload", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cookie": `app_session_id=${token}`,
+        "Cookie": `app_session_id=${token}; ${csrfCookie}`,
+        "x-csrf-token": csrfToken,
       },
       body: JSON.stringify({}),
     });

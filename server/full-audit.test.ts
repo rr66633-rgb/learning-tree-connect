@@ -82,13 +82,14 @@ describe("AUDIT: Unauthenticated Access Prevention", () => {
     await expect(call(createUnauthCtx()).users.list()).rejects.toThrow();
   });
 
-  it("unauthenticated upload returns 401", async () => {
+  it("unauthenticated upload returns 401 or 403 (CSRF)", async () => {
     const response = await fetch("http://localhost:3000/api/upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data: "dGVzdA==", contentType: "image/png", fileName: "test.png" }),
     });
-    expect(response.status).toBe(401);
+    // CSRF protection returns 403 before auth check can return 401
+    expect([401, 403]).toContain(response.status);
   });
 });
 
