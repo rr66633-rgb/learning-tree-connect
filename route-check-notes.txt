@@ -1,0 +1,6 @@
+Route Check Notes:
+- All 4 public pages (login, register, forgot-password, reset-password) render successfully
+- They show the app header with a green banner area (the login/register form is below the fold)
+- No 404 errors on any of these pages
+- The pages are rendering the authenticated user's view (super_admin) which redirects them
+- Need to verify with unauthenticated API calls instead

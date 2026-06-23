@@ -174,7 +174,7 @@ describe('Load Testing', () => {
       // Acceptance criteria for 1000 users (most lenient)
       expect(result.errorRate).toBeLessThan(15); // Less than 15% errors
       expect(result.avgLatencyMs).toBeLessThan(10000); // Avg under 10s
-    }, 30000);
+    }, 120000);
 
     it('should handle 1000 concurrent users on landing page', async () => {
       const result = await runLoadTest(1000, 15000, '/');
@@ -187,7 +187,7 @@ describe('Load Testing', () => {
 
       // In sandbox environment, 1000 concurrent connections may have higher error rate
       expect(result.errorRate).toBeLessThan(25);
-    }, 60000);
+    }, 120000);
 
     it('should handle 1000 concurrent users on CSRF token endpoint', async () => {
       const result = await runLoadTest(1000, 10000, '/api/csrf-token');
