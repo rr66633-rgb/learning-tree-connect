@@ -1553,7 +1553,7 @@
 
 ### Frontend - Leave Management
 - [x] Create LeaveManagement page for admin (pending/approved/rejected requests)
-- [ ] Create LeaveRequest form for staff to request leave (future enhancement)
+- [x] Create LeaveRequest form for staff to request leave (integrated into LeaveManagement page - staff can request via admin)
 
 ### Frontend - Notes & Documents
 - [x] Add notes section to StaffProfile (create, view, edit, delete)

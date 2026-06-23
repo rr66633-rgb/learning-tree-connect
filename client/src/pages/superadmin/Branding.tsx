@@ -216,7 +216,11 @@ export default function Branding() {
   }, [orgs, selectedOrgId]);
 
   const handleSave = () => {
-    if (!selectedOrgId) return;
+    if (!selectedOrgId) {
+      toast.error("يرجى اختيار منظمة أولاً");
+      return;
+    }
+    toast.info("جاري حفظ التغييرات...");
     updateBranding.mutate({
       organizationId: selectedOrgId,
       primaryColor: form.primaryColor,
@@ -530,17 +534,19 @@ export default function Branding() {
             </div>
           )}
 
-          {/* Save Button */}
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSave} disabled={updateBranding.isPending}>
+          {/* Save Button - Fixed at bottom for mobile, inline for desktop */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t p-3 flex items-center justify-center gap-3 md:relative md:border-t-0 md:p-0 md:mt-6 md:bg-transparent md:backdrop-blur-none">
+            <Button onClick={handleSave} disabled={updateBranding.isPending} size="lg" className="flex-1 md:flex-none min-h-[48px]">
               <Save className="w-4 h-4 ml-2" />
               {updateBranding.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
             </Button>
-            <Button variant="outline" onClick={() => refetch()}>
+            <Button variant="outline" size="lg" onClick={() => { refetch(); toast.info("تم إعادة تحميل البيانات"); }} className="flex-1 md:flex-none min-h-[48px]">
               <RotateCcw className="w-4 h-4 ml-2" />
               إعادة تحميل
             </Button>
           </div>
+          {/* Spacer for fixed bottom bar on mobile */}
+          <div className="h-16 md:hidden" />
         </>
       )}
     </div>
