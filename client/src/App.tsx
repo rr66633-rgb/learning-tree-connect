@@ -33,6 +33,7 @@ const StaffDocuments = lazy(() => import("./pages/staff/Documents"));
 const StaffNotifications = lazy(() => import("./pages/staff/Notifications"));
 const StaffUsers = lazy(() => import("./pages/staff/Users"));
 const StaffSettings = lazy(() => import("./pages/staff/Settings"));
+const StaffNotificationSettings = lazy(() => import("./pages/staff/NotificationSettings"));
 const StaffPendingApprovals = lazy(() => import("./pages/staff/PendingApprovals"));
 const StaffMediaUpload = lazy(() => import("./pages/staff/MediaUpload"));
 const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
@@ -189,6 +190,7 @@ function StaffRouter() {
         <Route path="/staff/users" component={StaffUsers} />
         <Route path="/staff/pending-approvals" component={StaffPendingApprovals} />
         <Route path="/staff/settings" component={StaffSettings} />
+        <Route path="/staff/notification-settings" component={StaffNotificationSettings} />
         <Route path="/staff/pickup" component={StaffPickup} />
         <Route path="/staff/assessments" component={StaffAssessments} />
         <Route path="/staff/audit-log" component={StaffAuditLog} />
@@ -449,6 +451,9 @@ function RoleRouter() {
         </Route>
         <Route path="/super-admin/settings">
           {isSuperAdminRole(userRole) ? <SuperAdminSettings /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/super-admin/notification-settings">
+          {isSuperAdminRole(userRole) ? <StaffNotificationSettings /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/super-admin">
           {isSuperAdminRole(userRole) ? <SuperAdminDashboard /> : <Redirect to={basePath} />}

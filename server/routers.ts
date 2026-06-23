@@ -20,7 +20,7 @@ import { registrationRouter } from "./registrationRouter";
 import { staffManagementRouter } from "./staffManagementRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+  if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   return next({ ctx });
 });
 
@@ -1493,6 +1493,62 @@ export const appRouter = router({
     deleteAll: protectedProcedure.mutation(async ({ ctx }) => {
       await db.deleteAllNotifications(ctx.user!.id);
       return { success: true };
+    }),
+    // ============ INTEGRATION STATUS ============
+    integrationStatus: adminProcedure.query(async () => {
+      const { isSmsConfigured } = await import('./services/smsService');
+      const { isEmailConfigured } = await import('./services/emailService');
+      
+      const smsConfigured = isSmsConfigured();
+      const emailConfigured = isEmailConfigured();
+      
+      return {
+        sms: {
+          configured: smsConfigured,
+          details: {
+            hasAccountSid: !!process.env.TWILIO_ACCOUNT_SID,
+            hasAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
+            hasPhoneNumber: !!process.env.TWILIO_PHONE_NUMBER,
+            phoneNumber: process.env.TWILIO_PHONE_NUMBER ? process.env.TWILIO_PHONE_NUMBER.replace(/(.{4}).*(.{4})/, '$1****$2') : undefined,
+            enabled: process.env.SMS_ENABLED === 'true',
+          },
+        },
+        email: {
+          configured: emailConfigured,
+          details: {
+            hasApiKey: !!process.env.SENDGRID_API_KEY,
+            hasFromAddress: !!process.env.EMAIL_FROM,
+            fromAddress: process.env.EMAIL_FROM || undefined,
+            hasFromName: !!process.env.EMAIL_FROM_NAME,
+            fromName: process.env.EMAIL_FROM_NAME || undefined,
+            enabled: process.env.EMAIL_ENABLED === 'true',
+          },
+        },
+      };
+    }),
+    testSms: adminProcedure.mutation(async () => {
+      const { sendOtpSms, isSmsConfigured } = await import('./services/smsService');
+      if (!isSmsConfigured()) {
+        return { success: false, message: 'خدمة الرسائل القصيرة غير مُفعّلة' };
+      }
+      try {
+        const result = await sendOtpSms(process.env.TWILIO_PHONE_NUMBER || '', '123456');
+        return { success: result.sent, message: result.message };
+      } catch (e: any) {
+        return { success: false, message: e.message || 'فشل إرسال الرسالة التجريبية' };
+      }
+    }),
+    testEmail: adminProcedure.mutation(async () => {
+      const { sendOtpEmail, isEmailConfigured } = await import('./services/emailService');
+      if (!isEmailConfigured()) {
+        return { success: false, message: 'خدمة البريد الإلكتروني غير مُفعّلة' };
+      }
+      try {
+        const result = await sendOtpEmail(process.env.EMAIL_FROM || 'test@naashah.com', '123456');
+        return { success: result.sent, message: result.message };
+      } catch (e: any) {
+        return { success: false, message: e.message || 'فشل إرسال البريد التجريبي' };
+      }
     }),
   }),
 

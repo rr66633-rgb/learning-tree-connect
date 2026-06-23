@@ -1681,3 +1681,10 @@
 - [x] Fix test failures from CSRF protection (upload tests accept 401/403, upload-auth tests include CSRF token)
 - [x] Fix security test parentId mismatch (updated to use existing parentId=6)
 - [x] Fix load test timeouts in sandbox environment (increased timeouts and thresholds)
+
+## صفحة إعدادات الإشعارات (لوحة الإدارة)
+- [x] إنشاء API endpoint لجلب حالة تكامل SMS/Email (notifications.integrationStatus)
+- [x] إنشاء صفحة إعدادات الإشعارات مع عرض حالة الخدمات
+- [x] إضافة بطاقات حالة لكل خدمة (Twilio SMS, SendGrid Email)
+- [x] عرض خطوات التفعيل والمتغيرات المطلوبة + زر إرسال رسالة تجريبية
+- [x] إضافة المسار والرابط في القائمة الجانبية للمدير العام والمشرف

@@ -127,6 +127,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: Shield, label: "سجل المراجعة", path: "/audit-log", color: "#EC4899" },
   { icon: FileWarning, label: "تقرير الأمان والأداء", path: "/qa-report", color: "#DC2626" },
   { icon: Settings, label: "الإعدادات", path: "/settings", color: "#7C3AED" },
+  { icon: Bell, label: "إعدادات الإشعارات", path: "/notification-settings", color: "#00C9B7" },
 ];
 
 /**
@@ -190,6 +191,7 @@ const superAdminMenuItems: MenuItem[] = [
   { icon: Palette, label: "الهوية البصرية", path: "/branding", color: "#EC4899" },
   { icon: Users, label: "المستخدمون", path: "/users", color: "#7C3AED" },
   { icon: Settings, label: "الإعدادات", path: "/settings", color: "#00C9B7" },
+  { icon: Bell, label: "إعدادات الإشعارات", path: "/notification-settings", color: "#00C9B7" },
 ];
 
 function getMenuItems(role?: string, basePath?: string): MenuItem[] {
