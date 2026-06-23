@@ -619,6 +619,190 @@ async function startServer() {
     res.send(buf);
   });
 
+  // ============ EXPORT ENDPOINTS ============
+  app.get('/api/export-staff', async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!['super_admin', 'admin', 'principal'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+
+      const { getDb } = await import('../db');
+      const db = await getDb();
+      if (!db) { res.status(500).json({ error: 'فشل الاتصال بقاعدة البيانات' }); return; }
+      const { staffProfiles, users: usersTable } = await import('../../drizzle/schema');
+      const { eq, and, like } = await import('drizzle-orm');
+
+      // Build filter conditions
+      const conditions: any[] = [eq(staffProfiles.organizationId, user.organizationId || 1)];
+      const { status, jobTitle, contractType, department } = req.query as any;
+      if (status) conditions.push(eq(staffProfiles.status, status));
+      if (jobTitle) conditions.push(eq(staffProfiles.jobTitle, jobTitle));
+      if (contractType) conditions.push(eq(staffProfiles.contractType, contractType));
+      if (department) conditions.push(like(staffProfiles.department, `%${department}%`));
+
+      const staffData = await db.select({
+        fullNameAr: staffProfiles.fullNameAr,
+        fullNameEn: staffProfiles.fullNameEn,
+        nationalId: staffProfiles.nationalId,
+        iqamaNumber: staffProfiles.iqamaNumber,
+        mobile: staffProfiles.mobile,
+        email: staffProfiles.email,
+        jobTitle: staffProfiles.jobTitle,
+        department: staffProfiles.department,
+        branch: staffProfiles.branch,
+        hireDate: staffProfiles.hireDate,
+        status: staffProfiles.status,
+        nationality: staffProfiles.nationality,
+        gender: staffProfiles.gender,
+        contractType: staffProfiles.contractType,
+        qualification: staffProfiles.qualification,
+        specialization: staffProfiles.specialization,
+        yearsOfExperience: staffProfiles.yearsOfExperience,
+        salary: staffProfiles.salary,
+        emergencyContactName: staffProfiles.emergencyContactName,
+        emergencyContactPhone: staffProfiles.emergencyContactPhone,
+        emergencyContactRelation: staffProfiles.emergencyContactRelation,
+        address: staffProfiles.address,
+        city: staffProfiles.city,
+        bankName: staffProfiles.bankName,
+        iban: staffProfiles.iban,
+        notes: staffProfiles.notes,
+      }).from(staffProfiles).where(and(...conditions));
+
+      // Map enum values to Arabic
+      const jobTitleMapReverse: Record<string, string> = {
+        'teacher': 'معلمة', 'supervisor': 'مشرفة', 'principal': 'مديرة',
+        'assistant': 'مساعدة', 'admin_staff': 'إدارية', 'specialist': 'أخصائية',
+        'accountant': 'محاسبة', 'receptionist': 'استقبال', 'driver': 'سائق', 'other': 'أخرى',
+      };
+      const contractMapReverse: Record<string, string> = {
+        'full_time': 'دوام كامل', 'part_time': 'دوام جزئي', 'contract': 'عقد', 'temporary': 'مؤقت',
+      };
+      const genderMapReverse: Record<string, string> = { 'male': 'ذكر', 'female': 'أنثى' };
+      const statusMapReverse: Record<string, string> = {
+        'active': 'نشط', 'inactive': 'غير نشط', 'on_leave': 'إجازة', 'terminated': 'منتهي', 'resigned': 'مستقيل',
+      };
+
+      const headers = [
+        'الاسم الكامل (عربي)', 'الاسم الكامل (إنجليزي)', 'رقم الهوية', 'رقم الإقامة',
+        'رقم الجوال', 'البريد الإلكتروني', 'المسمى الوظيفي', 'القسم', 'الفرع',
+        'تاريخ التعيين', 'الحالة', 'الجنسية', 'الجنس',
+        'نوع العقد', 'المؤهل', 'التخصص', 'سنوات الخبرة', 'الراتب',
+        'اسم جهة الطوارئ', 'رقم جهة الطوارئ', 'صلة جهة الطوارئ',
+        'العنوان', 'المدينة', 'اسم البنك', 'رقم الآيبان', 'ملاحظات'
+      ];
+
+      const rows = staffData.map(s => [
+        s.fullNameAr || '', s.fullNameEn || '', s.nationalId || '', s.iqamaNumber || '',
+        s.mobile || '', s.email || '', jobTitleMapReverse[s.jobTitle] || s.jobTitle || '', s.department || '', s.branch || '',
+        s.hireDate ? new Date(s.hireDate).toISOString().split('T')[0] : '', statusMapReverse[s.status] || s.status || '',
+        s.nationality || '', genderMapReverse[s.gender || ''] || s.gender || '',
+        contractMapReverse[s.contractType || ''] || s.contractType || '', s.qualification || '', s.specialization || '',
+        s.yearsOfExperience?.toString() || '', s.salary?.toString() || '',
+        s.emergencyContactName || '', s.emergencyContactPhone || '', s.emergencyContactRelation || '',
+        s.address || '', s.city || '', s.bankName || '', s.iban || '', s.notes || '',
+      ]);
+
+      const XLSX = await import('xlsx');
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = headers.map(() => ({ wch: 20 }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'الموظفين');
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="staff_export_${new Date().toISOString().split('T')[0]}.xlsx"`);
+      res.send(buf);
+    } catch (error: any) {
+      console.error('Export staff error:', error);
+      res.status(500).json({ error: 'حدث خطأ أثناء التصدير' });
+    }
+  });
+
+  app.get('/api/export-children', async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!['super_admin', 'admin', 'principal', 'teacher'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+
+      const { getDb } = await import('../db');
+      const db = await getDb();
+      if (!db) { res.status(500).json({ error: 'فشل الاتصال بقاعدة البيانات' }); return; }
+      const { children, classes } = await import('../../drizzle/schema');
+      const { eq, and, like } = await import('drizzle-orm');
+
+      // Build filter conditions
+      const conditions: any[] = [eq(children.organizationId, user.organizationId || 1)];
+      const { status: statusFilter, classId, gender: genderFilter, ageGroup } = req.query as any;
+      if (statusFilter) conditions.push(eq(children.status, statusFilter));
+      if (classId) conditions.push(eq(children.classId, parseInt(classId)));
+      if (genderFilter) conditions.push(eq(children.gender, genderFilter));
+
+      // Get classes for name mapping
+      const allClasses = await db.select({ id: classes.id, name: classes.name, nameAr: classes.nameAr }).from(classes);
+      const classMap = new Map(allClasses.map(c => [c.id, c.nameAr || c.name]));
+
+      const childrenData = await db.select().from(children).where(and(...conditions));
+
+      // Filter by age group if specified
+      let filteredChildren = childrenData;
+      if (ageGroup) {
+        const now = new Date();
+        filteredChildren = childrenData.filter(c => {
+          const age = (now.getTime() - new Date(c.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+          if (ageGroup === 'infant') return age < 1;
+          if (ageGroup === 'toddler') return age >= 1 && age < 2;
+          if (ageGroup === 'preschool') return age >= 2 && age < 4;
+          if (ageGroup === 'kg') return age >= 4 && age < 6;
+          return true;
+        });
+      }
+
+      const genderMapReverse: Record<string, string> = { 'male': 'ذكر', 'female': 'أنثى' };
+      const statusMapReverse: Record<string, string> = {
+        'active': 'نشط', 'inactive': 'غير نشط', 'graduated': 'متخرج', 'waitlist': 'قائمة انتظار',
+      };
+
+      const headers = [
+        'الاسم الأول', 'اسم العائلة', 'الاسم بالعربية', 'تاريخ الميلاد', 'الجنس',
+        'الجنسية', 'رقم الهوية', 'الفصل',
+        'اسم الأب', 'اسم الأم', 'بريد ولي الأمر', 'جوال ولي الأمر', 'جوال بديل', 'العنوان',
+        'الحساسية', 'الحالات الطبية', 'الأدوية', 'الاحتياجات الخاصة',
+        'اسم الطبيب', 'فصيلة الدم', 'ملاحظات طبية',
+        'يحتاج نقل', 'ملاحظات', 'الحالة', 'تاريخ التسجيل'
+      ];
+
+      const rows = filteredChildren.map(c => [
+        c.firstName || '', c.lastName || '', c.arabicName || '',
+        c.dateOfBirth ? new Date(c.dateOfBirth).toISOString().split('T')[0] : '',
+        genderMapReverse[c.gender] || c.gender || '',
+        c.nationality || '', c.childNationalId || '',
+        c.classId ? (classMap.get(c.classId) || '') : '',
+        c.fatherName || '', c.motherName || '', c.parentEmail || '', c.parentMobile || '', c.altPhone || '', c.homeAddress || '',
+        c.allergies || '', c.medicalConditions || '', c.medications || '', c.specialNeeds || '',
+        c.doctorName || '', c.bloodType || '', c.medicalNotes || '',
+        c.busRequired ? 'نعم' : 'لا', c.notes || '', statusMapReverse[c.status] || c.status || '',
+        c.enrollmentDate ? new Date(c.enrollmentDate).toISOString().split('T')[0] : '',
+      ]);
+
+      const XLSX = await import('xlsx');
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = headers.map(() => ({ wch: 18 }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'الأطفال');
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="children_export_${new Date().toISOString().split('T')[0]}.xlsx"`);
+      res.send(buf);
+    } catch (error: any) {
+      console.error('Export children error:', error);
+      res.status(500).json({ error: 'حدث خطأ أثناء التصدير' });
+    }
+  });
+
   // Scheduled tasks (Heartbeat cron callbacks)
   app.post('/api/scheduled/daily-backup', async (req, res) => {
     const { dailyBackupHandler } = await import('../backup');

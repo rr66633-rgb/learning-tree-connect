@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera } from "lucide-react";
+import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera, Download } from "lucide-react";
 import { useLocation } from "wouter";
 
 
@@ -352,10 +352,39 @@ export default function StaffChildren() {
           <h1 className="text-2xl font-bold text-foreground">{"\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0623\u0637\u0641\u0627\u0644"}</h1>
           <p className="text-sm text-muted-foreground mt-1">{filtered.length} \u0637\u0641\u0644 \u0645\u0633\u062C\u0644</p>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (!open) setForm(initialFormState); }}>
-          <DialogTrigger asChild>
-            <Button className="rounded-xl shadow-sm btn-press"><Plus className="ml-2 h-4 w-4" /> {"\u0625\u0636\u0627\u0641\u0629 \u0637\u0641\u0644"}</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2 rounded-xl"
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (classFilter !== 'all') params.set('classId', classFilter);
+              if (statusFilter !== 'all') params.set('status', statusFilter);
+              const url = `/api/export-children${params.toString() ? '?' + params.toString() : ''}`;
+              toast.info('جاري تحميل ملف التصدير...');
+              fetch(url, { credentials: 'include' })
+                .then(r => {
+                  if (!r.ok) throw new Error('فشل التصدير');
+                  return r.blob();
+                })
+                .then(blob => {
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = `children_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  toast.success('تم تصدير البيانات بنجاح');
+                })
+                .catch(() => toast.error('حدث خطأ أثناء التصدير'));
+            }}
+          >
+            <Download className="h-4 w-4" />
+            تصدير Excel
+          </Button>
+          <Dialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (!open) setForm(initialFormState); }}>
+            <DialogTrigger asChild>
+              <Button className="rounded-xl shadow-sm btn-press"><Plus className="ml-2 h-4 w-4" /> {"إضافة طفل"}</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{"\u0625\u0636\u0627\u0641\u0629 \u0637\u0641\u0644 \u062C\u062F\u064A\u062F"}</DialogTitle>
@@ -368,7 +397,8 @@ export default function StaffChildren() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters */}

@@ -1595,3 +1595,18 @@
 ### Integration
 - [x] Register import routes in App.tsx
 - [x] Add navigation links in DashboardLayout
+
+## Excel Export Feature (Staff & Children)
+### Backend
+- [x] Create /api/export-staff endpoint (generate Excel with filters: role, status, class)
+- [x] Create /api/export-children endpoint (generate Excel with filters: class, status, age group)
+
+### Frontend - Staff Export
+- [x] Add export button with filter dialog on StaffDirectory page
+- [x] Filter options: role, status (active/inactive)
+- [x] Generate and download Excel file with Arabic headers
+
+### Frontend - Children Export
+- [x] Add export button with filter dialog on Children page
+- [x] Filter options: class, enrollment status, age group
+- [x] Generate and download Excel file with Arabic headers

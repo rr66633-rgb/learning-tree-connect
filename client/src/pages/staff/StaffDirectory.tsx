@@ -10,8 +10,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation } from "wouter";
 import {
   Search, Plus, Users, UserCheck, UserX, Clock, LayoutGrid, List,
-  Briefcase, MapPin, Phone, Mail, ChevronLeft, ChevronRight, Filter
+  Briefcase, MapPin, Phone, Mail, ChevronLeft, ChevronRight, Filter, Download
 } from "lucide-react";
+import { toast } from "sonner";
 
 const JOB_TITLES: Record<string, string> = {
   teacher: "معلم/ة",
@@ -66,10 +67,41 @@ export default function StaffDirectory() {
           <h1 className="text-2xl font-bold text-foreground">دليل الموظفين</h1>
           <p className="text-sm text-muted-foreground mt-1">إدارة شاملة لبيانات الموظفين والكادر التعليمي</p>
         </div>
-        <Button onClick={() => navigate("/staff/staff-management/add")} className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9]">
-          <Plus className="h-4 w-4" />
-          إضافة موظف
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (jobFilter !== 'all') params.set('jobTitle', jobFilter);
+              if (statusFilter !== 'all') params.set('status', statusFilter);
+              if (departmentFilter !== 'all') params.set('department', departmentFilter);
+              const url = `/api/export-staff${params.toString() ? '?' + params.toString() : ''}`;
+              toast.info('جاري تحميل ملف التصدير...');
+              fetch(url, { credentials: 'include' })
+                .then(r => {
+                  if (!r.ok) throw new Error('فشل التصدير');
+                  return r.blob();
+                })
+                .then(blob => {
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = `staff_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  toast.success('تم تصدير البيانات بنجاح');
+                })
+                .catch(() => toast.error('حدث خطأ أثناء التصدير'));
+            }}
+          >
+            <Download className="h-4 w-4" />
+            تصدير Excel
+          </Button>
+          <Button onClick={() => navigate("/staff/staff-management/add")} className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9]">
+            <Plus className="h-4 w-4" />
+            إضافة موظف
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
