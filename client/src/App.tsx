@@ -108,6 +108,7 @@ const ParentChildren = lazy(() => import("./pages/parent/Children"));
 const ParentTimeline = lazy(() => import("./pages/parent/Timeline"));
 const ParentAttendance = lazy(() => import("./pages/parent/Attendance"));
 const ParentReports = lazy(() => import("./pages/parent/Reports"));
+const ParentDailyReport = lazy(() => import("./pages/parent/DailyReport"));
 const ParentCalendar = lazy(() => import("./pages/parent/Calendar"));
 const ParentMessages = lazy(() => import("./pages/parent/Messages"));
 const ParentFinance = lazy(() => import("./pages/parent/Finance"));
@@ -226,6 +227,7 @@ function ParentRouter() {
         <Route path="/parent/timeline" component={ParentTimeline} />
         <Route path="/parent/attendance" component={ParentAttendance} />
         <Route path="/parent/reports" component={ParentReports} />
+        <Route path="/parent/daily-report" component={ParentDailyReport} />
         <Route path="/parent/calendar" component={ParentCalendar} />
         <Route path="/parent/messages" component={ParentMessages} />
         <Route path="/parent/finance" component={ParentFinance} />
