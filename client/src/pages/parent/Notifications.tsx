@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Check, CreditCard, AlertTriangle, CheckCircle2, XCircle, FileText, MessageCircle } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 
 const notificationIcons: Record<string, any> = {
@@ -20,7 +22,7 @@ const notificationColors: Record<string, string> = {
 };
 
 export default function ParentNotifications() {
-  const { data: notifications } = trpc.notifications.list.useQuery();
+  const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
   const { data: unreadCount } = trpc.notifications.unreadCount.useQuery();
   const utils = trpc.useUtils();
   const markRead = trpc.notifications.markRead.useMutation({ onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); } });
@@ -50,7 +52,7 @@ export default function ParentNotifications() {
         <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={!unreadCount}>تحديد الكل كمقروء</Button>
       </div>
       <div className="space-y-2">
-        {notifications?.map((n: any) => (
+        {isLoading ? <PageSkeleton variant="list" title={false} count={5} /> : notifications?.map((n: any) => (
           <Card key={n.id} className={`transition-all ${!n.isRead ? "border-primary/30 bg-primary/5" : ""}`}>
             <CardContent className="p-4 flex items-start gap-3">
               {getIcon(n)}
@@ -64,10 +66,7 @@ export default function ParentNotifications() {
           </Card>
         ))}
         {(!notifications || notifications.length === 0) && (
-          <div className="text-center py-12">
-            <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <p className="text-muted-foreground">لا توجد إشعارات</p>
-          </div>
+          <EmptyState variant="notifications" />
         )}
       </div>
     </div>

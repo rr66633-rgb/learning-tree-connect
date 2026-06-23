@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState, useMemo } from "react";
 import { CalendarDays, Clock, LogIn, LogOut, User, History } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 const STATUS_LABELS: Record<string, string> = {
   present: "حاضر",
@@ -140,7 +141,7 @@ export default function ParentAttendance() {
                   </div>
                 </div>
               ) : (
-                <p className="text-center text-muted-foreground py-4">لم يتم تسجيل حضور اليوم</p>
+                <EmptyState variant="attendance" compact />
               )}
             </CardContent>
           </Card>
@@ -150,7 +151,7 @@ export default function ParentAttendance() {
             <CardHeader><CardTitle>سجل الحضور السابق</CardTitle></CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-32 w-full" /> : records?.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">لا توجد سجلات حضور</p>
+                <EmptyState variant="attendance" compact />
               ) : (
                 <div className="space-y-2">
                   {records?.map((r: any) => (

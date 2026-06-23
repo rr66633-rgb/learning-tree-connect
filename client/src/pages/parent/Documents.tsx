@@ -3,10 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, PenLine, CheckCircle2 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 
 export default function ParentDocuments() {
-  const { data: documents } = trpc.documents.list.useQuery();
+  const { data: documents, isLoading } = trpc.documents.list.useQuery();
+  if (isLoading) return <PageSkeleton variant="list" count={4} />;
   const utils = trpc.useUtils();
 
   const signDoc = trpc.documents.sign.useMutation({
@@ -59,7 +62,7 @@ export default function ParentDocuments() {
             </CardContent>
           </Card>
         ))}
-        {(!documents || documents.length === 0) && <p className="text-center text-muted-foreground py-8">لا توجد مستندات</p>}
+        {(!documents || documents.length === 0) && <EmptyState variant="documents" />}
       </div>
     </div>
   );

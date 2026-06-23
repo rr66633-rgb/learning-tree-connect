@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { ChevronRight, BookOpen, Clock, Star, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function EngagementActivities() {
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
@@ -127,8 +128,7 @@ export default function EngagementActivities() {
           {pending.length === 0 ? (
             <Card className="text-center py-8">
               <CardContent>
-                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                <p className="text-muted-foreground mb-3">لا توجد أنشطة حالياً</p>
+                <EmptyState variant="activities" compact />
                 <Button
                   onClick={() => generateMutation.mutate({ childId: activeChildId, category: "language" })}
                   disabled={generateMutation.isPending}
@@ -187,9 +187,9 @@ export default function EngagementActivities() {
 
         <TabsContent value="completed" className="space-y-3 mt-4">
           {completed.length === 0 ? (
-            <Card className="text-center py-8">
+            <Card>
               <CardContent>
-                <p className="text-muted-foreground">لم تكمل أي أنشطة بعد</p>
+                <EmptyState variant="activities" compact title="لم تكمل أي أنشطة بعد" description="أكمل الأنشطة المعينة لكسب النقاط والشارات" />
               </CardContent>
             </Card>
           ) : (

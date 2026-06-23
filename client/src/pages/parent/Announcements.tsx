@@ -1,9 +1,13 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Megaphone } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export default function ParentAnnouncements() {
-  const { data: announcements } = trpc.announcements.list.useQuery();
+  const { data: announcements, isLoading } = trpc.announcements.list.useQuery();
+
+  if (isLoading) return <PageSkeleton variant="list" count={4} />;
 
   return (
     <div className="space-y-6">
@@ -23,7 +27,7 @@ export default function ParentAnnouncements() {
             </CardContent>
           </Card>
         ))}
-        {(!announcements || announcements.length === 0) && <p className="text-center text-muted-foreground py-8">لا توجد إعلانات</p>}
+        {(!announcements || announcements.length === 0) && <EmptyState variant="announcements" />}
       </div>
     </div>
   );

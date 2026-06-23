@@ -50,7 +50,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "الرئيسية", path: "", color: "#00C9B7" },
   { icon: Users, label: "أطفالي", path: "/children", color: "#7C3AED" },
   { icon: CalendarCheck, label: "الحضور", path: "/attendance", color: "#00C9B7" },
-  { icon: ClipboardList, label: "التقرير اليومي", path: "/timeline", color: "#EC4899" },
+  { icon: ClipboardList, label: "التقرير اليومي", path: "/daily-report", color: "#EC4899" },
   { icon: Camera, label: "الصور والأنشطة", path: "/photos", color: "#F97316" },
   { icon: MessageCircle, label: "الرسائل", path: "/messages", color: "#00C9B7" },
   { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
 import { BarChart3, CalendarDays, CheckCircle2, XCircle, Baby } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function ParentReports() {
   const { data: children } = trpc.children.list.useQuery();
@@ -106,7 +107,7 @@ export default function ParentReports() {
             <CardHeader><CardTitle className="text-lg">آخر سجلات الحضور</CardTitle></CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-32 w-full" /> : records?.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">لا توجد سجلات</p>
+                <EmptyState variant="attendance" compact />
               ) : (
                 <div className="space-y-2">
                   {records?.slice(0, 15).map((r: any) => (

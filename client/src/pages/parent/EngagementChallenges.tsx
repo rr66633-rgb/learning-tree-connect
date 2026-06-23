@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { ChevronRight, Target, Trophy, Users, Calendar, CheckCircle2, Clock } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function EngagementChallenges() {
   const { data: challenges, isLoading } = trpc.engagement.challenges.listActive.useQuery({});
@@ -54,11 +55,9 @@ export default function EngagementChallenges() {
 
       {/* Active Challenges */}
       {!challenges || challenges.length === 0 ? (
-        <Card className="text-center py-8">
+        <Card>
           <CardContent>
-            <Target className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-muted-foreground">لا توجد تحديات نشطة حالياً</p>
-            <p className="text-xs text-muted-foreground mt-1">ستتوفر تحديات جديدة قريباً</p>
+            <EmptyState variant="challenges" />
           </CardContent>
         </Card>
       ) : (

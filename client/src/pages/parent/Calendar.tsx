@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronRight, ChevronLeft, Calendar as CalIcon, Clock, MapPin, Package, Shirt } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useState, useMemo } from "react";
 
 const CATEGORIES = [
@@ -189,9 +191,9 @@ export default function ParentCalendar() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+            <PageSkeleton variant="list" title={false} count={3} />
           ) : !filteredEvents || filteredEvents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">لا توجد أحداث في هذا الشهر</div>
+            <EmptyState variant="calendar" compact />
           ) : (
             <div className="space-y-3">
               {filteredEvents.map((ev: any) => {

@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Eye, Star, TrendingUp } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 const EYFS_AREAS = [
   "التواصل واللغة",
@@ -27,8 +29,8 @@ export default function ParentObservations() {
   const [selectedChild, setSelectedChild] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("observations");
 
-  const { data: children } = trpc.children.list.useQuery();
-  const { data: assessments } = trpc.eyfs.assessments.useQuery(
+  const { data: children, isLoading: loadingChildren } = trpc.children.list.useQuery();
+  const { data: assessments, isLoading: loadingAssessments } = trpc.eyfs.assessments.useQuery(
     { childId: selectedChild! },
     { enabled: !!selectedChild }
   );
@@ -46,6 +48,8 @@ export default function ParentObservations() {
     });
     return grouped;
   }, [assessments]);
+
+  if (loadingChildren) return <PageSkeleton variant="detail" />;
 
   return (
     <div className="space-y-6">
@@ -113,9 +117,8 @@ export default function ParentObservations() {
               </div>
             ) : (
               <Card>
-                <CardContent className="py-12 text-center">
-                  <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                  <p className="text-muted-foreground">لا توجد ملاحظات تعليمية بعد</p>
+                <CardContent>
+                  <EmptyState variant="observations" />
                 </CardContent>
               </Card>
             )}

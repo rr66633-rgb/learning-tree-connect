@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { Image as ImageIcon, Film, Eye, Download, X } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 export default function ParentPhotos() {
   const { data: children } = trpc.children.list.useQuery();
@@ -103,13 +104,7 @@ export default function ParentPhotos() {
 
 function MediaGallery({ items, onPreview }: { items: any[] | undefined; onPreview: (item: any) => void }) {
   if (!items || items.length === 0) {
-    return (
-      <div className="text-center py-16 text-muted-foreground">
-        <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-30" />
-        <p className="text-lg font-medium">لا توجد صور أو فيديو بعد</p>
-        <p className="text-sm mt-1">ستظهر هنا الصور والفيديو التي يشاركها المعلمون</p>
-      </div>
-    );
+    return <EmptyState variant="photos" />;
   }
 
   // Group by date

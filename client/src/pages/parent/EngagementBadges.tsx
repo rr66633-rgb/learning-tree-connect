@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Award, Lock, CheckCircle, Trophy, Flame, Star } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Link } from "wouter";
 
 export default function EngagementBadges() {
@@ -123,15 +124,8 @@ export default function EngagementBadges() {
       {/* Empty State */}
       {earned.length === 0 && available.length === 0 && (
         <Card className="border-dashed border-2">
-          <CardContent className="p-6 text-center space-y-3">
-            <Award className="h-12 w-12 text-muted-foreground mx-auto" />
-            <h3 className="font-bold">لا توجد شارات حالياً</h3>
-            <p className="text-sm text-muted-foreground">
-              ابدأ بإكمال الأنشطة والتحديات لكسب شارات الإنجاز
-            </p>
-            <Link href="/parent/engagement/activities">
-              <Button variant="outline">ابدأ الآن</Button>
-            </Link>
+          <CardContent>
+            <EmptyState variant="badges" actionLabel="ابدأ الآن" actionHref="/parent/engagement/activities" />
           </CardContent>
         </Card>
       )}

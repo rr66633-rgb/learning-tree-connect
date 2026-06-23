@@ -25,6 +25,7 @@ import {
   BookOpen,
   Clock,
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 const areaIcons: Record<string, any> = {
   "CL": MessageCircle,
@@ -91,9 +92,8 @@ export default function ParentDevelopment() {
     return (
       <div className="p-6" dir="rtl">
         <Card className="border-0 shadow-sm">
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">لا يوجد أطفال مسجلين</p>
+          <CardContent>
+            <EmptyState variant="children" />
           </CardContent>
         </Card>
       </div>
@@ -233,10 +233,8 @@ export default function ParentDevelopment() {
             </div>
           ) : (
             <Card className="border-0 shadow-sm">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد ملاحظات تطورية بعد</p>
-                <p className="text-sm mt-1">سيقوم المعلم بإضافة ملاحظات عن تطور طفلك قريباً</p>
+              <CardContent>
+                <EmptyState variant="development" />
               </CardContent>
             </Card>
           )}
@@ -269,10 +267,8 @@ export default function ParentDevelopment() {
             </div>
           ) : (
             <Card className="border-0 shadow-sm">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Star className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد معالم تطورية مسجلة بعد</p>
-                <p className="text-sm mt-1">ستظهر المعالم التطورية عند تسجيل ملاحظات كافية</p>
+              <CardContent>
+                <EmptyState variant="development" title="لا توجد معالم تطورية مسجلة بعد" description="ستظهر المعالم التطورية عند تسجيل ملاحظات كافية" />
               </CardContent>
             </Card>
           )}
@@ -317,10 +313,8 @@ export default function ParentDevelopment() {
             </div>
           ) : (
             <Card className="border-0 shadow-sm">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Home className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد أنشطة منزلية مقترحة حالياً</p>
-                <p className="text-sm mt-1">ستظهر الأنشطة المقترحة بعد تحليل ملاحظات المعلم</p>
+              <CardContent>
+                <EmptyState variant="activities" title="لا توجد أنشطة منزلية مقترحة حالياً" description="ستظهر الأنشطة المقترحة بعد تحليل ملاحظات المعلم" />
               </CardContent>
             </Card>
           )}

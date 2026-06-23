@@ -9,6 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ArrowRight, Target, Sparkles, CheckCircle, Clock, TrendingUp, RefreshCw } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -120,15 +121,7 @@ export default function EngagementGoals() {
       {(!goals || goals.length === 0) && (
         <Card className="border-dashed border-2">
           <CardContent className="p-6 text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mx-auto">
-              <Sparkles className="h-8 w-8 text-indigo-600" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">لا توجد أهداف لهذا الشهر</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                اضغط لإنشاء أهداف مخصصة بالذكاء الاصطناعي بناءً على عمر ومستوى طفلك
-              </p>
-            </div>
+            <EmptyState variant="goals" compact />
             <Button
               onClick={() => generateMutation.mutate({ childId: activeChildId })}
               disabled={generateMutation.isPending}

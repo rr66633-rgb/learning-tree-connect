@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Receipt, CreditCard, Clock, FileText, Download, AlertTriangle, CheckCircle2, XCircle, History } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -181,7 +182,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
                   </TableHeader>
                   <TableBody>
                     {isLoading ? <TableRow><TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell></TableRow> :
-                    filteredInvoices.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">لا توجد فواتير</TableCell></TableRow> :
+                    filteredInvoices.length === 0 ? <TableRow><TableCell colSpan={7}><EmptyState variant="finance" compact /></TableCell></TableRow> :
                     filteredInvoices.map((inv: any) => (
                       <TableRow key={inv.id}>
                         <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
@@ -219,9 +220,8 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
               <Card key={i}><CardContent className="p-4"><Skeleton className="h-24 w-full" /></CardContent></Card>
             )) : filteredInvoices.length === 0 ? (
               <Card>
-                <CardContent className="p-8 text-center">
-                  <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">لا توجد فواتير</p>
+                <CardContent>
+                  <EmptyState variant="finance" />
                 </CardContent>
               </Card>
             ) : filteredInvoices.map((inv: any) => (
@@ -266,10 +266,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
               {historyLoading ? (
                 <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
               ) : !paymentHistory || paymentHistory.length === 0 ? (
-                <div className="text-center py-8">
-                  <History className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">لا توجد مدفوعات سابقة</p>
-                </div>
+                <EmptyState variant="finance" compact title="لا توجد مدفوعات سابقة" description="ستظهر هنا سجل المدفوعات السابقة" />
               ) : (
                 <div className="space-y-3">
                   {paymentHistory.map((payment: any) => (

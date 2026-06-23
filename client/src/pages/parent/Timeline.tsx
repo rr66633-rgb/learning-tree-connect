@@ -10,6 +10,7 @@ import {
   ChevronRight, ChevronLeft, Calendar, LogIn, LogOut, Coffee, Apple,
   Sandwich, Cookie, Smile, BookOpen, TreePine, User
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 const iconMap: Record<string, any> = {
   arrival: LogIn, breakfast: Coffee, morning_snack: Apple, lunch: Sandwich,
@@ -147,10 +148,7 @@ export default function ParentTimeline() {
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-32 w-full" /> : activities?.length === 0 ? (
-                <div className="text-center py-12">
-                  <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-muted-foreground">لا توجد أنشطة مسجلة في هذا اليوم</p>
-                </div>
+                <EmptyState variant="daily-report" compact />
               ) : (
                 <div className="relative">
                   {/* Timeline line */}

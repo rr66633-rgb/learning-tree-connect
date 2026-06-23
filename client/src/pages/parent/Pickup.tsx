@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Clock, CheckCircle2, UserCheck, Bell, History, Car, Timer, Send, Building2 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 
 const STATUS_STEPS = [
   { key: "waiting_teacher", label: "تم إرسال الطلب", description: "بانتظار استجابة المعلمة", icon: Clock, color: "text-amber-600" },
@@ -255,7 +256,7 @@ export default function ParentPickup() {
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">سجل الاستلام</h2>
           {historyRequests.length === 0 ? (
-            <Card><CardContent className="p-8 text-center text-muted-foreground">لا يوجد سجل استلام سابق</CardContent></Card>
+            <Card><CardContent><EmptyState variant="generic" compact title="لا يوجد سجل استلام سابق" description="ستظهر هنا طلبات الاستلام السابقة" /></CardContent></Card>
           ) : (
             historyRequests.map((req: any) => {
               const totalMinutes = req.requestedAt && req.pickedUpAt

@@ -4,6 +4,8 @@ import {
   BookMarked, Palette, FlaskConical, Music, Home, MessageSquare,
   Calculator, Dumbbell, Hand, Moon, ChevronLeft, Eye
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -140,9 +142,7 @@ export default function ParentWeeklyPlan() {
 
         {/* Plan Sections */}
         {selectedPlan.isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-          </div>
+          <PageSkeleton variant="cards" title={false} count={4} />
         ) : sections ? (
           <div className="grid gap-4 md:grid-cols-2">
             {Object.entries(SECTION_CONFIG).map(([key, config]) => {
@@ -183,15 +183,11 @@ export default function ParentWeeklyPlan() {
 
       {/* Plans List */}
       {plansQuery.isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-        </div>
+        <PageSkeleton variant="cards" title={false} count={4} />
       ) : !plansQuery.data?.length ? (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <CalendarDays className="h-16 w-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">لا توجد خطط أسبوعية منشورة</h3>
-            <p className="text-sm text-gray-400 text-center">ستظهر هنا الخطط الأسبوعية عند نشرها من قبل المعلمة</p>
+          <CardContent>
+            <EmptyState variant="calendar" title="لا توجد خطط أسبوعية منشورة" description="ستظهر هنا الخطط الأسبوعية عند نشرها من قبل المعلمة" />
           </CardContent>
         </Card>
       ) : (

@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Send, Plus, Paperclip, Check, CheckCheck, MessageCircle, User, FileText, Image as ImageIcon, X } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 
 export default function ParentMessages() {
@@ -192,20 +194,9 @@ export default function ParentMessages() {
           </div>
           <CardContent className="p-2 overflow-y-auto flex-1">
             {loadingConvs ? (
-              <div className="space-y-3 p-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/2"></div>
-                  </div>
-                ))}
-              </div>
+              <PageSkeleton variant="list" title={false} count={4} />
             ) : filteredConversations.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageCircle className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
-                <p className="text-sm text-muted-foreground">لا توجد محادثات</p>
-                <p className="text-xs text-muted-foreground mt-1">ابدأ محادثة جديدة مع معلم طفلك</p>
-              </div>
+              <EmptyState variant="messages" compact />
             ) : (
               filteredConversations.map((c: any) => (
                 <button

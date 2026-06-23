@@ -8,15 +8,25 @@ import {
   BookOpen, MessageCircle, Sparkles, ArrowUpRight,
   CheckCircle2, XCircle, AlertCircle, LogIn, LogOut
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { usePrefetchParentData } from "@/hooks/useParentData";
 
 export default function ParentDashboard() {
   const { user } = useAuth();
-  const { data: children, isLoading } = trpc.children.list.useQuery();
-  const { data: notifications } = trpc.notifications.unreadCount.useQuery();
-  const { data: announcements } = trpc.announcements.list.useQuery();
+  const prefetch = usePrefetchParentData();
+  useEffect(() => { prefetch(); }, []);
+  const { data: children, isLoading } = trpc.children.list.useQuery(undefined, {
+    staleTime: 1000 * 60 * 15,
+  });
+  const { data: notifications } = trpc.notifications.unreadCount.useQuery(undefined, {
+    staleTime: 1000 * 30,
+    refetchInterval: 1000 * 60,
+  });
+  const { data: announcements } = trpc.announcements.list.useQuery(undefined, {
+    staleTime: 1000 * 60 * 10,
+  });
 
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
   const { data: todayAttendance } = trpc.attendance.byDate.useQuery({ date: today });

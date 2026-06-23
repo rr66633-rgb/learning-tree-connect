@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ArrowRight, Eye, Plus, Sparkles, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -144,13 +145,7 @@ export default function EngagementObservations() {
       {(!observations || observations.length === 0) ? (
         <Card className="border-dashed border-2">
           <CardContent className="p-6 text-center space-y-3">
-            <div className="h-14 w-14 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mx-auto">
-              <Eye className="h-7 w-7 text-teal-600" />
-            </div>
-            <h3 className="font-bold">لا توجد ملاحظات بعد</h3>
-            <p className="text-sm text-muted-foreground">
-              شارك ملاحظاتك عن نمو وتطور طفلك. سيقوم الذكاء الاصطناعي بتحليلها وربطها بمجالات التطور.
-            </p>
+            <EmptyState variant="observations" />
             <Button
               variant="outline"
               onClick={() => setCreateDialogOpen(true)}

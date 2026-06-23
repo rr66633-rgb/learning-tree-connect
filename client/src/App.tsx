@@ -227,7 +227,7 @@ function ParentRouter() {
         <Route path="/parent/timeline" component={ParentTimeline} />
         <Route path="/parent/attendance" component={ParentAttendance} />
         <Route path="/parent/reports" component={ParentReports} />
-        <Route path="/parent/daily-report" component={ParentDailyReport} />
+        <Route path="/parent/daily-report" component={ParentTimeline} />
         <Route path="/parent/calendar" component={ParentCalendar} />
         <Route path="/parent/messages" component={ParentMessages} />
         <Route path="/parent/finance" component={ParentFinance} />

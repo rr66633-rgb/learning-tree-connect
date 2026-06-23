@@ -803,7 +803,7 @@ export const appRouter = router({
       isPublished: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
       const report = await db.createDailyReport({ ...input, date: new Date(input.date), teacherId: ctx.user!.id });
-      // Notify parent about new daily report
+      // Notify parent about new daily report + push
       try {
         const child = await db.getChildById(input.childId);
         if (child?.parentId) {
@@ -811,11 +811,20 @@ export const appRouter = router({
             userId: child.parentId,
             title: 'تقرير يومي جديد',
             titleAr: 'تقرير يومي جديد',
-            body: `A new daily report has been added for ${child.firstName}`,
+            body: `تم إضافة تقرير يومي جديد لـ ${child.firstName} ${child.lastName}`,
             bodyAr: `تم إضافة تقرير يومي جديد لـ ${child.firstName} ${child.lastName}`,
             type: 'report',
-            link: '/parent/timeline',
+            link: '/parent/daily-report',
           });
+          // Push notification to parent
+          const { sendPushToUser } = await import('./_core/webPush');
+          const pushResult = await sendPushToUser(child.parentId, {
+            title: 'تقرير يومي جديد 📝',
+            body: `تم إضافة تقرير يومي جديد لـ ${child.firstName}`,
+            tag: 'daily_report',
+            data: { type: 'daily_report', childId: input.childId, url: '/parent/daily-report' },
+          }, db.getPushSubscriptionsForUser);
+          if (pushResult.expired.length > 0) await db.removeExpiredSubscriptions(pushResult.expired);
         }
       } catch (e) { /* non-critical */ }
       return report;
@@ -1696,7 +1705,40 @@ export const appRouter = router({
       notes: z.string().optional(),
       metadata: z.any().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createDailyActivity({ ...input, recordedBy: ctx.user!.id, recordedAt: new Date() });
+      const activity = await db.createDailyActivity({ ...input, recordedBy: ctx.user!.id, recordedAt: new Date() });
+      // Push notification to parent for key activities
+      const notifiableTypes = ['arrival', 'departure', 'medication', 'mood', 'learning_activity', 'photo', 'observation'];
+      if (notifiableTypes.includes(input.type)) {
+        try {
+          const child = await db.getChildById(input.childId);
+          if (child?.parentId) {
+            const activityLabels: Record<string, string> = {
+              arrival: 'وصول', departure: 'مغادرة', medication: 'دواء',
+              mood: 'حالة مزاجية', learning_activity: 'نشاط تعليمي',
+              photo: 'صورة جديدة', observation: 'ملاحظة',
+            };
+            const label = activityLabels[input.type] || 'نشاط';
+            await db.createNotification({
+              userId: child.parentId,
+              title: `${label} - ${child.firstName}`,
+              titleAr: `${label} - ${child.firstName}`,
+              body: input.title || `تم تسجيل ${label} لـ ${child.firstName}`,
+              bodyAr: input.title || `تم تسجيل ${label} لـ ${child.firstName}`,
+              type: 'activity',
+              link: '/parent/daily-report',
+            });
+            const { sendPushToUser } = await import('./_core/webPush');
+            const pushResult = await sendPushToUser(child.parentId, {
+              title: `${label} - ${child.firstName}`,
+              body: input.title || `تم تسجيل ${label} لـ ${child.firstName}`,
+              tag: `activity_${input.type}`,
+              data: { type: 'activity', childId: input.childId, url: '/parent/daily-report' },
+            }, db.getPushSubscriptionsForUser);
+            if (pushResult.expired.length > 0) await db.removeExpiredSubscriptions(pushResult.expired);
+          }
+        } catch (e) { /* non-critical */ }
+      }
+      return activity;
     }),
   }),
 
@@ -1747,7 +1789,37 @@ export const appRouter = router({
       visibility: z.enum(['class', 'specific']).optional(),
       childIds: z.array(z.number()).optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createMedia({ ...input, uploadedBy: ctx.user!.id });
+      const media = await db.createMedia({ ...input, uploadedBy: ctx.user!.id });
+      // Push notification to parents of tagged children
+      if (input.childIds && input.childIds.length > 0) {
+        try {
+          const { sendPushToUser } = await import('./_core/webPush');
+          const notifiedParents = new Set<number>();
+          for (const childId of input.childIds) {
+            const child = await db.getChildById(childId);
+            if (child?.parentId && !notifiedParents.has(child.parentId)) {
+              notifiedParents.add(child.parentId);
+              const mediaLabel = input.type === 'photo' ? 'صورة جديدة' : 'فيديو جديد';
+              await db.createNotification({
+                userId: child.parentId,
+                title: `${mediaLabel} لـ ${child.firstName}`,
+                titleAr: `${mediaLabel} لـ ${child.firstName}`,
+                body: input.caption || `تم إضافة ${mediaLabel} لـ ${child.firstName}`,
+                bodyAr: input.caption || `تم إضافة ${mediaLabel} لـ ${child.firstName}`,
+                type: 'activity',
+                link: '/parent/photos',
+              });
+              await sendPushToUser(child.parentId, {
+                title: `${mediaLabel} 📷`,
+                body: input.caption || `تم إضافة ${mediaLabel} لـ ${child.firstName}`,
+                tag: 'new_media',
+                data: { type: 'media', childId, url: '/parent/photos' },
+              }, db.getPushSubscriptionsForUser);
+            }
+          }
+        } catch (e) { /* non-critical */ }
+      }
+      return media;
     }),
     uploadBatch: teacherProcedure.input(z.object({
       items: z.array(z.object({
@@ -1772,6 +1844,34 @@ export const appRouter = router({
           uploadedBy: ctx.user!.id,
         });
         results.push(result);
+      }
+      // Push notification to parents of tagged children (batch)
+      if (input.childIds && input.childIds.length > 0) {
+        try {
+          const { sendPushToUser } = await import('./_core/webPush');
+          const notifiedParents = new Set<number>();
+          for (const childId of input.childIds) {
+            const child = await db.getChildById(childId);
+            if (child?.parentId && !notifiedParents.has(child.parentId)) {
+              notifiedParents.add(child.parentId);
+              await db.createNotification({
+                userId: child.parentId,
+                title: `صور جديدة لـ ${child.firstName}`,
+                titleAr: `صور جديدة لـ ${child.firstName}`,
+                body: `تم إضافة ${input.items.length} صور/فيديو جديدة لـ ${child.firstName}`,
+                bodyAr: `تم إضافة ${input.items.length} صور/فيديو جديدة لـ ${child.firstName}`,
+                type: 'activity',
+                link: '/parent/photos',
+              });
+              await sendPushToUser(child.parentId, {
+                title: 'صور جديدة 📷',
+                body: `تم إضافة ${input.items.length} صور/فيديو جديدة لـ ${child.firstName}`,
+                tag: 'new_media_batch',
+                data: { type: 'media', childId, url: '/parent/photos' },
+              }, db.getPushSubscriptionsForUser);
+            }
+          }
+        } catch (e) { /* non-critical */ }
       }
       return results;
     }),
