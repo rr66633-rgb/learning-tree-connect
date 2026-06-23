@@ -1505,3 +1505,9 @@
 - [x] Trigger notifications from new messages with link
 - [x] Trigger notifications from new nursery registrations (for super admin) with link
 - [x] Write vitest tests for notification system (10 tests passing)
+
+## Bug Fixes - Subscription Plans & Brand Identity Pages
+- [x] Fix SubscriptionPlans page parse/JSON error causing crash (removed JSON.parse, features is already array from drizzle)
+- [x] Fix Brand Identity page returning 404 (created /super-admin/branding page + route)
+- [x] Fix Super Admin Users page returning 404 (created /super-admin/users page + route)
+- [x] Fix Super Admin Settings page returning 404 (created /super-admin/settings page + route)

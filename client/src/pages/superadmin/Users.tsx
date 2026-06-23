@@ -1,0 +1,195 @@
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useState, useMemo } from "react";
+import { Users as UsersIcon, Search } from "lucide-react";
+
+const roleLabels: Record<string, string> = {
+  super_admin: "مدير عام",
+  admin: "مدير",
+  principal: "مدير حضانة",
+  teacher: "معلمة",
+  assistant: "مساعدة",
+  accountant: "محاسب",
+  receptionist: "استقبال",
+  parent: "ولي أمر",
+  user: "مستخدم",
+};
+
+const roleColors: Record<string, string> = {
+  super_admin: "bg-red-100 text-red-800",
+  admin: "bg-purple-100 text-purple-800",
+  principal: "bg-blue-100 text-blue-800",
+  teacher: "bg-green-100 text-green-800",
+  assistant: "bg-teal-100 text-teal-800",
+  accountant: "bg-orange-100 text-orange-800",
+  receptionist: "bg-pink-100 text-pink-800",
+  parent: "bg-cyan-100 text-cyan-800",
+  user: "bg-gray-100 text-gray-800",
+};
+
+export default function SuperAdminUsers() {
+  const { data: orgs, isLoading: orgsLoading } = trpc.superAdmin.listOrganizations.useQuery({});
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+
+  const { data: members, isLoading: membersLoading } = trpc.superAdmin.listMembers.useQuery(
+    { organizationId: selectedOrgId! },
+    { enabled: !!selectedOrgId }
+  );
+
+  // Auto-select first org
+  useMemo(() => {
+    if (orgs?.organizations?.length && !selectedOrgId) {
+      setSelectedOrgId(orgs.organizations[0].id);
+    }
+  }, [orgs, selectedOrgId]);
+
+  const filteredMembers = useMemo(() => {
+    if (!members) return [];
+    if (!search) return members;
+    const s = search.toLowerCase();
+    return members.filter(
+      (m: any) =>
+        m.userName?.toLowerCase().includes(s) ||
+        m.userEmail?.toLowerCase().includes(s) ||
+        m.userPhone?.includes(s)
+    );
+  }, [members, search]);
+
+  if (orgsLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <UsersIcon className="w-6 h-6 text-[#7C3AED]" />
+          المستخدمون
+        </h1>
+        <p className="text-muted-foreground mt-1">إدارة مستخدمي المنظمات</p>
+      </div>
+
+      {/* Organization Selector */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Select
+                value={selectedOrgId?.toString() || ""}
+                onValueChange={(v) => setSelectedOrgId(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر منظمة..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {orgs?.organizations?.map((org: any) => (
+                    <SelectItem key={org.id} value={org.id.toString()}>
+                      {org.nameAr || org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالاسم أو البريد..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pr-9"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Members Table */}
+      {selectedOrgId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">
+              أعضاء المنظمة ({filteredMembers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {membersLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : filteredMembers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                لا يوجد أعضاء
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">المستخدم</TableHead>
+                      <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                      <TableHead className="text-right">الهاتف</TableHead>
+                      <TableHead className="text-right">الدور</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">تاريخ الانضمام</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMembers.map((member: any) => (
+                      <TableRow key={member.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {member.userName?.charAt(0) || "؟"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{member.userName || "—"}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm" dir="ltr">
+                          {member.userEmail || "—"}
+                        </TableCell>
+                        <TableCell className="text-sm" dir="ltr">
+                          {member.userPhone || "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className={roleColors[member.role] || "bg-gray-100"}>
+                            {roleLabels[member.role] || member.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={member.isActive ? "default" : "destructive"}>
+                            {member.isActive ? "نشط" : "معطل"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {member.joinedAt
+                            ? new Date(member.joinedAt).toLocaleDateString("ar-SA")
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

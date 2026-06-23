@@ -61,7 +61,7 @@ export default function SubscriptionPlans() {
         {plans?.map((plan) => {
           const TierIcon = tierIcons[plan.tier] || Star;
           const colors = tierColors[plan.tier] || tierColors.starter;
-          const features = JSON.parse(plan.features as string || "[]") as string[];
+          const features = (Array.isArray(plan.features) ? plan.features : []) as string[];
           
           return (
             <Card
