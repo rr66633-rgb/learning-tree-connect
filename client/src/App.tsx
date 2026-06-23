@@ -58,6 +58,7 @@ const NewObservation = lazy(() => import("./pages/staff/NewObservation"));
 const EngagementAnalytics = lazy(() => import("./pages/staff/EngagementAnalytics"));
 const ParentSubmissionsReview = lazy(() => import("./pages/staff/ParentSubmissionsReview"));
 const EngagementReports = lazy(() => import("./pages/staff/EngagementReports"));
+const QAReport = lazy(() => import("./pages/staff/QAReport"));
 
 // Super Admin Pages
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
@@ -205,6 +206,7 @@ function StaffRouter() {
         <Route path="/staff/leave-management" component={LeaveManagement} />
         <Route path="/staff/import-staff" component={ImportStaff} />
         <Route path="/staff/import-children" component={ImportChildren} />
+        <Route path="/staff/qa-report" component={QAReport} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

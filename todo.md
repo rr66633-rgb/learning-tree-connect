@@ -1610,3 +1610,10 @@
 - [x] Add export button with filter dialog on Children page
 - [x] Filter options: class, enrollment status, age group
 - [x] Generate and download Excel file with Arabic headers
+
+## صفحة تقرير المشاكل الأمنية والأداء
+- [x] إنشاء صفحة QA Security & Performance Report
+- [x] عرض المشاكل الأمنية مع الحلول المقترحة
+- [x] عرض مشاكل الأداء مع الحلول المقترحة
+- [x] تسجيل المسار في App.tsx
+- [x] إضافة رابط في القائمة الجانبية للمشرف
