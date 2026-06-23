@@ -723,6 +723,50 @@ async function startServer() {
     res.send(buf);
   });
 
+  app.get('/api/download-template/parents', async (req, res) => {
+    const XLSX = await import('xlsx');
+    const headers = [
+      'اسم ولي الأمر', 'البريد الإلكتروني', 'رقم الجوال', 'صلة القرابة',
+      'رقم الهوية', 'العنوان', 'المدينة', 'الوظيفة',
+      'اسم الطفل الأول', 'اسم الطفل الثاني', 'ملاحظات'
+    ];
+    const sampleRow = [
+      'أحمد محمد الغامدي', 'ahmed@example.com', '0501234567', 'أب',
+      '1234567890', 'الرياض - حي النرجس', 'الرياض', 'مهندس',
+      'ليان', 'يزن', ''
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    ws['!cols'] = headers.map(() => ({ wch: 20 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'أولياء الأمور');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="parents_template.xlsx"');
+    res.send(buf);
+  });
+
+  app.get('/api/download-template/teachers', async (req, res) => {
+    const XLSX = await import('xlsx');
+    const headers = [
+      'اسم المعلمة', 'البريد الإلكتروني', 'رقم الجوال', 'رقم الهوية',
+      'التخصص', 'المؤهل', 'سنوات الخبرة', 'الفصل المعين',
+      'الجنسية', 'العنوان', 'ملاحظات'
+    ];
+    const sampleRow = [
+      'نورة الشمري', 'noura@example.com', '0501112233', '1234567890',
+      'رياض أطفال', 'بكالوريوس تربية', '5', 'روضة 1',
+      'سعودية', 'الرياض', ''
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    ws['!cols'] = headers.map(() => ({ wch: 18 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'المعلمات');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="teachers_template.xlsx"');
+    res.send(buf);
+  });
+
   // ============ EXPORT ENDPOINTS ============
   app.get('/api/export-staff', async (req, res) => {
     try {

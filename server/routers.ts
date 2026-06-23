@@ -18,6 +18,7 @@ import { developmentRouter } from "./developmentRouter";
 import { engagementRouter } from "./engagementRouter";
 import { registrationRouter } from "./registrationRouter";
 import { staffManagementRouter } from "./staffManagementRouter";
+import { bulkImportRouter } from "./bulkImportRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -157,12 +158,16 @@ export const appRouter = router({
           type: 'registration',
         });
 
-        // Send OTP via SMS
-        await authService.sendSmsOtp(input.phone, code);
+        // Send OTP via Email (primary) with SMS as optional fallback
+        if (input.email) {
+          await authService.sendEmailOtp(input.email, code, input.name);
+        } else {
+          await authService.sendSmsOtp(input.phone, code);
+        }
 
         return {
           success: true,
-          message: 'تم إنشاء الحساب. يرجى إدخال رمز التحقق المرسل إلى جوالك.',
+          message: input.email ? 'تم إنشاء الحساب. يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني.' : 'تم إنشاء الحساب. يرجى إدخال رمز التحقق.',
           userId,
           expiresAt: expiresAt.getTime(),
         };
@@ -197,7 +202,7 @@ export const appRouter = router({
     forgotPassword: publicProcedure
       .input(z.object({
         identifier: z.string().min(1), // email or phone
-        method: z.enum(['email', 'sms']),
+        method: z.enum(['email', 'sms']).default('email'),
       }))
       .mutation(async ({ input, ctx }) => {
         const user = await db.findUserByIdentifier(input.identifier);
@@ -212,24 +217,27 @@ export const appRouter = router({
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: `يرجى الانتظار ${canRequest.waitSeconds} ثانية قبل طلب رمز جديد.` });
         }
 
-        if (input.method === 'email') {
+        // Always prefer email for password reset (SMS is optional/future)
+        const userEmail = user.email || (input.identifier.includes('@') ? input.identifier : null);
+        
+        if (userEmail) {
           // Generate reset token and send email link
           const { token } = await authService.createPasswordResetToken(user.id);
           const origin = ctx.req.headers.origin || ctx.req.headers.referer || '';
           const resetLink = `${origin}/reset-password?token=${token}`;
-          await authService.sendPasswordResetEmail(user.email || input.identifier, resetLink, user.name || undefined);
+          await authService.sendPasswordResetEmail(userEmail, resetLink, user.name || undefined);
           
           // Also send OTP for email verification
           const { code, expiresAt } = await authService.createOtp({
             userId: user.id,
-            email: user.email || input.identifier,
+            email: userEmail,
             type: 'password_reset',
           });
-          await authService.sendEmailOtp(user.email || input.identifier, code, user.name || undefined);
+          await authService.sendEmailOtp(userEmail, code, user.name || undefined);
           
           return { success: true, message: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.', expiresAt: expiresAt.getTime() };
         } else {
-          // Send OTP via SMS
+          // Fallback to SMS only if no email available
           const { code, expiresAt } = await authService.createOtp({
             userId: user.id,
             phone: user.phone || input.identifier,
@@ -343,11 +351,17 @@ export const appRouter = router({
           type: input.type,
         });
 
-        // Send OTP
+        // Send OTP - prefer email, fallback to SMS
         if (input.identifier.includes('@')) {
           await authService.sendEmailOtp(input.identifier, code);
         } else {
-          await authService.sendSmsOtp(input.identifier, code);
+          // Try to find user's email first
+          const userRecord = await db.findUserByIdentifier(input.identifier);
+          if (userRecord?.email) {
+            await authService.sendEmailOtp(userRecord.email, code, userRecord.name || undefined);
+          } else {
+            await authService.sendSmsOtp(input.identifier, code);
+          }
         }
 
         return { success: true, message: 'تم إرسال رمز تحقق جديد.', expiresAt: expiresAt.getTime() };
@@ -2857,5 +2871,7 @@ export const appRouter = router({
   registration: registrationRouter,
   // ============ STAFF MANAGEMENT ============
   staffManagement: staffManagementRouter,
+  // ============ BULK IMPORT ============
+  bulkImport: bulkImportRouter,
 });
 export type AppRouter = typeof appRouter;
