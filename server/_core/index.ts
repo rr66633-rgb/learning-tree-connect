@@ -4,6 +4,9 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { rateLimit } from "express-rate-limit";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+import { doubleCsrf } from "csrf-csrf";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
@@ -34,30 +37,131 @@ async function startServer() {
   const server = createServer(app);
   // Trust proxy for correct IP detection behind reverse proxy
   app.set('trust proxy', 1);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Rate limiting for auth-related tRPC procedures
+  // Security headers with Helmet
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disabled for SPA compatibility
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
+
+  // Configure body parser with size limits
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+  // Cookie parser (required for CSRF double-submit cookie)
+  app.use(cookieParser());
+
+  // CSRF Protection using Double Submit Cookie pattern
+  const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
+    getSecret: () => process.env.JWT_SECRET || 'csrf-secret-fallback',
+    getSessionIdentifier: (req) => req.ip || req.socket.remoteAddress || 'anonymous',
+    cookieName: '__csrf',
+    cookieOptions: {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    },
+    getCsrfTokenFromRequest: (req) => {
+      return req.headers['x-csrf-token'] as string || null;
+    },
+  });
+
+  // CSRF token endpoint - frontend fetches this before making state-changing requests
+  app.get('/api/csrf-token', (req, res) => {
+    const token = generateCsrfToken(req, res);
+    res.json({ csrfToken: token });
+  });
+
+  // Apply CSRF protection to state-changing API endpoints
+  app.use('/api/', (req, res, next) => {
+    // Skip CSRF for safe methods
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      return next();
+    }
+    // Skip CSRF for OAuth callbacks
+    if (req.path.startsWith('/api/oauth/')) {
+      return next();
+    }
+    // Apply CSRF protection to mutations
+    doubleCsrfProtection(req, res, next);
+  });
+
+  // Rate limiting for auth-related tRPC procedures (strict)
   const authRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // max 20 login attempts per 15 min per IP
+    max: 10, // max 10 login attempts per 15 min per IP
     message: { error: "تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار 15 دقيقة." },
     standardHeaders: true,
     legacyHeaders: false,
-    // Use default keyGenerator (req.ip) which handles IPv6 properly
+    skipSuccessfulRequests: true, // Only count failed attempts
   });
 
-  // Apply rate limit to auth endpoints
+  // Stricter rate limit for OTP verification (5 attempts per 10 min)
+  const otpRateLimit = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5, // max 5 OTP attempts per 10 min per IP
+    message: { error: "تم تجاوز الحد الأقصى لمحاولات التحقق. يرجى الانتظار 10 دقائق." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Rate limit for file uploads (20 per minute)
+  const uploadRateLimit = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 20, // max 20 uploads per minute per IP
+    message: { error: "تم تجاوز الحد الأقصى لرفع الملفات. يرجى الانتظار." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Rate limit for export/download (10 per minute)
+  const exportRateLimit = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 10, // max 10 exports per minute per IP
+    message: { error: "تم تجاوز الحد الأقصى لعمليات التصدير. يرجى الانتظار." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Rate limit for AI features (5 per minute - expensive operations)
+  const aiRateLimit = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5, // max 5 AI requests per minute per IP
+    message: { error: "تم تجاوز الحد الأقصى لطلبات الذكاء الاصطناعي. يرجى الانتظار." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Apply rate limits to auth endpoints
   app.use('/api/trpc/auth.login', authRateLimit);
   app.use('/api/trpc/auth.register', authRateLimit);
   app.use('/api/trpc/auth.requestPasswordReset', authRateLimit);
-  app.use('/api/trpc/auth.verifyOtp', authRateLimit);
+  app.use('/api/trpc/auth.verifyOtp', otpRateLimit);
+  app.use('/api/trpc/auth.changePassword', authRateLimit);
+
+  // Apply rate limits to upload endpoints
+  app.use('/api/upload', uploadRateLimit);
+  app.use('/api/upload-photo', uploadRateLimit);
+  app.use('/api/upload-document', uploadRateLimit);
+  app.use('/api/upload-logo', uploadRateLimit);
+  app.use('/api/upload-media', uploadRateLimit);
+  app.use('/api/upload-media-batch', uploadRateLimit);
+
+  // Apply rate limits to export endpoints
+  app.use('/api/export-staff', exportRateLimit);
+  app.use('/api/export-children', exportRateLimit);
+  app.use('/api/download-template', exportRateLimit);
+
+  // Apply rate limits to AI endpoints
+  app.use('/api/trpc/ai.', aiRateLimit);
+  app.use('/api/trpc/weeklyPlan.generate', aiRateLimit);
 
   // General API rate limit (more permissive)
   const generalRateLimit = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 200, // 200 requests per minute per IP
+    max: 150, // 150 requests per minute per IP
     standardHeaders: true,
     legacyHeaders: false,
   });

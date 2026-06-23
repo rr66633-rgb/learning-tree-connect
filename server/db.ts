@@ -220,14 +220,16 @@ export async function deleteChild(id: number) {
 }
 
 // ============ ATTENDANCE ============
-export async function getAttendanceByDate(date: string) {
+export async function getAttendanceByDate(date: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
-  return db.select().from(attendance).where(and(gte(attendance.date, startOfDay), lte(attendance.date, endOfDay)));
+  const conditions = [gte(attendance.date, startOfDay), lte(attendance.date, endOfDay)];
+  if (organizationId) conditions.push(eq(attendance.organizationId, organizationId));
+  return db.select().from(attendance).where(and(...conditions));
 }
 
 export async function getAttendanceByChild(childId: number) {
@@ -299,11 +301,14 @@ export async function getAttendanceAuditLogByChild(childId: number) {
 }
 
 // ============ DAILY REPORTS ============
-export async function getDailyReports(childId?: number) {
+export async function getDailyReports(childId?: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  if (childId) {
-    return db.select().from(dailyReports).where(eq(dailyReports.childId, childId)).orderBy(desc(dailyReports.date));
+  const conditions = [];
+  if (childId) conditions.push(eq(dailyReports.childId, childId));
+  if (organizationId) conditions.push(eq(dailyReports.organizationId, organizationId));
+  if (conditions.length > 0) {
+    return db.select().from(dailyReports).where(conditions.length === 1 ? conditions[0] : and(...conditions)).orderBy(desc(dailyReports.date));
   }
   return db.select().from(dailyReports).orderBy(desc(dailyReports.date));
 }
@@ -689,10 +694,13 @@ export async function updateInvoiceStatus(id: number, status: string, paidAt?: D
   await db.update(invoices).set(updateData).where(eq(invoices.id, id));
 }
 
-export async function getFinanceSummary() {
+export async function getFinanceSummary(organizationId?: number) {
   const db = await getDb();
   if (!db) return { totalRevenue: 0, pendingAmount: 0, overdueAmount: 0, totalInvoices: 0 };
-  const allInvoices = await db.select().from(invoices);
+  const query = organizationId 
+    ? db.select().from(invoices).where(eq(invoices.organizationId, organizationId))
+    : db.select().from(invoices);
+  const allInvoices = await query;
   const totalRevenue = allInvoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + Number(i.total), 0);
   const pendingAmount = allInvoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + Number(i.total), 0);
   const overdueAmount = allInvoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + Number(i.total), 0);
@@ -793,11 +801,15 @@ export async function createBatchNotifications(data: InsertNotification[]) {
 }
 
 // ============ ANALYTICS ============
-export async function getDashboardStats() {
+export async function getDashboardStats(organizationId?: number) {
   const db = await getDb();
   if (!db) return { totalChildren: 0, totalStaff: 0, presentToday: 0, totalRevenue: 0 };
-  const allChildren = await db.select({ count: sql<number>`count(*)` }).from(children).where(eq(children.status, 'active'));
-  const allStaff = await db.select({ count: sql<number>`count(*)` }).from(users).where(sql`${users.role} IN ('admin', 'teacher')`);
+  const childConditions = [eq(children.status, 'active')];
+  if (organizationId) childConditions.push(eq(children.organizationId, organizationId));
+  const allChildren = await db.select({ count: sql<number>`count(*)` }).from(children).where(and(...childConditions));
+  const staffConditions = [sql`${users.role} IN ('admin', 'teacher')`];
+  if (organizationId) staffConditions.push(eq(users.organizationId, organizationId));
+  const allStaff = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(...staffConditions));
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
   const presentToday = await db.select({ count: sql<number>`count(*)` }).from(attendance)
@@ -966,9 +978,12 @@ export async function getUnlinkedChildren() {
 }
 
 // ============ CLASSES ============
-export async function getClasses() {
+export async function getClasses(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    return db.select().from(classes).where(eq(classes.organizationId, organizationId)).orderBy(classes.name);
+  }
   return db.select().from(classes).orderBy(classes.name);
 }
 

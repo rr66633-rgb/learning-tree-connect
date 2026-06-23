@@ -375,7 +375,7 @@ export const appRouter = router({
           totalRevenue: 0,
         };
       }
-      return db.getDashboardStats();
+      return db.getDashboardStats(ctx.user?.organizationId ?? undefined);
     }),
   }),
 
@@ -566,7 +566,7 @@ export const appRouter = router({
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         return db.getAttendanceByDateForChildren(input.date, childIds);
       }
-      return db.getAttendanceByDate(input.date);
+      return db.getAttendanceByDate(input.date, ctx.user?.organizationId ?? undefined);
     }),
     byChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       // Parents can only see their own children's attendance
@@ -777,7 +777,7 @@ export const appRouter = router({
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         return db.getDailyReportsForChildren(childIds);
       }
-      return db.getDailyReports(input?.childId);
+      return db.getDailyReports(input?.childId, ctx.user?.organizationId ?? undefined);
     }),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       const report = await db.getDailyReportById(input.id);
@@ -920,16 +920,19 @@ export const appRouter = router({
       await db.markMessagesAsRead(input.conversationId, ctx.user!.id);
       return { success: true };
     }),
-    archive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input }) => {
+    archive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input, ctx }) => {
       await db.archiveConversation(input.conversationId);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'archive_conversation', resource: 'conversations', resourceId: input.conversationId, details: `Archived conversation #${input.conversationId}`, ipAddress: '' });
       return { success: true };
     }),
-    unarchive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input }) => {
+    unarchive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input, ctx }) => {
       await db.unarchiveConversation(input.conversationId);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'unarchive_conversation', resource: 'conversations', resourceId: input.conversationId, details: `Unarchived conversation #${input.conversationId}`, ipAddress: '' });
       return { success: true };
     }),
-    deleteMessage: adminProcedure.input(z.object({ messageId: z.number() })).mutation(async ({ input }) => {
+    deleteMessage: adminProcedure.input(z.object({ messageId: z.number() })).mutation(async ({ input, ctx }) => {
       await db.deleteMessage(input.messageId);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_message', resource: 'messages', resourceId: input.messageId, details: `Deleted message #${input.messageId}`, ipAddress: '' });
       return { success: true };
     }),
     getContacts: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
@@ -1066,12 +1069,14 @@ export const appRouter = router({
       });
       return { success: true };
     }),
-    markPending: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    markPending: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.updateInvoice(input.id, { status: 'pending', paidAt: null, paymentMethod: undefined as any, paidAmount: '0.00' });
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'mark_pending', resource: 'invoices', resourceId: input.id, details: `Marked invoice #${input.id} as pending`, ipAddress: '' });
       return { success: true };
     }),
-    deleteInvoice: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    deleteInvoice: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.deleteInvoice(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_invoice', resource: 'invoices', resourceId: input.id, details: `Deleted invoice #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
     sendReminder: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
@@ -1492,8 +1497,8 @@ export const appRouter = router({
   }),
 
   classes: router({
-    list: protectedProcedure.query(async () => {
-      return db.getClasses();
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return db.getClasses(ctx.user?.organizationId ?? undefined);
     }),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
       return db.getClassById(input.id);
@@ -1521,8 +1526,10 @@ export const appRouter = router({
       const { id, ...data } = input;
       return db.updateClass(id, data);
     }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.deleteClass(input.id);
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const result = await db.deleteClass(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_class', resource: 'classes', resourceId: input.id, details: `Deleted class #${input.id}`, ipAddress: '' });
+      return result;
     }),
   }),
 
@@ -1751,8 +1758,9 @@ export const appRouter = router({
       await db.deleteMedia(input.id);
       return { success: true };
     }),
-    approve: adminProcedure.input(z.object({ id: z.number(), isApproved: z.boolean() })).mutation(async ({ input }) => {
+    approve: adminProcedure.input(z.object({ id: z.number(), isApproved: z.boolean() })).mutation(async ({ input, ctx }) => {
       await db.updateMediaApproval(input.id, input.isApproved);
+      await db.createAuditLog({ userId: ctx.user!.id, action: input.isApproved ? 'approve_media' : 'reject_media', resource: 'media', resourceId: input.id, details: `${input.isApproved ? 'Approved' : 'Rejected'} media #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
     // AI: Generate caption for an uploaded photo
@@ -1885,8 +1893,10 @@ export const appRouter = router({
     })).mutation(async ({ input, ctx }) => {
       return db.createAnnouncement({ ...input, createdBy: ctx.user!.id });
     }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.deleteAnnouncement(input.id);
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      await db.deleteAnnouncement(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_announcement', resource: 'announcements', resourceId: input.id, details: `Deleted announcement #${input.id}`, ipAddress: '' });
+      return { success: true };
     }),
   }),
 
@@ -1912,8 +1922,10 @@ export const appRouter = router({
     })).mutation(async ({ input, ctx }) => {
       return db.createDocument({ ...input, uploadedBy: ctx.user!.id });
     }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.deleteDocument(input.id);
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      await db.deleteDocument(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_document', resource: 'documents', resourceId: input.id, details: `Deleted document #${input.id}`, ipAddress: '' });
+      return { success: true };
     }),
     sign: protectedProcedure.input(z.object({ documentId: z.number() })).mutation(async ({ input, ctx }) => {
       return db.createSignature({ documentId: input.documentId, parentId: ctx.user!.id, signedAt: new Date() });
@@ -2086,8 +2098,10 @@ export const appRouter = router({
       await db.updateWaitingListEntry(id, data);
       return { success: true };
     }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.deleteWaitingListEntry(input.id);
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      await db.deleteWaitingListEntry(input.id);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_waiting_list', resource: 'waiting_list', resourceId: input.id, details: `Deleted waiting list entry #${input.id}`, ipAddress: '' });
+      return { success: true };
     }),
   }),
 
@@ -2205,11 +2219,15 @@ export const appRouter = router({
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_user', resource: 'users', resourceId: input.id, details: `Deleted user #${input.id}`, ipAddress: '' });
       return db.deleteUser(input.id);
     }),
-    linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input }) => {
-      return db.linkParentToChild(input.parentId, input.childId, input.relationship || 'parent');
+    linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const result = await db.linkParentToChild(input.parentId, input.childId, input.relationship || 'parent');
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'link_child', resource: 'parent_children', resourceId: input.childId, details: `Linked parent #${input.parentId} to child #${input.childId}`, ipAddress: '' });
+      return result;
     }),
-    unlinkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input }) => {
-      return db.unlinkParentFromChild(input.parentId, input.childId);
+    unlinkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const result = await db.unlinkParentFromChild(input.parentId, input.childId);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'unlink_child', resource: 'parent_children', resourceId: input.childId, details: `Unlinked parent #${input.parentId} from child #${input.childId}`, ipAddress: '' });
+      return result;
     }),
     getChildren: adminProcedure.input(z.object({ parentId: z.number() })).query(async ({ input }) => {
       return db.getChildrenForParent(input.parentId);
@@ -2220,11 +2238,15 @@ export const appRouter = router({
     getParentsForChild: adminProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
       return db.getParentsForChild(input.childId);
     }),
-    activate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.updateUser(input.id, { isActive: true });
+    activate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const result = await db.updateUser(input.id, { isActive: true });
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'activate_user', resource: 'users', resourceId: input.id, details: `Activated user #${input.id}`, ipAddress: '' });
+      return result;
     }),
-    deactivate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.updateUser(input.id, { isActive: false });
+    deactivate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const result = await db.updateUser(input.id, { isActive: false });
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'deactivate_user', resource: 'users', resourceId: input.id, details: `Deactivated user #${input.id}`, ipAddress: '' });
+      return result;
     }),
     // Get pending parents (role='parent', isActive=false) awaiting approval
     pending: adminProcedure.query(async () => {

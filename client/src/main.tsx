@@ -46,11 +46,30 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+// CSRF Token management
+let csrfToken: string | null = null;
+async function getCsrfToken(): Promise<string> {
+  if (!csrfToken) {
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      const data = await res.json();
+      csrfToken = data.csrfToken;
+    } catch {
+      csrfToken = '';
+    }
+  }
+  return csrfToken || '';
+}
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      async headers() {
+        const token = await getCsrfToken();
+        return { 'x-csrf-token': token };
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
