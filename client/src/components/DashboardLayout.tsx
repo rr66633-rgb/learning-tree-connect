@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -99,10 +99,12 @@ const staffMenuItems: MenuItem[] = [
 const adminMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
   { icon: Users, label: "الأطفال", path: "/children", color: "#7C3AED" },
+  { icon: FileSpreadsheet, label: "استيراد الأطفال", path: "/import-children", color: "#EC4899" },
   { icon: GraduationCap, label: "الفصول", path: "/classes", color: "#F97316" },
   { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance", color: "#00C9B7" },
   { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance", color: "#EC4899" },
   { icon: UserCog, label: "إدارة الموظفين", path: "/staff-management", color: "#7C3AED" },
+  { icon: FileSpreadsheet, label: "استيراد الموظفين", path: "/import-staff", color: "#00C9B7" },
   { icon: CalendarDays, label: "إدارة الإجازات", path: "/leave-management", color: "#F97316" },
   { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", color: "#EC4899" },
   { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", color: "#7C3AED" },
@@ -132,10 +134,12 @@ const adminMenuItems: MenuItem[] = [
 const principalMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "" },
   { icon: Users, label: "الأطفال", path: "/children" },
+  { icon: FileSpreadsheet, label: "استيراد الأطفال", path: "/import-children" },
   { icon: GraduationCap, label: "الفصول", path: "/classes" },
   { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance" },
   { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance" },
   { icon: UserCog, label: "إدارة الموظفين", path: "/staff-management" },
+  { icon: FileSpreadsheet, label: "استيراد الموظفين", path: "/import-staff" },
   { icon: CalendarDays, label: "إدارة الإجازات", path: "/leave-management" },
   { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log" },
   { icon: FileText, label: "التقارير اليومية", path: "/daily-reports" },

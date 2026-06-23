@@ -48,6 +48,8 @@ const AddStaff = lazy(() => import("./pages/staff/AddStaff"));
 const EditStaff = lazy(() => import("./pages/staff/EditStaff"));
 const StaffProfilePage = lazy(() => import("./pages/staff/StaffProfile"));
 const LeaveManagement = lazy(() => import("./pages/staff/LeaveManagement"));
+const ImportStaff = lazy(() => import("./pages/staff/ImportStaff"));
+const ImportChildren = lazy(() => import("./pages/staff/ImportChildren"));
 
 // Development Center Pages
 const DevelopmentDashboard = lazy(() => import("./pages/staff/DevelopmentDashboard"));
@@ -201,6 +203,8 @@ function StaffRouter() {
         <Route path="/staff/staff-management/:id/edit" component={EditStaff} />
         <Route path="/staff/staff-management/:id" component={StaffProfilePage} />
         <Route path="/staff/leave-management" component={LeaveManagement} />
+        <Route path="/staff/import-staff" component={ImportStaff} />
+        <Route path="/staff/import-children" component={ImportChildren} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

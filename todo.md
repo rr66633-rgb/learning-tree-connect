@@ -1564,3 +1564,34 @@
 - [x] Add "إدارة الموظفين" to DashboardLayout sidebar for admin/principal
 - [x] Ensure responsive design (mobile/tablet/desktop)
 - [x] Write vitest tests for staff management procedures (25 tests passing)
+
+## Excel/CSV Import Feature
+### Backend
+- [x] Install xlsx library for parsing Excel files
+- [x] Create /api/import-staff endpoint (parse Excel, validate, bulk insert)
+- [x] Create /api/import-children endpoint (parse Excel, validate, bulk insert)
+- [x] Create /api/download-template/staff endpoint (generate staff template)
+- [x] Create /api/download-template/children endpoint (generate children template)
+
+### Frontend - Staff Import
+- [x] Create ImportStaff page with file upload (drag & drop)
+- [x] Show data preview table after parsing
+- [x] Validate data and show errors/warnings per row
+- [x] Confirm import button with progress indicator
+- [x] Add link to import from StaffDirectory page
+
+### Frontend - Children Import
+- [x] Create ImportChildren page with file upload (drag & drop)
+- [x] Show data preview table after parsing
+- [x] Validate data and show errors/warnings per row
+- [x] Confirm import button with progress indicator
+- [x] Add link to import from Children page
+
+### Templates
+- [x] Generate staff Excel template with Arabic headers and sample data
+- [x] Generate children Excel template with Arabic headers and sample data
+- [x] Add download template button on import pages
+
+### Integration
+- [x] Register import routes in App.tsx
+- [x] Add navigation links in DashboardLayout

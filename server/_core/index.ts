@@ -268,6 +268,357 @@ async function startServer() {
     }
   });
 
+  // ============ EXCEL/CSV IMPORT ENDPOINTS ============
+  const uploadImport = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+  app.post('/api/import-staff', uploadImport.single('file'), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!['super_admin', 'admin', 'principal'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+      const file = (req as any).file;
+      if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(file.buffer, { type: 'buffer', cellDates: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rawData = XLSX.utils.sheet_to_json(sheet, { defval: '' }) as any[];
+      if (!rawData.length) { res.status(400).json({ error: 'الملف فارغ' }); return; }
+
+      // Map Arabic headers to field names
+      const headerMap: Record<string, string> = {
+        'الاسم الكامل (عربي)': 'fullNameAr', 'الاسم الكامل (إنجليزي)': 'fullNameEn',
+        'رقم الهوية': 'nationalId', 'رقم الإقامة': 'iqamaNumber',
+        'رقم الجوال': 'mobile', 'البريد الإلكتروني': 'email',
+        'المسمى الوظيفي': 'jobTitle', 'القسم': 'department', 'الفرع': 'branch',
+        'تاريخ التعيين': 'hireDate', 'الحالة': 'status',
+        'الجنسية': 'nationality', 'الجنس': 'gender',
+        'نوع العقد': 'contractType', 'المؤهل': 'qualification', 'التخصص': 'specialization',
+        'سنوات الخبرة': 'yearsOfExperience', 'الراتب': 'salary',
+        'اسم جهة الطوارئ': 'emergencyContactName', 'رقم جهة الطوارئ': 'emergencyContactPhone',
+        'صلة جهة الطوارئ': 'emergencyContactRelation',
+        'العنوان': 'address', 'المدينة': 'city',
+        'اسم البنك': 'bankName', 'رقم الآيبان': 'iban',
+        'ملاحظات': 'notes',
+      };
+
+      const jobTitleMap: Record<string, string> = {
+        'معلمة': 'teacher', 'مشرفة': 'supervisor', 'مديرة': 'principal',
+        'مساعدة': 'assistant', 'إدارية': 'admin_staff', 'أخصائية': 'specialist',
+        'محاسبة': 'accountant', 'استقبال': 'receptionist', 'سائق': 'driver', 'أخرى': 'other',
+      };
+      const contractMap: Record<string, string> = {
+        'دوام كامل': 'full_time', 'دوام جزئي': 'part_time', 'عقد': 'contract', 'مؤقت': 'temporary',
+      };
+      const genderMap: Record<string, string> = { 'ذكر': 'male', 'أنثى': 'female' };
+      const statusMap: Record<string, string> = {
+        'نشط': 'active', 'غير نشط': 'inactive', 'إجازة': 'on_leave', 'منتهي': 'terminated', 'مستقيل': 'resigned',
+      };
+
+      // Parse and validate rows
+      const results: { row: number; data: any; errors: string[] }[] = [];
+      for (let i = 0; i < rawData.length; i++) {
+        const raw = rawData[i];
+        const mapped: any = {};
+        const errors: string[] = [];
+
+        // Map headers
+        for (const [key, val] of Object.entries(raw)) {
+          const fieldName = headerMap[key] || key;
+          mapped[fieldName] = val;
+        }
+
+        // Validate required fields
+        if (!mapped.fullNameAr && !mapped.fullNameEn) errors.push('الاسم مطلوب');
+        if (!mapped.mobile) errors.push('رقم الجوال مطلوب');
+        if (!mapped.jobTitle) errors.push('المسمى الوظيفي مطلوب');
+
+        // Map enum values
+        if (mapped.jobTitle) mapped.jobTitle = jobTitleMap[mapped.jobTitle] || mapped.jobTitle;
+        if (mapped.contractType) mapped.contractType = contractMap[mapped.contractType] || mapped.contractType;
+        if (mapped.gender) mapped.gender = genderMap[mapped.gender] || mapped.gender;
+        if (mapped.status) mapped.status = statusMap[mapped.status] || mapped.status || 'active';
+
+        // Parse dates
+        if (mapped.hireDate && !(mapped.hireDate instanceof Date)) {
+          const d = new Date(mapped.hireDate);
+          mapped.hireDate = isNaN(d.getTime()) ? null : d;
+        }
+
+        results.push({ row: i + 2, data: mapped, errors });
+      }
+
+      // If mode=preview, just return parsed data
+      if (req.query.mode === 'preview') {
+        res.json({ total: results.length, rows: results });
+        return;
+      }
+
+      // Insert valid rows
+      const { getDb } = await import('../db');
+      const db = await getDb();
+      if (!db) { res.status(500).json({ error: 'فشل الاتصال بقاعدة البيانات' }); return; }
+      const { users: usersTable, staffProfiles } = await import('../../drizzle/schema');
+      const bcrypt = await import('bcryptjs');
+      let imported = 0;
+      const errors: { row: number; error: string }[] = [];
+      const orgId = user.organizationId || 1;
+
+      for (const item of results) {
+        if (item.errors.length > 0) { errors.push({ row: item.row, error: item.errors.join(', ') }); continue; }
+        try {
+          const d = item.data;
+          // Create user account
+          const openId = `staff_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const hashedPw = await bcrypt.hash(d.mobile || '123456', 10);
+          const roleForUser = d.jobTitle === 'principal' ? 'principal' : d.jobTitle === 'teacher' ? 'teacher' : d.jobTitle === 'assistant' ? 'assistant' : d.jobTitle === 'accountant' ? 'accountant' : d.jobTitle === 'receptionist' ? 'receptionist' : 'teacher';
+          const [newUser] = await db.insert(usersTable).values({
+            openId,
+            name: d.fullNameAr || d.fullNameEn || 'موظف',
+            email: d.email || null,
+            phone: d.mobile || null,
+            role: roleForUser,
+            password: hashedPw,
+            nationalId: d.nationalId || null,
+            organizationId: orgId,
+          }).$returningId();
+
+          // Create staff profile
+          await db.insert(staffProfiles).values({
+            userId: newUser.id,
+            organizationId: orgId,
+            fullNameAr: d.fullNameAr || null,
+            fullNameEn: d.fullNameEn || null,
+            nationalId: d.nationalId || null,
+            iqamaNumber: d.iqamaNumber || null,
+            mobile: d.mobile || null,
+            email: d.email || null,
+            jobTitle: d.jobTitle || 'teacher',
+            department: d.department || null,
+            branch: d.branch || null,
+            hireDate: d.hireDate || null,
+            status: d.status || 'active',
+            nationality: d.nationality || null,
+            gender: d.gender || null,
+            contractType: d.contractType || 'full_time',
+            qualification: d.qualification || null,
+            specialization: d.specialization || null,
+            yearsOfExperience: d.yearsOfExperience ? parseInt(d.yearsOfExperience) : null,
+            salary: d.salary ? String(d.salary) : null,
+            emergencyContactName: d.emergencyContactName || null,
+            emergencyContactPhone: d.emergencyContactPhone || null,
+            emergencyContactRelation: d.emergencyContactRelation || null,
+            address: d.address || null,
+            city: d.city || null,
+            bankName: d.bankName || null,
+            iban: d.iban || null,
+            notes: d.notes || null,
+          });
+          imported++;
+        } catch (e: any) {
+          errors.push({ row: item.row, error: e.message || 'خطأ غير متوقع' });
+        }
+      }
+      res.json({ success: true, imported, failed: errors.length, errors });
+    } catch (error: any) {
+      console.error('Staff import error:', error);
+      res.status(500).json({ error: 'فشل استيراد الملف: ' + (error.message || '') });
+    }
+  });
+
+  app.post('/api/import-children', uploadImport.single('file'), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!['super_admin', 'admin', 'principal'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+      const file = (req as any).file;
+      if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(file.buffer, { type: 'buffer', cellDates: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rawData = XLSX.utils.sheet_to_json(sheet, { defval: '' }) as any[];
+      if (!rawData.length) { res.status(400).json({ error: 'الملف فارغ' }); return; }
+
+      const headerMap: Record<string, string> = {
+        'الاسم الأول': 'firstName', 'اسم العائلة': 'lastName',
+        'الاسم بالعربية': 'arabicName',
+        'تاريخ الميلاد': 'dateOfBirth', 'الجنس': 'gender',
+        'الجنسية': 'nationality', 'رقم الهوية': 'childNationalId',
+        'الفصل': 'className',
+        'اسم الأب': 'fatherName', 'اسم الأم': 'motherName',
+        'بريد ولي الأمر': 'parentEmail', 'جوال ولي الأمر': 'parentMobile',
+        'جوال بديل': 'altPhone', 'العنوان': 'homeAddress',
+        'الحساسية': 'allergies', 'الحالات الطبية': 'medicalConditions',
+        'الأدوية': 'medications', 'الاحتياجات الخاصة': 'specialNeeds',
+        'اسم الطبيب': 'doctorName', 'فصيلة الدم': 'bloodType',
+        'ملاحظات طبية': 'medicalNotes',
+        'يحتاج نقل': 'busRequired', 'ملاحظات': 'notes',
+        'الحالة': 'status', 'تاريخ التسجيل': 'enrollmentDate',
+      };
+      const genderMap: Record<string, string> = { 'ذكر': 'male', 'أنثى': 'female' };
+      const statusMap: Record<string, string> = {
+        'نشط': 'active', 'غير نشط': 'inactive', 'متخرج': 'graduated', 'قائمة انتظار': 'waitlist',
+      };
+
+      const results: { row: number; data: any; errors: string[] }[] = [];
+      for (let i = 0; i < rawData.length; i++) {
+        const raw = rawData[i];
+        const mapped: any = {};
+        const errors: string[] = [];
+        for (const [key, val] of Object.entries(raw)) {
+          const fieldName = headerMap[key] || key;
+          mapped[fieldName] = val;
+        }
+        if (!mapped.firstName && !mapped.arabicName) errors.push('اسم الطفل مطلوب');
+        if (!mapped.dateOfBirth) errors.push('تاريخ الميلاد مطلوب');
+        if (!mapped.gender) errors.push('الجنس مطلوب');
+        if (mapped.gender) mapped.gender = genderMap[mapped.gender] || mapped.gender;
+        if (mapped.status) mapped.status = statusMap[mapped.status] || mapped.status || 'active';
+        if (mapped.dateOfBirth && !(mapped.dateOfBirth instanceof Date)) {
+          const d = new Date(mapped.dateOfBirth);
+          mapped.dateOfBirth = isNaN(d.getTime()) ? null : d;
+        }
+        if (mapped.enrollmentDate && !(mapped.enrollmentDate instanceof Date)) {
+          const d = new Date(mapped.enrollmentDate);
+          mapped.enrollmentDate = isNaN(d.getTime()) ? null : d;
+        }
+        if (mapped.busRequired) mapped.busRequired = mapped.busRequired === 'نعم' || mapped.busRequired === true;
+        results.push({ row: i + 2, data: mapped, errors });
+      }
+
+      if (req.query.mode === 'preview') {
+        res.json({ total: results.length, rows: results });
+        return;
+      }
+
+      const { getDb } = await import('../db');
+      const db = await getDb();
+      if (!db) { res.status(500).json({ error: 'فشل الاتصال بقاعدة البيانات' }); return; }
+      const { children: childrenTable, classes } = await import('../../drizzle/schema');
+      let imported = 0;
+      const importErrors: { row: number; error: string }[] = [];
+      const orgId = user.organizationId || 1;
+
+      // Get classes for mapping
+      const allClasses: any[] = await db.select().from(classes);
+
+      for (const item of results) {
+        if (item.errors.length > 0) { importErrors.push({ row: item.row, error: item.errors.join(', ') }); continue; }
+        try {
+          const d = item.data;
+          let classId = null;
+          if (d.className) {
+            const cls = allClasses.find(c => c.name === d.className);
+            if (cls) classId = cls.id;
+          }
+          // Parse name from arabicName if firstName/lastName not provided
+          let firstName = d.firstName;
+          let lastName = d.lastName;
+          if (!firstName && d.arabicName) {
+            const parts = d.arabicName.trim().split(/\s+/);
+            firstName = parts[0];
+            lastName = parts.slice(1).join(' ') || '';
+          }
+          await db.insert(childrenTable).values({
+            firstName: firstName || 'طفل',
+            lastName: lastName || '',
+            arabicName: d.arabicName || null,
+            dateOfBirth: d.dateOfBirth || new Date(),
+            gender: d.gender || 'male',
+            nationality: d.nationality || null,
+            childNationalId: d.childNationalId || null,
+            classId,
+            enrollmentDate: d.enrollmentDate || new Date(),
+            fatherName: d.fatherName || null,
+            motherName: d.motherName || null,
+            parentEmail: d.parentEmail || null,
+            parentMobile: d.parentMobile || null,
+            altPhone: d.altPhone || null,
+            homeAddress: d.homeAddress || null,
+            allergies: d.allergies || null,
+            medicalConditions: d.medicalConditions || null,
+            medications: d.medications || null,
+            specialNeeds: d.specialNeeds || null,
+            doctorName: d.doctorName || null,
+            bloodType: d.bloodType || null,
+            medicalNotes: d.medicalNotes || null,
+            busRequired: d.busRequired || false,
+            notes: d.notes || null,
+            status: d.status || 'active',
+            organizationId: orgId,
+          });
+          imported++;
+        } catch (e: any) {
+          importErrors.push({ row: item.row, error: e.message || 'خطأ غير متوقع' });
+        }
+      }
+      res.json({ success: true, imported, failed: importErrors.length, errors: importErrors });
+    } catch (error: any) {
+      console.error('Children import error:', error);
+      res.status(500).json({ error: 'فشل استيراد الملف: ' + (error.message || '') });
+    }
+  });
+
+  // Download template endpoints
+  app.get('/api/download-template/staff', async (req, res) => {
+    const XLSX = await import('xlsx');
+    const headers = [
+      'الاسم الكامل (عربي)', 'الاسم الكامل (إنجليزي)', 'رقم الهوية', 'رقم الإقامة',
+      'رقم الجوال', 'البريد الإلكتروني', 'المسمى الوظيفي', 'القسم', 'الفرع',
+      'تاريخ التعيين', 'الحالة', 'الجنسية', 'الجنس', 'نوع العقد',
+      'المؤهل', 'التخصص', 'سنوات الخبرة', 'الراتب',
+      'اسم جهة الطوارئ', 'رقم جهة الطوارئ', 'صلة جهة الطوارئ',
+      'العنوان', 'المدينة', 'اسم البنك', 'رقم الآيبان', 'ملاحظات'
+    ];
+    const sampleRow = [
+      'فاطمة أحمد العلي', 'Fatima Ahmad', '1234567890', '',
+      '0501234567', 'fatima@example.com', 'معلمة', 'التعليم', 'الفرع الرئيسي',
+      '2024-01-15', 'نشط', 'سعودية', 'أنثى', 'دوام كامل',
+      'بكالوريوس تربية', 'رياض أطفال', '5', '8000',
+      'محمد أحمد', '0559876543', 'أخ',
+      'الرياض - حي النزهة', 'الرياض', 'بنك الراجحي', 'SA1234567890123456789012', ''
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    ws['!cols'] = headers.map(() => ({ wch: 20 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'الموظفين');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="staff_template.xlsx"');
+    res.send(buf);
+  });
+
+  app.get('/api/download-template/children', async (req, res) => {
+    const XLSX = await import('xlsx');
+    const headers = [
+      'الاسم الأول', 'اسم العائلة', 'الاسم بالعربية', 'تاريخ الميلاد', 'الجنس',
+      'الجنسية', 'رقم الهوية', 'الفصل',
+      'اسم الأب', 'اسم الأم', 'بريد ولي الأمر', 'جوال ولي الأمر', 'جوال بديل', 'العنوان',
+      'الحساسية', 'الحالات الطبية', 'الأدوية', 'الاحتياجات الخاصة',
+      'اسم الطبيب', 'فصيلة الدم', 'ملاحظات طبية',
+      'يحتاج نقل', 'ملاحظات', 'الحالة', 'تاريخ التسجيل'
+    ];
+    const sampleRow = [
+      'محمد', 'العلي', 'محمد عبدالله العلي', '2021-03-15', 'ذكر',
+      'سعودي', '1234567890', 'روضة 1',
+      'عبدالله العلي', 'نورة العلي', 'parent@example.com', '0501234567', '0559876543', 'الرياض',
+      '', '', '', '',
+      'د. أحمد', 'A+', '',
+      'لا', '', 'نشط', '2024-09-01'
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    ws['!cols'] = headers.map(() => ({ wch: 18 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'الأطفال');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="children_template.xlsx"');
+    res.send(buf);
+  });
+
   // Scheduled tasks (Heartbeat cron callbacks)
   app.post('/api/scheduled/daily-backup', async (req, res) => {
     const { dailyBackupHandler } = await import('../backup');
