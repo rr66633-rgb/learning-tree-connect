@@ -4,20 +4,10 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import { weeklyPlans, children, parentChildren, classes, notifications, pushSubscriptions } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { sendPushToUsers } from "./_core/webPush";
-
-let _db: any = null;
-async function getDb() {
-  if (!_db) {
-    const mysql2 = await import("mysql2/promise");
-    const pool = mysql2.createPool({ uri: ENV.databaseUrl, waitForConnections: true, connectionLimit: 5 });
-    _db = drizzle(pool);
-  }
-  return _db!;
-}
+import { getDb } from "./db";
 
 // Middleware: only teachers and admins can use weekly plan features
 const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -276,7 +266,7 @@ export const weeklyPlanRouter = router({
       }
 
       // Save as draft
-      const db = await getDb();
+      const db = (await getDb())!;
       const [saved] = await db.insert(weeklyPlans).values({
         classId: input.classId || null,
         teacherId: ctx.user!.id,
@@ -309,7 +299,7 @@ export const weeklyPlanRouter = router({
       theme: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
       if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
       if (plan.teacherId !== ctx.user!.id && !['admin', 'super_admin', 'principal'].includes(ctx.user!.role || '')) {
@@ -332,7 +322,7 @@ export const weeklyPlanRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const conditions: any[] = [];
       
       // Teachers see their own plans, admins see all
@@ -368,7 +358,7 @@ export const weeklyPlanRouter = router({
   get: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
       if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
       return plan;
@@ -381,7 +371,7 @@ export const weeklyPlanRouter = router({
       sections: z.any(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
       if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
       if (plan.status === 'published') {
@@ -399,7 +389,7 @@ export const weeklyPlanRouter = router({
   publish: staffProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
       if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
       if (plan.status === 'published') {
@@ -482,7 +472,7 @@ export const weeklyPlanRouter = router({
   duplicate: staffProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
       if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
 
@@ -505,7 +495,7 @@ export const weeklyPlanRouter = router({
   delete: staffProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
       if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
       if (plan.teacherId !== ctx.user!.id && !['admin', 'super_admin', 'principal'].includes(ctx.user!.role || '')) {
@@ -523,7 +513,7 @@ export const weeklyPlanRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const userId = ctx.user!.id;
 
       // Get classes of parent's children

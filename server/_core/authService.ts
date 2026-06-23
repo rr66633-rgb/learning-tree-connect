@@ -5,16 +5,13 @@
 import crypto from 'crypto';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { otpCodes, passwordResetTokens, loginAttempts, users } from '../../drizzle/schema';
-import { drizzle } from 'drizzle-orm/mysql2';
+import { getDb as getSharedDb } from '../db';
 
-// Get the raw drizzle instance for direct table operations
-let _db: ReturnType<typeof drizzle> | null = null;
-
-function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    _db = drizzle(process.env.DATABASE_URL);
-  }
-  return _db!;
+// Wrapper to maintain the non-null return type expected by this module
+async function getDb() {
+  const db = await getSharedDb();
+  if (!db) throw new Error('Database not available');
+  return db;
 }
 
 // ============ CONSTANTS ============
@@ -71,7 +68,7 @@ export async function verifyPassword(password: string, storedHash: string): Prom
  * Check if user can request a new OTP (rate limiting)
  */
 export async function canRequestOtp(identifier: string): Promise<{ allowed: boolean; waitSeconds?: number }> {
-  const db = getDb();
+  const db = await getDb();
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
   
   const recentOtps = await db.select()
@@ -112,7 +109,7 @@ export async function createOtp(params: {
   email?: string;
   type: 'registration' | 'password_reset' | 'login_verification' | 'phone_verification' | 'email_verification';
 }): Promise<{ code: string; expiresAt: Date }> {
-  const db = getDb();
+  const db = await getDb();
   const code = generateOtpCode();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
   
@@ -138,7 +135,7 @@ export async function verifyOtp(params: {
   code: string;
   type: 'registration' | 'password_reset' | 'login_verification' | 'phone_verification' | 'email_verification';
 }): Promise<{ valid: boolean; error?: string; userId?: number }> {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   // Find the latest OTP for this identifier and type
@@ -190,7 +187,7 @@ export async function verifyOtp(params: {
  * Create a password reset token (for email link)
  */
 export async function createPasswordResetToken(userId: number): Promise<{ token: string; expiresAt: Date }> {
-  const db = getDb();
+  const db = await getDb();
   const token = generateResetToken();
   const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_HOURS * 60 * 60 * 1000);
   
@@ -214,7 +211,7 @@ export async function createPasswordResetToken(userId: number): Promise<{ token:
  * Verify a password reset token
  */
 export async function verifyResetToken(token: string): Promise<{ valid: boolean; userId?: number; error?: string }> {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   const tokens = await db.select()
@@ -239,7 +236,7 @@ export async function verifyResetToken(token: string): Promise<{ valid: boolean;
  * Mark a reset token as used
  */
 export async function markTokenUsed(token: string): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   await db.update(passwordResetTokens)
     .set({ used: true })
     .where(eq(passwordResetTokens.token, token));
@@ -257,7 +254,7 @@ export async function recordLoginAttempt(params: {
   success: boolean;
   reason?: string;
 }): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   await db.insert(loginAttempts).values({
     userId: params.userId || null,
     identifier: params.identifier,
@@ -271,7 +268,7 @@ export async function recordLoginAttempt(params: {
  * Check if an account is locked
  */
 export async function isAccountLocked(userId: number): Promise<{ locked: boolean; lockedUntil?: Date }> {
-  const db = getDb();
+  const db = await getDb();
   const userResults = await db.select({
     accountLockedUntil: users.accountLockedUntil,
     failedLoginAttempts: users.failedLoginAttempts,
@@ -294,7 +291,7 @@ export async function isAccountLocked(userId: number): Promise<{ locked: boolean
  * Increment failed login attempts and potentially lock account
  */
 export async function handleFailedLogin(userId: number): Promise<{ locked: boolean; attemptsRemaining: number }> {
-  const db = getDb();
+  const db = await getDb();
   const userResults = await db.select({
     failedLoginAttempts: users.failedLoginAttempts,
   })
@@ -326,7 +323,7 @@ export async function handleFailedLogin(userId: number): Promise<{ locked: boole
  * Reset failed login attempts on successful login
  */
 export async function resetFailedAttempts(userId: number): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   await db.update(users)
     .set({ failedLoginAttempts: 0, accountLockedUntil: null, lastSignedIn: new Date() })
     .where(eq(users.id, userId));
@@ -336,7 +333,7 @@ export async function resetFailedAttempts(userId: number): Promise<void> {
  * Update user password
  */
 export async function updatePassword(userId: number, newPassword: string): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   const hashedPassword = await hashPassword(newPassword);
   await db.update(users)
     .set({ password: hashedPassword, passwordChangedAt: new Date(), failedLoginAttempts: 0, accountLockedUntil: null })

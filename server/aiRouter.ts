@@ -4,19 +4,9 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import { eq, desc, and, like, inArray, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import { aiGeneratedContent, aiLibrary, children, attendance, eyfsAssessments, learningObservations, dailyReports, calendarEvents, announcements } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-
-let _db: any = null;
-async function getDb() {
-  if (!_db) {
-    const mysql2 = await import("mysql2/promise");
-    const pool = mysql2.createPool({ uri: ENV.databaseUrl, waitForConnections: true, connectionLimit: 5 });
-    _db = drizzle(pool);
-  }
-  return _db!;
-}
+import { getDb } from "./db";
 
 // Middleware: only teachers and admins can use AI features
 const aiProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -57,7 +47,7 @@ export const aiRouter = router({
       language: z.enum(["ar", "en"]).default("ar"),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const lang = input.language === "ar" ? "العربية" : "English";
       const prompt = input.language === "ar" 
         ? `أنت معلمة رياض أطفال محترفة في المملكة العربية السعودية. اكتبي ملاحظة تعليمية مهنية بناءً على هذه الملاحظة القصيرة.
@@ -134,7 +124,7 @@ Write the response in JSON format with this structure:
       classId: z.number().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const goals = input.learningGoals?.join("، ") || "";
       const isArabic = input.language === "ar";
       
@@ -421,7 +411,7 @@ Do NOT leave any field empty.`;
       language: z.enum(["ar", "en"]).default("ar"),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       const prompt = input.language === "ar"
         ? `أنت معلمة رياض أطفال مبدعة في المملكة العربية السعودية. أنشئي نشاطاً تعليمياً مفصلاً.
@@ -509,7 +499,7 @@ Write the response in JSON format:
       language: z.enum(["ar", "en"]).default("ar"),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       // Fetch child data
       const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
@@ -638,7 +628,7 @@ Make the report positive and encouraging.`;
       tone: z.enum(["formal", "friendly", "urgent"]).default("friendly"),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       const prompt = `أنت مسؤولة تواصل في حضانة أطفال في المملكة العربية السعودية. اكتبي رسالة مهنية لأولياء الأمور بناءً على هذه الفكرة:
 
@@ -694,7 +684,7 @@ ${CULTURAL_GUIDELINES}
       language: z.enum(["ar", "en"]).default("ar"),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       // Fetch recent events and announcements
       const recentEvents = await db.select().from(calendarEvents)
@@ -791,7 +781,7 @@ Write the response in JSON format:
       language: z.enum(["ar", "en"]).default("ar"),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       const prompt = input.language === "ar"
         ? `أنت كاتبة قصص أطفال تعليمية في المملكة العربية السعودية. اكتبي قصة تعليمية قصيرة مناسبة للأطفال.
@@ -871,7 +861,7 @@ Write the response in JSON format:
       tags: z.array(z.string()).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       // Get the content to determine category
       const [content] = await db.select().from(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.contentId)).limit(1);
@@ -894,7 +884,7 @@ Write the response in JSON format:
   removeFromLibrary: aiProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [item] = await db.select().from(aiLibrary).where(eq(aiLibrary.id, input.id)).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       
@@ -906,7 +896,7 @@ Write the response in JSON format:
   toggleFavorite: aiProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [item] = await db.select().from(aiLibrary).where(eq(aiLibrary.id, input.id)).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       await db.update(aiLibrary).set({ isFavorite: !item.isFavorite }).where(eq(aiLibrary.id, input.id));
@@ -922,7 +912,7 @@ Write the response in JSON format:
       offset: z.number().default(0),
     }))
     .query(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const conditions: any[] = [eq(aiLibrary.savedBy, ctx.user!.id)];
       
       if (input.category) conditions.push(eq(aiLibrary.category, input.category));
@@ -960,7 +950,7 @@ Write the response in JSON format:
       offset: z.number().default(0),
     }))
     .query(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const conditions: any[] = [eq(aiGeneratedContent.createdBy, ctx.user!.id)];
       if (input.type) conditions.push(eq(aiGeneratedContent.type, input.type));
 
@@ -977,7 +967,7 @@ Write the response in JSON format:
   getById: aiProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [item] = await db.select().from(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.id)).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       return item;
@@ -1032,7 +1022,7 @@ Write the response in JSON format:
   deleteContent: aiProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [item] = await db.select().from(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.id)).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       if (item.createdBy !== ctx.user!.id) throw new TRPCError({ code: 'FORBIDDEN' });
@@ -1051,7 +1041,7 @@ Write the response in JSON format:
       details: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
       if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
 
@@ -1079,16 +1069,14 @@ Write the response in JSON format:
       const [saved] = await db.insert(aiGeneratedContent).values({
         organizationId: ctx.user!.organizationId!,
         createdBy: ctx.user!.id,
-        contentType: 'certificate',
+        type: 'progress_report',
         title: parsed.title || typeLabels[input.certificateType],
-        content: JSON.stringify(parsed),
-        metadata: JSON.stringify({ childId: input.childId, childName: child.arabicName || child.firstName, certificateType: input.certificateType }),
-        createdAt: Date.now(),
+        content: JSON.stringify({ ...parsed, subType: 'certificate', certificateType: input.certificateType }),
+        childId: input.childId,
+        createdAt: new Date(),
       });
-
       return { id: saved.insertId, ...parsed };
     }),
-
   generateAssessment: aiProcedure
     .input(z.object({
       childId: z.number(),
@@ -1097,7 +1085,7 @@ Write the response in JSON format:
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
       if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
 
@@ -1127,11 +1115,11 @@ Write the response in JSON format:
       const [saved] = await db.insert(aiGeneratedContent).values({
         organizationId: ctx.user!.organizationId!,
         createdBy: ctx.user!.id,
-        contentType: 'assessment',
+        type: 'progress_report',
         title: `${typeLabels[input.assessmentType]} - ${child.arabicName || child.firstName}`,
-        content: JSON.stringify(parsed),
-        metadata: JSON.stringify({ childId: input.childId, childName: child.arabicName || child.firstName, assessmentType: input.assessmentType, period: input.period }),
-        createdAt: Date.now(),
+        content: JSON.stringify({ ...parsed, subType: 'assessment', assessmentType: input.assessmentType, period: input.period }),
+        childId: input.childId,
+        createdAt: new Date(),
       });
 
       return { id: saved.insertId, ...parsed };

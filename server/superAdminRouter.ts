@@ -2,7 +2,6 @@ import { router, protectedProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { eq, desc, sql, and, like, or } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import {
   organizations,
   organizationBranding,
@@ -14,11 +13,7 @@ import {
   classes,
   auditLog,
 } from "../drizzle/schema";
-
-async function getDb() {
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL not set");
-  return drizzle(process.env.DATABASE_URL);
-}
+import { getDb } from "./db";
 
 // Super Admin procedure - ONLY super_admin role can access (not regular admin)
 const superAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -40,7 +35,7 @@ export const superAdminRouter = router({
       limit: z.number().default(20),
     }).optional())
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const filters: any[] = [];
       
       if (input?.status) {
@@ -83,7 +78,7 @@ export const superAdminRouter = router({
   getOrganization: superAdminProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       const [org] = await db
         .select()
@@ -153,7 +148,7 @@ export const superAdminRouter = router({
       subscriptionPlanId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
 
       // Check slug uniqueness
       const [existing] = await db
@@ -205,7 +200,7 @@ export const superAdminRouter = router({
       licenseNumber: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const { id, ...updates } = input;
       
       await db
@@ -232,7 +227,7 @@ export const superAdminRouter = router({
       status: z.enum(["active", "suspended"]),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       await db
         .update(organizations)
@@ -257,7 +252,7 @@ export const superAdminRouter = router({
   getBranding: superAdminProcedure
     .input(z.object({ organizationId: z.number() }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [branding] = await db
         .select()
         .from(organizationBranding)
@@ -284,7 +279,7 @@ export const superAdminRouter = router({
       customCss: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const { organizationId, ...updates } = input;
 
       const [existing] = await db
@@ -311,7 +306,7 @@ export const superAdminRouter = router({
   
   // List all plans
   listPlans: superAdminProcedure.query(async () => {
-    const db = await getDb();
+    const db = (await getDb())!;
     return db
       .select()
       .from(subscriptionPlans)
@@ -326,7 +321,7 @@ export const superAdminRouter = router({
       billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
     }))
     .mutation(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
 
       const [plan] = await db
         .select()
@@ -378,7 +373,7 @@ export const superAdminRouter = router({
   listMembers: superAdminProcedure
     .input(z.object({ organizationId: z.number() }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       
       const members = await db
         .select({
@@ -408,7 +403,7 @@ export const superAdminRouter = router({
       search: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
 
       const conditions = [];
       if (input.status !== "all") {
@@ -478,7 +473,7 @@ export const superAdminRouter = router({
       billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
     }))
     .mutation(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
 
       const [sub] = await db
         .select()
@@ -535,7 +530,7 @@ export const superAdminRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
 
       const [sub] = await db
         .select()
@@ -560,7 +555,7 @@ export const superAdminRouter = router({
   
   // Get platform-wide statistics
   platformStats: superAdminProcedure.query(async () => {
-    const db = await getDb();
+    const db = (await getDb())!;
 
     const [orgCount] = await db
       .select({ count: sql<number>`COUNT(*)` })

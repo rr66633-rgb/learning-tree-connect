@@ -1,22 +1,18 @@
 import { router, protectedProcedure, publicProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import {
   organizations,
   organizationBranding,
   organizationMembers,
 } from "../drizzle/schema";
-
-async function getDb() {
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL not set");
-  return drizzle(process.env.DATABASE_URL);
-}
+import { getDb } from "./db";
 
 export const brandingRouter = router({
   // Get branding for the current user's organization
   getMyBranding: publicProcedure.query(async ({ ctx }) => {
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     // Default to organization 1 (Naashah) if no user or no org membership
     let orgId = 1;
@@ -81,6 +77,7 @@ export const brandingRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
       // Get user's organization
       let orgId = 1;

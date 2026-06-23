@@ -851,3 +851,20 @@ async function startServer() {
 }
 
 startServer().catch(console.error);
+
+// ============ GRACEFUL SHUTDOWN ============
+import { closeDb } from "../db";
+
+function gracefulShutdown(signal: string) {
+  console.log(`\n[Server] ${signal} received. Shutting down gracefully...`);
+  closeDb().then(() => {
+    console.log("[Server] Cleanup complete. Exiting.");
+    process.exit(0);
+  }).catch((err) => {
+    console.error("[Server] Error during shutdown:", err);
+    process.exit(1);
+  });
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

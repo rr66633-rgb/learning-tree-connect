@@ -1617,3 +1617,10 @@
 - [x] عرض مشاكل الأداء مع الحلول المقترحة
 - [x] تسجيل المسار في App.tsx
 - [x] إضافة رابط في القائمة الجانبية للمشرف
+
+## إصلاح تسرب اتصالات قاعدة البيانات (حرج)
+- [x] تحليل مواقع getDb() التي تنشئ اتصالات جديدة في كل استدعاء (6 ملفات)
+- [x] تطبيق نمط Singleton مع Connection Pool في server/db.ts (limit:10, queue:50, keepAlive)
+- [x] تحديث جميع الملفات: brandingRouter, onboardingRouter, superAdminRouter, aiRouter, weeklyPlanRouter, authService
+- [x] إضافة إغلاق آمن للاتصالات عند إيقاف الخادم (SIGTERM/SIGINT graceful shutdown)
+- [x] اختبار الإصلاح: 357 اختبار ناجح، صفر أخطاء TypeScript، الخادم يعمل بشكل طبيعي

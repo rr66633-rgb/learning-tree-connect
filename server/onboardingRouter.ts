@@ -2,7 +2,6 @@ import { router, protectedProcedure, publicProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import {
   organizations,
   organizationBranding,
@@ -10,16 +9,12 @@ import {
   organizationMembers,
   subscriptionPlans,
 } from "../drizzle/schema";
-
-async function getDb() {
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL not set");
-  return drizzle(process.env.DATABASE_URL);
-}
+import { getDb } from "./db";
 
 export const onboardingRouter = router({
   // Get available subscription plans for onboarding
   getPlans: publicProcedure.query(async () => {
-    const db = await getDb();
+    const db = (await getDb())!;
     return db
       .select()
       .from(subscriptionPlans)
@@ -36,7 +31,7 @@ export const onboardingRouter = router({
       if (reserved.includes(input.slug)) {
         return { available: false, reason: 'هذا الاسم محجوز للنظام' };
       }
-      const db = await getDb();
+      const db = (await getDb())!;
       const [existing] = await db
         .select()
         .from(organizations)
@@ -67,7 +62,7 @@ export const onboardingRouter = router({
       billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
 
       // Check slug availability
       const [existing] = await db

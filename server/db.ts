@@ -1,5 +1,6 @@
 import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
+import mysql2 from "mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
 import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations } from "../drizzle/schema";
@@ -7,19 +8,66 @@ import type { InsertNurseryRegistration } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+// ============ SINGLETON CONNECTION POOL ============
+let _pool: ReturnType<typeof mysql2.createPool> | null = null;
+let _db: MySql2Database<Record<string, unknown>> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
+/**
+ * Creates and returns a singleton MySQL connection pool with drizzle ORM.
+ * This prevents connection leaks by reusing the same pool across all requests.
+ * Pool configuration:
+ * - connectionLimit: 10 (max concurrent connections)
+ * - waitForConnections: true (queue requests when pool is full)
+ * - queueLimit: 50 (max queued requests before rejecting)
+ * - enableKeepAlive: true (prevent idle connection drops)
+ * - keepAliveInitialDelay: 30000ms (30s keep-alive ping)
+ */
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = mysql2.createPool({
+        uri: process.env.DATABASE_URL,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 50,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 30000,
+        idleTimeout: 60000,
+      });
+      _db = drizzle(_pool) as unknown as MySql2Database<Record<string, unknown>>;
+      console.log("[Database] Connection pool created (limit: 10, queue: 50)");
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.warn("[Database] Failed to create connection pool:", error);
+      _pool = null;
       _db = null;
     }
   }
   return _db;
+}
+
+/**
+ * Returns the raw MySQL pool for health checks or direct queries.
+ */
+export function getPool() {
+  return _pool;
+}
+
+/**
+ * Gracefully closes the connection pool.
+ * Should be called on server shutdown (SIGTERM/SIGINT).
+ */
+export async function closeDb(): Promise<void> {
+  if (_pool) {
+    try {
+      _pool.end();
+      console.log("[Database] Connection pool closed gracefully");
+    } catch (error) {
+      console.error("[Database] Error closing connection pool:", error);
+    } finally {
+      _pool = null;
+      _db = null;
+    }
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
