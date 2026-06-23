@@ -173,6 +173,48 @@ async function startServer() {
     }
   });
 
+  // Logo upload endpoint - preserves transparency (PNG), optimized for logos
+  app.post('/api/upload-logo', upload.single('file'), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      const file = (req as any).file;
+      if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+      if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: 'نوع الملف غير مدعوم. يرجى رفع صور PNG أو JPG أو SVG' }); return; }
+      const { storagePut } = await import('../storage');
+      
+      let finalBuffer = file.buffer;
+      let finalMime = file.mimetype;
+      let ext = 'png';
+      
+      // For SVG, store as-is
+      if (file.mimetype === 'image/svg+xml') {
+        ext = 'svg';
+        finalMime = 'image/svg+xml';
+      } else {
+        // For raster images, optimize with sharp - preserve transparency
+        const sharp = (await import('sharp')).default;
+        finalBuffer = await sharp(file.buffer)
+          .rotate()
+          .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+          .png({ quality: 90, compressionLevel: 6 })
+          .toBuffer();
+        finalMime = 'image/png';
+        ext = 'png';
+      }
+      
+      const fileName = `logos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { url } = await storagePut(fileName, finalBuffer, finalMime);
+      res.json({ url });
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      res.status(500).json({ error: 'فشل رفع الشعار' });
+    }
+  });
+
   // Media upload endpoint (photos + videos with larger size limit)
   const uploadMedia = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
   app.post('/api/upload-media', uploadMedia.single('file'), async (req, res) => {

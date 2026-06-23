@@ -6,8 +6,158 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
-import { Palette, Save, RotateCcw } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Palette, Save, RotateCcw, Upload, X, Image as ImageIcon } from "lucide-react";
+
+interface LogoUploadProps {
+  label: string;
+  currentUrl: string;
+  onUpload: (url: string) => void;
+  onRemove: () => void;
+}
+
+function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) {
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback(async (file: File) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("نوع الملف غير مدعوم. يرجى رفع صور PNG أو JPG أو SVG");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload-logo', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'فشل رفع الشعار');
+      }
+      const { url } = await res.json();
+      onUpload(url);
+      toast.success("تم رفع الشعار بنجاح");
+    } catch (err: any) {
+      toast.error(err.message || "فشل رفع الشعار");
+    } finally {
+      setUploading(false);
+    }
+  }, [onUpload]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }, [handleFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false);
+  }, []);
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      {currentUrl ? (
+        <div className="relative group">
+          <div className="border rounded-xl p-4 bg-muted/30 flex items-center gap-4">
+            <div className="w-20 h-20 rounded-lg border bg-white flex items-center justify-center overflow-hidden">
+              <img
+                src={currentUrl}
+                alt={label}
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{label}</p>
+              <p className="text-xs text-muted-foreground mt-1 truncate" dir="ltr">{currentUrl}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => inputRef.current?.click()}
+                disabled={uploading}
+              >
+                <Upload className="w-3.5 h-3.5 ml-1" />
+                تغيير
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRemove}
+                className="text-destructive hover:text-destructive"
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+            dragOver
+              ? "border-primary bg-primary/5 scale-[1.01]"
+              : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
+          } ${uploading ? "opacity-60 pointer-events-none" : ""}`}
+          onClick={() => inputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          <div className="flex flex-col items-center gap-3">
+            {uploading ? (
+              <>
+                <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                <p className="text-sm text-muted-foreground">جاري رفع الشعار...</p>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <ImageIcon className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    اسحب الشعار هنا أو اضغط للاختيار
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG, SVG - الحد الأقصى 5 ميجابايت
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          e.target.value = '';
+        }}
+      />
+    </div>
+  );
+}
 
 export default function Branding() {
   const { data: orgs, isLoading: orgsLoading } = trpc.superAdmin.listOrganizations.useQuery({});
@@ -33,6 +183,8 @@ export default function Branding() {
     backgroundColor: "#0f172a",
     textColor: "#f8fafc",
     logoUrl: "",
+    logoLightUrl: "",
+    appIcon: "",
     fontFamily: "Noto Sans Arabic",
     borderRadius: "0.5rem",
     sidebarStyle: "dark" as "dark" | "light" | "gradient",
@@ -47,6 +199,8 @@ export default function Branding() {
         backgroundColor: branding.backgroundColor || "#0f172a",
         textColor: branding.textColor || "#f8fafc",
         logoUrl: branding.logoUrl || "",
+        logoLightUrl: branding.logoLightUrl || "",
+        appIcon: branding.appIcon || "",
         fontFamily: branding.fontFamily || "Noto Sans Arabic",
         borderRadius: branding.borderRadius || "0.5rem",
         sidebarStyle: (branding.sidebarStyle as "dark" | "light" | "gradient") || "dark",
@@ -65,8 +219,17 @@ export default function Branding() {
     if (!selectedOrgId) return;
     updateBranding.mutate({
       organizationId: selectedOrgId,
-      ...form,
+      primaryColor: form.primaryColor,
+      secondaryColor: form.secondaryColor,
+      accentColor: form.accentColor,
+      backgroundColor: form.backgroundColor,
+      textColor: form.textColor,
       logoUrl: form.logoUrl || undefined,
+      logoLightUrl: form.logoLightUrl || undefined,
+      appIcon: form.appIcon || undefined,
+      fontFamily: form.fontFamily,
+      borderRadius: form.borderRadius,
+      sidebarStyle: form.sidebarStyle,
     });
   };
 
@@ -121,6 +284,38 @@ export default function Branding() {
             <Skeleton className="h-96 w-full" />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Logos Card */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-[#7C3AED]" />
+                    الشعارات
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <LogoUpload
+                      label="الشعار الرئيسي (للخلفيات الفاتحة)"
+                      currentUrl={form.logoUrl}
+                      onUpload={(url) => setForm({ ...form, logoUrl: url })}
+                      onRemove={() => setForm({ ...form, logoUrl: "" })}
+                    />
+                    <LogoUpload
+                      label="الشعار الفاتح (للخلفيات الداكنة)"
+                      currentUrl={form.logoLightUrl}
+                      onUpload={(url) => setForm({ ...form, logoLightUrl: url })}
+                      onRemove={() => setForm({ ...form, logoLightUrl: "" })}
+                    />
+                    <LogoUpload
+                      label="أيقونة التطبيق"
+                      currentUrl={form.appIcon}
+                      onUpload={(url) => setForm({ ...form, appIcon: url })}
+                      onRemove={() => setForm({ ...form, appIcon: "" })}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Colors Card */}
               <Card>
                 <CardHeader>
@@ -141,6 +336,7 @@ export default function Branding() {
                           value={form.primaryColor}
                           onChange={(e) => setForm({ ...form, primaryColor: e.target.value })}
                           className="font-mono text-sm"
+                          dir="ltr"
                         />
                       </div>
                     </div>
@@ -157,6 +353,7 @@ export default function Branding() {
                           value={form.secondaryColor}
                           onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })}
                           className="font-mono text-sm"
+                          dir="ltr"
                         />
                       </div>
                     </div>
@@ -173,6 +370,7 @@ export default function Branding() {
                           value={form.accentColor}
                           onChange={(e) => setForm({ ...form, accentColor: e.target.value })}
                           className="font-mono text-sm"
+                          dir="ltr"
                         />
                       </div>
                     </div>
@@ -189,6 +387,7 @@ export default function Branding() {
                           value={form.backgroundColor}
                           onChange={(e) => setForm({ ...form, backgroundColor: e.target.value })}
                           className="font-mono text-sm"
+                          dir="ltr"
                         />
                       </div>
                     </div>
@@ -205,6 +404,7 @@ export default function Branding() {
                           value={form.textColor}
                           onChange={(e) => setForm({ ...form, textColor: e.target.value })}
                           className="font-mono text-sm"
+                          dir="ltr"
                         />
                       </div>
                     </div>
@@ -272,16 +472,6 @@ export default function Branding() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>رابط الشعار</Label>
-                    <Input
-                      value={form.logoUrl}
-                      onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
-                      placeholder="https://..."
-                      dir="ltr"
-                    />
-                  </div>
                 </CardContent>
               </Card>
 
@@ -296,33 +486,39 @@ export default function Branding() {
                     style={{ backgroundColor: form.backgroundColor }}
                   >
                     <div className="flex items-center gap-4 mb-4">
-                      {form.logoUrl && (
+                      {form.logoLightUrl ? (
+                        <img src={form.logoLightUrl} alt="شعار" className="w-12 h-12 rounded-lg object-contain" />
+                      ) : form.logoUrl ? (
                         <img src={form.logoUrl} alt="شعار" className="w-12 h-12 rounded-lg object-contain" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6" style={{ color: form.textColor }} />
+                        </div>
                       )}
                       <div>
-                        <h3 className="text-lg font-bold" style={{ color: form.textColor }}>
+                        <h3 className="text-lg font-bold" style={{ color: form.textColor, fontFamily: form.fontFamily }}>
                           معاينة الهوية البصرية
                         </h3>
                         <p className="text-sm opacity-70" style={{ color: form.textColor }}>
-                          هذه معاينة لكيفية ظهور الألوان
+                          هذه معاينة لكيفية ظهور الألوان والشعار
                         </p>
                       </div>
                     </div>
                     <div className="flex gap-3 flex-wrap">
                       <div
-                        className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                        className="px-4 py-2 text-white text-sm font-medium"
                         style={{ backgroundColor: form.primaryColor, borderRadius: form.borderRadius }}
                       >
                         زر أساسي
                       </div>
                       <div
-                        className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                        className="px-4 py-2 text-white text-sm font-medium"
                         style={{ backgroundColor: form.secondaryColor, borderRadius: form.borderRadius }}
                       >
                         زر ثانوي
                       </div>
                       <div
-                        className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                        className="px-4 py-2 text-white text-sm font-medium"
                         style={{ backgroundColor: form.accentColor, borderRadius: form.borderRadius }}
                       >
                         زر تمييز

@@ -1511,3 +1511,9 @@
 - [x] Fix Brand Identity page returning 404 (created /super-admin/branding page + route)
 - [x] Fix Super Admin Users page returning 404 (created /super-admin/users page + route)
 - [x] Fix Super Admin Settings page returning 404 (created /super-admin/settings page + route)
+
+## Logo Upload Feature in Branding Page
+- [x] Add server endpoint for logo file upload (/api/upload-logo - accepts PNG/JPG/SVG, stores in S3, returns URL)
+- [x] Update Branding page with drag-and-drop / click-to-upload logo component
+- [x] Show logo preview after upload with option to remove/change
+- [x] Support uploading main logo, light version logo, and app icon
