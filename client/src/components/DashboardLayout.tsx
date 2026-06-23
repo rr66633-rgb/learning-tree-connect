@@ -177,7 +177,7 @@ const receptionistMenuItems: MenuItem[] = [
 const superAdminMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
   { icon: Building2, label: "المنظمات", path: "/organizations", color: "#7C3AED" },
-  { icon: Crown, label: "خطط الاشتراك", path: "/plans", color: "#F97316" },
+  { icon: Crown, label: "إدارة الاشتراكات", path: "/plans", color: "#F97316" },
   { icon: Palette, label: "الهوية البصرية", path: "/branding", color: "#EC4899" },
   { icon: Users, label: "المستخدمون", path: "/users", color: "#7C3AED" },
   { icon: Settings, label: "الإعدادات", path: "/settings", color: "#00C9B7" },

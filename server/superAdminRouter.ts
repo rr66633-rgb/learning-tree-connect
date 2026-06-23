@@ -399,6 +399,163 @@ export const superAdminRouter = router({
       return members;
     }),
 
+  // ============ SUBSCRIPTIONS MANAGEMENT ============
+  
+  // List all organization subscriptions with details
+  listSubscriptions: superAdminProcedure
+    .input(z.object({
+      status: z.enum(["all", "active", "expired", "cancelled", "past_due", "trialing"]).default("all"),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+
+      const conditions = [];
+      if (input.status !== "all") {
+        conditions.push(eq(organizationSubscriptions.status, input.status));
+      }
+      if (input.search) {
+        conditions.push(
+          or(
+            like(organizations.name, `%${input.search}%`),
+            like(organizations.nameAr, `%${input.search}%`)
+          )
+        );
+      }
+
+      const results = await db
+        .select({
+          id: organizationSubscriptions.id,
+          organizationId: organizationSubscriptions.organizationId,
+          orgName: organizations.name,
+          orgNameAr: organizations.nameAr,
+          orgStatus: organizations.status,
+          planId: organizationSubscriptions.planId,
+          planName: subscriptionPlans.name,
+          planNameAr: subscriptionPlans.nameAr,
+          planTier: subscriptionPlans.tier,
+          status: organizationSubscriptions.status,
+          billingCycle: organizationSubscriptions.billingCycle,
+          amount: organizationSubscriptions.amount,
+          currency: organizationSubscriptions.currency,
+          currentPeriodStart: organizationSubscriptions.currentPeriodStart,
+          currentPeriodEnd: organizationSubscriptions.currentPeriodEnd,
+          cancelledAt: organizationSubscriptions.cancelledAt,
+          cancelReason: organizationSubscriptions.cancelReason,
+          createdAt: organizationSubscriptions.createdAt,
+        })
+        .from(organizationSubscriptions)
+        .leftJoin(organizations, eq(organizationSubscriptions.organizationId, organizations.id))
+        .leftJoin(subscriptionPlans, eq(organizationSubscriptions.planId, subscriptionPlans.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(organizationSubscriptions.createdAt));
+
+      // Calculate stats
+      const allSubs = await db
+        .select({
+          status: organizationSubscriptions.status,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(organizationSubscriptions)
+        .groupBy(organizationSubscriptions.status);
+
+      const stats = {
+        total: allSubs.reduce((acc, s) => acc + (s.count || 0), 0),
+        active: allSubs.find(s => s.status === "active")?.count || 0,
+        expired: allSubs.find(s => s.status === "expired")?.count || 0,
+        trialing: allSubs.find(s => s.status === "trialing")?.count || 0,
+        cancelled: allSubs.find(s => s.status === "cancelled")?.count || 0,
+        pastDue: allSubs.find(s => s.status === "past_due")?.count || 0,
+      };
+
+      return { subscriptions: results, stats };
+    }),
+
+  // Renew subscription
+  renewSubscription: superAdminProcedure
+    .input(z.object({
+      subscriptionId: z.number(),
+      billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+
+      const [sub] = await db
+        .select()
+        .from(organizationSubscriptions)
+        .where(eq(organizationSubscriptions.id, input.subscriptionId));
+
+      if (!sub) throw new TRPCError({ code: "NOT_FOUND", message: "الاشتراك غير موجود" });
+
+      const [plan] = await db
+        .select()
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.id, sub.planId));
+
+      if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "الخطة غير موجودة" });
+
+      const amount = input.billingCycle === "yearly" 
+        ? Number(plan.priceYearly) 
+        : Number(plan.priceMonthly);
+
+      const now = new Date();
+      const periodEnd = new Date(now);
+      if (input.billingCycle === "yearly") {
+        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      } else {
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+      }
+
+      await db
+        .update(organizationSubscriptions)
+        .set({
+          status: "active",
+          billingCycle: input.billingCycle,
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          amount: amount.toFixed(2),
+          cancelledAt: null,
+          cancelReason: null,
+        })
+        .where(eq(organizationSubscriptions.id, input.subscriptionId));
+
+      // Update organization status
+      await db
+        .update(organizations)
+        .set({ status: "active" })
+        .where(eq(organizations.id, sub.organizationId));
+
+      return { success: true, message: "تم تجديد الاشتراك بنجاح" };
+    }),
+
+  // Cancel subscription
+  cancelSubscription: superAdminProcedure
+    .input(z.object({
+      subscriptionId: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+
+      const [sub] = await db
+        .select()
+        .from(organizationSubscriptions)
+        .where(eq(organizationSubscriptions.id, input.subscriptionId));
+
+      if (!sub) throw new TRPCError({ code: "NOT_FOUND", message: "الاشتراك غير موجود" });
+
+      await db
+        .update(organizationSubscriptions)
+        .set({
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancelReason: input.reason || null,
+        })
+        .where(eq(organizationSubscriptions.id, input.subscriptionId));
+
+      return { success: true, message: "تم إلغاء الاشتراك" };
+    }),
+
   // ============ DASHBOARD STATS ============
   
   // Get platform-wide statistics

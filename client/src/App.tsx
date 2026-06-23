@@ -60,6 +60,7 @@ const SubscriptionPlans = lazy(() => import("./pages/SubscriptionPlans"));
 const SuperAdminBranding = lazy(() => import("./pages/superadmin/Branding"));
 const SuperAdminUsers = lazy(() => import("./pages/superadmin/Users"));
 const SuperAdminSettings = lazy(() => import("./pages/superadmin/Settings"));
+const SubscriptionsManagement = lazy(() => import("./pages/superadmin/SubscriptionsManagement"));
 
 // AI Pages
 const AIHub = lazy(() => import("./pages/ai/AIHub"));
@@ -420,7 +421,7 @@ function RoleRouter() {
           {isSuperAdminRole(userRole) ? <OrganizationsList /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/super-admin/plans">
-          {isSuperAdminRole(userRole) ? <SubscriptionPlans /> : <Redirect to={basePath} />}
+          {isSuperAdminRole(userRole) ? <SubscriptionsManagement /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/super-admin/branding">
           {isSuperAdminRole(userRole) ? <SuperAdminBranding /> : <Redirect to={basePath} />}
