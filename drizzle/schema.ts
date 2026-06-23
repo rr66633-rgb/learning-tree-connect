@@ -1350,3 +1350,137 @@ export const nurseryRegistrations = mysqlTable("nursery_registrations", {
 });
 export type NurseryRegistration = typeof nurseryRegistrations.$inferSelect;
 export type InsertNurseryRegistration = typeof nurseryRegistrations.$inferInsert;
+
+
+// ============ STAFF PROFILES (Extended HR Data) ============
+export const staffProfiles = mysqlTable("staff_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // Links to users table
+  organizationId: int("organizationId").notNull(),
+  // Personal Info
+  fullNameAr: varchar("fullNameAr", { length: 200 }),
+  fullNameEn: varchar("fullNameEn", { length: 200 }),
+  nationalId: varchar("nationalId", { length: 20 }),
+  iqamaNumber: varchar("iqamaNumber", { length: 20 }),
+  dateOfBirth: timestamp("dateOfBirth"),
+  gender: mysqlEnum("gender", ["male", "female"]),
+  nationality: varchar("nationality", { length: 100 }),
+  maritalStatus: mysqlEnum("maritalStatus", ["single", "married", "divorced", "widowed"]),
+  // Contact
+  mobile: varchar("mobile", { length: 20 }),
+  altPhone: varchar("altPhone", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  // Employment Info
+  jobTitle: mysqlEnum("jobTitle", ["teacher", "supervisor", "principal", "assistant", "admin_staff", "specialist", "accountant", "receptionist", "driver", "other"]).notNull(),
+  customJobTitle: varchar("customJobTitle", { length: 200 }),
+  department: varchar("department", { length: 200 }),
+  branch: varchar("branch", { length: 200 }),
+  hireDate: timestamp("hireDate"),
+  contractType: mysqlEnum("contractType", ["full_time", "part_time", "contract", "temporary"]).default("full_time"),
+  contractEndDate: timestamp("contractEndDate"),
+  // Qualifications
+  qualification: varchar("qualification", { length: 200 }),
+  specialization: varchar("specialization", { length: 200 }),
+  yearsOfExperience: int("yearsOfExperience"),
+  certifications: json("certifications"), // JSON array of certification strings
+  // Financial (optional)
+  bankName: varchar("bankName", { length: 200 }),
+  iban: varchar("iban", { length: 50 }),
+  salary: decimal("salary", { precision: 10, scale: 2 }),
+  // Emergency Contact
+  emergencyContactName: varchar("emergencyContactName", { length: 200 }),
+  emergencyContactPhone: varchar("emergencyContactPhone", { length: 20 }),
+  emergencyContactRelation: varchar("emergencyContactRelation", { length: 100 }),
+  // Photo
+  photo: text("photo"),
+  // Status
+  status: mysqlEnum("status", ["active", "inactive", "on_leave", "terminated", "resigned"]).default("active").notNull(),
+  terminationDate: timestamp("terminationDate"),
+  terminationReason: text("terminationReason"),
+  // Metadata
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StaffProfile = typeof staffProfiles.$inferSelect;
+export type InsertStaffProfile = typeof staffProfiles.$inferInsert;
+
+// ============ STAFF LEAVES ============
+export const staffLeaves = mysqlTable("staff_leaves", {
+  id: int("id").autoincrement().primaryKey(),
+  staffProfileId: int("staffProfileId").notNull(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  type: mysqlEnum("type", ["annual", "sick", "emergency", "unpaid", "maternity", "other"]).notNull(),
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate").notNull(),
+  totalDays: int("totalDays").notNull(),
+  reason: text("reason"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "cancelled"]).default("pending").notNull(),
+  approvedBy: int("approvedBy"),
+  approvedAt: timestamp("approvedAt"),
+  rejectionReason: text("rejectionReason"),
+  attachmentUrl: text("attachmentUrl"),
+  attachmentKey: varchar("attachmentKey", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StaffLeave = typeof staffLeaves.$inferSelect;
+export type InsertStaffLeave = typeof staffLeaves.$inferInsert;
+
+// ============ STAFF LEAVE BALANCES ============
+export const staffLeaveBalances = mysqlTable("staff_leave_balances", {
+  id: int("id").autoincrement().primaryKey(),
+  staffProfileId: int("staffProfileId").notNull(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  year: int("year").notNull(),
+  annualTotal: int("annualTotal").default(21).notNull(),
+  annualUsed: int("annualUsed").default(0).notNull(),
+  sickTotal: int("sickTotal").default(14).notNull(),
+  sickUsed: int("sickUsed").default(0).notNull(),
+  emergencyTotal: int("emergencyTotal").default(5).notNull(),
+  emergencyUsed: int("emergencyUsed").default(0).notNull(),
+  unpaidUsed: int("unpaidUsed").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StaffLeaveBalance = typeof staffLeaveBalances.$inferSelect;
+export type InsertStaffLeaveBalance = typeof staffLeaveBalances.$inferInsert;
+
+// ============ STAFF NOTES ============
+export const staffNotes = mysqlTable("staff_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  staffProfileId: int("staffProfileId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  authorId: int("authorId").notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  content: text("content").notNull(),
+  type: mysqlEnum("type", ["general", "performance", "warning", "appreciation", "meeting", "other"]).default("general").notNull(),
+  isPrivate: boolean("isPrivate").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StaffNote = typeof staffNotes.$inferSelect;
+export type InsertStaffNote = typeof staffNotes.$inferInsert;
+
+// ============ STAFF DOCUMENTS ============
+export const staffDocuments = mysqlTable("staff_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  staffProfileId: int("staffProfileId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  uploadedBy: int("uploadedBy").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  type: mysqlEnum("type", ["contract", "id_copy", "certificate", "license", "medical", "other"]).default("other").notNull(),
+  url: text("url").notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  mimeType: varchar("mimeType", { length: 100 }),
+  fileSize: int("fileSize"),
+  expiryDate: timestamp("expiryDate"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type StaffDocument = typeof staffDocuments.$inferSelect;
+export type InsertStaffDocument = typeof staffDocuments.$inferInsert;

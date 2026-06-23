@@ -1,0 +1,414 @@
+import { useState, useRef } from "react";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
+import { ArrowRight, Upload, User, Briefcase, GraduationCap, CreditCard, Phone as PhoneIcon, Save } from "lucide-react";
+
+export default function AddStaff() {
+  const [, navigate] = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const [form, setForm] = useState({
+    fullNameAr: "",
+    fullNameEn: "",
+    nationalId: "",
+    iqamaNumber: "",
+    dateOfBirth: "",
+    gender: "" as "male" | "female" | "",
+    nationality: "",
+    maritalStatus: "" as "single" | "married" | "divorced" | "widowed" | "",
+    mobile: "",
+    altPhone: "",
+    email: "",
+    address: "",
+    city: "",
+    jobTitle: "" as any,
+    customJobTitle: "",
+    department: "",
+    branch: "",
+    hireDate: "",
+    contractType: "full_time" as any,
+    contractEndDate: "",
+    qualification: "",
+    specialization: "",
+    yearsOfExperience: "",
+    bankName: "",
+    iban: "",
+    salary: "",
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    emergencyContactRelation: "",
+    photo: "",
+    notes: "",
+  });
+
+  const createStaff = trpc.staffManagement.create.useMutation({
+    onSuccess: (result) => {
+      toast.success("تم إضافة الموظف بنجاح");
+      navigate(`/staff/staff-management/${result.id}`);
+    },
+    onError: (err) => toast.error(err.message || "حدث خطأ أثناء الإضافة"),
+  });
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن لا يتجاوز 5 ميجابايت");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload-photo", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("فشل رفع الصورة");
+      const data = await res.json();
+      setForm(f => ({ ...f, photo: data.url }));
+      setPhotoPreview(data.url);
+      toast.success("تم رفع الصورة بنجاح");
+    } catch {
+      toast.error("فشل رفع الصورة");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.fullNameAr) { toast.error("الاسم بالعربي مطلوب"); return; }
+    if (!form.mobile) { toast.error("رقم الجوال مطلوب"); return; }
+    if (!form.email) { toast.error("البريد الإلكتروني مطلوب"); return; }
+    if (!form.jobTitle) { toast.error("المسمى الوظيفي مطلوب"); return; }
+
+    createStaff.mutate({
+      ...form,
+      gender: form.gender || undefined,
+      maritalStatus: form.maritalStatus || undefined,
+      yearsOfExperience: form.yearsOfExperience ? parseInt(form.yearsOfExperience) : undefined,
+      dateOfBirth: form.dateOfBirth || undefined,
+      hireDate: form.hireDate || undefined,
+      contractEndDate: form.contractEndDate || undefined,
+    } as any);
+  };
+
+  const updateField = (field: string, value: any) => setForm(f => ({ ...f, [field]: value }));
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/staff/staff-management")}>
+          <ArrowRight className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">إضافة موظف جديد</h1>
+          <p className="text-sm text-muted-foreground">أدخل بيانات الموظف الأساسية والتفصيلية</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <Tabs defaultValue="personal" className="space-y-6">
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
+            <TabsTrigger value="personal" className="gap-1.5 text-xs md:text-sm">
+              <User className="h-3.5 w-3.5" />
+              شخصية
+            </TabsTrigger>
+            <TabsTrigger value="employment" className="gap-1.5 text-xs md:text-sm">
+              <Briefcase className="h-3.5 w-3.5" />
+              وظيفية
+            </TabsTrigger>
+            <TabsTrigger value="qualifications" className="gap-1.5 text-xs md:text-sm">
+              <GraduationCap className="h-3.5 w-3.5" />
+              مؤهلات
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="gap-1.5 text-xs md:text-sm">
+              <CreditCard className="h-3.5 w-3.5" />
+              مالية
+            </TabsTrigger>
+            <TabsTrigger value="emergency" className="gap-1.5 text-xs md:text-sm">
+              <PhoneIcon className="h-3.5 w-3.5" />
+              طوارئ
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Personal Info Tab */}
+          <TabsContent value="personal">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">البيانات الشخصية</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Photo Upload */}
+                <div className="flex items-center gap-6">
+                  <Avatar className="h-20 w-20 border-2 border-dashed border-[#7C3AED]/30 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="صورة" className="h-full w-full object-cover rounded-full" />
+                    ) : (
+                      <AvatarFallback className="bg-[#7C3AED]/5">
+                        <Upload className="h-6 w-6 text-[#7C3AED]/50" />
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                      {uploading ? "جاري الرفع..." : "رفع صورة شخصية"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG حتى 5 ميجابايت</p>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>الاسم الكامل بالعربي <span className="text-red-500">*</span></Label>
+                    <Input value={form.fullNameAr} onChange={e => updateField("fullNameAr", e.target.value)} placeholder="محمد أحمد العلي" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الاسم الكامل بالإنجليزي</Label>
+                    <Input value={form.fullNameEn} onChange={e => updateField("fullNameEn", e.target.value)} placeholder="Mohammed Ahmed Al-Ali" dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>رقم الهوية الوطنية</Label>
+                    <Input value={form.nationalId} onChange={e => updateField("nationalId", e.target.value)} placeholder="1xxxxxxxxx" dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>رقم الإقامة</Label>
+                    <Input value={form.iqamaNumber} onChange={e => updateField("iqamaNumber", e.target.value)} placeholder="2xxxxxxxxx" dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>تاريخ الميلاد</Label>
+                    <Input type="date" value={form.dateOfBirth} onChange={e => updateField("dateOfBirth", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الجنس</Label>
+                    <Select value={form.gender} onValueChange={v => updateField("gender", v)}>
+                      <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">ذكر</SelectItem>
+                        <SelectItem value="female">أنثى</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الجنسية</Label>
+                    <Input value={form.nationality} onChange={e => updateField("nationality", e.target.value)} placeholder="سعودي" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الحالة الاجتماعية</Label>
+                    <Select value={form.maritalStatus} onValueChange={v => updateField("maritalStatus", v)}>
+                      <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">أعزب/عزباء</SelectItem>
+                        <SelectItem value="married">متزوج/ة</SelectItem>
+                        <SelectItem value="divorced">مطلق/ة</SelectItem>
+                        <SelectItem value="widowed">أرمل/ة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div className="border-t pt-4">
+                  <h3 className="font-medium mb-3">معلومات الاتصال</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>رقم الجوال <span className="text-red-500">*</span></Label>
+                      <Input value={form.mobile} onChange={e => updateField("mobile", e.target.value)} placeholder="05xxxxxxxx" dir="ltr" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>رقم هاتف بديل</Label>
+                      <Input value={form.altPhone} onChange={e => updateField("altPhone", e.target.value)} dir="ltr" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>البريد الإلكتروني <span className="text-red-500">*</span></Label>
+                      <Input type="email" value={form.email} onChange={e => updateField("email", e.target.value)} placeholder="email@example.com" dir="ltr" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>المدينة</Label>
+                      <Input value={form.city} onChange={e => updateField("city", e.target.value)} placeholder="الرياض" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>العنوان</Label>
+                      <Input value={form.address} onChange={e => updateField("address", e.target.value)} placeholder="العنوان التفصيلي" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Employment Tab */}
+          <TabsContent value="employment">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">البيانات الوظيفية</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>المسمى الوظيفي <span className="text-red-500">*</span></Label>
+                    <Select value={form.jobTitle} onValueChange={v => updateField("jobTitle", v)}>
+                      <SelectTrigger><SelectValue placeholder="اختر المسمى" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="teacher">معلم/ة</SelectItem>
+                        <SelectItem value="supervisor">مشرف/ة</SelectItem>
+                        <SelectItem value="principal">مدير/ة</SelectItem>
+                        <SelectItem value="assistant">مساعد/ة</SelectItem>
+                        <SelectItem value="admin_staff">إداري/ة</SelectItem>
+                        <SelectItem value="specialist">أخصائي/ة</SelectItem>
+                        <SelectItem value="accountant">محاسب/ة</SelectItem>
+                        <SelectItem value="receptionist">موظف/ة استقبال</SelectItem>
+                        <SelectItem value="driver">سائق</SelectItem>
+                        <SelectItem value="other">أخرى</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.jobTitle === "other" && (
+                    <div className="space-y-2">
+                      <Label>المسمى المخصص</Label>
+                      <Input value={form.customJobTitle} onChange={e => updateField("customJobTitle", e.target.value)} />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>القسم</Label>
+                    <Input value={form.department} onChange={e => updateField("department", e.target.value)} placeholder="مثال: قسم الروضة" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الفرع</Label>
+                    <Input value={form.branch} onChange={e => updateField("branch", e.target.value)} placeholder="مثال: الفرع الرئيسي" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>تاريخ التعيين</Label>
+                    <Input type="date" value={form.hireDate} onChange={e => updateField("hireDate", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>نوع العقد</Label>
+                    <Select value={form.contractType} onValueChange={v => updateField("contractType", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full_time">دوام كامل</SelectItem>
+                        <SelectItem value="part_time">دوام جزئي</SelectItem>
+                        <SelectItem value="contract">عقد مؤقت</SelectItem>
+                        <SelectItem value="temporary">مؤقت</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>تاريخ انتهاء العقد</Label>
+                    <Input type="date" value={form.contractEndDate} onChange={e => updateField("contractEndDate", e.target.value)} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Qualifications Tab */}
+          <TabsContent value="qualifications">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">المؤهلات والخبرات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>المؤهل العلمي</Label>
+                    <Input value={form.qualification} onChange={e => updateField("qualification", e.target.value)} placeholder="بكالوريوس تربية طفولة مبكرة" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>التخصص</Label>
+                    <Input value={form.specialization} onChange={e => updateField("specialization", e.target.value)} placeholder="تربية خاصة" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>سنوات الخبرة</Label>
+                    <Input type="number" value={form.yearsOfExperience} onChange={e => updateField("yearsOfExperience", e.target.value)} placeholder="5" />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <Label>ملاحظات إضافية</Label>
+                  <Textarea value={form.notes} onChange={e => updateField("notes", e.target.value)} placeholder="أي ملاحظات أو معلومات إضافية..." rows={3} />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Financial Tab */}
+          <TabsContent value="financial">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">البيانات المالية</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>اسم البنك</Label>
+                    <Input value={form.bankName} onChange={e => updateField("bankName", e.target.value)} placeholder="البنك الأهلي" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>رقم الآيبان</Label>
+                    <Input value={form.iban} onChange={e => updateField("iban", e.target.value)} placeholder="SA..." dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الراتب الشهري (ريال)</Label>
+                    <Input value={form.salary} onChange={e => updateField("salary", e.target.value)} placeholder="0.00" dir="ltr" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Emergency Contact Tab */}
+          <TabsContent value="emergency">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">جهة الاتصال في حالات الطوارئ</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>اسم جهة الاتصال</Label>
+                    <Input value={form.emergencyContactName} onChange={e => updateField("emergencyContactName", e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>رقم الهاتف</Label>
+                    <Input value={form.emergencyContactPhone} onChange={e => updateField("emergencyContactPhone", e.target.value)} dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>صلة القرابة</Label>
+                    <Input value={form.emergencyContactRelation} onChange={e => updateField("emergencyContactRelation", e.target.value)} placeholder="أخ، أب، زوج..." />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Submit Button */}
+        <div className="flex justify-end gap-3 mt-6 sticky bottom-4">
+          <Button type="button" variant="outline" onClick={() => navigate("/staff/staff-management")}>
+            إلغاء
+          </Button>
+          <Button type="submit" disabled={createStaff.isPending} className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9]">
+            <Save className="h-4 w-4" />
+            {createStaff.isPending ? "جاري الحفظ..." : "حفظ الموظف"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

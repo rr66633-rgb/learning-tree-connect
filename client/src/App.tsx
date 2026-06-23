@@ -42,6 +42,13 @@ const StaffAssessments = lazy(() => import("./pages/staff/Assessments"));
 const StaffAuditLog = lazy(() => import("./pages/staff/AuditLog"));
 const StaffWeeklyPlan = lazy(() => import("./pages/staff/WeeklyPlan"));
 
+// Staff Management System
+const StaffDirectory = lazy(() => import("./pages/staff/StaffDirectory"));
+const AddStaff = lazy(() => import("./pages/staff/AddStaff"));
+const EditStaff = lazy(() => import("./pages/staff/EditStaff"));
+const StaffProfilePage = lazy(() => import("./pages/staff/StaffProfile"));
+const LeaveManagement = lazy(() => import("./pages/staff/LeaveManagement"));
+
 // Development Center Pages
 const DevelopmentDashboard = lazy(() => import("./pages/staff/DevelopmentDashboard"));
 const ChildDevelopmentProfile = lazy(() => import("./pages/staff/ChildDevelopmentProfile"));
@@ -189,6 +196,11 @@ function StaffRouter() {
         <Route path="/staff/engagement" component={EngagementAnalytics} />
         <Route path="/staff/engagement/reviews" component={ParentSubmissionsReview} />
         <Route path="/staff/engagement/reports" component={EngagementReports} />
+        <Route path="/staff/staff-management" component={StaffDirectory} />
+        <Route path="/staff/staff-management/add" component={AddStaff} />
+        <Route path="/staff/staff-management/:id/edit" component={EditStaff} />
+        <Route path="/staff/staff-management/:id" component={StaffProfilePage} />
+        <Route path="/staff/leave-management" component={LeaveManagement} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

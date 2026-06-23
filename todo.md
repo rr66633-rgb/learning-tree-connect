@@ -1526,3 +1526,41 @@
 - [x] Update Branding page with drag-and-drop / click-to-upload logo component
 - [x] Show logo preview after upload with option to remove/change
 - [x] Support uploading main logo, light version logo, and app icon
+
+## Staff Management System (Complete)
+### Database Schema
+- [x] Create staff_profiles table (jobTitle, department, branch, hireDate, specialization, qualifications, contractType, salary, emergencyContact, photo, etc.)
+- [x] Create staff_leaves table (type: annual/sick/emergency, startDate, endDate, status, approvedBy, notes)
+- [x] Create staff_leave_balances table (per year balance tracking)
+- [x] Create staff_notes table (staffId, authorId, title, content, type, isPrivate)
+- [x] Create staff_documents table (staffId, name, type, url, fileKey, expiryDate)
+- [x] Apply all migrations via SQL
+
+### Backend - tRPC Procedures
+- [x] Create staffManagement router with CRUD for staff profiles
+- [x] Add staff directory listing with search, filters, sorting, pagination
+- [x] Add staff profile detail endpoint (full profile with attendance/leaves/docs)
+- [x] Add leave management procedures (request, approve, reject, list, balance)
+- [x] Add staff notes procedures (create, list, update, delete)
+- [x] Add staff documents procedures (upload, list, delete)
+- [x] Admin and principal roles have access (assertAdminOrPrincipal helper)
+
+### Frontend - Staff Directory
+- [x] Create StaffDirectory page with grid/list view, search, role/department/status filters
+- [x] Create AddStaff form page with all required fields and photo upload
+- [x] Create EditStaff form page
+- [x] Create StaffProfile page with tabs (info, attendance, leaves, notes, documents)
+
+### Frontend - Leave Management
+- [x] Create LeaveManagement page for admin (pending/approved/rejected requests)
+- [ ] Create LeaveRequest form for staff to request leave (future enhancement)
+
+### Frontend - Notes & Documents
+- [x] Add notes section to StaffProfile (create, view, edit, delete)
+- [x] Add documents section to StaffProfile (upload, view, download, delete)
+
+### Integration & Navigation
+- [x] Add staff management routes to App.tsx
+- [x] Add "إدارة الموظفين" to DashboardLayout sidebar for admin/principal
+- [x] Ensure responsive design (mobile/tablet/desktop)
+- [x] Write vitest tests for staff management procedures (25 tests passing)
