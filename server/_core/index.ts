@@ -55,7 +55,9 @@ async function startServer() {
   // CSRF Protection using Double Submit Cookie pattern
   const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
     getSecret: () => process.env.JWT_SECRET || 'csrf-secret-fallback',
-    getSessionIdentifier: (req) => req.ip || req.socket.remoteAddress || 'anonymous',
+    // Use a stable identifier instead of IP - mobile users frequently switch between WiFi/cellular
+    // The double-submit cookie pattern is already secure without IP binding
+    getSessionIdentifier: (req) => req.cookies?.['session'] || req.headers['user-agent'] || 'anonymous',
     cookieName: '__csrf',
     cookieOptions: {
       httpOnly: true,
@@ -86,6 +88,18 @@ async function startServer() {
     }
     // Apply CSRF protection to mutations
     doubleCsrfProtection(req, res, next);
+  });
+
+  // JSON error handler for CSRF failures (prevents Express default HTML error page)
+  // Safari throws "The string did not match the expected pattern." when response.json()
+  // is called on HTML content, so we must always return JSON for API endpoints
+  app.use('/api/', (err: any, req: any, res: any, next: any) => {
+    if (err.code === 'EBADCSRFTOKEN' || err.message === 'invalid csrf token') {
+      return res.status(403).json({ error: 'invalid csrf token', code: 'EBADCSRFTOKEN' });
+    }
+    // For other errors on API routes, also return JSON
+    const status = err.status || err.statusCode || 500;
+    return res.status(status).json({ error: err.message || 'Internal server error' });
   });
 
   // Rate limiting for auth-related tRPC procedures (strict)
