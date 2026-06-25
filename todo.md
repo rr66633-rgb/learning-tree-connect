@@ -1789,3 +1789,7 @@
 - [ ] إعداد متغيرات البيئة SMTP
 - [ ] اختبار إرسال البريد الإلكتروني
 - [ ] التحقق من عمل جميع التدفقات (OTP، دعوات، إشعارات)
+
+- [x] Fix parent Documents page crash - React hooks rules violation (useUtils and useMutation called after early return)
+- [x] Fix documents.list to include signed status for parent (join with signatures table)
+- [x] Fix createDocument - passes uploadedBy but schema column is createdBy

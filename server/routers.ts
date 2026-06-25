@@ -2077,20 +2077,30 @@ export const appRouter = router({
         if (input?.childId && !childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
-        return db.getDocuments('parents', input?.childId);
+        const docs = await db.getDocuments('parents', input?.childId);
+        // Add signed status for each document
+        const docsWithSignedStatus = await Promise.all(docs.map(async (doc: any) => {
+          if (doc.requiresSignature) {
+            const sigs = await db.getSignaturesForDocument(doc.id);
+            const signed = sigs.some((s: any) => s.parentId === ctx.user!.id);
+            return { ...doc, signed };
+          }
+          return { ...doc, signed: false };
+        }));
+        return docsWithSignedStatus;
       }
       return db.getDocuments(undefined, input?.childId);
     }),
     create: adminProcedure.input(z.object({
       name: z.string().min(1),
       nameAr: z.string().optional(),
-      type: z.enum(['policy', 'form', 'report', 'certificate', 'other']),
+      type: z.enum(['policy', 'form', 'consent', 'report', 'other']),
       url: z.string(),
       childId: z.number().optional(),
       audience: z.enum(['all', 'parents', 'staff']).optional(),
       requiresSignature: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createDocument({ ...input, uploadedBy: ctx.user!.id });
+      return db.createDocument({ ...input, createdBy: ctx.user!.id });
     }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.deleteDocument(input.id);

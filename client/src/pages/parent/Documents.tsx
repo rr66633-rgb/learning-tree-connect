@@ -9,7 +9,6 @@ import { toast } from "sonner";
 
 export default function ParentDocuments() {
   const { data: documents, isLoading } = trpc.documents.list.useQuery();
-  if (isLoading) return <PageSkeleton variant="list" count={4} />;
   const utils = trpc.useUtils();
 
   const signDoc = trpc.documents.sign.useMutation({
@@ -21,6 +20,8 @@ export default function ParentDocuments() {
   });
 
   const typeLabels: Record<string, string> = { policy: "سياسة", form: "نموذج", report: "تقرير", certificate: "شهادة", consent: "موافقة", other: "أخرى" };
+
+  if (isLoading) return <PageSkeleton variant="list" count={4} />;
 
   return (
     <div className="space-y-6">
