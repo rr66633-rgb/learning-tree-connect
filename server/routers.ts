@@ -85,7 +85,7 @@ export const appRouter = router({
 
         // Verify password
         if (!user.password) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'يرجى استخدام تسجيل الدخول عبر المنصة' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'لم يتم تعيين كلمة مرور لهذا الحساب. يرجى التواصل مع الإدارة.' });
         }
 
         const passwordValid = await authService.verifyPassword(input.password, user.password);
@@ -315,7 +315,7 @@ export const appRouter = router({
         
         // Verify current password
         if (!user.password) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكن تغيير كلمة المرور لحسابات المنصة' });
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم تعيين كلمة مرور لهذا الحساب بعد. يرجى التواصل مع الإدارة.' });
         }
 
         const isValid = await authService.verifyPassword(input.currentPassword, user.password);

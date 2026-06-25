@@ -1795,3 +1795,9 @@
 - [x] Fix createDocument - passes uploadedBy but schema column is createdBy
 - [x] Fix "The string did not match the expected pattern" error on approve button (Safari) - CSRF failure returned HTML instead of JSON, Safari's response.json() on HTML throws this error. Added JSON error handler for CSRF middleware + CSRF token retry logic + changed session identifier from IP to User-Agent for mobile stability
 - [x] Remove QA Security & Performance Report page from production (internal dev page not for end users)
+- [x] Build independent auth system (email+password + phone OTP)
+- [x] Remove Manus OAuth completely
+- [x] Create custom login page (no Manus branding)
+- [ ] Create custom registration page
+- [ ] Create forgot password / reset password flow
+- [ ] Create phone OTP verification flow

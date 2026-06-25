@@ -7,7 +7,7 @@ import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { doubleCsrf } from "csrf-csrf";
-import { registerOAuthRoutes } from "./oauth";
+// OAuth removed - using independent auth system
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -82,10 +82,7 @@ async function startServer() {
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
       return next();
     }
-    // Skip CSRF for OAuth callbacks
-    if (req.path.startsWith('/api/oauth/')) {
-      return next();
-    }
+
     // Apply CSRF protection to mutations
     doubleCsrfProtection(req, res, next);
   });
@@ -182,7 +179,7 @@ async function startServer() {
   app.use('/api/', generalRateLimit);
 
   registerStorageProxy(app);
-  registerOAuthRoutes(app);
+  // OAuth routes removed - independent auth only
 
   // File upload endpoint - handles base64 JSON uploads (requires authentication)
   app.post('/api/upload', async (req, res) => {

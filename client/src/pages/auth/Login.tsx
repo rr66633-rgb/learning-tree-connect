@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail, Phone } from "lucide-react";
-import { getLoginUrl } from "@/const";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -126,22 +125,6 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">أو</span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full h-11"
-            onClick={() => { window.location.href = getLoginUrl(); }}
-          >
-            تسجيل الدخول عبر المنصة
-          </Button>
 
           <div className="text-center pt-2">
             <p className="text-sm text-muted-foreground">

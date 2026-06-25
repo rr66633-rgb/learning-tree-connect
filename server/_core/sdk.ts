@@ -30,12 +30,7 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
-    if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
-      );
-    }
+    // OAuth service kept for backward compatibility but not used for user auth
   }
 
   private decodeState(state: string): string {
@@ -160,7 +155,7 @@ class SDKServer {
   }
 
   /**
-   * Create a session token for a Manus user openId
+   * Create a session token for a user
    * @example
    * const sessionToken = await sdk.createSessionToken(userInfo.openId);
    */
@@ -257,7 +252,7 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
-    // Regular authentication flow
+    // Independent authentication flow - no external OAuth dependency
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
@@ -267,35 +262,13 @@ class SDKServer {
     }
 
     if (session.openId.startsWith(CRON_OPEN_ID_PREFIX)) {
-      const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-      const taskUid = userInfo.taskUid ?? null;
-      if (!taskUid) {
-        throw ForbiddenError("Cron session missing task_uid");
-      }
-      return buildCronUser(userInfo);
+      // Cron jobs use a special session format
+      return buildCronUser(session.openId, session.name);
     }
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
-
-    // If user not in DB, sync from OAuth server automatically
-    if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
-      }
-    }
+    const user = await db.getUserByOpenId(sessionUserId);
 
     if (!user) {
       throw ForbiddenError("User not found");
@@ -306,17 +279,7 @@ class SDKServer {
       throw ForbiddenError("Account is locked");
     }
 
-    // Check for inactivity timeout (30 minutes)
-    const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
-    if (user.lastSignedIn) {
-      const lastActivity = new Date(user.lastSignedIn).getTime();
-      const now = Date.now();
-      if (now - lastActivity > SESSION_TIMEOUT_MS) {
-        // Session expired due to inactivity - but don't block OAuth users
-        // Just update the timestamp (frontend handles logout)
-      }
-    }
-
+    // Update last signed in
     await db.upsertUser({
       openId: user.openId,
       lastSignedIn: signedInAt,
@@ -335,20 +298,21 @@ export type AuthenticatedUser = User & {
 };
 
 function buildCronUser(
-  userInfo: GetUserInfoWithJwtResponse
+  openId: string,
+  name: string
 ): AuthenticatedUser {
   const now = new Date();
   return {
     id: -1,
-    openId: userInfo.openId,
-    name: userInfo.name || "Manus Scheduled Task",
+    openId,
+    name: name || "Scheduled Task",
     email: null,
     loginMethod: null,
     role: "user",
     createdAt: now,
     updatedAt: now,
     lastSignedIn: now,
-    taskUid: userInfo.taskUid ?? undefined,
+    taskUid: openId,
     isCron: true,
   } as AuthenticatedUser;
 }

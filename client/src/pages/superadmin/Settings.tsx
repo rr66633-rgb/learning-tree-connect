@@ -126,10 +126,7 @@ export default function SuperAdminSettings() {
               <span className="text-muted-foreground">النطاق الرئيسي</span>
               <span className="font-medium text-sm" dir="ltr">naashah.com</span>
             </div>
-            <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-muted-foreground">النطاق الفرعي</span>
-              <span className="font-medium text-sm" dir="ltr">naashah.manus.space</span>
-            </div>
+
             <div className="flex items-center justify-between py-2">
               <span className="text-muted-foreground">شهادة الأمان</span>
               <Badge className="bg-green-100 text-green-800">SSL مفعّل</Badge>
