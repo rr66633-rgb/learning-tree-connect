@@ -135,20 +135,27 @@ async function sendEmail(
 // ─── Email Templates ─────────────────────────────────────────────────────────
 
 function baseTemplate(content: string): string {
+  const logoUrl = 'https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp';
+  const brandGreen = '#1a5632';
+  const brandGreenLight = '#e8f5e9';
+  const brandGreenGradient = 'linear-gradient(135deg, #1a5632, #2d7a4a)';
+  
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl; background-color: #f8fafb; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .logo { text-align: center; margin-bottom: 30px; }
-    .logo h1 { color: #1a5632; font-size: 28px; margin: 0; }
-    .logo p { color: #6b7280; font-size: 14px; margin: 5px 0 0; }
+    body { font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl; background-color: #f0fdf4; margin: 0; padding: 20px; }
+    .wrapper { max-width: 600px; margin: 0 auto; }
+    .header { background: ${brandGreenGradient}; border-radius: 12px 12px 0 0; padding: 30px 40px; text-align: center; }
+    .header img { width: 60px; height: 60px; border-radius: 12px; margin-bottom: 12px; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; font-weight: 700; }
+    .header p { color: rgba(255,255,255,0.85); font-size: 13px; margin: 6px 0 0; }
+    .container { background: #ffffff; border-radius: 0 0 12px 12px; padding: 40px; box-shadow: 0 4px 16px rgba(26,86,50,0.08); }
     .message { color: #374151; font-size: 16px; line-height: 1.8; }
-    .otp-box { background: linear-gradient(135deg, #e8f5e9, #f1f8e9); border: 2px solid #4caf50; border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0; }
-    .otp-code { font-size: 36px; font-weight: 700; color: #1a5632; letter-spacing: 8px; margin: 10px 0; font-family: monospace; }
+    .otp-box { background: linear-gradient(135deg, ${brandGreenLight}, #f1f8e9); border: 2px solid #4caf50; border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0; }
+    .otp-code { font-size: 36px; font-weight: 700; color: ${brandGreen}; letter-spacing: 8px; margin: 10px 0; font-family: monospace; }
     .otp-label { color: #4a5568; font-size: 14px; }
     .reset-box { background: linear-gradient(135deg, #fff3e0, #fce4ec); border: 2px solid #ff9800; border-radius: 12px; padding: 30px; text-align: center; margin: 30px 0; }
     .reset-code { font-size: 36px; font-weight: 700; color: #e65100; letter-spacing: 8px; margin: 10px 0; font-family: monospace; }
@@ -156,31 +163,43 @@ function baseTemplate(content: string): string {
     .warning { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 13px; color: #856404; }
     .danger { background: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 13px; color: #991b1b; }
     .cta { text-align: center; margin: 30px 0; }
-    .cta a { background: #1a5632; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; }
-    .features { background: #f0fdf4; border-radius: 12px; padding: 20px; margin: 20px 0; }
+    .cta a { background: ${brandGreenGradient}; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; box-shadow: 0 4px 12px rgba(26,86,50,0.3); }
+    .features { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 20px 0; }
     .features ul { list-style: none; padding: 0; margin: 0; }
     .features li { padding: 8px 0; color: #374151; }
     .features li::before { content: "\\2705 "; }
     .invoice-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 20px 0; }
     .invoice-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
     .invoice-row:last-child { border-bottom: none; font-weight: 700; }
-    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; }
+    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    .footer p { color: #9ca3af; font-size: 12px; margin: 4px 0; }
+    .footer a { color: ${brandGreen}; text-decoration: none; font-weight: 500; }
+    .social-links { margin: 12px 0; }
+    .social-links a { display: inline-block; margin: 0 8px; color: ${brandGreen}; font-size: 13px; text-decoration: none; }
     @media (max-width: 600px) {
       .container { padding: 20px; }
+      .header { padding: 20px; }
       .otp-code, .reset-code { font-size: 28px; letter-spacing: 5px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <h1>&#127795; نشأة</h1>
+  <div class="wrapper">
+    <div class="header">
+      <img src="${logoUrl}" alt="نشأة" />
+      <h1>نشأة</h1>
       <p>منصة إدارة الحضانات والروضات</p>
     </div>
+    <div class="container">
     ${content}
     <div class="footer">
+      <div class="social-links">
+        <a href="https://naashah.com">naashah.com</a>
+      </div>
       <p>هذه رسالة آلية من منصة نشأة. لا ترد على هذه الرسالة.</p>
       <p>&copy; ${new Date().getFullYear()} نشأة - جميع الحقوق محفوظة</p>
+      <p style="margin-top: 8px; font-size: 11px; color: #d1d5db;">info@naashah.com</p>
+    </div>
     </div>
   </div>
 </body>
