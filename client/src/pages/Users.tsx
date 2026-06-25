@@ -69,13 +69,18 @@ export default function UsersPage() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    createUser.mutate(form);
+    // Clean email from whitespace and invisible RTL/LTR characters
+    const cleanEmail = form.email.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\s]/g, '').trim();
+    const cleanPhone = form.phone.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
+    createUser.mutate({ ...form, email: cleanEmail, phone: cleanPhone || undefined });
   };
 
   const handleEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
-    updateUser.mutate({ id: selectedUser.id, ...editForm });
+    const cleanEmail = editForm.email.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\s]/g, '').trim();
+    const cleanPhone = editForm.phone.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
+    updateUser.mutate({ id: selectedUser.id, ...editForm, email: cleanEmail, phone: cleanPhone || undefined });
   };
 
   const openEdit = (user: any) => {

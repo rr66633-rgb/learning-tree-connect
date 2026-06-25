@@ -2362,12 +2362,15 @@ export const appRouter = router({
     }),
     create: adminProcedure.input(z.object({
       name: z.string().min(1),
-      email: z.string().email(),
+      email: z.string().trim().email(),
       phone: z.string().optional(),
       role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist']),
       nationalId: z.string().optional(),
       password: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
+      // Clean email from invisible RTL/LTR characters
+      const cleanEmail = input.email.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
+      input = { ...input, email: cleanEmail };
       // Generate a unique openId for manually created users
       const openId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const { password, ...userData } = input;
