@@ -2369,6 +2369,19 @@ export const appRouter = router({
         await db.updateUser(user.id, { password: hashedPassword } as any);
       }
       await db.createAuditLog({ userId: ctx.user!.id, action: 'create_user', resource: 'users', resourceId: user?.id, details: `Created user ${input.name} (${input.role})`, ipAddress: '' });
+      // Send invitation email to the new user
+      try {
+        const { sendInvitationEmail } = await import('./services/emailService');
+        await sendInvitationEmail(
+          input.email,
+          input.name,
+          input.role,
+          password || undefined,
+          ctx.user?.name || undefined
+        );
+      } catch (emailErr) {
+        console.error('[User Create] Failed to send invitation email:', emailErr);
+      }
       return user;
     }),
     update: adminProcedure.input(z.object({

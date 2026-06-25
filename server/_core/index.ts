@@ -967,9 +967,20 @@ async function startServer() {
     await eventRemindersHandler(req, res);
   });
 
-  // PDF Generation API
-  // PDF generation is now handled client-side using browser's native print-to-PDF
-  // No server-side endpoint needed
+  // Email Health Check API
+  app.get('/api/email/health', async (req, res) => {
+    try {
+      const { isEmailConfigured, verifyEmailConnection } = await import('../services/emailService');
+      const configured = isEmailConfigured();
+      if (!configured) {
+        return res.json({ status: 'not_configured', message: 'SMTP not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS environment variables.' });
+      }
+      const result = await verifyEmailConnection();
+      return res.json({ status: result.connected ? 'connected' : 'error', ...result });
+    } catch (err: any) {
+      return res.status(500).json({ status: 'error', error: err.message });
+    }
+  });
 
   // tRPC API
   app.use(
