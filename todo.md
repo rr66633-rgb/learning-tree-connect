@@ -1801,3 +1801,4 @@
 - [ ] Create custom registration page
 - [ ] Create forgot password / reset password flow
 - [ ] Create phone OTP verification flow
+- [x] Fix forgotPassword to respect user's chosen method (SMS/email) instead of always preferring email

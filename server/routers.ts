@@ -217,35 +217,55 @@ export const appRouter = router({
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: `يرجى الانتظار ${canRequest.waitSeconds} ثانية قبل طلب رمز جديد.` });
         }
 
-        // Always prefer email for password reset (SMS is optional/future)
-        const userEmail = user.email || (input.identifier.includes('@') ? input.identifier : null);
-        
-        if (userEmail) {
-          // Generate reset token and send email link
+        // Respect user's chosen method
+        if (input.method === 'sms') {
+          // Send OTP via SMS
+          const userPhone = user.phone || (!input.identifier.includes('@') ? input.identifier : null);
+          if (!userPhone) {
+            // User chose SMS but has no phone - fall back to email
+            const userEmail = user.email || input.identifier;
+            const { code, expiresAt } = await authService.createOtp({
+              userId: user.id,
+              email: userEmail,
+              type: 'password_reset',
+            });
+            await authService.sendEmailOtp(userEmail, code, user.name || undefined);
+            return { success: true, message: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.', expiresAt: expiresAt.getTime() };
+          }
+          const { code, expiresAt } = await authService.createOtp({
+            userId: user.id,
+            phone: userPhone,
+            type: 'password_reset',
+          });
+          await authService.sendSmsOtp(userPhone, code);
+          return { success: true, message: 'تم إرسال رمز التحقق إلى رقم جوالك.', expiresAt: expiresAt.getTime() };
+        } else {
+          // Send OTP via email
+          const userEmail = user.email || (input.identifier.includes('@') ? input.identifier : null);
+          if (!userEmail) {
+            // User chose email but has no email - fall back to SMS
+            const userPhone = user.phone || input.identifier;
+            const { code, expiresAt } = await authService.createOtp({
+              userId: user.id,
+              phone: userPhone,
+              type: 'password_reset',
+            });
+            await authService.sendSmsOtp(userPhone, code);
+            return { success: true, message: 'تم إرسال رمز التحقق إلى رقم جوالك.', expiresAt: expiresAt.getTime() };
+          }
+          // Generate reset token and send email link + OTP
           const { token } = await authService.createPasswordResetToken(user.id);
           const origin = ctx.req.headers.origin || ctx.req.headers.referer || '';
           const resetLink = `${origin}/reset-password?token=${token}`;
           await authService.sendPasswordResetEmail(userEmail, resetLink, user.name || undefined);
           
-          // Also send OTP for email verification
           const { code, expiresAt } = await authService.createOtp({
             userId: user.id,
             email: userEmail,
             type: 'password_reset',
           });
           await authService.sendEmailOtp(userEmail, code, user.name || undefined);
-          
           return { success: true, message: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.', expiresAt: expiresAt.getTime() };
-        } else {
-          // Fallback to SMS only if no email available
-          const { code, expiresAt } = await authService.createOtp({
-            userId: user.id,
-            phone: user.phone || input.identifier,
-            type: 'password_reset',
-          });
-          await authService.sendSmsOtp(user.phone || input.identifier, code);
-          
-          return { success: true, message: 'تم إرسال رمز التحقق إلى رقم جوالك.', expiresAt: expiresAt.getTime() };
         }
       }),
 
