@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, FileWarning
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -125,7 +125,6 @@ const adminMenuItems: MenuItem[] = [
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai", color: "#F97316" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals", color: "#00C9B7" },
   { icon: Shield, label: "سجل المراجعة", path: "/audit-log", color: "#EC4899" },
-  { icon: FileWarning, label: "تقرير الأمان والأداء", path: "/qa-report", color: "#DC2626" },
   { icon: Settings, label: "الإعدادات", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", path: "/notification-settings", color: "#00C9B7" },
 ];
