@@ -12,6 +12,7 @@ import { Receipt, CreditCard, Clock, FileText, Download, AlertTriangle, CheckCir
 import { EmptyState } from "@/components/EmptyState";
 import { useState } from "react";
 import { toast } from "sonner";
+import { trackPurchase } from "@/lib/metaPixel";
 
 const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة", partially_paid: "مدفوعة جزئياً" };
 const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-green-100 text-green-700", overdue: "bg-red-100 text-red-700", cancelled: "bg-gray-100 text-gray-700", partially_paid: "bg-blue-100 text-blue-700" };
@@ -36,6 +37,10 @@ export default function ParentFinance() {
         toast.info("بوابة الدفع غير مفعلة حالياً. سيتم تفعيلها قريباً.");
         setOpenPayDialog(false);
         return;
+      }
+      // Track Purchase event when payment is initiated
+      if (selectedInvoice) {
+        trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), "SAR");
       }
       if (data.transactionUrl) {
         window.location.href = data.transactionUrl;

@@ -11,6 +11,7 @@ import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { useNativeInit } from "./hooks/useNativeInit";
 import { useWeeklyPlanPdf } from "./hooks/useWeeklyPlanPdf";
 import { lazy, Suspense } from "react";
+import { useMetaPixelPageView } from "./hooks/useMetaPixel";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Landing Page
@@ -312,6 +313,7 @@ function RoleRouter() {
   useSessionTimeout();
   useNativeInit();
   useWeeklyPlanPdf();
+  useMetaPixelPageView();
 
   // Public legal pages - always accessible without auth or dashboard
   if (location === "/privacy" || location === "/terms") {

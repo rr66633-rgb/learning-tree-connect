@@ -11,6 +11,7 @@ import { Send, Plus, Paperclip, Check, CheckCheck, MessageCircle, User, FileText
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
+import { trackContact } from "@/lib/metaPixel";
 
 export default function ParentMessages() {
   const { user } = useAuth();
@@ -59,6 +60,7 @@ export default function ParentMessages() {
       {
         onSuccess: () => {
           setText("");
+          trackContact();
           utils.messages.list.invalidate();
           utils.messages.conversations.invalidate();
         },

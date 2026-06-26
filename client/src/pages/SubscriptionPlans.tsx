@@ -5,10 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
 import { Check, Star, Zap, Crown } from "lucide-react";
+import { useEffect } from "react";
+import { trackViewContent } from "@/lib/metaPixel";
 
 export default function SubscriptionPlans() {
   const [, navigate] = useLocation();
   const { data: plans, isLoading } = trpc.onboarding.getPlans.useQuery();
+
+  useEffect(() => {
+    trackViewContent("Subscription Plans", "pricing");
+  }, []);
 
   const tierIcons: Record<string, any> = {
     starter: Star,

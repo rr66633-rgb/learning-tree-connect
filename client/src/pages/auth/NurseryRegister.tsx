@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { trackLead } from "@/lib/metaPixel";
 import { 
   ArrowRight, ArrowLeft, CheckCircle2, Eye, EyeOff, 
   Building2, User, Mail, Phone, Lock, MapPin, Users, Baby,
@@ -93,6 +94,7 @@ export default function NurseryRegister() {
     onSuccess: (data) => {
       toast.success(data.message);
       setStep(5);
+      trackLead("Nursery Registration");
     },
     onError: (error) => {
       toast.error(error.message);

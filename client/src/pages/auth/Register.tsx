@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { trackCompleteRegistration } from "@/lib/metaPixel";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, User, Mail, Phone, Lock } from "lucide-react";
 
 export default function Register() {
@@ -35,6 +36,7 @@ export default function Register() {
   const verifyMutation = trpc.auth.verifyRegistration.useMutation({
     onSuccess: () => {
       setStep("success");
+      trackCompleteRegistration("email");
     },
     onError: (error) => toast.error(error.message),
   });

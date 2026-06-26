@@ -1802,3 +1802,13 @@
 - [ ] Create forgot password / reset password flow
 - [ ] Create phone OTP verification flow
 - [x] Fix forgotPassword to respect user's chosen method (SMS/email) instead of always preferring email
+
+## Meta Pixel Integration
+- [x] Add Meta Pixel base code (ID: 1314391127472452) to index.html
+- [x] Create MetaPixel utility module for event tracking
+- [x] Track PageView on all route changes
+- [x] Track ViewContent on key pages
+- [x] Track CompleteRegistration on registration success
+- [x] Track Lead on nursery registration/inquiry
+- [x] Track Contact on message/contact actions
+- [x] Track Purchase on invoice payment (if applicable)
