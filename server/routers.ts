@@ -19,6 +19,7 @@ import { engagementRouter } from "./engagementRouter";
 import { registrationRouter } from "./registrationRouter";
 import { staffManagementRouter } from "./staffManagementRouter";
 import { bulkImportRouter } from "./bulkImportRouter";
+import { capiRouter } from "./capiRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -2919,5 +2920,7 @@ export const appRouter = router({
   staffManagement: staffManagementRouter,
   // ============ BULK IMPORT ============
   bulkImport: bulkImportRouter,
+  // ============ META CONVERSIONS API ============
+  capi: capiRouter,
 });
 export type AppRouter = typeof appRouter;

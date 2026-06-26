@@ -1812,3 +1812,12 @@
 - [x] Track Lead on nursery registration/inquiry
 - [x] Track Contact on message/contact actions
 - [x] Track Purchase on invoice payment (if applicable)
+
+## Meta Conversions API (CAPI) - Server-Side Tracking
+- [x] Create server-side CAPI module (server/lib/metaCapi.ts)
+- [x] Add META_CAPI_ACCESS_TOKEN environment variable
+- [x] Create tRPC endpoint for CAPI events (server/capiRouter.ts)
+- [x] Implement event deduplication (eventID shared between browser pixel and server)
+- [x] Update frontend metaPixel.ts to send events to both browser pixel and server CAPI
+- [x] Test CAPI endpoint - events received successfully by Meta
+- [x] Validate token (expires: 2026-08-25, 60 days)
