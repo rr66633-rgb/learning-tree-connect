@@ -326,15 +326,16 @@ export default function Landing() {
           <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4 leading-relaxed">
             اكتشفي كيف تساعد نشأة حضانتك على إدارة الحضور، التواصل مع أولياء الأمور، والتقارير اليومية بكل سهولة
           </p>
-          <a 
-            href="https://calendly.com/naashah-info/30min"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#00C9B7] hover:bg-[#00B5A5] text-white text-sm sm:text-base md:text-lg px-6 sm:px-8 md:px-10 h-12 sm:h-[52px] md:h-14 rounded-xl shadow-[0_4px_14px_rgba(0,201,183,0.3)] hover:shadow-[0_6px_20px_rgba(0,201,183,0.4)] active:scale-[0.97] transition-all duration-150 font-medium"
-          >
-            <Calendar className="w-5 h-5" />
-            احجزي موعدك الآن
-          </a>
+          <div className="w-full max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-white">
+            <iframe
+              src="https://calendly.com/naashah-info/30min?hide_gdpr_banner=1&background_color=ffffff&text_color=1e293b&primary_color=00C9B7"
+              width="100%"
+              height="660"
+              frameBorder="0"
+              title="احجزي موعدك مع نشأة"
+              className="w-full min-h-[580px] sm:min-h-[620px] md:min-h-[660px]"
+            />
+          </div>
           <p className="text-[10px] sm:text-xs text-gray-400 mt-4">
             مدة العرض ٣٠ دقيقة عبر زوم
           </p>

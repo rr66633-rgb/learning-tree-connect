@@ -330,6 +330,7 @@
 - [x] Add free demo booking section with Calendly link (https://calendly.com/naashah-info/30min)
 - [x] Arabic CTA text with Calendar icon
 - [x] Verify Calendly link works correctly
+- [x] Embed Calendly inline widget inside the page instead of external link
 
 ## Media Management System
 - [x] Add media database schema (media + media_children tables)
