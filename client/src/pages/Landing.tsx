@@ -313,6 +313,34 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Free Demo Booking Section */}
+      <section id="demo" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-[#f0fdf9] via-white to-[#ecfdf5]">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-[#00C9B7]/10 text-[#00997A] px-4 py-2 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6">
+            <Calendar className="w-4 h-4" />
+            <span>عرض تعريفي مجاني</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-3 sm:mb-4 md:mb-6 px-2">
+            احجزي عرضاً تعريفياً مجانياً لمنصة نشأة
+          </h2>
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4 leading-relaxed">
+            اكتشفي كيف تساعد نشأة حضانتك على إدارة الحضور، التواصل مع أولياء الأمور، والتقارير اليومية بكل سهولة
+          </p>
+          <a 
+            href="https://calendly.com/naashah-info/30min"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-[#00C9B7] hover:bg-[#00B5A5] text-white text-sm sm:text-base md:text-lg px-6 sm:px-8 md:px-10 h-12 sm:h-[52px] md:h-14 rounded-xl shadow-[0_4px_14px_rgba(0,201,183,0.3)] hover:shadow-[0_6px_20px_rgba(0,201,183,0.4)] active:scale-[0.97] transition-all duration-150 font-medium"
+          >
+            <Calendar className="w-5 h-5" />
+            احجزي موعدك الآن
+          </a>
+          <p className="text-[10px] sm:text-xs text-gray-400 mt-4">
+            مدة العرض ٣٠ دقيقة عبر زوم
+          </p>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95]">
         <div className="max-w-4xl mx-auto text-center">

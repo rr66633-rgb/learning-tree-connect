@@ -326,6 +326,11 @@
 - [x] Convert existing 'user' role users to 'parent' + isActive=false
 - [x] All 158 tests pass
 
+## Landing Page - Demo Booking Section
+- [x] Add free demo booking section with Calendly link (https://calendly.com/naashah-info/30min)
+- [x] Arabic CTA text with Calendar icon
+- [x] Verify Calendly link works correctly
+
 ## Media Management System
 - [x] Add media database schema (media + media_children tables)
 - [x] Add backend procedures: media.upload, media.list, media.delete, media.byChild
