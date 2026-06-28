@@ -426,7 +426,7 @@ async function startServer() {
       const contractMap: Record<string, string> = {
         'دوام كامل': 'full_time', 'دوام جزئي': 'part_time', 'عقد': 'contract', 'مؤقت': 'temporary',
       };
-      const genderMap: Record<string, string> = { 'ذكر': 'male', 'أنثى': 'female' };
+      const genderMap: Record<string, string> = { 'ذكر': 'male', 'أنثى': 'female', 'انثى': 'female', 'انثي': 'female', 'أنثي': 'female', 'male': 'male', 'female': 'female' };
       const statusMap: Record<string, string> = {
         'نشط': 'active', 'غير نشط': 'inactive', 'إجازة': 'on_leave', 'منتهي': 'terminated', 'مستقيل': 'resigned',
       };
@@ -579,11 +579,10 @@ async function startServer() {
         'المدينة': 'parentCity',
         'وظيفة ولي الأمر': 'parentJob',
       };
-      const genderMap: Record<string, string> = { 'ذكر': 'male', 'أنثى': 'female' };
+            const genderMap: Record<string, string> = { 'ذكر': 'male', 'أنثى': 'female', 'انثى': 'female', 'انثي': 'female', 'أنثي': 'female', 'بنت': 'female', 'ولد': 'male', 'male': 'male', 'female': 'female' };
       const statusMap: Record<string, string> = {
         'نشط': 'active', 'غير نشط': 'inactive', 'متخرج': 'graduated', 'قائمة انتظار': 'waitlist',
       };
-
       const results: { row: number; data: any; errors: string[] }[] = [];
       for (let i = 0; i < rawData.length; i++) {
         const raw = rawData[i];
@@ -596,15 +595,38 @@ async function startServer() {
         if (!mapped.firstName && !mapped.arabicName) errors.push('اسم الطفل مطلوب');
         if (!mapped.dateOfBirth) errors.push('تاريخ الميلاد مطلوب');
         if (!mapped.gender) errors.push('الجنس مطلوب');
-        if (mapped.gender) mapped.gender = genderMap[mapped.gender] || mapped.gender;
+        if (mapped.gender) mapped.gender = genderMap[String(mapped.gender).trim()] || mapped.gender;
         if (mapped.status) mapped.status = statusMap[mapped.status] || mapped.status || 'active';
         if (mapped.dateOfBirth && !(mapped.dateOfBirth instanceof Date)) {
-          const d = new Date(mapped.dateOfBirth);
-          mapped.dateOfBirth = isNaN(d.getTime()) ? null : d;
+          let d = new Date(mapped.dateOfBirth);
+          // Handle Hijri dates (year < 1900) - approximate conversion
+          if (!isNaN(d.getTime()) && d.getFullYear() < 1900) {
+            const hijriYear = d.getFullYear();
+            const hijriMonth = d.getMonth();
+            const hijriDay = d.getDate();
+            // Approximate Hijri to Gregorian: Gregorian year ≈ Hijri year + 579 (rough)
+            const gregYear = Math.round(hijriYear + 579 + (hijriYear - 1) * 0.03);
+            d = new Date(gregYear, hijriMonth, hijriDay);
+          }
+          // Ensure date is within valid MySQL timestamp range (1970-2038)
+          if (isNaN(d.getTime()) || d.getFullYear() < 1970 || d.getFullYear() > 2038) {
+            mapped.dateOfBirth = new Date(); // fallback to today
+          } else {
+            mapped.dateOfBirth = d;
+          }
         }
         if (mapped.enrollmentDate && !(mapped.enrollmentDate instanceof Date)) {
-          const d = new Date(mapped.enrollmentDate);
-          mapped.enrollmentDate = isNaN(d.getTime()) ? null : d;
+          let d = new Date(mapped.enrollmentDate);
+          if (!isNaN(d.getTime()) && d.getFullYear() < 1900) {
+            const hijriYear = d.getFullYear();
+            const gregYear = Math.round(hijriYear + 579 + (hijriYear - 1) * 0.03);
+            d = new Date(gregYear, d.getMonth(), d.getDate());
+          }
+          if (isNaN(d.getTime()) || d.getFullYear() < 1970 || d.getFullYear() > 2038) {
+            mapped.enrollmentDate = new Date();
+          } else {
+            mapped.enrollmentDate = d;
+          }
         }
         if (mapped.busRequired) mapped.busRequired = mapped.busRequired === 'نعم' || mapped.busRequired === true;
         results.push({ row: i + 2, data: mapped, errors });
@@ -637,7 +659,8 @@ async function startServer() {
           const d = item.data;
           let classId = null;
           if (d.className) {
-            const cls = allClasses.find((c: any) => c.name === d.className);
+            const classNameLower = String(d.className).trim().toLowerCase();
+            const cls = allClasses.find((c: any) => c.name && c.name.toLowerCase() === classNameLower);
             if (cls) classId = cls.id;
           }
           // Parse name from arabicName if firstName/lastName not provided
@@ -660,8 +683,8 @@ async function startServer() {
             enrollmentDate: d.enrollmentDate || new Date(),
             fatherName: d.fatherName || null,
             motherName: d.motherName || null,
-            parentEmail: d.parentEmail || null,
-            parentMobile: d.parentMobile || null,
+            parentEmail: d.parentEmail ? String(d.parentEmail).replace(/\s/g, '').toLowerCase() : null,
+            parentMobile: d.parentMobile ? String(d.parentMobile).replace(/\s/g, '') : null,
             altPhone: d.altPhone || null,
             homeAddress: d.homeAddress || null,
             allergies: d.allergies || null,
@@ -682,8 +705,8 @@ async function startServer() {
           // Create or find parent account and link to child
           if (d.parentEmail || d.parentMobile) {
             try {
-              const parentEmail = d.parentEmail ? String(d.parentEmail).trim().toLowerCase() : null;
-              const parentPhone = d.parentMobile ? String(d.parentMobile).trim() : null;
+              const parentEmail = d.parentEmail ? String(d.parentEmail).replace(/\s/g, '').toLowerCase() : null;
+              const parentPhone = d.parentMobile ? String(d.parentMobile).replace(/\s/g, '').trim() : null;
               const parentName = d.parentFullName || d.fatherName || 'ولي أمر';
               const relation = d.parentRelation || 'أب';
 

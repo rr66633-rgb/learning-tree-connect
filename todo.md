@@ -1865,3 +1865,10 @@
 - [x] إنشاء lib/csrf.ts لتوفير getCsrfToken() لجميع الصفحات
 - [x] إضافة x-csrf-token header في ImportChildren.tsx
 - [x] إضافة x-csrf-token header في ImportStaff.tsx
+
+## إصلاح أخطاء استيراد الأطفال
+- [x] إصلاح genderMap لدعم "انثى" بدون همزة وجميع الاختلافات الإملائية
+- [x] إصلاح التواريخ الهجرية (تحويل تقريبي من هجري لميلادي)
+- [x] تنظيف البريد الإلكتروني من المسافات تلقائياً
+- [x] جعل البحث عن الفصول case-insensitive
+- [x] إصلاح نفس المشاكل في import-staff
