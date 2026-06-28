@@ -1484,3 +1484,36 @@ export const staffDocuments = mysqlTable("staff_documents", {
 });
 export type StaffDocument = typeof staffDocuments.$inferSelect;
 export type InsertStaffDocument = typeof staffDocuments.$inferInsert;
+
+// ============ DEVELOPMENTAL ASSESSMENTS (مقياس شجرة التعلم) ============
+export const developmentalAssessments = mysqlTable("developmental_assessments", {
+  id: int("id").autoincrement().primaryKey(),
+  childId: int("childId").notNull(),
+  assessorId: int("assessorId").notNull(),
+  ageGroup: mysqlEnum("ageGroup", ["24-36", "36-48", "48-60", "60-72"]).notNull(),
+  totalScore: int("totalScore").notNull(),
+  maxScore: int("maxScore").notNull(),
+  percentage: decimal("percentage", { precision: 5, scale: 2 }).notNull(),
+  interpretation: mysqlEnum("interpretation", ["on_track", "needs_support", "needs_referral"]).notNull(),
+  notes: text("notes"),
+  assessmentDate: timestamp("assessmentDate").notNull(),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DevelopmentalAssessment = typeof developmentalAssessments.$inferSelect;
+export type InsertDevelopmentalAssessment = typeof developmentalAssessments.$inferInsert;
+
+// ============ ASSESSMENT RESPONSES (إجابات التقييم) ============
+export const assessmentResponses = mysqlTable("assessment_responses", {
+  id: int("id").autoincrement().primaryKey(),
+  assessmentId: int("assessmentId").notNull(),
+  domain: mysqlEnum("domain", ["communication", "gross_motor", "fine_motor", "problem_solving", "personal_social"]).notNull(),
+  itemIndex: int("itemIndex").notNull(),
+  itemText: text("itemText").notNull(),
+  response: mysqlEnum("response", ["yes", "sometimes", "not_yet"]).notNull(),
+  score: int("score").notNull(),
+});
+
+export type AssessmentResponse = typeof assessmentResponses.$inferSelect;
+export type InsertAssessmentResponse = typeof assessmentResponses.$inferInsert;

@@ -3,9 +3,10 @@ import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
-import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses } from "../drizzle/schema";
 import type { InsertNurseryRegistration } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
+import type { InsertDevelopmentalAssessment, InsertAssessmentResponse } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 // ============ SINGLETON CONNECTION POOL ============
@@ -2563,4 +2564,60 @@ export async function checkNurseryRegistrationEmailExists(email: string) {
     )
   );
   return rows.length > 0;
+}
+
+// ============ DEVELOPMENTAL ASSESSMENTS (مقياس شجرة التعلم) ============
+
+export async function createDevelopmentalAssessment(data: InsertDevelopmentalAssessment) {
+  const database = await getDb();
+  if (!database) throw new Error('Database not available');
+  const result = await database.insert(developmentalAssessments).values(data);
+  return result[0].insertId;
+}
+
+export async function createAssessmentResponses(responses: InsertAssessmentResponse[]) {
+  const database = await getDb();
+  if (!database) throw new Error('Database not available');
+  await database.insert(assessmentResponses).values(responses);
+}
+
+export async function getAssessmentsByChild(childId: number) {
+  const database = await getDb();
+  if (!database) return [];
+  const rows = await database.select().from(developmentalAssessments)
+    .where(eq(developmentalAssessments.childId, childId))
+    .orderBy(desc(developmentalAssessments.assessmentDate));
+  return rows;
+}
+
+export async function getAssessmentById(id: number) {
+  const database = await getDb();
+  if (!database) return null;
+  const rows = await database.select().from(developmentalAssessments)
+    .where(eq(developmentalAssessments.id, id));
+  return rows[0] || null;
+}
+
+export async function getAssessmentResponsesByAssessmentId(assessmentId: number) {
+  const database = await getDb();
+  if (!database) return [];
+  const rows = await database.select().from(assessmentResponses)
+    .where(eq(assessmentResponses.assessmentId, assessmentId));
+  return rows;
+}
+
+export async function getAllDevelopmentalAssessments(organizationId: number = 1) {
+  const database = await getDb();
+  if (!database) return [];
+  const rows = await database.select().from(developmentalAssessments)
+    .where(eq(developmentalAssessments.organizationId, organizationId))
+    .orderBy(desc(developmentalAssessments.createdAt));
+  return rows;
+}
+
+export async function deleteDevelopmentalAssessment(id: number) {
+  const database = await getDb();
+  if (!database) throw new Error('Database not available');
+  await database.delete(assessmentResponses).where(eq(assessmentResponses.assessmentId, id));
+  await database.delete(developmentalAssessments).where(eq(developmentalAssessments.id, id));
 }

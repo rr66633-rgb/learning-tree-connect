@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -83,6 +83,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
   { icon: MapPin, label: "الاستلام", path: "/pickup", color: "#7C3AED" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
+  { icon: TreePine, label: "مقياس شجرة التعلم", path: "/developmental-assessment", color: "#10B981" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
   { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
@@ -119,6 +120,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users", color: "#7C3AED" },
   { icon: MapPin, label: "الاستلام", path: "/pickup", color: "#7C3AED" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
+  { icon: TreePine, label: "مقياس شجرة التعلم", path: "/developmental-assessment", color: "#10B981" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
   { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
@@ -154,6 +156,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: Bell, label: "الإشعارات", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments" },
+  { icon: TreePine, label: "مقياس شجرة التعلم", path: "/developmental-assessment" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },

@@ -1827,3 +1827,17 @@
 - [x] Update frontend metaPixel.ts to send events to both browser pixel and server CAPI
 - [x] Test CAPI endpoint - events received successfully by Meta
 - [x] Validate token (expires: 2026-08-25, 60 days)
+
+## مقياس شجرة التعلم للكشف المبكر عن التأخر النمائي
+- [x] Database: Create developmental_assessments table (id, childId, assessorId, ageGroup, totalScore, maxScore, percentage, interpretation, assessmentDate, createdAt)
+- [x] Database: Create assessment_responses table (id, assessmentId, domain, itemIndex, itemText, response: yes/sometimes/not_yet, score)
+- [x] Backend: tRPC procedures for creating/listing/viewing assessments
+- [x] Backend: Auto-calculate score percentage and interpretation
+- [x] Frontend Staff: Assessment page with child selector and age group selector
+- [x] Frontend Staff: Interactive checklist UI (نعم/أحياناً/ليس بعد) for all 5 domains
+- [x] Frontend Staff: Auto-detect age group from child's birth date
+- [x] Frontend Staff: Results summary with color-coded interpretation (green/yellow/red)
+- [x] Frontend Staff: Assessment history list per child with progress tracking
+- [x] Frontend Parent: View child's assessment results and history
+- [x] Frontend Parent: Color-coded progress visualization
+- [x] Navigation: Add assessment link to staff and admin sidebars
