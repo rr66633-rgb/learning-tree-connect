@@ -1789,12 +1789,12 @@
 - [x] قائمة العوائق المتبقية
 
 ## إعداد البريد الإلكتروني SMTP للإنتاج
-- [ ] مراجعة خدمة البريد الحالية
-- [ ] بناء خدمة SMTP كاملة مع Nodemailer
-- [ ] قوالب بريد إلكتروني عربية (إعادة تعيين كلمة المرور، الدعوات، الإشعارات)
-- [ ] إعداد متغيرات البيئة SMTP
-- [ ] اختبار إرسال البريد الإلكتروني
-- [ ] التحقق من عمل جميع التدفقات (OTP، دعوات، إشعارات)
+- [x] مراجعة خدمة البريد الحالية
+- [x] بناء خدمة SMTP كاملة مع Nodemailer
+- [x] قوالب بريد إلكتروني عربية (إعادة تعيين كلمة المرور، الدعوات، الإشعارات)
+- [x] إعداد متغيرات البيئة SMTP
+- [x] اختبار إرسال البريد الإلكتروني
+- [x] التحقق من عمل جميع التدفقات (OTP، دعوات، إشعارات)
 
 - [x] Fix parent Documents page crash - React hooks rules violation (useUtils and useMutation called after early return)
 - [x] Fix documents.list to include signed status for parent (join with signatures table)
@@ -1804,9 +1804,9 @@
 - [x] Build independent auth system (email+password + phone OTP)
 - [x] Remove Manus OAuth completely
 - [x] Create custom login page (no Manus branding)
-- [ ] Create custom registration page
-- [ ] Create forgot password / reset password flow
-- [ ] Create phone OTP verification flow
+- [x] Create custom registration page
+- [x] Create forgot password / reset password flow
+- [x] Create phone OTP verification flow
 - [x] Fix forgotPassword to respect user's chosen method (SMS/email) instead of always preferring email
 
 ## Meta Pixel Integration
@@ -1845,3 +1845,7 @@
 ## تحميل PDF لنتائج التقييم النمائي
 - [x] إضافة زر تحميل PDF لنتائج التقييم النمائي في بوابة أولياء الأمور
 - [x] PDF يشمل: شعار نشأة، اسم الطفل، تاريخ التقييم، الفئة العمرية، النتيجة الإجمالية، التفسير، تفاصيل كل مجال
+
+## إصلاح تسجيل الدخول
+- [x] جعل البحث عن البريد الإلكتروني case-insensitive في findUserByIdentifier
+- [x] إعادة تعيين كلمة المرور لحساب nursery@naashah.com إلى Nashaa@2026

@@ -1952,8 +1952,9 @@ export async function findUserByIdentifier(identifier: string) {
   const db = await getDb();
   if (!db) return undefined;
   
-  // Try to find by email first, then by phone
-  const byEmail = await db.select().from(users).where(eq(users.email, identifier)).limit(1);
+  // Try to find by email first (case-insensitive), then by phone
+  const normalizedIdentifier = identifier.trim();
+  const byEmail = await db.select().from(users).where(sql`LOWER(${users.email}) = LOWER(${normalizedIdentifier})`).limit(1);
   if (byEmail.length > 0) return byEmail[0];
   
   const byPhone = await db.select().from(users).where(eq(users.phone, identifier)).limit(1);
