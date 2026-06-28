@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Download, ArrowRight, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2, Baby } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf";
 
 type ParsedRow = {
   row: number;
@@ -75,10 +76,12 @@ export default function ImportChildren() {
     const formData = new FormData();
     formData.append("file", file);
     try {
+      const csrfToken = await getCsrfToken();
       const res = await fetch("/api/import-children?mode=preview", {
         method: "POST",
         body: formData,
         credentials: "include",
+        headers: { 'x-csrf-token': csrfToken },
       });
       if (!res.ok) {
         const err = await res.json();
@@ -102,10 +105,12 @@ export default function ImportChildren() {
     formData.append("file", file);
     try {
       setImportProgress(30);
+      const csrfToken2 = await getCsrfToken();
       const res = await fetch("/api/import-children", {
         method: "POST",
         body: formData,
         credentials: "include",
+        headers: { 'x-csrf-token': csrfToken2 },
       });
       setImportProgress(80);
       if (!res.ok) {
