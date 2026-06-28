@@ -621,8 +621,10 @@ async function startServer() {
       const { children: childrenTable, classes, users: usersTable, parentChildren } = await import('../../drizzle/schema');
       const { eq, sql } = await import('drizzle-orm');
       const { hashPassword } = await import('./authService');
+      const { sendParentWelcomeWithCredentials } = await import('../services/emailService');
       let imported = 0;
       let parentsCreated = 0;
+      let welcomeEmailsSent = 0;
       const importErrors: { row: number; error: string }[] = [];
       const orgId = user.organizationId || 1;
 
@@ -723,6 +725,24 @@ async function startServer() {
                 });
                 parentId = parentResult[0].insertId;
                 parentsCreated++;
+
+                // Send welcome email with credentials
+                const childFullName = d.arabicName || `${firstName || ''} ${lastName || ''}`.trim() || 'طفلك';
+                const loginId = parentEmail || parentPhone || '';
+                if (parentEmail) {
+                  try {
+                    const emailResult = await sendParentWelcomeWithCredentials(
+                      parentEmail,
+                      parentName,
+                      childFullName,
+                      loginId,
+                      defaultPassword
+                    );
+                    if (emailResult.sent) welcomeEmailsSent++;
+                  } catch (emailErr: any) {
+                    console.error(`[Import] Welcome email failed for ${parentEmail}:`, emailErr.message);
+                  }
+                }
               }
 
               // Link parent to child
@@ -746,7 +766,7 @@ async function startServer() {
           importErrors.push({ row: item.row, error: e.message || 'خطأ غير متوقع' });
         }
       }
-      res.json({ success: true, imported, parentsCreated, failed: importErrors.length, errors: importErrors });
+      res.json({ success: true, imported, parentsCreated, welcomeEmailsSent, failed: importErrors.length, errors: importErrors });
     } catch (error: any) {
       console.error('Children import error:', error);
       res.status(500).json({ error: 'فشل استيراد الملف: ' + (error.message || '') });

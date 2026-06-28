@@ -358,6 +358,60 @@ export async function sendWelcomeEmail(
 }
 
 /**
+ * Send welcome email to parent with login credentials after import
+ */
+export async function sendParentWelcomeWithCredentials(
+  email: string,
+  parentName: string,
+  childName: string,
+  loginIdentifier: string,
+  defaultPassword: string,
+  nurseryName?: string
+): Promise<EmailSendResult> {
+  const nursery = nurseryName || 'حضانة شجرة التعلم';
+  const subject = `مرحباً بك في ${nursery} - بيانات تسجيل الدخول`;
+
+  const content = `
+    <p class="message">مرحباً ${parentName}!</p>
+    <p class="message">تم تسجيل طفلك <strong>${childName}</strong> بنجاح في ${nursery}. تم إنشاء حسابك على منصة نشأة لمتابعة أنشطة طفلك والتواصل مع الحضانة.</p>
+    
+    <div class="otp-box" style="text-align: right;">
+      <p style="font-weight: 700; font-size: 16px; color: #1a5632; margin-top: 0;">بيانات تسجيل الدخول:</p>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+        <tr>
+          <td style="padding: 10px 0; color: #4a5568; font-size: 14px;">البريد / الجوال:</td>
+          <td style="padding: 10px 0; font-weight: 700; color: #1a5632; font-size: 16px; direction: ltr; text-align: left;">${loginIdentifier}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; color: #4a5568; font-size: 14px;">كلمة المرور:</td>
+          <td style="padding: 10px 0; font-weight: 700; color: #1a5632; font-size: 16px; direction: ltr; text-align: left;">${defaultPassword}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="warning">
+      ننصحك بتغيير كلمة المرور بعد أول تسجيل دخول من إعدادات الحساب.
+    </div>
+
+    <div class="features">
+      <p style="font-weight: 600; margin-top: 0;">يمكنك الآن الاستفادة من:</p>
+      <ul>
+        <li>متابعة حضور وأنشطة طفلك يومياً</li>
+        <li>استلام التقارير اليومية والصور</li>
+        <li>التواصل المباشر مع المعلمات</li>
+        <li>إدارة الفواتير والمدفوعات</li>
+        <li>الاطلاع على التقييمات النمائية</li>
+      </ul>
+    </div>
+    
+    <div class="cta">
+      <a href="${APP_URL}/login">تسجيل الدخول الآن</a>
+    </div>`;
+
+  return sendEmail(email, subject, baseTemplate(content));
+}
+
+/**
  * Send invoice notification email
  */
 export async function sendInvoiceEmail(

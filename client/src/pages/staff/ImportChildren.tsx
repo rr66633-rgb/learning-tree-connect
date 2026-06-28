@@ -17,6 +17,8 @@ type ParsedRow = {
 type ImportResult = {
   success: boolean;
   imported: number;
+  parentsCreated?: number;
+  welcomeEmailsSent?: number;
   failed: number;
   errors: { row: number; error: string }[];
 };
@@ -117,7 +119,11 @@ export default function ImportChildren() {
       setImportResult(result);
       setStep("done");
       if (result.imported > 0) {
-        toast.success(`تم استيراد ${result.imported} طفل بنجاح`);
+        let msg = `تم استيراد ${result.imported} طفل بنجاح`;
+        if (result.parentsCreated && result.parentsCreated > 0) {
+          msg += ` وإنشاء ${result.parentsCreated} حساب ولي أمر`;
+        }
+        toast.success(msg);
       }
     } catch (e) {
       toast.error("فشل الاتصال بالخادم");
@@ -427,11 +433,23 @@ export default function ImportChildren() {
             <CardContent className="py-8 text-center space-y-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
               <h2 className="text-xl font-bold">تم الاستيراد بنجاح</h2>
-              <div className="flex justify-center gap-6">
+              <div className="flex justify-center gap-6 flex-wrap">
                 <div>
                   <p className="text-3xl font-bold text-green-600">{importResult.imported}</p>
-                  <p className="text-sm text-muted-foreground">تم استيرادهم</p>
+                  <p className="text-sm text-muted-foreground">طفل تم استيرادهم</p>
                 </div>
+                {(importResult.parentsCreated ?? 0) > 0 && (
+                  <div>
+                    <p className="text-3xl font-bold text-blue-600">{importResult.parentsCreated}</p>
+                    <p className="text-sm text-muted-foreground">حساب ولي أمر جديد</p>
+                  </div>
+                )}
+                {(importResult.welcomeEmailsSent ?? 0) > 0 && (
+                  <div>
+                    <p className="text-3xl font-bold text-teal-600">{importResult.welcomeEmailsSent}</p>
+                    <p className="text-sm text-muted-foreground">إشعار ترحيبي مُرسل</p>
+                  </div>
+                )}
                 {importResult.failed > 0 && (
                   <div>
                     <p className="text-3xl font-bold text-red-600">{importResult.failed}</p>
