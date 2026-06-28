@@ -1841,3 +1841,7 @@
 - [x] Frontend Parent: View child's assessment results and history
 - [x] Frontend Parent: Color-coded progress visualization
 - [x] Navigation: Add assessment link to staff and admin sidebars
+
+## تحميل PDF لنتائج التقييم النمائي
+- [x] إضافة زر تحميل PDF لنتائج التقييم النمائي في بوابة أولياء الأمور
+- [x] PDF يشمل: شعار نشأة، اسم الطفل، تاريخ التقييم، الفئة العمرية، النتيجة الإجمالية، التفسير، تفاصيل كل مجال

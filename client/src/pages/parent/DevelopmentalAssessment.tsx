@@ -2,9 +2,12 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useMemo } from "react";
-import { TreePine, TrendingUp, CheckCircle2, AlertTriangle, XCircle, Calendar, User } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { TreePine, TrendingUp, CheckCircle2, AlertTriangle, XCircle, Calendar, User, Download, Loader2 } from "lucide-react";
+import { generateAssessmentPDF } from "@/lib/assessmentPdf";
+import { toast } from "sonner";
 
 const AGE_GROUP_LABELS: Record<string, string> = {
   "24-36": "٢٤ - ٣٦ شهر",
@@ -19,19 +22,13 @@ const DOMAIN_LABELS: Record<string, string> = {
   fine_motor: "المهارات الحركية الدقيقة",
   cognitive: "المهارات الإدراكية والمعرفية",
   social_emotional: "المهارات الاجتماعية والعاطفية",
-};
-
-const DOMAIN_COLORS: Record<string, string> = {
-  communication: "#3B82F6",
-  gross_motor: "#10B981",
-  fine_motor: "#F59E0B",
-  cognitive: "#8B5CF6",
-  social_emotional: "#EC4899",
+  problem_solving: "حل المشكلات والإدراك",
+  personal_social: "المهارات الشخصية والاجتماعية",
 };
 
 function getInterpretationConfig(interpretation: string) {
   switch (interpretation) {
-    case "normal":
+    case "on_track":
       return { label: "نمو ضمن المتوقع", color: "bg-green-100 text-green-800", icon: CheckCircle2, iconColor: "text-green-600" };
     case "needs_support":
       return { label: "يحتاج متابعة ودعم", color: "bg-yellow-100 text-yellow-800", icon: AlertTriangle, iconColor: "text-yellow-600" };
@@ -45,6 +42,8 @@ function getInterpretationConfig(interpretation: string) {
 export default function ParentDevelopmentalAssessment() {
   const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState<string>("");
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const utils = trpc.useUtils();
 
   // Get parent's children
   const { data: childrenData } = trpc.children.list.useQuery();
@@ -62,6 +61,47 @@ export default function ParentDevelopmentalAssessment() {
 
   // Get latest assessment for summary
   const latestAssessment = assessments?.[0];
+
+  // Handle PDF download
+  const handleDownloadPDF = useCallback(async (assessment: any) => {
+    try {
+      setDownloadingId(assessment.id);
+
+      // Fetch detailed responses for this assessment using utils.fetch
+      let responses: any[] = [];
+      try {
+        const details = await utils.client.assessment.getDetails.query({ id: assessment.id });
+        responses = (details as any)?.responses || [];
+      } catch (e) {
+        // If fetching details fails, continue without responses
+        console.warn("Could not fetch assessment details:", e);
+      }
+
+      const childName = selectedChild
+        ? `${selectedChild.firstName} ${selectedChild.lastName}`
+        : "الطفل";
+
+      await generateAssessmentPDF({
+        id: assessment.id,
+        childName,
+        ageGroup: assessment.ageGroup,
+        assessmentDate: assessment.assessmentDate,
+        totalScore: assessment.totalScore,
+        maxScore: assessment.maxScore,
+        percentage: assessment.percentage,
+        interpretation: assessment.interpretation,
+        notes: assessment.notes,
+        responses,
+      });
+
+      toast.success("تم تحميل التقرير بنجاح");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast.error("حدث خطأ أثناء إنشاء التقرير");
+    } finally {
+      setDownloadingId(null);
+    }
+  }, [selectedChild, utils]);
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto" dir="rtl">
@@ -121,10 +161,26 @@ export default function ParentDevelopmentalAssessment() {
         <>
           <Card className="border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
-                آخر تقييم
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+                  آخر تقييم
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadPDF(latestAssessment)}
+                  disabled={downloadingId === latestAssessment.id}
+                  className="gap-2 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                >
+                  {downloadingId === latestAssessment.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  تحميل التقرير
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -208,14 +264,30 @@ export default function ParentDevelopmentalAssessment() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-left">
-                        <div className={`text-lg font-bold ${
-                          parseFloat(assessment.percentage) >= 80 ? "text-green-600" :
-                          parseFloat(assessment.percentage) >= 60 ? "text-yellow-600" :
-                          "text-red-600"
-                        }`}>
-                          {Math.round(parseFloat(assessment.percentage))}%
+                      <div className="flex items-center gap-3">
+                        <div className="text-left">
+                          <div className={`text-lg font-bold ${
+                            parseFloat(assessment.percentage) >= 80 ? "text-green-600" :
+                            parseFloat(assessment.percentage) >= 60 ? "text-yellow-600" :
+                            "text-red-600"
+                          }`}>
+                            {Math.round(parseFloat(assessment.percentage))}%
+                          </div>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownloadPDF(assessment)}
+                          disabled={downloadingId === assessment.id}
+                          className="h-8 w-8 text-gray-500 hover:text-emerald-600"
+                          title="تحميل التقرير"
+                        >
+                          {downloadingId === assessment.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Download className="w-4 h-4" />
+                          )}
+                        </Button>
                       </div>
                     </div>
                   );
