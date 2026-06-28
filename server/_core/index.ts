@@ -572,6 +572,12 @@ async function startServer() {
         'ملاحظات طبية': 'medicalNotes',
         'يحتاج نقل': 'busRequired', 'ملاحظات': 'notes',
         'الحالة': 'status', 'تاريخ التسجيل': 'enrollmentDate',
+        // Parent extra columns
+        'اسم ولي الأمر الكامل': 'parentFullName',
+        'صلة القرابة': 'parentRelation',
+        'رقم هوية ولي الأمر': 'parentNationalId',
+        'المدينة': 'parentCity',
+        'وظيفة ولي الأمر': 'parentJob',
       };
       const genderMap: Record<string, string> = { 'ذكر': 'male', 'أنثى': 'female' };
       const statusMap: Record<string, string> = {
@@ -612,8 +618,11 @@ async function startServer() {
       const { getDb } = await import('../db');
       const db = await getDb();
       if (!db) { res.status(500).json({ error: 'فشل الاتصال بقاعدة البيانات' }); return; }
-      const { children: childrenTable, classes } = await import('../../drizzle/schema');
+      const { children: childrenTable, classes, users: usersTable, parentChildren } = await import('../../drizzle/schema');
+      const { eq, sql } = await import('drizzle-orm');
+      const { hashPassword } = await import('./authService');
       let imported = 0;
+      let parentsCreated = 0;
       const importErrors: { row: number; error: string }[] = [];
       const orgId = user.organizationId || 1;
 
@@ -626,7 +635,7 @@ async function startServer() {
           const d = item.data;
           let classId = null;
           if (d.className) {
-            const cls = allClasses.find(c => c.name === d.className);
+            const cls = allClasses.find((c: any) => c.name === d.className);
             if (cls) classId = cls.id;
           }
           // Parse name from arabicName if firstName/lastName not provided
@@ -637,7 +646,7 @@ async function startServer() {
             firstName = parts[0];
             lastName = parts.slice(1).join(' ') || '';
           }
-          await db.insert(childrenTable).values({
+          const childResult = await db.insert(childrenTable).values({
             firstName: firstName || 'طفل',
             lastName: lastName || '',
             arabicName: d.arabicName || null,
@@ -665,12 +674,79 @@ async function startServer() {
             status: d.status || 'active',
             organizationId: orgId,
           });
+          const childId = childResult[0].insertId;
           imported++;
+
+          // Create or find parent account and link to child
+          if (d.parentEmail || d.parentMobile) {
+            try {
+              const parentEmail = d.parentEmail ? String(d.parentEmail).trim().toLowerCase() : null;
+              const parentPhone = d.parentMobile ? String(d.parentMobile).trim() : null;
+              const parentName = d.parentFullName || d.fatherName || 'ولي أمر';
+              const relation = d.parentRelation || 'أب';
+
+              // Check if parent already exists by email or phone
+              let existingParent: any = null;
+              if (parentEmail) {
+                const found = await db.select().from(usersTable).where(sql`LOWER(${usersTable.email}) = ${parentEmail}`).limit(1);
+                if (found.length > 0) existingParent = found[0];
+              }
+              if (!existingParent && parentPhone) {
+                const found = await db.select().from(usersTable).where(eq(usersTable.phone, parentPhone)).limit(1);
+                if (found.length > 0) existingParent = found[0];
+              }
+
+              let parentId: number;
+              if (existingParent) {
+                parentId = existingParent.id;
+                // Update parent info if new data available
+                const updates: any = {};
+                if (d.parentNationalId && !existingParent.nationalId) updates.nationalId = String(d.parentNationalId);
+                if (Object.keys(updates).length > 0) {
+                  await db.update(usersTable).set(updates).where(eq(usersTable.id, parentId));
+                }
+              } else {
+                // Create new parent account with default password (phone or 123456)
+                const defaultPassword = parentPhone || '123456';
+                const hashedPw = await hashPassword(defaultPassword);
+                const openId = `parent_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+                const parentResult = await db.insert(usersTable).values({
+                  openId,
+                  name: parentName,
+                  email: parentEmail,
+                  phone: parentPhone,
+                  password: hashedPw,
+                  role: 'parent',
+                  nationalId: d.parentNationalId ? String(d.parentNationalId) : null,
+                  isActive: true,
+                  organizationId: orgId,
+                });
+                parentId = parentResult[0].insertId;
+                parentsCreated++;
+              }
+
+              // Link parent to child
+              const existingLink = await db.select().from(parentChildren)
+                .where(sql`${parentChildren.parentId} = ${parentId} AND ${parentChildren.childId} = ${childId}`)
+                .limit(1);
+              if (existingLink.length === 0) {
+                await db.insert(parentChildren).values({
+                  parentId,
+                  childId,
+                  relationship: relation,
+                  isPrimary: true,
+                });
+              }
+            } catch (parentErr: any) {
+              // Don't fail the child import if parent creation fails
+              console.error(`Parent creation error for row ${item.row}:`, parentErr.message);
+            }
+          }
         } catch (e: any) {
           importErrors.push({ row: item.row, error: e.message || 'خطأ غير متوقع' });
         }
       }
-      res.json({ success: true, imported, failed: importErrors.length, errors: importErrors });
+      res.json({ success: true, imported, parentsCreated, failed: importErrors.length, errors: importErrors });
     } catch (error: any) {
       console.error('Children import error:', error);
       res.status(500).json({ error: 'فشل استيراد الملف: ' + (error.message || '') });
@@ -714,7 +790,8 @@ async function startServer() {
       'اسم الأب', 'اسم الأم', 'بريد ولي الأمر', 'جوال ولي الأمر', 'جوال بديل', 'العنوان',
       'الحساسية', 'الحالات الطبية', 'الأدوية', 'الاحتياجات الخاصة',
       'اسم الطبيب', 'فصيلة الدم', 'ملاحظات طبية',
-      'يحتاج نقل', 'ملاحظات', 'الحالة', 'تاريخ التسجيل'
+      'يحتاج نقل', 'ملاحظات', 'الحالة', 'تاريخ التسجيل',
+      'اسم ولي الأمر الكامل', 'صلة القرابة', 'رقم هوية ولي الأمر', 'المدينة', 'وظيفة ولي الأمر'
     ];
     const sampleRow = [
       'محمد', 'العلي', 'محمد عبدالله العلي', '2021-03-15', 'ذكر',
@@ -722,7 +799,8 @@ async function startServer() {
       'عبدالله العلي', 'نورة العلي', 'parent@example.com', '0501234567', '0559876543', 'الرياض',
       '', '', '', '',
       'د. أحمد', 'A+', '',
-      'لا', '', 'نشط', '2024-09-01'
+      'لا', '', 'نشط', '2024-09-01',
+      'عبدالله محمد العلي', 'أب', '1098765432', 'الرياض', 'مهندس'
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
     ws['!cols'] = headers.map(() => ({ wch: 18 }));
