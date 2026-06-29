@@ -2129,6 +2129,18 @@ export const appRouter = router({
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_announcement', resource: 'announcements', resourceId: input.id, details: `Deleted announcement #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
+    markRead: protectedProcedure.input(z.object({ announcementId: z.number() })).mutation(async ({ input, ctx }) => {
+      return db.markAnnouncementRead(input.announcementId, ctx.user!.id);
+    }),
+    myReadStatus: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserReadAnnouncements(ctx.user!.id);
+    }),
+    readers: adminProcedure.input(z.object({ announcementId: z.number() })).query(async ({ input }) => {
+      return db.getAnnouncementReaders(input.announcementId);
+    }),
+    readCount: adminProcedure.input(z.object({ announcementId: z.number() })).query(async ({ input }) => {
+      return db.getAnnouncementReadCount(input.announcementId);
+    }),
   }),
 
   documents: router({

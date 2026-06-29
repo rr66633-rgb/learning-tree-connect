@@ -1,15 +1,29 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Megaphone, Pin } from "lucide-react";
+import { Megaphone, Pin, CheckCircle2, Eye } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function ParentAnnouncements() {
   const { data: announcements, isLoading } = trpc.announcements.list.useQuery();
+  const { data: readIds } = trpc.announcements.myReadStatus.useQuery();
+  const utils = trpc.useUtils();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const markRead = trpc.announcements.markRead.useMutation({
+    onSuccess: () => {
+      utils.announcements.myReadStatus.invalidate();
+      toast.success("تم تأكيد القراءة");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const isRead = (announcementId: number) => readIds?.includes(announcementId) ?? false;
 
   if (isLoading) return <PageSkeleton variant="list" count={4} />;
 
@@ -18,7 +32,7 @@ export default function ParentAnnouncements() {
       <h1 className="text-2xl font-bold">الإعلانات</h1>
       <div className="space-y-3">
         {announcements?.map((a: any) => (
-          <Card key={a.id} className={a.isPinned ? "border-amber-300 bg-amber-50/50 shadow-sm" : ""}>
+          <Card key={a.id} className={`${a.isPinned ? "border-amber-300 bg-amber-50/50 shadow-sm" : ""} ${isRead(a.id) ? "opacity-80" : ""}`}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${a.isPinned ? "bg-amber-200" : "bg-amber-100"}`}>
@@ -36,6 +50,11 @@ export default function ParentAnnouncements() {
                         <Pin className="h-3 w-3 ml-1" />مهم
                       </Badge>
                     )}
+                    {isRead(a.id) && (
+                      <Badge className="bg-green-100 text-green-700 border-green-300 text-xs">
+                        <CheckCircle2 className="h-3 w-3 ml-1" />تمت القراءة
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{a.content}</p>
                   {a.imageUrl && (
@@ -46,7 +65,21 @@ export default function ParentAnnouncements() {
                       onClick={() => setPreviewImage(a.imageUrl)}
                     />
                   )}
-                  <p className="text-xs text-muted-foreground mt-2">{new Date(a.createdAt).toLocaleDateString('ar-SA')}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-muted-foreground">{new Date(a.createdAt).toLocaleDateString('ar-SA')}</p>
+                    {!isRead(a.id) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-700 border-green-300 hover:bg-green-50"
+                        onClick={() => markRead.mutate({ announcementId: a.id })}
+                        disabled={markRead.isPending}
+                      >
+                        <Eye className="h-4 w-4 ml-1" />
+                        {markRead.isPending ? "جاري..." : "تأكيد القراءة"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Megaphone, Pencil, Trash2, Pin, PinOff, ImagePlus, X, Clock } from "lucide-react";
+import { Plus, Megaphone, Pencil, Trash2, Pin, PinOff, ImagePlus, X, Clock, Users, Eye } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -39,6 +39,9 @@ export default function StaffAnnouncements() {
 
   // Delete confirm state
   const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  // Readers dialog state
+  const [readersAnnouncementId, setReadersAnnouncementId] = useState<number | null>(null);
 
   // Image preview
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -296,6 +299,15 @@ export default function StaffAnnouncements() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-green-600"
+                        onClick={() => setReadersAnnouncementId(a.id)}
+                        title="من قرأ الإعلان"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-gray-500 hover:text-blue-600"
                         onClick={() => openEditDialog(a)}
                         title="تعديل"
@@ -427,6 +439,14 @@ export default function StaffAnnouncements() {
         </DialogContent>
       </Dialog>
 
+      {/* Readers Dialog */}
+      <Dialog open={!!readersAnnouncementId} onOpenChange={(open) => !open && setReadersAnnouncementId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Users className="h-5 w-5" />من قرأ هذا الإعلان</DialogTitle></DialogHeader>
+          {readersAnnouncementId && <ReadersListContent announcementId={readersAnnouncementId} />}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>
@@ -444,6 +464,51 @@ export default function StaffAnnouncements() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// Readers list sub-component
+function ReadersListContent({ announcementId }: { announcementId: number }) {
+  const { data: readers, isLoading } = trpc.announcements.readers.useQuery({ announcementId });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 py-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-1"><Skeleton className="h-3 w-24" /><Skeleton className="h-2 w-16" /></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (!readers || readers.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <Eye className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+        <p className="text-sm text-muted-foreground">لم يقم أحد بتأكيد قراءة هذا الإعلان بعد</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1 max-h-80 overflow-y-auto">
+      <p className="text-sm text-muted-foreground mb-3">عدد من قرأ: <span className="font-bold text-foreground">{readers.length}</span></p>
+      {readers.map((reader: any) => (
+        <div key={reader.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
+          <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+            <Users className="h-4 w-4 text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{reader.userName}</p>
+            <p className="text-xs text-muted-foreground">{reader.userPhone}</p>
+          </div>
+          <p className="text-xs text-muted-foreground shrink-0">{new Date(reader.readAt).toLocaleDateString('ar-SA')} - {new Date(reader.readAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</p>
+        </div>
+      ))}
     </div>
   );
 }

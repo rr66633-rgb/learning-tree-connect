@@ -1,7 +1,7 @@
 import { eq, desc, and, sql, gte, lte, gt, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, announcementReads, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
 import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses } from "../drizzle/schema";
 import type { InsertNurseryRegistration } from "../drizzle/schema";
@@ -1276,6 +1276,52 @@ export async function deleteAnnouncement(id: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(announcements).where(eq(announcements.id, id));
   return { success: true };
+}
+
+// ============ ANNOUNCEMENT READS ============
+export async function markAnnouncementRead(announcementId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Use INSERT IGNORE to avoid duplicate errors
+  await db.insert(announcementReads).values({ announcementId, userId }).onDuplicateKeyUpdate({ set: { readAt: new Date() } });
+  return { success: true };
+}
+
+export async function getAnnouncementReadStatus(announcementId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(announcementReads).where(and(eq(announcementReads.announcementId, announcementId), eq(announcementReads.userId, userId))).limit(1);
+  return result[0] || null;
+}
+
+export async function getAnnouncementReaders(announcementId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({
+    id: announcementReads.id,
+    userId: announcementReads.userId,
+    readAt: announcementReads.readAt,
+    userName: users.name,
+    userPhone: users.phone,
+  }).from(announcementReads)
+    .innerJoin(users, eq(announcementReads.userId, users.id))
+    .where(eq(announcementReads.announcementId, announcementId))
+    .orderBy(desc(announcementReads.readAt));
+  return result;
+}
+
+export async function getAnnouncementReadCount(announcementId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`COUNT(*)` }).from(announcementReads).where(eq(announcementReads.announcementId, announcementId));
+  return result[0]?.count || 0;
+}
+
+export async function getUserReadAnnouncements(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({ announcementId: announcementReads.announcementId }).from(announcementReads).where(eq(announcementReads.userId, userId));
+  return result.map(r => r.announcementId);
 }
 
 // ============ DOCUMENTS ============

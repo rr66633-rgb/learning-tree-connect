@@ -281,6 +281,14 @@ export const announcements = mysqlTable("announcements", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+// ============ ANNOUNCEMENT READS ============
+export const announcementReads = mysqlTable("announcement_reads", {
+  id: int("id").autoincrement().primaryKey(),
+  announcementId: int("announcementId").notNull(),
+  userId: int("userId").notNull(),
+  readAt: timestamp("readAt").defaultNow().notNull(),
+});
+
 // ============ DOCUMENTS ============
 export const documents = mysqlTable("documents", {
   id: int("id").autoincrement().primaryKey(),
