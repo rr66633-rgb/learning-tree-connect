@@ -109,7 +109,7 @@ export default function ParentDevelopmentalAssessment() {
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
           <TreePine className="w-8 h-8 text-emerald-600" />
-          <h1 className="text-2xl font-bold text-gray-900">مقياس شجرة التعلم</h1>
+          <h1 className="text-2xl font-bold text-gray-900">مقياس الكشف المبكر</h1>
         </div>
         <p className="text-gray-500 text-sm">للكشف المبكر عن التأخر النمائي</p>
       </div>

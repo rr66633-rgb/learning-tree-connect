@@ -2567,7 +2567,7 @@ export async function checkNurseryRegistrationEmailExists(email: string) {
   return rows.length > 0;
 }
 
-// ============ DEVELOPMENTAL ASSESSMENTS (مقياس شجرة التعلم) ============
+// ============ DEVELOPMENTAL ASSESSMENTS (مقياس الكشف المبكر) ============
 
 export async function createDevelopmentalAssessment(data: InsertDevelopmentalAssessment) {
   const database = await getDb();

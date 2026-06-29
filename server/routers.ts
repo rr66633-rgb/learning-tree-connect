@@ -2924,7 +2924,7 @@ export const appRouter = router({
   bulkImport: bulkImportRouter,
   // ============ META CONVERSIONS API ============
   capi: capiRouter,
-  // ============ DEVELOPMENTAL ASSESSMENT (مقياس شجرة التعلم) ============
+  // ============ DEVELOPMENTAL ASSESSMENT (مقياس الكشف المبكر) ============
   assessment: assessmentRouter,
   curriculum: curriculumRouter,
 });

@@ -1828,7 +1828,7 @@
 - [x] Test CAPI endpoint - events received successfully by Meta
 - [x] Validate token (expires: 2026-08-25, 60 days)
 
-## مقياس شجرة التعلم للكشف المبكر عن التأخر النمائي
+## مقياس الكشف المبكر للكشف المبكر عن التأخر النمائي
 - [x] Database: Create developmental_assessments table (id, childId, assessorId, ageGroup, totalScore, maxScore, percentage, interpretation, assessmentDate, createdAt)
 - [x] Database: Create assessment_responses table (id, assessmentId, domain, itemIndex, itemText, response: yes/sometimes/not_yet, score)
 - [x] Backend: tRPC procedures for creating/listing/viewing assessments

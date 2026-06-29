@@ -247,7 +247,7 @@ export default function DevelopmentalAssessment() {
       <div className="p-6 max-w-4xl mx-auto" dir="rtl">
         <div className="flex items-center gap-3 mb-4">
           <TreePine className="w-8 h-8 text-emerald-600" />
-          <h1 className="text-2xl font-bold text-gray-800">مقياس شجرة التعلم</h1>
+          <h1 className="text-2xl font-bold text-gray-800">مقياس الكشف المبكر</h1>
         </div>
 
         {/* Child info bar */}
@@ -381,7 +381,7 @@ export default function DevelopmentalAssessment() {
       <div className="flex items-center gap-3 mb-6">
         <TreePine className="w-8 h-8 text-emerald-600" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">مقياس شجرة التعلم</h1>
+          <h1 className="text-2xl font-bold text-gray-800">مقياس الكشف المبكر</h1>
           <p className="text-gray-500 text-sm">للكشف المبكر عن التأخر النمائي</p>
         </div>
       </div>

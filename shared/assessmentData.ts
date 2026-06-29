@@ -1,4 +1,4 @@
-// مقياس شجرة التعلم للكشف المبكر عن التأخر النمائي
+// مقياس الكشف المبكر للكشف المبكر عن التأخر النمائي
 // Assessment items organized by age group and domain
 
 export type AgeGroup = "24-36" | "36-48" | "48-60" | "60-72";

@@ -1485,7 +1485,7 @@ export const staffDocuments = mysqlTable("staff_documents", {
 export type StaffDocument = typeof staffDocuments.$inferSelect;
 export type InsertStaffDocument = typeof staffDocuments.$inferInsert;
 
-// ============ DEVELOPMENTAL ASSESSMENTS (مقياس شجرة التعلم) ============
+// ============ DEVELOPMENTAL ASSESSMENTS (مقياس الكشف المبكر) ============
 export const developmentalAssessments = mysqlTable("developmental_assessments", {
   id: int("id").autoincrement().primaryKey(),
   childId: int("childId").notNull(),
