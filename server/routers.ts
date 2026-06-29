@@ -2086,6 +2086,18 @@ export const appRouter = router({
     })).mutation(async ({ input, ctx }) => {
       return db.createAnnouncement({ ...input, createdBy: ctx.user!.id });
     }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      title: z.string().min(1).optional(),
+      content: z.string().min(1).optional(),
+      audience: z.enum(['all', 'parents', 'staff']).optional(),
+      isPinned: z.boolean().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      const { id, ...data } = input;
+      await db.updateAnnouncement(id, data);
+      await db.createAuditLog({ userId: ctx.user!.id, action: 'update_announcement', resource: 'announcements', resourceId: id, details: `Updated announcement #${id}`, ipAddress: '' });
+      return { success: true };
+    }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.deleteAnnouncement(input.id);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_announcement', resource: 'announcements', resourceId: input.id, details: `Deleted announcement #${input.id}`, ipAddress: '' });

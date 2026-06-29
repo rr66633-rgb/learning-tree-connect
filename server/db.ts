@@ -1259,6 +1259,13 @@ export async function createAnnouncement(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
+export async function updateAnnouncement(id: number, data: { title?: string; content?: string; audience?: string; isPinned?: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(announcements).set(data as any).where(eq(announcements.id, id));
+  return { id, ...data };
+}
+
 export async function deleteAnnouncement(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
