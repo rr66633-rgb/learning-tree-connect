@@ -1247,9 +1247,9 @@ export async function getAnnouncements(audience?: string) {
   if (audience) {
     return db.select().from(announcements).where(
       or(eq(announcements.audience, audience as any), eq(announcements.audience, "all"))
-    ).orderBy(desc(announcements.createdAt));
+    ).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
   }
-  return db.select().from(announcements).orderBy(desc(announcements.createdAt));
+  return db.select().from(announcements).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
 }
 
 export async function createAnnouncement(data: any) {

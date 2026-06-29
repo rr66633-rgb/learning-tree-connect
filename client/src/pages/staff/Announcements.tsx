@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Megaphone, Pencil, Trash2 } from "lucide-react";
+import { Plus, Megaphone, Pencil, Trash2, Pin, PinOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -67,12 +67,24 @@ export default function StaffAnnouncements() {
     onError: (e) => toast.error(e.message),
   });
 
+  const togglePin = trpc.announcements.update.useMutation({
+    onSuccess: () => {
+      utils.announcements.list.invalidate();
+      toast.success("تم تحديث حالة التثبيت");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const openEditDialog = (announcement: any) => {
     setEditId(announcement.id);
     setEditTitle(announcement.title);
     setEditContent(announcement.content);
     setEditAudience(announcement.audience);
     setEditOpen(true);
+  };
+
+  const handleTogglePin = (announcement: any) => {
+    togglePin.mutate({ id: announcement.id, isPinned: !announcement.isPinned });
   };
 
   const audienceLabels: Record<string, string> = { all: "الجميع", parents: "أولياء الأمور", staff: "الموظفون" };
@@ -127,22 +139,42 @@ export default function StaffAnnouncements() {
       ) : (
         <div className="space-y-3">
           {announcements?.map((a: any) => (
-            <Card key={a.id}>
+            <Card key={a.id} className={a.isPinned ? "border-amber-300 bg-amber-50/50 shadow-sm" : ""}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                    <Megaphone className="h-5 w-5 text-amber-600" />
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${a.isPinned ? "bg-amber-200" : "bg-amber-100"}`}>
+                    {a.isPinned ? (
+                      <Pin className="h-5 w-5 text-amber-700" />
+                    ) : (
+                      <Megaphone className="h-5 w-5 text-amber-600" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-medium">{a.title}</span>
                       <Badge variant="secondary">{audienceLabels[a.audience] || a.audience}</Badge>
+                      {a.isPinned && (
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs">
+                          <Pin className="h-3 w-3 ml-1" />
+                          مثبت
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.content}</p>
                     <p className="text-xs text-muted-foreground mt-2">{new Date(a.createdAt).toLocaleDateString('ar-SA')}</p>
                   </div>
                   {isAdmin && (
                     <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 ${a.isPinned ? "text-amber-600 hover:text-amber-800" : "text-gray-500 hover:text-amber-600"}`}
+                        onClick={() => handleTogglePin(a)}
+                        title={a.isPinned ? "إلغاء التثبيت" : "تثبيت"}
+                        disabled={togglePin.isPending}
+                      >
+                        {a.isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
