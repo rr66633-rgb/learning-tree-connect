@@ -53,6 +53,7 @@ const StaffProfilePage = lazy(() => import("./pages/staff/StaffProfile"));
 const LeaveManagement = lazy(() => import("./pages/staff/LeaveManagement"));
 const ImportStaff = lazy(() => import("./pages/staff/ImportStaff"));
 const ImportChildren = lazy(() => import("./pages/staff/ImportChildren"));
+const StaffCurriculumManagement = lazy(() => import("./pages/staff/CurriculumManagement"));
 
 // Development Center Pages
 const DevelopmentDashboard = lazy(() => import("./pages/staff/DevelopmentDashboard"));
@@ -132,6 +133,7 @@ const ParentEngagementGoals = lazy(() => import("./pages/parent/EngagementGoals"
 const ParentEngagementObservations = lazy(() => import("./pages/parent/EngagementObservations"));
 const ParentEngagementScore = lazy(() => import("./pages/parent/EngagementScore"));
 const ParentEngagementBadges = lazy(() => import("./pages/parent/EngagementBadges"));
+const ParentCurriculumLibrary = lazy(() => import("./pages/parent/CurriculumLibrary"));
 
 function PageLoader() {
   return (
@@ -212,6 +214,7 @@ function StaffRouter() {
         <Route path="/staff/leave-management" component={LeaveManagement} />
         <Route path="/staff/import-staff" component={ImportStaff} />
         <Route path="/staff/import-children" component={ImportChildren} />
+        <Route path="/staff/curriculum" component={StaffCurriculumManagement} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -253,6 +256,7 @@ function ParentRouter() {
         <Route path="/parent/engagement/observations" component={ParentEngagementObservations} />
         <Route path="/parent/engagement/score" component={ParentEngagementScore} />
         <Route path="/parent/engagement/badges" component={ParentEngagementBadges} />
+        <Route path="/parent/curriculum" component={ParentCurriculumLibrary} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

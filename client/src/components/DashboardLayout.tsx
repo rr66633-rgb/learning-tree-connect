@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -64,6 +64,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
+  { icon: Library, label: "مكتبة المناهج", path: "/curriculum", color: "#10B981" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai/assistant", color: "#F97316" },
 ];
 
@@ -87,6 +88,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
   { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
+  { icon: Library, label: "مكتبة المناهج", path: "/curriculum", color: "#10B981" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai", color: "#F97316" },
   { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
   { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
@@ -124,6 +126,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
   { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
+  { icon: Library, label: "مكتبة المناهج", path: "/curriculum", color: "#10B981" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai", color: "#F97316" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals", color: "#00C9B7" },
   { icon: Shield, label: "سجل المراجعة", path: "/audit-log", color: "#EC4899" },
@@ -159,6 +162,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: TreePine, label: "مقياس شجرة التعلم", path: "/developmental-assessment" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan" },
+  { icon: Library, label: "مكتبة المناهج", path: "/curriculum" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals" },
 ];

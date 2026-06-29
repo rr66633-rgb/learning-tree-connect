@@ -288,6 +288,27 @@ async function startServer() {
     }
   });
 
+  // Curriculum PDF upload endpoint
+  app.post('/api/upload-curriculum', upload.single('file'), async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      let user;
+      try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (user.role === 'parent') { res.status(403).json({ error: 'غير مصرح' }); return; }
+      const file = (req as any).file;
+      if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
+      if (file.mimetype !== 'application/pdf') { res.status(400).json({ error: 'يرجى رفع ملف PDF فقط' }); return; }
+      const { storagePut } = await import('../storage');
+      const key = `curricula/${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;
+      const { url } = await storagePut(key, file.buffer, 'application/pdf');
+      res.json({ fileUrl: url, fileKey: key, fileName: file.originalname, fileSize: file.size });
+    } catch (error) {
+      console.error('Curriculum upload error:', error);
+      res.status(500).json({ error: 'فشل رفع ملف المنهج' });
+    }
+  });
+
   // Logo upload endpoint - preserves transparency (PNG), optimized for logos
   app.post('/api/upload-logo', upload.single('file'), async (req, res) => {
     try {

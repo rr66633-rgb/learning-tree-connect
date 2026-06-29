@@ -1517,3 +1517,25 @@ export const assessmentResponses = mysqlTable("assessment_responses", {
 
 export type AssessmentResponse = typeof assessmentResponses.$inferSelect;
 export type InsertAssessmentResponse = typeof assessmentResponses.$inferInsert;
+
+
+// ============ CURRICULUM LIBRARY (مكتبة المناهج) ============
+export const curricula = mysqlTable("curricula", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  level: mysqlEnum("level", ["nursery", "kg1", "kg2", "kg3", "all"]).notNull(),
+  category: varchar("category", { length: 100 }),
+  fileUrl: text("fileUrl").notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileSize: int("fileSize"),
+  uploadedBy: int("uploadedBy").notNull(),
+  organizationId: int("organizationId").default(1),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Curriculum = typeof curricula.$inferSelect;
+export type InsertCurriculum = typeof curricula.$inferInsert;

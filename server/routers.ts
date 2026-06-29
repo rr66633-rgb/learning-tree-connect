@@ -21,6 +21,7 @@ import { staffManagementRouter } from "./staffManagementRouter";
 import { bulkImportRouter } from "./bulkImportRouter";
 import { capiRouter } from "./capiRouter";
 import { assessmentRouter } from "./assessmentRouter";
+import { curriculumRouter } from "./curriculumRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -2925,5 +2926,6 @@ export const appRouter = router({
   capi: capiRouter,
   // ============ DEVELOPMENTAL ASSESSMENT (مقياس شجرة التعلم) ============
   assessment: assessmentRouter,
+  curriculum: curriculumRouter,
 });
 export type AppRouter = typeof appRouter;
