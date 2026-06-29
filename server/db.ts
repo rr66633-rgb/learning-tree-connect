@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, gte, lte, inArray, like, or, isNull } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, gt, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
@@ -1241,13 +1241,18 @@ export async function cancelSingleReminder(id: number) {
 }
 
 // ============ ANNOUNCEMENTS ============
-export async function getAnnouncements(audience?: string) {
+export async function getAnnouncements(audience?: string, includeExpired = false) {
   const db = await getDb();
   if (!db) return [];
+  const conditions: any[] = [];
   if (audience) {
-    return db.select().from(announcements).where(
-      or(eq(announcements.audience, audience as any), eq(announcements.audience, "all"))
-    ).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
+    conditions.push(or(eq(announcements.audience, audience as any), eq(announcements.audience, "all")));
+  }
+  if (!includeExpired) {
+    conditions.push(or(isNull(announcements.expiresAt), gt(announcements.expiresAt, new Date())));
+  }
+  if (conditions.length > 0) {
+    return db.select().from(announcements).where(and(...conditions)).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
   }
   return db.select().from(announcements).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
 }
@@ -1259,7 +1264,7 @@ export async function createAnnouncement(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateAnnouncement(id: number, data: { title?: string; content?: string; audience?: string; isPinned?: boolean }) {
+export async function updateAnnouncement(id: number, data: { title?: string; content?: string; audience?: string; isPinned?: boolean; imageUrl?: string | null; expiresAt?: Date | null }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(announcements).set(data as any).where(eq(announcements.id, id));

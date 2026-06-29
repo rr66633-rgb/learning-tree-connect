@@ -274,6 +274,8 @@ export const announcements = mysqlTable("announcements", {
   audience: mysqlEnum("audience", ["all", "parents", "staff", "class"]).default("all").notNull(),
   classId: int("classId"),
   isPinned: boolean("isPinned").default(false).notNull(),
+  imageUrl: text("imageUrl"),
+  expiresAt: timestamp("expiresAt"),
   createdBy: int("createdBy").notNull(),
   organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

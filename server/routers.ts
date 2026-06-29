@@ -2068,13 +2068,14 @@ export const appRouter = router({
 
   announcements: router({
     list: protectedProcedure.query(async ({ ctx }) => {
+      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'principal' || ctx.user?.role === 'super_admin';
       if (ctx.user?.role === 'parent') {
-        return db.getAnnouncements('parents');
+        return db.getAnnouncements('parents', false);
       }
       if (ctx.user?.role === 'teacher') {
-        return db.getAnnouncements('staff');
+        return db.getAnnouncements('staff', false);
       }
-      return db.getAnnouncements();
+      return db.getAnnouncements(undefined, isAdmin);
     }),
     create: adminProcedure.input(z.object({
       title: z.string().min(1),
@@ -2083,8 +2084,29 @@ export const appRouter = router({
       contentAr: z.string().optional(),
       audience: z.enum(['all', 'parents', 'staff']),
       priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+      imageUrl: z.string().nullable().optional(),
+      expiresAt: z.string().nullable().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createAnnouncement({ ...input, createdBy: ctx.user!.id });
+      const { expiresAt, ...rest } = input;
+      const data: any = { ...rest, createdBy: ctx.user!.id };
+      if (expiresAt) data.expiresAt = new Date(expiresAt);
+      const result = await db.createAnnouncement(data);
+      // Send notification to parents if audience includes them
+      if (input.audience === 'all' || input.audience === 'parents') {
+        const parents = await db.getUsersByRoles(['parent']);
+        for (const parent of parents) {
+          await db.createNotification({
+            userId: parent.id,
+            title: 'إعلان جديد',
+            titleAr: 'إعلان جديد',
+            body: input.title,
+            bodyAr: input.title,
+            type: 'announcement',
+            link: '/parent/announcements',
+          });
+        }
+      }
+      return result;
     }),
     update: adminProcedure.input(z.object({
       id: z.number(),
@@ -2092,8 +2114,12 @@ export const appRouter = router({
       content: z.string().min(1).optional(),
       audience: z.enum(['all', 'parents', 'staff']).optional(),
       isPinned: z.boolean().optional(),
+      imageUrl: z.string().nullable().optional(),
+      expiresAt: z.string().nullable().optional(),
     })).mutation(async ({ input, ctx }) => {
-      const { id, ...data } = input;
+      const { id, expiresAt, ...rest } = input;
+      const data: any = { ...rest };
+      if (expiresAt !== undefined) data.expiresAt = expiresAt ? new Date(expiresAt) : null;
       await db.updateAnnouncement(id, data);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'update_announcement', resource: 'announcements', resourceId: id, details: `Updated announcement #${id}`, ipAddress: '' });
       return { success: true };
