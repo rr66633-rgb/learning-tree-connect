@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 
+export type OrgType = "nursery" | "school" | "independent_teacher";
+
 export interface BrandingConfig {
   organizationId: number;
   organizationName: string;
   organizationNameAr: string;
   edition: "learning_tree" | "nashaa";
+  orgType: OrgType;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -25,6 +28,7 @@ const defaultBranding: BrandingConfig = {
   organizationName: "نشأة",
   organizationNameAr: "نشأة",
   edition: "nashaa",
+  orgType: "nursery",
   primaryColor: "#10b981",
   secondaryColor: "#059669",
   accentColor: "#34d399",

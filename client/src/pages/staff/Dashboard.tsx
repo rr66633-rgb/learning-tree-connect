@@ -13,9 +13,11 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Link } from "wouter";
+import { useOrgLabels } from "@/hooks/useOrgLabels";
 
 export default function StaffDashboard() {
   const { user } = useAuth();
+  const labels = useOrgLabels();
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
   const { data: todayAttendance } = trpc.staffAttendance.today.useQuery();
   const { data: announcements } = trpc.announcements.list.useQuery();
@@ -186,7 +188,7 @@ export default function StaffDashboard() {
               {isLoading ? <Skeleton className="h-8 w-16" /> : (
                 <p className="text-3xl font-bold text-foreground">{stats?.totalChildren ?? 0}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-1">إجمالي الأطفال</p>
+              <p className="text-sm text-muted-foreground mt-1">إجمالي {labels.children}</p>
             </div>
           </div>
 
@@ -307,7 +309,7 @@ export default function StaffDashboard() {
                 <div className="h-9 w-9 rounded-xl bg-[#7B61FF]/10 flex items-center justify-center">
                   <Users className="h-4 w-4 text-[#7B61FF]" />
                 </div>
-                <span className="text-sm font-medium">الأطفال المسجلون</span>
+                <span className="text-sm font-medium">{labels.children} المسجلون</span>
               </div>
               {isLoading ? <Skeleton className="h-6 w-14" /> : (
                 <span className="text-lg font-bold text-[#7B61FF]">{stats?.totalChildren ?? 0}</span>
@@ -342,7 +344,7 @@ export default function StaffDashboard() {
             <CardContent className="space-y-2">
               <div className="p-3 bg-white/80 rounded-xl border border-[#7B61FF]/10">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  بناءً على بيانات الحضور، يُنصح بالتواصل مع أولياء أمور الأطفال الغائبين لأكثر من يومين متتاليين.
+                  بناءً على بيانات الحضور، يُنصح بالتواصل مع {labels.parents} للغائبين لأكثر من يومين متتاليين.
                 </p>
               </div>
               <div className="p-3 bg-white/80 rounded-xl border border-[#7B61FF]/10">

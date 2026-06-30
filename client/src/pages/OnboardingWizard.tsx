@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 const STEPS = [
-  { id: 1, title: "معلومات الحضانة", icon: Building2 },
+  { id: 1, title: "معلومات المنشأة", icon: Building2 },
   { id: 2, title: "الهوية البصرية", icon: Palette },
   { id: 3, title: "خطة الاشتراك", icon: CreditCard },
   { id: 4, title: "التأكيد", icon: CheckCircle2 },
@@ -35,6 +35,7 @@ export default function OnboardingWizard() {
     name: "",
     nameAr: "",
     slug: "",
+    orgType: "nursery" as "nursery" | "school" | "independent_teacher",
     phone: "",
     email: "",
     address: "",
@@ -102,7 +103,7 @@ export default function OnboardingWizard() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Sparkles className="w-6 h-6 text-[#00C9B7]" />
-            <h1 className="text-2xl font-bold text-foreground">إعداد حضانتك على Naashah</h1>
+            <h1 className="text-2xl font-bold text-foreground">إعداد منشأتك على نشأة</h1>
           </div>
           <p className="text-muted-foreground">أكمل الخطوات التالية لبدء استخدام المنصة</p>
         </div>
@@ -140,10 +141,34 @@ export default function OnboardingWizard() {
           <CardContent className="p-6">
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-foreground mb-4">معلومات الحضانة الأساسية</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">المعلومات الأساسية</h2>
+
+                {/* Organization Type Selection */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[
+                    { value: "nursery", label: "حضانة / روضة", desc: "إدارة متكاملة للحضانات" },
+                    { value: "school", label: "مدرسة", desc: "نظام مدرسي متكامل" },
+                    { value: "independent_teacher", label: "معلمة مستقلة", desc: "أدوات مبسطة للمعلمة" },
+                  ].map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, orgType: type.value as any }))}
+                      className={`p-4 rounded-xl border-2 text-center transition-all ${
+                        form.orgType === type.value
+                          ? "border-[#00C9B7] bg-[#00C9B7]/5"
+                          : "border-border hover:border-[#00C9B7]/50"
+                      }`}
+                    >
+                      <p className="font-semibold text-sm text-foreground">{type.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{type.desc}</p>
+                    </button>
+                  ))}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-foreground">اسم الحضانة بالعربية *</Label>
+                    <Label className="text-foreground">{form.orgType === "independent_teacher" ? "اسمك بالعربية" : "اسم المنشأة بالعربية"} *</Label>
                     <Input
                       value={form.nameAr}
                       onChange={(e) => setForm((p) => ({ ...p, nameAr: e.target.value }))}
@@ -153,7 +178,7 @@ export default function OnboardingWizard() {
                     />
                   </div>
                   <div>
-                    <Label className="text-foreground">اسم الحضانة بالإنجليزية *</Label>
+                    <Label className="text-foreground">{form.orgType === "independent_teacher" ? "اسمك بالإنجليزية" : "اسم المنشأة بالإنجليزية"} *</Label>
                     <Input
                       value={form.name}
                       onChange={(e) => handleNameChange(e.target.value)}

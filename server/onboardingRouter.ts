@@ -42,10 +42,11 @@ export const onboardingRouter = router({
   // Complete onboarding - create organization
   completeOnboarding: protectedProcedure
     .input(z.object({
-      // Step 1: Nursery Info
+      // Step 1: Organization Info
       name: z.string().min(2),
       nameAr: z.string().min(2),
       slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
+      orgType: z.enum(["nursery", "school", "independent_teacher"]).default("nursery"),
       phone: z.string().optional(),
       email: z.string().email().optional(),
       address: z.string().optional(),
@@ -92,6 +93,7 @@ export const onboardingRouter = router({
         nameAr: input.nameAr,
         slug: input.slug,
         edition: "nashaa",
+        orgType: input.orgType,
         status: "trial",
         phone: input.phone || null,
         email: input.email || null,

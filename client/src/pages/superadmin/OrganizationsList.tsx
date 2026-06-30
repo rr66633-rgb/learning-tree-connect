@@ -87,6 +87,12 @@ export default function OrganizationsList() {
     nashaa: "نشأة",
   };
 
+  const orgTypeLabels: Record<string, string> = {
+    nursery: "حضانة / روضة",
+    school: "مدرسة",
+    independent_teacher: "معلمة مستقلة",
+  };
+
   function openEditDialog(org: any) {
     setEditingOrg(org);
     setEditForm({
@@ -193,6 +199,7 @@ export default function OrganizationsList() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">المنظمة</TableHead>
+                      <TableHead className="text-right">النوع</TableHead>
                       <TableHead className="text-right">النسخة</TableHead>
                       <TableHead className="text-right">المدينة</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
@@ -217,6 +224,11 @@ export default function OrganizationsList() {
                                 <p className="text-xs text-muted-foreground">{org.name}</p>
                               </div>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs rounded-lg">
+                              {orgTypeLabels[(org as any).orgType] || "حضانة"}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs rounded-lg">

@@ -852,6 +852,7 @@ export const organizations = mysqlTable("organizations", {
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   domain: varchar("domain", { length: 255 }),
   edition: mysqlEnum("edition", ["learning_tree", "nashaa"]).default("nashaa").notNull(),
+  orgType: mysqlEnum("orgType", ["nursery", "school", "independent_teacher"]).default("nursery").notNull(),
   status: mysqlEnum("status", ["active", "suspended", "pending", "trial"]).default("pending").notNull(),
   logoUrl: text("logoUrl"),
   phone: varchar("phone", { length: 20 }),

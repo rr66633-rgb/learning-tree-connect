@@ -16,6 +16,7 @@ export default function CreateOrganization() {
     nameAr: "",
     slug: "",
     edition: "nashaa" as "learning_tree" | "nashaa",
+    orgType: "nursery" as "nursery" | "school" | "independent_teacher",
     status: "trial" as "active" | "suspended" | "pending" | "trial",
     phone: "",
     email: "",
@@ -73,8 +74,8 @@ export default function CreateOrganization() {
           <Building2 className="w-6 h-6 text-[#7B61FF]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">إضافة حضانة جديدة</h1>
-          <p className="text-muted-foreground text-sm">إنشاء منظمة جديدة على المنصة</p>
+          <h1 className="text-2xl font-bold text-foreground">إضافة منظمة جديدة</h1>
+          <p className="text-muted-foreground text-sm">إنشاء حضانة أو مدرسة أو حساب معلمة مستقلة</p>
         </div>
       </div>
 
@@ -139,7 +140,20 @@ export default function CreateOrganization() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>نوع المنظمة</Label>
+                <Select value={form.orgType} onValueChange={(v) => setForm((p) => ({ ...p, orgType: v as any }))}>
+                  <SelectTrigger className="rounded-lg mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nursery">حضانة / روضة</SelectItem>
+                    <SelectItem value="school">مدرسة</SelectItem>
+                    <SelectItem value="independent_teacher">معلمة مستقلة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>الحالة</Label>
                 <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v as any }))}>
