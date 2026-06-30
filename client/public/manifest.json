@@ -12,48 +12,48 @@
   "dir": "rtl",
   "icons": [
     {
-      "src": "/manus-storage/favicon-16x16_b64663dc.png",
+      "src": "/manus-storage/naashah-icon-16x16_549ef17a.png",
       "sizes": "16x16",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/favicon-32x32_30a255a6.png",
+      "src": "/manus-storage/naashah-icon-32x32_906dd5be.png",
       "sizes": "32x32",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/icon-64x64_00f8750a.png",
+      "src": "/manus-storage/naashah-icon-64x64_bc13d828.png",
       "sizes": "64x64",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/icon-128x128_1e6d58ac.png",
+      "src": "/manus-storage/naashah-icon-128x128_8a110d3b.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/apple-touch-icon_a0a3de8c.png",
+      "src": "/manus-storage/naashah-icon-180x180_94648dab.png",
       "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/android-chrome-192x192_9b956363.png",
+      "src": "/manus-storage/naashah-icon-192x192_1155acbd.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/manus-storage/icon-256x256_0b0020a6.png",
+      "src": "/manus-storage/naashah-icon-256x256_33d3ae13.png",
       "sizes": "256x256",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/icon-384x384_f30ca280.png",
+      "src": "/manus-storage/naashah-icon-384x384_16152310.png",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "/manus-storage/android-chrome-512x512_17fcc301.png",
+      "src": "/manus-storage/naashah-icon-512x512_e620dec0.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
