@@ -875,7 +875,7 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
-export async function createUser(data: { name: string; email: string; phone?: string; role: string; openId: string; nationalId?: string }) {
+export async function createUser(data: { name: string; email: string; phone?: string; role: string; openId: string; nationalId?: string; organizationId?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(users).values({

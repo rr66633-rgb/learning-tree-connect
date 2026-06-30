@@ -2444,6 +2444,21 @@ export const appRouter = router({
       // Clean email from invisible RTL/LTR characters
       const cleanEmail = input.email.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
       input = { ...input, email: cleanEmail };
+      
+      // Check for duplicate email
+      const existingUser = await db.findUserByIdentifier(cleanEmail);
+      if (existingUser) {
+        throw new TRPCError({ code: 'CONFLICT', message: `يوجد حساب مسجل بهذا البريد الإلكتروني (${existingUser.role === 'parent' ? 'ولي أمر' : existingUser.role === 'teacher' ? 'معلمة' : existingUser.role === 'admin' ? 'مشرفة' : existingUser.role}). يرجى استخدام بريد إلكتروني آخر.` });
+      }
+      
+      // Check for duplicate phone if provided
+      if (input.phone) {
+        const existingByPhone = await db.findUserByIdentifier(input.phone);
+        if (existingByPhone) {
+          throw new TRPCError({ code: 'CONFLICT', message: `يوجد حساب مسجل بهذا الرقم (${existingByPhone.role === 'parent' ? 'ولي أمر' : existingByPhone.role === 'teacher' ? 'معلمة' : existingByPhone.role === 'admin' ? 'مشرفة' : existingByPhone.role}). يرجى استخدام رقم آخر.` });
+        }
+      }
+      
       // Generate a unique openId for manually created users
       const openId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const { password, ...userData } = input;
@@ -2476,7 +2491,7 @@ export const appRouter = router({
       name: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().optional(),
-      role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist', 'user']).optional(),
+      role: z.enum(['admin', 'principal', 'teacher', 'parent', 'assistant', 'accountant', 'receptionist', 'user']).optional(),
       nationalId: z.string().optional(),
       isActive: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
