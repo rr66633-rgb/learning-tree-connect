@@ -143,32 +143,11 @@ export default function OnboardingWizard() {
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-foreground mb-4">المعلومات الأساسية</h2>
 
-                {/* Organization Type Selection */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {[
-                    { value: "nursery", label: "حضانة / روضة", desc: "إدارة متكاملة للحضانات" },
-                    { value: "school", label: "مدرسة", desc: "نظام مدرسي متكامل" },
-                    { value: "independent_teacher", label: "معلمة مستقلة", desc: "أدوات مبسطة للمعلمة" },
-                  ].map((type) => (
-                    <button
-                      key={type.value}
-                      type="button"
-                      onClick={() => setForm((p) => ({ ...p, orgType: type.value as any }))}
-                      className={`p-4 rounded-xl border-2 text-center transition-all ${
-                        form.orgType === type.value
-                          ? "border-[#00C9B7] bg-[#00C9B7]/5"
-                          : "border-border hover:border-[#00C9B7]/50"
-                      }`}
-                    >
-                      <p className="font-semibold text-sm text-foreground">{type.label}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{type.desc}</p>
-                    </button>
-                  ))}
-                </div>
+                {/* Organization Type - fixed to nursery */}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-foreground">{form.orgType === "independent_teacher" ? "اسمك بالعربية" : "اسم المنشأة بالعربية"} *</Label>
+                    <Label className="text-foreground">اسم المنشأة بالعربية *</Label>
                     <Input
                       value={form.nameAr}
                       onChange={(e) => setForm((p) => ({ ...p, nameAr: e.target.value }))}
@@ -178,7 +157,7 @@ export default function OnboardingWizard() {
                     />
                   </div>
                   <div>
-                    <Label className="text-foreground">{form.orgType === "independent_teacher" ? "اسمك بالإنجليزية" : "اسم المنشأة بالإنجليزية"} *</Label>
+                    <Label className="text-foreground">اسم المنشأة بالإنجليزية *</Label>
                     <Input
                       value={form.name}
                       onChange={(e) => handleNameChange(e.target.value)}

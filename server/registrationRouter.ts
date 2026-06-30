@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import * as authService from "./_core/authService";
+import { organizations, organizationBranding, organizationMembers, users } from "../drizzle/schema";
+import { getDb } from "./db";
 import { notifyOwner } from "./_core/notification";
 
 // Saudi cities list
@@ -241,5 +243,89 @@ export const registrationRouter = router({
       );
 
       return { success: true, message: input.status === 'approved' ? 'تمت الموافقة على الطلب' : 'تم رفض الطلب' };
+    }),
+
+  // Ghiras: Teacher self-registration
+  ghirasRegister: publicProcedure
+    .input(z.object({
+      name: z.string().min(2, "الاسم مطلوب"),
+      email: z.string().email("البريد الإلكتروني غير صحيح"),
+      phone: z.string().optional(),
+      password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+    }))
+    .mutation(async ({ input }) => {
+      // Check if email already exists
+      const existingUser = await db.findUserByIdentifier(input.email);
+      if (existingUser) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'هذا البريد الإلكتروني مسجل مسبقاً. يرجى تسجيل الدخول أو استخدام بريد إلكتروني آخر.',
+        });
+      }
+
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
+
+      // Hash password
+      const hashedPassword = await authService.hashPassword(input.password);
+
+      // Create a slug from the teacher name
+      const slug = 'ghiras-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6);
+
+      // Create organization for the teacher (type: independent_teacher)
+      const [orgResult] = await database.insert(organizations).values({
+        name: input.name,
+        nameAr: input.name,
+        slug,
+        orgType: 'independent_teacher',
+        status: 'active',
+        phone: input.phone || null,
+        email: input.email,
+      });
+      const orgId = orgResult.insertId;
+
+      // Create branding defaults
+      await database.insert(organizationBranding).values({
+        organizationId: orgId,
+        primaryColor: '#10b981',
+        secondaryColor: '#059669',
+        accentColor: '#34d399',
+      });
+
+      // Create user as admin of this org
+      const openId = `ghiras_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      const [userResult] = await database.insert(users).values({
+        openId,
+        name: input.name,
+        phone: input.phone || '',
+        email: input.email,
+        password: hashedPassword,
+        role: 'admin',
+        isActive: true,
+        organizationId: orgId,
+      });
+      const userId = userResult.insertId;
+
+      // Add as organization member
+      await database.insert(organizationMembers).values({
+        organizationId: orgId,
+        userId,
+        role: 'owner',
+        isActive: true,
+      });
+
+      // Notify platform owner
+      await notifyOwner({
+        title: `تسجيل معلمة جديدة في غراس: ${input.name}`,
+        content: `تم تسجيل معلمة جديدة:\n\n` +
+          `الاسم: ${input.name}\n` +
+          `البريد: ${input.email}\n` +
+          `الجوال: ${input.phone || 'غير محدد'}\n`,
+      });
+
+      return {
+        success: true,
+        message: "تم إنشاء حسابك بنجاح! يمكنك تسجيل الدخول الآن.",
+      };
     }),
 });

@@ -75,7 +75,7 @@ export default function CreateOrganization() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground">إضافة منظمة جديدة</h1>
-          <p className="text-muted-foreground text-sm">إنشاء حضانة أو مدرسة أو حساب معلمة مستقلة</p>
+          <p className="text-muted-foreground text-sm">إنشاء حضانة أو روضة جديدة</p>
         </div>
       </div>
 
