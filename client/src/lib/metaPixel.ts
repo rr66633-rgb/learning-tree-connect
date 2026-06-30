@@ -80,14 +80,36 @@ function sendToServer(
     ...(customData && { customData }),
   };
 
-  // Call the tRPC mutation via HTTP POST
-  fetch('/api/trpc/capi.trackEvent', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ json: payload }),
-    keepalive: true, // Ensures request completes even if page navigates
-  }).catch(() => {
-    // Silently fail - server-side tracking is supplementary
+  // Call the tRPC mutation via HTTP POST with CSRF token
+  const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  const csrfToken = csrfMeta?.getAttribute('content') || '';
+  
+  // Try to get token from cookie or fetch it
+  const getToken = async () => {
+    if (csrfToken) return csrfToken;
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        return data.csrfToken || '';
+      }
+    } catch {}
+    return '';
+  };
+
+  getToken().then(token => {
+    fetch('/api/trpc/capi.trackEvent', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'x-csrf-token': token } : {}),
+      },
+      body: JSON.stringify({ json: payload }),
+      credentials: 'include',
+      keepalive: true, // Ensures request completes even if page navigates
+    }).catch(() => {
+      // Silently fail - server-side tracking is supplementary
+    });
   });
 }
 

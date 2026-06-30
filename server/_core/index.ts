@@ -57,7 +57,7 @@ async function startServer() {
     getSecret: () => process.env.JWT_SECRET || 'csrf-secret-fallback',
     // Use a stable identifier instead of IP - mobile users frequently switch between WiFi/cellular
     // The double-submit cookie pattern is already secure without IP binding
-    getSessionIdentifier: (req) => req.cookies?.['session'] || req.headers['user-agent'] || 'anonymous',
+    getSessionIdentifier: (req) => req.cookies?.['app_session_id'] || req.headers['user-agent'] || 'anonymous',
     cookieName: '__csrf',
     cookieOptions: {
       httpOnly: true,
