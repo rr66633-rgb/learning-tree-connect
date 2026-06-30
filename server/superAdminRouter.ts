@@ -102,7 +102,8 @@ export const superAdminRouter = router({
         .from(organizationMembers)
         .where(and(
           eq(organizationMembers.organizationId, input.id),
-          eq(organizationMembers.isActive, true)
+          eq(organizationMembers.isActive, true),
+          sql`${organizationMembers.role} != 'parent'`
         ));
 
       const [classCount] = await db

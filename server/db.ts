@@ -808,7 +808,7 @@ export async function getDashboardStats(organizationId?: number) {
   const childConditions = [eq(children.status, 'active')];
   if (organizationId) childConditions.push(eq(children.organizationId, organizationId));
   const allChildren = await db.select({ count: sql<number>`count(*)` }).from(children).where(and(...childConditions));
-  const staffConditions = [sql`${users.role} IN ('admin', 'teacher')`];
+  const staffConditions = [sql`${users.role} IN ('admin', 'principal', 'teacher', 'assistant', 'accountant', 'receptionist', 'super_admin')`];
   if (organizationId) staffConditions.push(eq(users.organizationId, organizationId));
   const allStaff = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(...staffConditions));
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -2011,12 +2011,32 @@ export async function findUserByIdentifier(identifier: string) {
   const db = await getDb();
   if (!db) return undefined;
   
-  // Try to find by email first (case-insensitive), then by phone
+  // Priority order for roles: staff roles first, then parent
+  const rolePriority = sql`CASE 
+    WHEN ${users.role} = 'super_admin' THEN 1
+    WHEN ${users.role} = 'admin' THEN 2
+    WHEN ${users.role} = 'principal' THEN 3
+    WHEN ${users.role} = 'teacher' THEN 4
+    WHEN ${users.role} = 'assistant' THEN 5
+    WHEN ${users.role} = 'accountant' THEN 6
+    WHEN ${users.role} = 'receptionist' THEN 7
+    WHEN ${users.role} = 'parent' THEN 8
+    ELSE 9
+  END`;
+  
+  // Try to find by email first (case-insensitive), prioritize staff roles
   const normalizedIdentifier = identifier.trim();
-  const byEmail = await db.select().from(users).where(sql`LOWER(${users.email}) = LOWER(${normalizedIdentifier})`).limit(1);
+  const byEmail = await db.select().from(users)
+    .where(sql`LOWER(${users.email}) = LOWER(${normalizedIdentifier})`)
+    .orderBy(rolePriority)
+    .limit(1);
   if (byEmail.length > 0) return byEmail[0];
   
-  const byPhone = await db.select().from(users).where(eq(users.phone, identifier)).limit(1);
+  // Then try by phone, prioritize staff roles
+  const byPhone = await db.select().from(users)
+    .where(eq(users.phone, identifier))
+    .orderBy(rolePriority)
+    .limit(1);
   if (byPhone.length > 0) return byPhone[0];
   
   return undefined;
