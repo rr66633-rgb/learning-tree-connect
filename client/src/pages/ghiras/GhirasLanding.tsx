@@ -16,45 +16,45 @@ const features = [
   {
     icon: CalendarCheck,
     title: "تسجيل الحضور",
-    desc: "سجلي حضور وغياب طلابك بسهولة يومياً",
-    color: "#00C9B7",
+    desc: "سجّل حضور وغياب طلابك بسهولة يومياً",
+    color: "#4A6741",
   },
   {
     icon: Users,
     title: "إدارة الطلاب",
-    desc: "أضيفي طلابك وتابعي بياناتهم ومعلومات أولياء أمورهم",
-    color: "#7C3AED",
+    desc: "أضف طلابك وتابع بياناتهم ومعلومات أولياء أمورهم",
+    color: "#5C7A52",
   },
   {
     icon: FileText,
     title: "التقارير والملاحظات",
-    desc: "أرسلي تقارير يومية وملاحظات لأولياء الأمور",
-    color: "#F97316",
+    desc: "أرسل تقارير يومية وملاحظات لأولياء الأمور",
+    color: "#3D5A35",
   },
   {
     icon: MessageCircle,
     title: "التواصل مع الأسر",
-    desc: "تواصلي مع أولياء الأمور مباشرة من المنصة",
-    color: "#EC4899",
+    desc: "تواصل مع أولياء الأمور مباشرة من المنصة",
+    color: "#6B8F5E",
   },
   {
     icon: BookOpen,
     title: "التقييمات",
-    desc: "قيّمي أداء طلابك وتابعي تطورهم",
-    color: "#10B981",
+    desc: "قيّم أداء طلابك وتابع تطورهم",
+    color: "#4A6741",
   },
   {
     icon: Sparkles,
     title: "الخطة الأسبوعية",
-    desc: "خططي لأسبوعك الدراسي بسهولة وشاركيه مع الأسر",
-    color: "#7C3AED",
+    desc: "خطط لأسبوعك الدراسي بسهولة وشاركه مع الأسر",
+    color: "#3D5A35",
   },
 ];
 
 const benefits = [
   "بدون تعقيد - واجهة بسيطة ومباشرة",
   "تعمل على الجوال والكمبيوتر",
-  "مناسبة لأي معلمة سواء بمدرسة حكومية أو خاصة",
+  "مناسبة لأي معلم أو معلمة سواء بمدرسة حكومية أو خاصة",
   "تواصل مباشر مع أولياء الأمور",
   "تقارير جاهزة بضغطة زر",
   "آمنة ومشفرة لحماية بيانات الطلاب",
@@ -62,12 +62,12 @@ const benefits = [
 
 export default function GhirasLanding() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f0fdf4] to-white" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[#f5f7f0] to-white" dir="rtl">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#059669] flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4A6741] to-[#2F4228] flex items-center justify-center shadow-sm">
               <span className="text-white font-bold text-lg">غ</span>
             </div>
             <div>
@@ -80,8 +80,8 @@ export default function GhirasLanding() {
               <Button variant="ghost" size="sm">تسجيل الدخول</Button>
             </Link>
             <Link href="/ghiras/register">
-              <Button size="sm" className="bg-[#10B981] hover:bg-[#059669] text-white rounded-xl">
-                ابدئي مجاناً
+              <Button size="sm" className="bg-[#4A6741] hover:bg-[#3D5A35] text-white rounded-xl">
+                ابدأ مجاناً
               </Button>
             </Link>
           </div>
@@ -91,22 +91,22 @@ export default function GhirasLanding() {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <div className="inline-flex items-center gap-2 bg-[#10B981]/10 text-[#059669] px-4 py-2 rounded-full text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 bg-[#4A6741]/10 text-[#3D5A35] px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            منصة مجانية للمعلمات
+            منصة مجانية للمعلمين والمعلمات
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight mb-6">
-            أدوات ذكية لكل معلمة
+            أدوات ذكية لكل معلم ومعلمة
             <br />
-            <span className="text-[#10B981]">تبسّط يومك الدراسي</span>
+            <span className="text-[#4A6741]">تبسّط يومك الدراسي</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-            غراس منصة مصممة خصيصاً للمعلمات. سجلي الحضور، أرسلي التقارير، وتواصلي مع أولياء الأمور - كل شي في مكان واحد.
+            غراس منصة مصممة خصيصاً للمعلمين والمعلمات. سجّل الحضور، أرسل التقارير، وتواصل مع أولياء الأمور - كل شيء في مكان واحد.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/ghiras/register">
-              <Button size="lg" className="bg-[#10B981] hover:bg-[#059669] text-white rounded-xl px-8 h-12 text-base shadow-lg shadow-[#10B981]/20">
-                ابدئي الآن مجاناً
+              <Button size="lg" className="bg-[#4A6741] hover:bg-[#3D5A35] text-white rounded-xl px-8 h-12 text-base shadow-lg shadow-[#4A6741]/20">
+                ابدأ الآن مجاناً
                 <ArrowLeft className="w-4 h-4 mr-2" />
               </Button>
             </Link>
@@ -123,7 +123,7 @@ export default function GhirasLanding() {
       <section className="py-16 px-4 bg-white">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-3">كل ما تحتاجينه في مكان واحد</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-3">كل ما تحتاجه في مكان واحد</h2>
             <p className="text-muted-foreground">أدوات بسيطة وفعالة تساعدك في إدارة فصلك</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -150,12 +150,12 @@ export default function GhirasLanding() {
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-3">لماذا غراس؟</h2>
-            <p className="text-muted-foreground">صُممت خصيصاً لتناسب احتياجات المعلمة</p>
+            <p className="text-muted-foreground">صُممت خصيصاً لتناسب احتياجات المعلمين والمعلمات</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {benefits.map((benefit) => (
               <div key={benefit} className="flex items-center gap-3 p-4 rounded-xl bg-white shadow-sm">
-                <CheckCircle2 className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-[#4A6741] flex-shrink-0" />
                 <span className="text-foreground font-medium">{benefit}</span>
               </div>
             ))}
@@ -164,14 +164,14 @@ export default function GhirasLanding() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-gradient-to-br from-[#10B981] to-[#059669]">
+      <section className="py-16 px-4 bg-gradient-to-br from-[#4A6741] to-[#2F4228]">
         <div className="container mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">جاهزة تبدئين؟</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">جاهز تبدأ؟</h2>
           <p className="text-white/80 text-lg mb-8">
-            سجلي الآن مجاناً وابدئي بإدارة فصلك بطريقة أسهل
+            سجّل الآن مجاناً وابدأ بإدارة فصلك بطريقة أسهل
           </p>
           <Link href="/ghiras/register">
-            <Button size="lg" className="bg-white text-[#059669] hover:bg-white/90 rounded-xl px-8 h-12 text-base font-bold shadow-lg">
+            <Button size="lg" className="bg-white text-[#3D5A35] hover:bg-white/90 rounded-xl px-8 h-12 text-base font-bold shadow-lg">
               إنشاء حساب مجاني
             </Button>
           </Link>
@@ -182,7 +182,7 @@ export default function GhirasLanding() {
       <footer className="py-8 px-4 bg-white border-t border-border/50">
         <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#10B981] to-[#059669] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4A6741] to-[#2F4228] flex items-center justify-center">
               <span className="text-white font-bold text-sm">غ</span>
             </div>
             <span className="font-bold text-foreground">غراس</span>

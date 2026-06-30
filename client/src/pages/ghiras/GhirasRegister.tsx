@@ -54,21 +54,21 @@ export default function GhirasRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f0fdf4] to-white flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[#f5f7f0] to-white flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#059669] flex items-center justify-center shadow-lg mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4A6741] to-[#2F4228] flex items-center justify-center shadow-lg mx-auto mb-4">
             <span className="text-white font-bold text-2xl">غ</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground">إنشاء حساب في غراس</h1>
-          <p className="text-muted-foreground text-sm mt-1">ابدئي بإدارة فصلك بطريقة أسهل</p>
+          <p className="text-muted-foreground text-sm mt-1">ابدأ بإدارة فصلك بطريقة أسهل</p>
         </div>
 
         <Card className="border-0 shadow-lg">
           <CardHeader className="pb-4">
             <CardTitle className="text-base text-foreground flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#10B981]" />
+              <Sparkles className="w-4 h-4 text-[#4A6741]" />
               معلوماتك الأساسية
             </CardTitle>
           </CardHeader>
@@ -126,13 +126,13 @@ export default function GhirasRegister() {
                   value={form.confirmPassword}
                   onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))}
                   className="mt-1.5 rounded-lg"
-                  placeholder="أعيدي كتابة كلمة المرور"
+                  placeholder="أعد كتابة كلمة المرور"
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full bg-[#10B981] hover:bg-[#059669] text-white rounded-xl h-11 text-base font-medium"
+                className="w-full bg-[#4A6741] hover:bg-[#3D5A35] text-white rounded-xl h-11 text-base font-medium"
                 disabled={loading}
               >
                 {loading ? "جاري التسجيل..." : "إنشاء حساب"}
@@ -141,7 +141,7 @@ export default function GhirasRegister() {
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               عندك حساب؟{" "}
-              <Link href="/login" className="text-[#10B981] font-medium hover:underline">
+              <Link href="/login" className="text-[#4A6741] font-medium hover:underline">
                 تسجيل الدخول
               </Link>
             </div>
