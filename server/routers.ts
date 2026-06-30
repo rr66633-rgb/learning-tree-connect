@@ -1801,7 +1801,7 @@ export const appRouter = router({
       attendanceId: z.number().optional(),
       departureTime: z.string(),
       pickedUpBy: z.string().min(1),
-      relationship: z.enum(['parent', 'driver', 'guardian', 'other']),
+      relationship: z.enum(['mother', 'father', 'driver', 'grandparent', 'guardian', 'other']),
       pickedUpById: z.number().optional(),
       notes: z.string().optional(),
       status: z.enum(['completed', 'pending', 'late']).optional(),

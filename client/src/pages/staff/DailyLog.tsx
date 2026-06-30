@@ -54,6 +54,14 @@ export default function StaffDailyLog() {
   const [departureNotes, setDepartureNotes] = useState("");
   const [departureSearch, setDepartureSearch] = useState("");
   const [showDepartureDialog, setShowDepartureDialog] = useState(false);
+  const [selectedPickupPerson, setSelectedPickupPerson] = useState<string>("");
+  const [customPickupName, setCustomPickupName] = useState("");
+
+  // Fetch authorized pickup persons when a child is selected for departure
+  const { data: authorizedPersons } = trpc.pickup.authorizedPersons.useQuery(
+    { childId: parseInt(departureChild) },
+    { enabled: !!departureChild && !isNaN(parseInt(departureChild)) }
+  );
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -81,6 +89,8 @@ export default function StaffDailyLog() {
       setRelationship("");
       setDepartureNotes("");
       setDepartureChild("");
+      setSelectedPickupPerson("");
+      setCustomPickupName("");
       setShowDepartureDialog(false);
       utils.departures.byDate.invalidate();
     },
@@ -130,16 +140,37 @@ export default function StaffDailyLog() {
     });
   };
 
+  const handlePickupPersonChange = (value: string) => {
+    setSelectedPickupPerson(value);
+    if (value === "other") {
+      setPickedUpBy("");
+      setRelationship("other");
+      setCustomPickupName("");
+    } else if (authorizedPersons) {
+      const person = authorizedPersons.find((p: any) => p.id.toString() === value);
+      if (person) {
+        setPickedUpBy(person.name);
+        // Map authorized_pickup_persons relationships to departure enum
+        const relMap: Record<string, string> = {
+          father: 'father', mother: 'mother', grandfather: 'grandparent',
+          grandmother: 'grandparent', driver: 'driver', relative: 'guardian', other: 'other'
+        };
+        setRelationship(relMap[person.relationship] || 'other');
+      }
+    }
+  };
+
   const handleDeparture = () => {
-    if (!departureChild || !pickedUpBy || !relationship) {
+    const finalPickedUpBy = selectedPickupPerson === "other" ? customPickupName : pickedUpBy;
+    if (!departureChild || !finalPickedUpBy || !relationship) {
       toast.error("يرجى ملء جميع الحقول المطلوبة");
       return;
     }
     createDeparture.mutate({
       childId: parseInt(departureChild),
       departureTime: new Date().toISOString(),
-      pickedUpBy,
-      relationship: relationship as "parent" | "driver" | "guardian" | "other",
+      pickedUpBy: finalPickedUpBy,
+      relationship: relationship as "mother" | "father" | "driver" | "grandparent" | "guardian" | "other",
       notes: departureNotes || undefined,
     });
   };
@@ -182,7 +213,11 @@ export default function StaffDailyLog() {
   };
 
   const getRelationshipLabel = (rel: string) => {
-    const labels: Record<string, string> = { parent: "ولي أمر", driver: "سائق", guardian: "وصي", other: "آخر" };
+    const labels: Record<string, string> = {
+      mother: "الأم", father: "الأب", driver: "السائق",
+      grandparent: "الجد/الجدة", grandfather: "الجد", grandmother: "الجدة",
+      guardian: "ولي الأمر", parent: "ولي أمر", relative: "قريب", other: "آخر"
+    };
     return labels[rel] || rel;
   };
 
@@ -374,27 +409,69 @@ export default function StaffDailyLog() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>المستلم</Label>
-                  <Input
-                    placeholder="اسم المستلم"
-                    value={pickedUpBy}
-                    onChange={(e) => setPickedUpBy(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>صلة القرابة</Label>
-                  <Select value={relationship} onValueChange={setRelationship}>
-                    <SelectTrigger><SelectValue placeholder="اختر صلة القرابة" /></SelectTrigger>
+                  <Select value={selectedPickupPerson} onValueChange={handlePickupPersonChange}>
+                    <SelectTrigger><SelectValue placeholder="اختر المستلم" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="parent">ولي أمر</SelectItem>
-                      <SelectItem value="driver">سائق</SelectItem>
-                      <SelectItem value="guardian">وصي</SelectItem>
-                      <SelectItem value="other">آخر</SelectItem>
+                      {authorizedPersons && authorizedPersons.length > 0 ? (
+                        authorizedPersons.map((person: any) => (
+                          <SelectItem key={person.id} value={person.id.toString()}>
+                            <span className="flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              {person.name} - {getRelationshipLabel(person.relationship)}
+                              {person.phone && <span className="text-muted-foreground text-xs">({person.phone})</span>}
+                            </span>
+                          </SelectItem>
+                        ))
+                      ) : null}
+                      <SelectItem value="other">
+                        <span className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          شخص آخر
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                {selectedPickupPerson === "other" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>اسم المستلم</Label>
+                      <Input
+                        placeholder="أدخل اسم المستلم"
+                        value={customPickupName}
+                        onChange={(e) => setCustomPickupName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>صلة القرابة</Label>
+                      <Select value={relationship} onValueChange={setRelationship}>
+                        <SelectTrigger><SelectValue placeholder="اختر صلة القرابة" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mother">الأم</SelectItem>
+                          <SelectItem value="father">الأب</SelectItem>
+                          <SelectItem value="driver">السائق</SelectItem>
+                          <SelectItem value="grandparent">الجد/الجدة</SelectItem>
+                          <SelectItem value="guardian">ولي الأمر</SelectItem>
+                          <SelectItem value="other">أخرى</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {selectedPickupPerson && selectedPickupPerson !== "other" && pickedUpBy && (
+                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <User className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-800 dark:text-green-200">{pickedUpBy}</p>
+                      <p className="text-sm text-green-600 dark:text-green-400">{getRelationshipLabel(relationship)}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
