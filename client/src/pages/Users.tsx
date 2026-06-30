@@ -14,9 +14,9 @@ import * as XLSX from "xlsx";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
-type UserRole = "teacher" | "parent" | "assistant" | "accountant" | "receptionist";
-type UserForm = { name: string; email: string; phone: string; role: UserRole };
-const emptyForm: UserForm = { name: "", email: "", phone: "", role: "teacher" };
+type UserRole = "admin" | "principal" | "teacher" | "parent" | "assistant" | "accountant" | "receptionist";
+type UserForm = { name: string; email: string; phone: string; role: UserRole; password: string };
+const emptyForm: UserForm = { name: "", email: "", phone: "", role: "teacher", password: "" };
 
 export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
@@ -72,7 +72,7 @@ export default function UsersPage() {
     // Clean email from whitespace and invisible RTL/LTR characters
     const cleanEmail = form.email.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\s]/g, '').trim();
     const cleanPhone = form.phone.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
-    createUser.mutate({ ...form, email: cleanEmail, phone: cleanPhone || undefined });
+    createUser.mutate({ ...form, email: cleanEmail, phone: cleanPhone || undefined, password: form.password || undefined });
   };
 
   const handleEdit = (e: React.FormEvent) => {
@@ -258,7 +258,8 @@ export default function UsersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الأدوار</SelectItem>
-                <SelectItem value="admin">المديرون</SelectItem>
+                <SelectItem value="admin">المشرفون</SelectItem>
+                <SelectItem value="principal">المديرون</SelectItem>
                 <SelectItem value="teacher">المعلمات</SelectItem>
                 <SelectItem value="assistant">المساعدات</SelectItem>
                 <SelectItem value="parent">أولياء الأمور</SelectItem>
@@ -365,6 +366,8 @@ export default function UsersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="admin">مشرف/ة</SelectItem>
+                  <SelectItem value="principal">مدير/ة</SelectItem>
                   <SelectItem value="teacher">معلم/ة</SelectItem>
                   <SelectItem value="assistant">مساعد/ة</SelectItem>
                   <SelectItem value="parent">ولي أمر</SelectItem>
@@ -372,6 +375,11 @@ export default function UsersPage() {
                   <SelectItem value="receptionist">موظف/ة استقبال</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>كلمة المرور</Label>
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} dir="ltr" placeholder="أدخل كلمة المرور" />
+              <p className="text-xs text-muted-foreground">إذا لم تُدخل كلمة مرور، سيتم إرسال رابط تفعيل بالبريد</p>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>إلغاء</Button>
@@ -402,7 +410,7 @@ export default function UsersPage() {
               <Label>رقم الهاتف</Label>
               <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} dir="ltr" placeholder="+966xxxxxxxxx" />
             </div>
-            {selectedUser?.role !== 'admin' && (
+            {selectedUser?.role !== 'super_admin' && (
               <div className="space-y-2">
                 <Label>الدور</Label>
                 <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as UserRole })}>
@@ -410,6 +418,8 @@ export default function UsersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="admin">مشرف/ة</SelectItem>
+                    <SelectItem value="principal">مدير/ة</SelectItem>
                     <SelectItem value="teacher">معلم/ة</SelectItem>
                     <SelectItem value="assistant">مساعد/ة</SelectItem>
                     <SelectItem value="parent">ولي أمر</SelectItem>

@@ -828,8 +828,8 @@ export async function getUsersByRole(role?: string, search?: string, organizatio
   if (role && role !== 'all') {
     conditions.push(eq(users.role, role as any));
   } else {
-    // Exclude 'user' role (unassigned), show only admin/teacher/parent
-    conditions.push(sql`${users.role} IN ('admin', 'teacher', 'parent')`);
+    // Exclude 'user' role (unassigned), show all active roles
+    conditions.push(sql`${users.role} IN ('admin', 'principal', 'teacher', 'assistant', 'accountant', 'receptionist', 'parent')`);
   }
   if (search) {
     conditions.push(
@@ -885,6 +885,7 @@ export async function createUser(data: { name: string; email: string; phone?: st
     phone: data.phone || null,
     role: data.role as any,
     nationalId: (data as any).nationalId || null,
+    organizationId: (data as any).organizationId || 1,
     lastSignedIn: new Date(),
   });
   return { id: result[0].insertId, ...data };

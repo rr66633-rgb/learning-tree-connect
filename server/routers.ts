@@ -2437,7 +2437,7 @@ export const appRouter = router({
       name: z.string().min(1),
       email: z.string().trim().email(),
       phone: z.string().optional(),
-      role: z.enum(['teacher', 'parent', 'assistant', 'accountant', 'receptionist']),
+      role: z.enum(['admin', 'principal', 'teacher', 'parent', 'assistant', 'accountant', 'receptionist']),
       nationalId: z.string().optional(),
       password: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
@@ -2447,11 +2447,12 @@ export const appRouter = router({
       // Generate a unique openId for manually created users
       const openId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const { password, ...userData } = input;
-      const user = await db.createUser({ ...userData, openId });
-      // If password provided, store hashed password for direct login
+      const orgId = ctx.user!.organizationId ?? 1;
+      const user = await db.createUser({ ...userData, openId, organizationId: orgId });
+      // If password provided, store hashed password for direct login (PBKDF2 format)
       if (password && user) {
-        const bcrypt = await import('bcryptjs');
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const { hashPassword } = await import('./_core/authService');
+        const hashedPassword = await hashPassword(password);
         await db.updateUser(user.id, { password: hashedPassword } as any);
       }
       await db.createAuditLog({ userId: ctx.user!.id, action: 'create_user', resource: 'users', resourceId: user?.id, details: `Created user ${input.name} (${input.role})`, ipAddress: '' });

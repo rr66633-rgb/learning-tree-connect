@@ -1491,6 +1491,15 @@
 - [x] Update web manifest with new icon paths and Naashah branding
 - [x] Update service worker with Naashah branding and icon paths
 - [x] Replace all Learning Tree branding with Naashah across codebase
+## إضافة أدوار مشرف/مدير مع باسوورد في إدارة المستخدمين
+- [x] إضافة أدوار مشرف (admin) ومدير (principal) في نموذج إنشاء المستخدمين
+- [x] إضافة حقل باسوورد في نموذج إنشاء المستخدمين بالواجهة
+- [x] إصلاح تشفير الباسوورد (PBKDF2 بدلاً من bcrypt) لتوافق تسجيل الدخول
+- [x] تحديث getUsersByRole لعرض جميع الأدوار افتراضياً
+- [x] إضافة organizationId تلقائياً عند إنشاء المستخدم
+- [x] تحديث نموذج التعديل بالأدوار الجديدة
+- [x] تحديث فلتر الأدوار بإضافة المشرفون والمديرون
+
 ## SEO Fixes for Landing Page (/)
 - [x] Update page title to 30-60 characters with relevant Arabic keywords (47 chars)
 - [x] Add meta keywords tag with Arabic/English nursery management keywords
