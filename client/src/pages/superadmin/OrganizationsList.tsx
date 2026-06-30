@@ -87,11 +87,7 @@ export default function OrganizationsList() {
     nashaa: "نشأة",
   };
 
-  const orgTypeLabels: Record<string, string> = {
-    nursery: "حضانة / روضة",
-    school: "مدرسة",
-    independent_teacher: "معلمة مستقلة",
-  };
+
 
   function openEditDialog(org: any) {
     setEditingOrg(org);
@@ -227,7 +223,7 @@ export default function OrganizationsList() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs rounded-lg">
-                              {orgTypeLabels[(org as any).orgType] || "حضانة"}
+                              حضانة / روضة
                             </Badge>
                           </TableCell>
                           <TableCell>

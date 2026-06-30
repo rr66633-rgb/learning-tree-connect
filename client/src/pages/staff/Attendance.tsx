@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, X, LogIn, LogOut, Loader2, History, Edit } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { useOrgLabels } from "@/hooks/useOrgLabels";
 
 const STATUS_LABELS: Record<string, string> = {
   present: "حاضر",
@@ -34,7 +33,6 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function StaffAttendance() {
-  const labels = useOrgLabels();
   const [selectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [checkInDialog, setCheckInDialog] = useState<{ childId: number; childName: string } | null>(null);
   const [checkOutDialog, setCheckOutDialog] = useState<{ id: number; childId: number; childName: string } | null>(null);
@@ -147,7 +145,7 @@ export default function StaffAttendance() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{labels.childAttendance}</h1>
+          <h1 className="text-2xl font-bold text-foreground">حضور الأطفال</h1>
           <p className="text-sm text-muted-foreground mt-1">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <Badge variant="outline" className="w-fit rounded-xl px-4 py-2 text-sm border-primary/20 text-primary bg-primary/5">

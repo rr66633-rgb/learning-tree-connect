@@ -137,7 +137,7 @@ export const superAdminRouter = router({
       nameAr: z.string().min(2),
       slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
       edition: z.enum(["learning_tree", "nashaa"]).default("nashaa"),
-      orgType: z.enum(["nursery", "school", "independent_teacher"]).default("nursery"),
+      orgType: z.enum(["nursery"]).default("nursery"),
       status: z.enum(["active", "suspended", "pending", "trial"]).default("trial"),
       phone: z.string().optional(),
       email: z.string().email().optional(),

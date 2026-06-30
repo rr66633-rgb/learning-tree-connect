@@ -35,7 +35,7 @@ export default function OnboardingWizard() {
     name: "",
     nameAr: "",
     slug: "",
-    orgType: "nursery" as "nursery" | "school" | "independent_teacher",
+    orgType: "nursery" as const,
     phone: "",
     email: "",
     address: "",

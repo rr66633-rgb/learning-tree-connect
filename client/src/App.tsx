@@ -97,9 +97,6 @@ const AIMarketingMediaCaption = lazy(() => import("./pages/ai/AIMarketingMediaCa
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
-// Ghiras - Teacher Platform
-const GhirasLanding = lazy(() => import("./pages/ghiras/GhirasLanding"));
-const GhirasRegister = lazy(() => import("./pages/ghiras/GhirasRegister"));
 
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -328,14 +325,12 @@ function RoleRouter() {
   useMetaPixelPageView();
 
   // Public legal pages - always accessible without auth or dashboard
-  if (location === "/privacy" || location === "/terms" || location.startsWith("/ghiras")) {
+  if (location === "/privacy" || location === "/terms") {
     return (
       <Suspense fallback={<PageLoader />}>
         <Switch>
           <Route path="/privacy" component={PrivacyPolicy} />
           <Route path="/terms" component={TermsOfService} />
-          <Route path="/ghiras/register" component={GhirasRegister} />
-          <Route path="/ghiras" component={GhirasLanding} />
         </Switch>
       </Suspense>
     );

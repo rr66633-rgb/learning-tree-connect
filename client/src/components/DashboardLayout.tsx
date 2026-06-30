@@ -38,7 +38,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
-import { useBranding, type OrgType } from "@/contexts/BrandingContext";
+import { useBranding } from "@/contexts/BrandingContext";
 
 type MenuItem = { icon: any; label: string; path: string; color?: string };
 
@@ -201,97 +201,10 @@ const superAdminMenuItems: MenuItem[] = [
   { icon: Bell, label: "إعدادات الإشعارات", path: "/notification-settings", color: "#00C9B7" },
 ];
 
-/**
- * Independent Teacher - simplified menu (no finance, no HR, no enrollment)
- */
-const independentTeacherMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
-  { icon: Users, label: "الطلاب", path: "/children", color: "#7C3AED" },
-  { icon: GraduationCap, label: "الفصول", path: "/classes", color: "#F97316" },
-  { icon: CalendarCheck, label: "الحضور", path: "/attendance", color: "#00C9B7" },
-  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", color: "#EC4899" },
-  { icon: FileText, label: "التقارير", path: "/daily-reports", color: "#7C3AED" },
-  { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages", color: "#00C9B7" },
-  { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
-  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
-  { icon: Settings, label: "الإعدادات", path: "/settings", color: "#7C3AED" },
-];
 
-/**
- * School Admin - similar to nursery admin but with school-specific terminology
- */
-const schoolAdminMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
-  { icon: Users, label: "الطلاب", path: "/children", color: "#7C3AED" },
-  { icon: FileSpreadsheet, label: "استيراد الطلاب", path: "/import-children", color: "#EC4899" },
-  { icon: GraduationCap, label: "الصفوف", path: "/classes", color: "#F97316" },
-  { icon: CalendarCheck, label: "حضور الطلاب", path: "/attendance", color: "#00C9B7" },
-  { icon: Clock, label: "حضور الموظفين", path: "/staff-attendance", color: "#EC4899" },
-  { icon: UserCog, label: "إدارة الموظفين", path: "/staff-management", color: "#7C3AED" },
-  { icon: FileSpreadsheet, label: "استيراد الموظفين", path: "/import-staff", color: "#00C9B7" },
-  { icon: CalendarDays, label: "إدارة الإجازات", path: "/leave-management", color: "#F97316" },
-  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", color: "#EC4899" },
-  { icon: FileText, label: "التقارير", path: "/daily-reports", color: "#7C3AED" },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages", color: "#00C9B7" },
-  { icon: CreditCard, label: "المالية والمدفوعات", path: "/finance", color: "#F97316" },
-  { icon: UserPlus, label: "التسجيل", path: "/enrollment", color: "#7C3AED" },
-  { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
-  { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
-  { icon: UserCog, label: "إدارة المستخدمين", path: "/users", color: "#7C3AED" },
-  { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
-  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
-  { icon: Library, label: "مكتبة المناهج", path: "/curriculum", color: "#10B981" },
-  { icon: Sparkles, label: "المساعد الذكي", path: "/ai", color: "#F97316" },
-  { icon: Settings, label: "الإعدادات", path: "/settings", color: "#7C3AED" },
-];
-
-/**
- * School Teacher - simplified for school context
- */
-const schoolTeacherMenuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "", color: "#00C9B7" },
-  { icon: Users, label: "الطلاب", path: "/children", color: "#7C3AED" },
-  { icon: GraduationCap, label: "الصفوف", path: "/classes", color: "#F97316" },
-  { icon: CalendarCheck, label: "حضور الطلاب", path: "/attendance", color: "#00C9B7" },
-  { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", color: "#EC4899" },
-  { icon: FileText, label: "التقارير", path: "/daily-reports", color: "#7C3AED" },
-  { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
-  { icon: MessageCircle, label: "الرسائل", path: "/messages", color: "#00C9B7" },
-  { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
-  { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
-  { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
-  { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
-];
-
-function getMenuItems(role?: string, basePath?: string, orgType?: OrgType): MenuItem[] {
+function getMenuItems(role?: string, basePath?: string): MenuItem[] {
   if (basePath === "/super-admin") return superAdminMenuItems;
 
-  // Independent teacher: always show simplified menu regardless of role
-  if (orgType === "independent_teacher") {
-    return independentTeacherMenuItems;
-  }
-
-  // School: use school-specific menus
-  if (orgType === "school") {
-    switch (role) {
-      case "admin":
-      case "super_admin":
-      case "principal":
-        return schoolAdminMenuItems;
-      case "teacher":
-      case "assistant":
-        return schoolTeacherMenuItems;
-      case "parent":
-        return parentMenuItems;
-      default:
-        return schoolTeacherMenuItems;
-    }
-  }
-
-  // Nursery (default): use existing menus
   switch (role) {
     case "admin":
     case "super_admin":
@@ -437,7 +350,7 @@ function DashboardLayoutContent({
   // Initialize in-app notification sounds (plays sound on new notifications)
   useInAppNotifications();
   const { branding } = useBranding();
-  const menuItems = getMenuItems(user?.role, basePath, branding.orgType);
+  const menuItems = getMenuItems(user?.role, basePath);
   const isMobile = useIsMobile();
 
   // Determine active item by matching location against basePath + item.path

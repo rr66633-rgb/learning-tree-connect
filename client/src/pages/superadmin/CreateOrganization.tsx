@@ -16,7 +16,7 @@ export default function CreateOrganization() {
     nameAr: "",
     slug: "",
     edition: "nashaa" as "learning_tree" | "nashaa",
-    orgType: "nursery" as "nursery" | "school" | "independent_teacher",
+    orgType: "nursery" as const,
     status: "trial" as "active" | "suspended" | "pending" | "trial",
     phone: "",
     email: "",
@@ -42,7 +42,7 @@ export default function CreateOrganization() {
       toast.error("يرجى ملء الحقول المطلوبة");
       return;
     }
-    createOrg.mutate(form);
+    createOrg.mutate({ ...form, orgType: "nursery" });
   };
 
   // Auto-generate slug from English name
@@ -141,19 +141,7 @@ export default function CreateOrganization() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label>نوع المنظمة</Label>
-                <Select value={form.orgType} onValueChange={(v) => setForm((p) => ({ ...p, orgType: v as any }))}>
-                  <SelectTrigger className="rounded-lg mt-1.5">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="nursery">حضانة / روضة</SelectItem>
-                    <SelectItem value="school">مدرسة</SelectItem>
-                    <SelectItem value="independent_teacher">معلمة مستقلة</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
               <div>
                 <Label>الحالة</Label>
                 <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v as any }))}>
