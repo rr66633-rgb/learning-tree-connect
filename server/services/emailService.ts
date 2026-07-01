@@ -562,3 +562,98 @@ export async function verifyEmailConnection(): Promise<{ connected: boolean; err
     return { connected: false, error: error.message };
   }
 }
+
+
+/**
+ * Send assessment report email to parents
+ */
+export async function sendAssessmentReportEmail(
+  email: string,
+  parentName: string,
+  childName: string,
+  assessmentTitle: string,
+  reportData: Array<{
+    questionText: string;
+    questionType: string;
+    answer: string | null;
+    rating: number | null;
+    maxRating: number;
+    notes: string | null;
+  }>
+): Promise<EmailSendResult> {
+  const subject = `تقرير اختبار "${assessmentTitle}" - ${childName} | نشأة`;
+
+  const questionTypeNames: Record<string, string> = {
+    multiple_choice: 'اختيار من متعدد',
+    true_false: 'صح / خطأ',
+    rating: 'تقييم',
+    text: 'نص حر',
+  };
+
+  const questionsHtml = reportData.map((q, idx) => {
+    let answerDisplay = '';
+    if (q.questionType === 'rating' && q.rating !== null) {
+      const stars = '★'.repeat(q.rating) + '☆'.repeat(q.maxRating - q.rating);
+      answerDisplay = `<span style="color: #f59e0b; font-size: 18px;">${stars}</span> (${q.rating}/${q.maxRating})`;
+    } else if (q.answer) {
+      answerDisplay = `<strong>${q.answer}</strong>`;
+    } else {
+      answerDisplay = '<span style="color: #9ca3af;">لم يتم الإجابة</span>';
+    }
+
+    const notesHtml = q.notes ? `<p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;">ملاحظات: ${q.notes}</p>` : '';
+
+    return `
+      <div style="padding: 14px 0; border-bottom: 1px solid #e5e7eb;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="background: #e8f5e9; color: #1a5632; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">${idx + 1}</span>
+          <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 4px;">${questionTypeNames[q.questionType] || q.questionType}</span>
+        </div>
+        <p style="margin: 6px 0; font-weight: 600;">${q.questionText}</p>
+        <p style="margin: 6px 0;">الإجابة: ${answerDisplay}</p>
+        ${notesHtml}
+      </div>`;
+  }).join('');
+
+  // Summary stats
+  const answeredCount = reportData.filter(q => q.answer || q.rating).length;
+  const ratingQuestions = reportData.filter(q => q.questionType === 'rating' && q.rating !== null);
+  const avgRating = ratingQuestions.length > 0
+    ? (ratingQuestions.reduce((sum, q) => sum + (q.rating || 0), 0) / ratingQuestions.length).toFixed(1)
+    : null;
+
+  const summaryHtml = `
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-top: 20px;">
+      <p style="font-weight: 600; margin: 0 0 8px;">ملخص التقرير:</p>
+      <p style="margin: 4px 0;">عدد الأسئلة: <strong>${reportData.length}</strong></p>
+      <p style="margin: 4px 0;">الأسئلة المجابة: <strong>${answeredCount}</strong> من ${reportData.length}</p>
+      ${avgRating ? `<p style="margin: 4px 0;">متوسط التقييم: <strong>${avgRating}</strong></p>` : ''}
+    </div>`;
+
+  const content = `
+    <p class="message">مرحباً ${parentName || 'ولي الأمر'}،</p>
+    <p class="message">نود مشاركتكم نتائج اختبار <strong>"${assessmentTitle}"</strong> الخاص بطفلكم <strong>${childName}</strong>.</p>
+    
+    <div class="info-box">
+      <p style="margin: 0; font-weight: 600;">📋 اسم الاختبار: ${assessmentTitle}</p>
+      <p style="margin: 6px 0 0;">👶 الطفل: ${childName}</p>
+      <p style="margin: 6px 0 0;">📅 التاريخ: ${new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <h3 style="color: #1a5632; border-bottom: 2px solid #1a5632; padding-bottom: 8px;">تفاصيل الإجابات</h3>
+      ${questionsHtml}
+    </div>
+
+    ${summaryHtml}
+
+    <div class="cta">
+      <a href="${APP_URL}/parent/assessments">عرض جميع التقييمات</a>
+    </div>
+
+    <div class="warning">
+      💡 يمكنك الاطلاع على جميع تقييمات طفلك من خلال تطبيق نشأة في قسم "التقييمات".
+    </div>`;
+
+  return sendEmail(email, subject, baseTemplate(content));
+}

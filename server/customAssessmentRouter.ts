@@ -264,6 +264,93 @@ export const customAssessmentRouter = router({
       return responses;
     }),
 
+  // ============ EMAIL REPORT TO PARENTS ============
+  emailReportToParents: staffProcedure
+    .input(z.object({
+      assessmentId: z.number(),
+      childId: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const { sendAssessmentReportEmail } = await import('./services/emailService');
+      const { users } = await import('../drizzle/schema');
+
+      // Get child info
+      const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+
+      // Get assessment info with questions
+      const [assessment] = await db.select().from(customAssessments).where(eq(customAssessments.id, input.assessmentId)).limit(1);
+      if (!assessment) throw new TRPCError({ code: 'NOT_FOUND', message: 'الاختبار غير موجود' });
+
+      const questions = await db.select().from(assessmentQuestions)
+        .where(eq(assessmentQuestions.assessmentId, input.assessmentId))
+        .orderBy(asc(assessmentQuestions.sortOrder));
+
+      // Get responses
+      const responses = await db.select().from(customAssessmentResponses)
+        .where(and(
+          eq(customAssessmentResponses.assessmentId, input.assessmentId),
+          eq(customAssessmentResponses.childId, input.childId)
+        ));
+
+      if (responses.length === 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا توجد إجابات مسجلة لهذا الطفل' });
+
+      // Get all parents for this child (from parent_children table + direct parentId)
+      const parentLinks = await db.select({ parentId: parentChildren.parentId })
+        .from(parentChildren)
+        .where(eq(parentChildren.childId, input.childId));
+
+      const parentIds = Array.from(new Set([
+        ...parentLinks.map(l => l.parentId),
+        ...(child.parentId ? [child.parentId] : []),
+      ]));
+
+      if (parentIds.length === 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد أولياء أمور مربوطين بهذا الطفل' });
+
+      // Get parent emails
+      const parents = await db.select({ id: users.id, email: users.email, name: users.name })
+        .from(users)
+        .where(inArray(users.id, parentIds));
+
+      const parentEmails = parents.filter(p => p.email).map(p => ({ email: p.email!, name: p.name || '' }));
+      if (parentEmails.length === 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد بريد إلكتروني لأولياء الأمور' });
+
+      // Build report data
+      const childName = `${child.firstName} ${child.lastName || ''}`.trim();
+      const reportData = questions.map(q => {
+        const resp = responses.find(r => r.questionId === q.id);
+        return {
+          questionText: q.questionText,
+          questionType: q.questionType,
+          answer: resp?.answer || null,
+          rating: resp?.rating || null,
+          maxRating: q.maxRating || 5,
+          notes: resp?.notes || null,
+        };
+      });
+
+      // Send email to all parents
+      const results = [];
+      for (const parent of parentEmails) {
+        const result = await sendAssessmentReportEmail(
+          parent.email,
+          parent.name,
+          childName,
+          assessment.title,
+          reportData
+        );
+        results.push({ email: parent.email, ...result });
+      }
+
+      const successCount = results.filter(r => r.sent).length;
+      return {
+        success: successCount > 0,
+        message: `تم إرسال التقرير إلى ${successCount} من ${parentEmails.length} أولياء أمور`,
+        details: results,
+      };
+    }),
+
   // ============ PARENT: LIST SHARED ASSESSMENTS ============
   parentList: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }))
