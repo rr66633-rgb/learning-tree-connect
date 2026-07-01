@@ -22,6 +22,7 @@ import { bulkImportRouter } from "./bulkImportRouter";
 import { capiRouter } from "./capiRouter";
 import { assessmentRouter } from "./assessmentRouter";
 import { curriculumRouter } from "./curriculumRouter";
+import { customAssessmentRouter } from "./customAssessmentRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -3085,5 +3086,6 @@ export const appRouter = router({
   // ============ DEVELOPMENTAL ASSESSMENT (مقياس الكشف المبكر) ============
   assessment: assessmentRouter,
   curriculum: curriculumRouter,
+  customAssessment: customAssessmentRouter,
 });
 export type AppRouter = typeof appRouter;

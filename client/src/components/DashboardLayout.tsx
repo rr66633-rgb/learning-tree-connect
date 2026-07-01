@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -60,6 +60,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: Heart, label: "المعلومات الطبية", path: "/medical", color: "#EC4899" },
   { icon: MapPin, label: "طلب الاستلام", path: "/pickup", color: "#7C3AED" },
   { icon: BookOpen, label: "الملاحظات والتقييمات", path: "/observations", color: "#F97316" },
+  { icon: ClipboardCheck, label: "الاختبارات", path: "/assessments", color: "#8B5CF6" },
   { icon: Brain, label: "نمو وتطور طفلي", path: "/development", color: "#00C9B7" },
   { icon: HandHeart, label: "مشاركة الأسرة", path: "/engagement", color: "#EC4899" },
   { icon: Calendar, label: "التقويم السنوي", path: "/calendar", color: "#00C9B7" },
@@ -86,6 +87,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: Bell, label: "الإشعارات", path: "/notifications", color: "#EC4899" },
   { icon: MapPin, label: "الاستلام", path: "/pickup", color: "#7C3AED" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
+  { icon: ClipboardCheck, label: "الاختبارات المخصصة", path: "/custom-assessments", color: "#8B5CF6" },
   { icon: TreePine, label: "مقياس الكشف المبكر", path: "/developmental-assessment", color: "#10B981" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
   { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },
@@ -124,6 +126,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: UserCog, label: "إدارة المستخدمين", path: "/users", color: "#7C3AED" },
   { icon: MapPin, label: "الاستلام", path: "/pickup", color: "#7C3AED" },
   { icon: BookOpen, label: "التقييمات", path: "/assessments", color: "#F97316" },
+  { icon: ClipboardCheck, label: "الاختبارات المخصصة", path: "/custom-assessments", color: "#8B5CF6" },
   { icon: TreePine, label: "مقياس الكشف المبكر", path: "/developmental-assessment", color: "#10B981" },
   { icon: Brain, label: "مركز النمو والتطور", path: "/development", color: "#00C9B7" },
   { icon: HandHeart, label: "مشاركة الأسر", path: "/engagement", color: "#EC4899" },

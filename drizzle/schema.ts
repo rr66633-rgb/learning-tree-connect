@@ -1554,3 +1554,55 @@ export const curricula = mysqlTable("curricula", {
 
 export type Curriculum = typeof curricula.$inferSelect;
 export type InsertCurriculum = typeof curricula.$inferInsert;
+
+
+// ============ CUSTOM ASSESSMENTS ============
+export const customAssessments = mysqlTable("custom_assessments", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  classId: int("classId"),
+  ageGroup: varchar("ageGroup", { length: 50 }),
+  createdBy: int("createdBy").notNull(),
+  status: mysqlEnum("status", ["draft", "active", "archived"]).default("draft").notNull(),
+  shareWithParents: boolean("shareWithParents").default(false).notNull(),
+  organizationId: int("organizationId").default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomAssessment = typeof customAssessments.$inferSelect;
+export type InsertCustomAssessment = typeof customAssessments.$inferInsert;
+
+// ============ ASSESSMENT QUESTIONS ============
+export const assessmentQuestions = mysqlTable("assessment_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  assessmentId: int("assessmentId").notNull(),
+  questionText: text("questionText").notNull(),
+  questionType: mysqlEnum("questionType", ["multiple_choice", "true_false", "rating", "text"]).notNull(),
+  options: json("options"), // For multiple_choice: ["option1", "option2", ...] 
+  correctAnswer: text("correctAnswer"), // Optional correct answer
+  maxRating: int("maxRating").default(5), // For rating type
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AssessmentQuestion = typeof assessmentQuestions.$inferSelect;
+export type InsertAssessmentQuestion = typeof assessmentQuestions.$inferInsert;
+
+// ============ CUSTOM ASSESSMENT RESPONSES ============
+export const customAssessmentResponses = mysqlTable("custom_assessment_responses", {
+  id: int("id").autoincrement().primaryKey(),
+  assessmentId: int("assessmentId").notNull(),
+  childId: int("childId").notNull(),
+  questionId: int("questionId").notNull(),
+  answer: text("answer"), // The child's answer
+  rating: int("rating"), // For rating type questions
+  notes: text("notes"), // Teacher notes
+  recordedBy: int("recordedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomAssessmentResponse = typeof customAssessmentResponses.$inferSelect;
+export type InsertCustomAssessmentResponse = typeof customAssessmentResponses.$inferInsert;
