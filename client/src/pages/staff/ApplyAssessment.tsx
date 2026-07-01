@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ChevronRight, Save, Star, CheckCircle2, FileDown, Mail } from "lucide-react";
 import { generateCustomAssessmentPDF } from "@/lib/customAssessmentPdf";
 import { useRoute, useLocation } from "wouter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 const QUESTION_TYPES: Record<string, string> = {
   multiple_choice: "اختيار من متعدد",
@@ -28,6 +29,8 @@ export default function ApplyAssessment() {
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
   const [responses, setResponses] = useState<Record<number, { answer?: string; rating?: number; notes?: string }>>({});
   const [saved, setSaved] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [additionalNotes, setAdditionalNotes] = useState("");
 
   const assessmentQuery = trpc.customAssessment.get.useQuery({ id: assessmentId }, { enabled: !!assessmentId });
   const childrenQuery = trpc.children.list.useQuery({});
@@ -294,12 +297,7 @@ export default function ApplyAssessment() {
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => {
-                    emailToParentsMutation.mutate({
-                      assessmentId,
-                      childId: selectedChildId!,
-                    });
-                  }}
+                  onClick={() => setEmailModalOpen(true)}
                   disabled={emailToParentsMutation.isPending}
                 >
                   <Mail className="h-5 w-5 ml-2" />
@@ -318,6 +316,57 @@ export default function ApplyAssessment() {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal لإضافة ملاحظات قبل الإرسال */}
+      <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>إرسال التقرير لأولياء الأمور</DialogTitle>
+            <DialogDescription>
+              يمكنك إضافة ملاحظات أو توصيات إضافية تُرفق مع التقرير المرسل عبر البريد الإلكتروني.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="additional-notes">ملاحظات وتوصيات إضافية (اختياري)</Label>
+              <Textarea
+                id="additional-notes"
+                placeholder="اكتب ملاحظاتك أو توصياتك هنا... مثلاً: يحتاج الطفل لمزيد من التدريب على..."
+                value={additionalNotes}
+                onChange={(e) => setAdditionalNotes(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEmailModalOpen(false);
+                setAdditionalNotes("");
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                emailToParentsMutation.mutate({
+                  assessmentId,
+                  childId: selectedChildId!,
+                  additionalNotes: additionalNotes.trim() || undefined,
+                });
+                setEmailModalOpen(false);
+                setAdditionalNotes("");
+              }}
+              disabled={emailToParentsMutation.isPending}
+            >
+              <Mail className="h-4 w-4 ml-2" />
+              {emailToParentsMutation.isPending ? "جاري الإرسال..." : "إرسال التقرير"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

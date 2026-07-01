@@ -269,6 +269,7 @@ export const customAssessmentRouter = router({
     .input(z.object({
       assessmentId: z.number(),
       childId: z.number(),
+      additionalNotes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
@@ -338,7 +339,8 @@ export const customAssessmentRouter = router({
           parent.name,
           childName,
           assessment.title,
-          reportData
+          reportData,
+          input.additionalNotes
         );
         results.push({ email: parent.email, ...result });
       }

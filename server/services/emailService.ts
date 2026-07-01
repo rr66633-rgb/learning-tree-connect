@@ -579,7 +579,8 @@ export async function sendAssessmentReportEmail(
     rating: number | null;
     maxRating: number;
     notes: string | null;
-  }>
+  }>,
+  additionalNotes?: string
 ): Promise<EmailSendResult> {
   const subject = `تقرير اختبار "${assessmentTitle}" - ${childName} | نشأة`;
 
@@ -646,6 +647,12 @@ export async function sendAssessmentReportEmail(
     </div>
 
     ${summaryHtml}
+
+    ${additionalNotes ? `
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin-top: 20px;">
+      <p style="font-weight: 600; margin: 0 0 8px; color: #1e40af;">\u2709\uFE0F ملاحظات وتوصيات المعلمة:</p>
+      <p style="margin: 0; white-space: pre-wrap;">${additionalNotes}</p>
+    </div>` : ''}
 
     <div class="cta">
       <a href="${APP_URL}/parent/assessments">عرض جميع التقييمات</a>
