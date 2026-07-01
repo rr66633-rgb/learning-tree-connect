@@ -97,20 +97,20 @@ function sendToServer(
     return '';
   };
 
-  getToken().then(token => {
-    fetch('/api/trpc/capi.trackEvent', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...(token ? { 'x-csrf-token': token } : {}),
-      },
-      body: JSON.stringify({ json: payload }),
-      credentials: 'include',
-      keepalive: true, // Ensures request completes even if page navigates
-    }).catch(() => {
-      // Silently fail - server-side tracking is supplementary
-    });
-  });
+  // CAPI disabled temporarily - Meta access token needs renewal
+  // Re-enable when a valid token is configured in Events Manager
+  // getToken().then(token => {
+  //   fetch('/api/trpc/capi.trackEvent', {
+  //     method: 'POST',
+  //     headers: { 
+  //       'Content-Type': 'application/json',
+  //       ...(token ? { 'x-csrf-token': token } : {}),
+  //     },
+  //     body: JSON.stringify({ json: payload }),
+  //     credentials: 'include',
+  //     keepalive: true,
+  //   }).catch(() => {});
+  // });
 }
 
 /**
