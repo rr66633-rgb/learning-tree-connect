@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ChevronRight, Save, Star, CheckCircle2 } from "lucide-react";
+import { ChevronRight, Save, Star, CheckCircle2, FileDown } from "lucide-react";
+import { generateCustomAssessmentPDF } from "@/lib/customAssessmentPdf";
 import { useRoute, useLocation } from "wouter";
 
 const QUESTION_TYPES: Record<string, string> = {
@@ -233,7 +234,7 @@ export default function ApplyAssessment() {
             </Card>
           ))}
 
-          {/* Save Button */}
+          {/* Save & Export Buttons */}
           <div className="flex items-center gap-3 sticky bottom-4">
             <Button
               size="lg"
@@ -253,6 +254,36 @@ export default function ApplyAssessment() {
                 </>
               )}
             </Button>
+            {saved && selectedChildId && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  const child = filteredChildren.find((c: any) => c.id === selectedChildId);
+                  const childName = child ? `${child.firstName} ${child.lastName || ""}`.trim() : "طفل";
+                  generateCustomAssessmentPDF({
+                    assessmentTitle: assessment?.title || "",
+                    assessmentDescription: assessment?.description || undefined,
+                    childName,
+                    className: undefined,
+                    date: new Date().toISOString(),
+                    responses: questions.map((q: any) => ({
+                      questionText: q.questionText,
+                      questionType: q.questionType,
+                      answer: responses[q.id]?.answer || null,
+                      rating: responses[q.id]?.rating || null,
+                      maxRating: q.maxRating || 5,
+                      notes: responses[q.id]?.notes || null,
+                      options: q.options || [],
+                    })),
+                  });
+                  toast.success("تم تصدير التقرير بنجاح");
+                }}
+              >
+                <FileDown className="h-5 w-5 ml-2" />
+                تصدير PDF
+              </Button>
+            )}
           </div>
         </div>
       )}
