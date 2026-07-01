@@ -73,6 +73,9 @@ export async function sendCAPIEvent(params: SendEventParams): Promise<{
   messages?: string[];
   error?: string;
 }> {
+  // CAPI temporarily disabled - Meta access token blocked
+  return { success: false, error: 'CAPI disabled' };
+
   const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
 
   if (!accessToken) {
@@ -123,11 +126,12 @@ export async function sendCAPIEvent(params: SendEventParams): Promise<{
       events_received: result.events_received as number,
       messages: result.messages as string[],
     };
-  } catch (error) {
-    console.error('[Meta CAPI] Network Error:', error);
+  } catch (e) {
+    const errMsg = (e as Error)?.message || 'Network error';
+    console.error('[Meta CAPI] Network Error:', errMsg);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Network error',
+      error: errMsg,
     };
   }
 }
