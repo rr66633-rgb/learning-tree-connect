@@ -78,6 +78,7 @@ const staffMenuItems: MenuItem[] = [
   { icon: Users, label: "الأطفال", path: "/children", color: "#7C3AED" },
   { icon: GraduationCap, label: "الفصول", path: "/classes", color: "#F97316" },
   { icon: CalendarCheck, label: "حضور الأطفال", path: "/attendance", color: "#00C9B7" },
+  { icon: Clock, label: "تسجيل حضوري", path: "/staff-attendance", color: "#EC4899" },
   { icon: ClipboardList, label: "السجل اليومي", path: "/daily-log", color: "#EC4899" },
   { icon: FileText, label: "التقارير اليومية", path: "/daily-reports", color: "#7C3AED" },
   { icon: Camera, label: "الصور والفيديو", path: "/media", color: "#F97316" },

@@ -1693,6 +1693,98 @@ export const appRouter = router({
       });
       return { success: true };
     }),
+
+    // ============ QUICK CHECK-IN (No GPS required) ============
+    quickCheckIn: protectedProcedure.input(z.object({
+      device: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      // Check if already checked in today
+      const existing = await db.getTodayStaffAttendance(ctx.user!.id);
+      if (existing && existing.checkInTime) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم تسجيل وصولك مسبقاً اليوم.' });
+      }
+      return db.staffCheckIn({
+        userId: ctx.user!.id,
+        date: new Date(),
+        checkInTime: new Date(),
+        device: input.device,
+        status: 'checked_in',
+        isLateRecord: false,
+      });
+    }),
+
+    // ============ QUICK CHECK-OUT (No GPS required) ============
+    quickCheckOut: protectedProcedure.input(z.object({
+      device: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const existing = await db.getTodayStaffAttendance(ctx.user!.id);
+      if (!existing || !existing.checkInTime) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم تسجيل وصولك اليوم بعد.' });
+      }
+      if (existing.checkOutTime) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم تسجيل انصرافك مسبقاً اليوم.' });
+      }
+      await db.staffCheckOut(existing.id, {
+        checkOutTime: new Date(),
+        status: 'checked_out',
+      });
+      return { success: true };
+    }),
+
+    // ============ LATE CHECK-IN (with reason) ============
+    lateCheckIn: protectedProcedure.input(z.object({
+      actualTime: z.string(), // ISO string of the actual arrival time
+      reason: z.string().min(1, 'يرجى كتابة سبب التسجيل المتأخر'),
+      device: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      // Check if already checked in today
+      const existing = await db.getTodayStaffAttendance(ctx.user!.id);
+      if (existing && existing.checkInTime) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم تسجيل وصولك مسبقاً اليوم.' });
+      }
+      const actualTime = new Date(input.actualTime);
+      return db.staffCheckIn({
+        userId: ctx.user!.id,
+        date: new Date(),
+        checkInTime: new Date(), // recorded now
+        actualCheckInTime: actualTime, // actual arrival time
+        device: input.device,
+        status: 'checked_in',
+        isLateRecord: true,
+        lateReason: input.reason,
+      });
+    }),
+
+    // ============ LATE CHECK-OUT (with reason) ============
+    lateCheckOut: protectedProcedure.input(z.object({
+      actualTime: z.string(), // ISO string of the actual departure time
+      reason: z.string().min(1, 'يرجى كتابة سبب التسجيل المتأخر'),
+      device: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const existing = await db.getTodayStaffAttendance(ctx.user!.id);
+      if (!existing || !existing.checkInTime) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم تسجيل وصولك اليوم بعد.' });
+      }
+      if (existing.checkOutTime) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم تسجيل انصرافك مسبقاً اليوم.' });
+      }
+      const actualTime = new Date(input.actualTime);
+      await db.staffCheckOut(existing.id, {
+        checkOutTime: new Date(), // recorded now
+        actualCheckOutTime: actualTime, // actual departure time
+        status: 'checked_out',
+        isLateRecord: true,
+        lateReason: input.reason,
+      });
+      return { success: true };
+    }),
+
+    // ============ ADMIN: Get all attendance with late records highlighted ============
+    allToday: adminProcedure.query(async () => {
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0];
+      return db.getStaffAttendanceByDate(dateStr);
+    }),
   }),
 
   centerSettings: router({

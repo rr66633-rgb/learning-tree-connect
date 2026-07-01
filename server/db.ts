@@ -1046,6 +1046,10 @@ export async function getStaffAttendanceByDate(date: string) {
     checkOutTime: staffAttendance.checkOutTime,
     status: staffAttendance.status,
     notes: staffAttendance.notes,
+    isLateRecord: staffAttendance.isLateRecord,
+    lateReason: staffAttendance.lateReason,
+    actualCheckInTime: staffAttendance.actualCheckInTime,
+    actualCheckOutTime: staffAttendance.actualCheckOutTime,
     userName: users.name,
   }).from(staffAttendance)
     .leftJoin(users, eq(staffAttendance.userId, users.id))

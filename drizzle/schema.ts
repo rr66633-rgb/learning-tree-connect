@@ -147,6 +147,10 @@ export const staffAttendance = mysqlTable("staff_attendance", {
   deviceInfo: text("deviceInfo"),
   status: mysqlEnum("status", ["checked_in", "checked_out", "absent", "late"]).default("checked_in").notNull(),
   notes: text("notes"),
+  isLateRecord: boolean("isLateRecord").default(false),
+  lateReason: text("lateReason"),
+  actualCheckInTime: timestamp("actualCheckInTime"),
+  actualCheckOutTime: timestamp("actualCheckOutTime"),
   organizationId: int("organizationId").default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
