@@ -1832,6 +1832,8 @@ export const appRouter = router({
       workingHoursStart: z.string().optional(),
       workingHoursEnd: z.string().optional(),
       timezone: z.string().optional(),
+      vatNumber: z.string().optional(),
+      commercialRegister: z.string().optional(),
     })).mutation(async ({ input }) => {
       const mapped: any = {};
       if (input.name) mapped.centerName = input.name;
@@ -1840,6 +1842,8 @@ export const appRouter = router({
       if (input.gpsRadius) mapped.allowedRadius = input.gpsRadius;
       if (input.workingHoursStart) mapped.workingHoursStart = input.workingHoursStart;
       if (input.workingHoursEnd) mapped.workingHoursEnd = input.workingHoursEnd;
+      if (input.vatNumber !== undefined) mapped.vatNumber = input.vatNumber;
+      if (input.commercialRegister !== undefined) mapped.commercialRegister = input.commercialRegister;
       return db.updateCenterSettings(mapped);
     }),
   }),

@@ -186,6 +186,8 @@ export default function StaffSettings() {
   const [radius, setRadius] = useState("");
   const [workStart, setWorkStart] = useState("");
   const [workEnd, setWorkEnd] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
+  const [commercialRegister, setCommercialRegister] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -195,6 +197,8 @@ export default function StaffSettings() {
       setRadius(settings.allowedRadius?.toString() || "100");
       setWorkStart(settings.workingHoursStart || "07:00");
       setWorkEnd(settings.workingHoursEnd || "17:00");
+      setVatNumber((settings as any).vatNumber || "");
+      setCommercialRegister((settings as any).commercialRegister || "");
     }
   }, [settings]);
 
@@ -206,6 +210,8 @@ export default function StaffSettings() {
       gpsRadius: parseInt(radius) || 100,
       workingHoursStart: workStart,
       workingHoursEnd: workEnd,
+      vatNumber: vatNumber,
+      commercialRegister: commercialRegister,
     });
   };
 
@@ -242,6 +248,18 @@ export default function StaffSettings() {
           <div>
             <Label>اسم المركز</Label>
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="مركز شجرة التعلم" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>الرقم الضريبي (VAT)</Label>
+              <Input value={vatNumber} onChange={e => setVatNumber(e.target.value)} placeholder="300000000000003" dir="ltr" />
+              <p className="text-xs text-muted-foreground mt-1">يظهر في الفواتير ورمز QR</p>
+            </div>
+            <div>
+              <Label>السجل التجاري</Label>
+              <Input value={commercialRegister} onChange={e => setCommercialRegister(e.target.value)} placeholder="1010000000" dir="ltr" />
+              <p className="text-xs text-muted-foreground mt-1">يظهر في الفواتير</p>
+            </div>
           </div>
         </CardContent>
       </Card>

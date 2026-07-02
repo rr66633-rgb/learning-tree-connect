@@ -169,6 +169,8 @@ export const centerSettings = mysqlTable("center_settings", {
   email: varchar("email", { length: 320 }),
   workingHoursStart: varchar("workingHoursStart", { length: 10 }).default("07:00"),
   workingHoursEnd: varchar("workingHoursEnd", { length: 10 }).default("17:00"),
+  vatNumber: varchar("vatNumber", { length: 50 }),
+  commercialRegister: varchar("commercialRegister", { length: 50 }),
   organizationId: int("organizationId").default(1),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

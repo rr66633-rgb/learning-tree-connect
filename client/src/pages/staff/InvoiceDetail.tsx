@@ -30,6 +30,7 @@ export default function InvoiceDetail() {
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'principal' || user?.role === 'accountant';
 
   const { data: invoice, isLoading } = trpc.finance.getById.useQuery({ id: invoiceId }, { enabled: invoiceId > 0 });
+  const { data: centerSettings } = trpc.centerSettings.get.useQuery();
   const utils = trpc.useUtils();
 
   const [payDialog, setPayDialog] = useState(false);
@@ -78,7 +79,14 @@ export default function InvoiceDetail() {
   const handleDownloadPDF = async () => {
     if (!invoice) return;
     try {
-      await generateInvoicePDF(invoice as any);
+      await generateInvoicePDF(invoice as any, {
+        centerName: centerSettings?.centerName,
+        phone: centerSettings?.phone || undefined,
+        email: centerSettings?.email || undefined,
+        address: centerSettings?.address || undefined,
+        vatNumber: centerSettings?.vatNumber || undefined,
+        commercialRegister: centerSettings?.commercialRegister || undefined,
+      });
       toast.success('تم تحميل الفاتورة بنجاح');
     } catch (err) {
       console.error('PDF generation error:', err);
