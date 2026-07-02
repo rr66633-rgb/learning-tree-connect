@@ -64,6 +64,21 @@ const INVOICE_TYPE_LABELS: Record<string, string> = {
 let fontRegularBase64: string | null = null;
 let fontBoldBase64: string | null = null;
 
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      // Remove data:...;base64, prefix to get raw base64
+      const base64 = dataUrl.split(',')[1];
+      if (base64) resolve(base64);
+      else reject(new Error('Failed to convert blob to base64'));
+    };
+    reader.onerror = () => reject(new Error('FileReader error'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function loadArabicFont(): Promise<{ regular: string; bold: string }> {
   if (fontRegularBase64 && fontBoldBase64) {
     return { regular: fontRegularBase64, bold: fontBoldBase64 };
@@ -75,30 +90,16 @@ async function loadArabicFont(): Promise<{ regular: string; bold: string }> {
   ]);
 
   if (!regularResp.ok || !boldResp.ok) {
-    throw new Error('فشل تحميل الخطوط العربية');
+    throw new Error(`فشل تحميل الخطوط العربية: Regular=${regularResp.status}, Bold=${boldResp.status}`);
   }
 
-  const [regularBuf, boldBuf] = await Promise.all([
-    regularResp.arrayBuffer(),
-    boldResp.arrayBuffer(),
+  const [regularBlob, boldBlob] = await Promise.all([
+    regularResp.blob(),
+    boldResp.blob(),
   ]);
 
-  // Convert to base64
-  const toBase64 = (buf: ArrayBuffer) => {
-    const bytes = new Uint8Array(buf);
-    let binary = '';
-    const chunkSize = 1024;
-    for (let i = 0; i < bytes.byteLength; i += chunkSize) {
-      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.byteLength));
-      for (let j = 0; j < chunk.length; j++) {
-        binary += String.fromCharCode(chunk[j]);
-      }
-    }
-    return btoa(binary);
-  };
-
-  fontRegularBase64 = toBase64(regularBuf);
-  fontBoldBase64 = toBase64(boldBuf);
+  fontRegularBase64 = await blobToBase64(regularBlob);
+  fontBoldBase64 = await blobToBase64(boldBlob);
 
   return { regular: fontRegularBase64, bold: fontBoldBase64 };
 }
@@ -164,14 +165,46 @@ async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo):
 }
 
 export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<void> {
-  const { default: jsPDF } = await import('jspdf');
-  const { autoTable } = await import('jspdf-autotable');
+  console.log('[PDF] Starting PDF generation...');
+  
+  let jsPDF: any;
+  let autoTable: any;
+  try {
+    const jspdfModule = await import('jspdf');
+    jsPDF = jspdfModule.default || jspdfModule.jsPDF;
+    console.log('[PDF] jsPDF loaded');
+  } catch (e) {
+    console.error('[PDF] Failed to load jsPDF:', e);
+    throw new Error('فشل تحميل مكتبة PDF');
+  }
+
+  try {
+    const atModule = await import('jspdf-autotable');
+    autoTable = atModule.autoTable || atModule.default;
+    console.log('[PDF] autoTable loaded');
+  } catch (e) {
+    console.error('[PDF] Failed to load autoTable:', e);
+    throw new Error('فشل تحميل مكتبة الجداول');
+  }
 
   // Load Arabic fonts
-  const fonts = await loadArabicFont();
+  let fonts: { regular: string; bold: string };
+  try {
+    fonts = await loadArabicFont();
+    console.log('[PDF] Fonts loaded, regular length:', fonts.regular.length, 'bold length:', fonts.bold.length);
+  } catch (e) {
+    console.error('[PDF] Failed to load fonts:', e);
+    throw new Error('فشل تحميل الخطوط العربية');
+  }
 
   // Generate QR code (non-blocking, fallback to null)
-  const qrDataUrl = await generateInvoiceQR(invoice, centerInfo);
+  let qrDataUrl: string | null = null;
+  try {
+    qrDataUrl = await generateInvoiceQR(invoice, centerInfo);
+    console.log('[PDF] QR generated:', !!qrDataUrl);
+  } catch (e) {
+    console.warn('[PDF] QR generation failed, skipping:', e);
+  }
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
