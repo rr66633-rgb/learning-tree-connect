@@ -1,7 +1,7 @@
 import { router, protectedProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { eq, desc, sql, and, like, or } from "drizzle-orm";
+import { eq, desc, sql, and, like, or, gte, lte, inArray } from "drizzle-orm";
 import {
   organizations,
   organizationBranding,
@@ -12,6 +12,8 @@ import {
   children,
   classes,
   auditLog,
+  payments,
+  invoices,
 } from "../drizzle/schema";
 import { getDb } from "./db";
 
@@ -588,4 +590,86 @@ export const superAdminRouter = router({
       totalClasses: totalClasses?.count || 0,
     };
   }),
+
+  // ============ PAYMENTS REPORT ============
+  
+  paymentsReport: superAdminProcedure
+    .input(z.object({
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+      status: z.enum(["initiated", "paid", "failed", "expired", "refunded", "all"]).default("all"),
+      method: z.enum(["apple_pay", "mada", "visa", "mastercard", "stc_pay", "cash", "bank_transfer", "all"]).default("all"),
+      page: z.number().default(1),
+      limit: z.number().default(50),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      const filters: any[] = [];
+      const params = input || {} as any;
+
+      if (params.status && params.status !== "all") {
+        filters.push(eq(payments.status, params.status));
+      }
+      if (params.method && params.method !== "all") {
+        filters.push(eq(payments.method, params.method));
+      }
+      if (params.dateFrom) {
+        filters.push(gte(payments.createdAt, new Date(params.dateFrom)));
+      }
+      if (params.dateTo) {
+        filters.push(lte(payments.createdAt, new Date(params.dateTo + "T23:59:59")));
+      }
+
+      const whereClause = filters.length > 0 ? and(...filters) : undefined;
+      const offset = ((params.page || 1) - 1) * (params.limit || 50);
+
+      const [paymentsList, countResult, statsResult] = await Promise.all([
+        db.select({
+          id: payments.id,
+          invoiceId: payments.invoiceId,
+          parentId: payments.parentId,
+          amount: payments.amount,
+          currency: payments.currency,
+          method: payments.method,
+          status: payments.status,
+          moyasarPaymentId: payments.moyasarPaymentId,
+          paidAt: payments.paidAt,
+          createdAt: payments.createdAt,
+          invoiceNumber: invoices.invoiceNumber,
+          invoiceDescription: invoices.description,
+          parentName: users.name,
+          parentEmail: users.email,
+        })
+        .from(payments)
+        .leftJoin(invoices, eq(payments.invoiceId, invoices.id))
+        .leftJoin(users, eq(payments.parentId, users.id))
+        .where(whereClause)
+        .orderBy(desc(payments.createdAt))
+        .limit(params.limit || 50)
+        .offset(offset),
+
+        db.select({ count: sql<number>`count(*)` })
+        .from(payments)
+        .where(whereClause),
+
+        db.select({
+          totalPaid: sql<string>`COALESCE(SUM(CASE WHEN ${payments.status} = 'paid' THEN ${payments.amount} ELSE 0 END), 0)`,
+          totalInitiated: sql<string>`COALESCE(SUM(CASE WHEN ${payments.status} = 'initiated' THEN ${payments.amount} ELSE 0 END), 0)`,
+          totalFailed: sql<string>`COALESCE(SUM(CASE WHEN ${payments.status} = 'failed' THEN ${payments.amount} ELSE 0 END), 0)`,
+          countPaid: sql<number>`SUM(CASE WHEN ${payments.status} = 'paid' THEN 1 ELSE 0 END)`,
+          countFailed: sql<number>`SUM(CASE WHEN ${payments.status} = 'failed' THEN 1 ELSE 0 END)`,
+          countTotal: sql<number>`count(*)`,
+        })
+        .from(payments)
+        .where(whereClause),
+      ]);
+
+      return {
+        payments: paymentsList,
+        total: countResult[0]?.count || 0,
+        page: params.page || 1,
+        limit: params.limit || 50,
+        stats: statsResult[0] || { totalPaid: "0", totalInitiated: "0", totalFailed: "0", countPaid: 0, countFailed: 0, countTotal: 0 },
+      };
+    }),
 });
