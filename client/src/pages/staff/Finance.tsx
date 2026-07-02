@@ -179,10 +179,10 @@ export default function StaffFinance() {
           </Button>
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
             <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />فاتورة جديدة</Button></DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg w-[calc(100%-2rem)]">
               <DialogHeader><DialogTitle>إنشاء فاتورة جديدة</DialogTitle></DialogHeader>
               <form onSubmit={handleCreateInvoice} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>الطفل</Label>
                     <Select value={form.childId ? String(form.childId) : ""} onValueChange={v => {
@@ -209,7 +209,7 @@ export default function StaffFinance() {
                   </div>
                 </div>
                 <div><Label>الوصف</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف الفاتورة" required /></div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div><Label>المبلغ (ر.س)</Label><Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required /></div>
                   <div><Label>تاريخ الاستحقاق</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required /></div>
                 </div>
@@ -440,10 +440,10 @@ export default function StaffFinance() {
                 </Button>
                 <Dialog open={openPlan} onOpenChange={setOpenPlan}>
                   <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />خطة جديدة</Button></DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-lg w-[calc(100%-2rem)]">
                     <DialogHeader><DialogTitle>إنشاء خطة رسوم دراسية</DialogTitle></DialogHeader>
                     <form onSubmit={handleCreatePlan} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label>الطفل</Label>
                           <Select value={planForm.childId ? String(planForm.childId) : ""} onValueChange={v => {
@@ -470,7 +470,7 @@ export default function StaffFinance() {
                       <div><Label>اسم الخطة</Label><Input value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} placeholder="رسوم الفصل الأول" required /></div>
                       <div><Label>المبلغ (ر.س)</Label><Input type="number" step="0.01" value={planForm.amount} onChange={e => setPlanForm(f => ({ ...f, amount: e.target.value }))} required /></div>
                       <div><Label>الوصف</Label><Input value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف اختياري" /></div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><Label>تاريخ البدء</Label><Input type="date" value={planForm.startDate} onChange={e => setPlanForm(f => ({ ...f, startDate: e.target.value }))} required /></div>
                         <div><Label>تاريخ الانتهاء (اختياري)</Label><Input type="date" value={planForm.endDate} onChange={e => setPlanForm(f => ({ ...f, endDate: e.target.value }))} /></div>
                       </div>
