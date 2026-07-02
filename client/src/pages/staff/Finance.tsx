@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, CreditCard, TrendingUp, Clock, AlertTriangle, Send, RefreshCw, Download, FileText, Receipt, Undo2, CalendarClock, DollarSign, Search, Filter } from "lucide-react";
+import { Plus, CreditCard, TrendingUp, Clock, AlertTriangle, Send, RefreshCw, Download, FileText, Receipt, Undo2, CalendarClock, DollarSign, Search, Filter, Mail } from "lucide-react";
+import { generateInvoicePDF } from "@/lib/invoicePdf";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -51,6 +52,10 @@ export default function StaffFinance() {
   const sendReminder = trpc.finance.sendReminder.useMutation({
     onSuccess: () => toast.success("تم إرسال التذكير"),
     onError: () => toast.error("حدث خطأ"),
+  });
+  const sendInvoiceEmail = trpc.finance.sendInvoiceEmail.useMutation({
+    onSuccess: () => toast.success("تم إرسال الفاتورة بالبريد الإلكتروني"),
+    onError: (e: any) => toast.error(e.message || "فشل إرسال الإيميل"),
   });
   const deleteInvoice = trpc.finance.deleteInvoice.useMutation({
     onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); toast.success("تم حذف الفاتورة"); },
@@ -320,6 +325,12 @@ export default function StaffFinance() {
                                 <Undo2 className="h-3 w-3 ml-1" />استرداد
                               </Button>
                             )}
+                            <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={async () => { try { await generateInvoicePDF(inv as any); toast.success('تم تحميل PDF'); } catch { toast.error('خطأ في توليد PDF'); } }}>
+                              <Download className="h-3 w-3 ml-1" />PDF
+                            </Button>
+                            <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => sendInvoiceEmail.mutate({ id: inv.id })} disabled={sendInvoiceEmail.isPending}>
+                              <Mail className="h-3 w-3 ml-1" />إيميل
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

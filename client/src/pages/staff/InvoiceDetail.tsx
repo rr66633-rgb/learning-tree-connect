@@ -13,7 +13,8 @@ import { useLocation } from "wouter";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { ArrowRight, CheckCircle2, Clock, Trash2, Pencil, Download, Printer, Send, CreditCard, Banknote, Building2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Trash2, Pencil, Download, Printer, Send, Mail, CreditCard, Banknote, Building2 } from "lucide-react";
+import { generateInvoicePDF } from "@/lib/invoicePdf";
 
 const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة" };
 const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-green-100 text-green-700", overdue: "bg-red-100 text-red-700", cancelled: "bg-gray-100 text-gray-700" };
@@ -61,8 +62,13 @@ export default function InvoiceDetail() {
   });
 
   const sendToParent = trpc.finance.sendReminder.useMutation({
-    onSuccess: () => toast.success("تم إرسال الفاتورة لولي الأمر"),
+    onSuccess: () => toast.success("تم إرسال التذكير لولي الأمر"),
     onError: (e: any) => toast.error(e.message),
+  });
+
+  const sendInvoiceEmail = trpc.finance.sendInvoiceEmail.useMutation({
+    onSuccess: () => toast.success("تم إرسال الفاتورة بالبريد الإلكتروني بنجاح"),
+    onError: (e: any) => toast.error(e.message || 'فشل إرسال البريد الإلكتروني'),
   });
 
   const handlePrint = () => {
@@ -71,65 +77,13 @@ export default function InvoiceDetail() {
 
   const handleDownloadPDF = async () => {
     if (!invoice) return;
-    const { default: jsPDF } = await import('jspdf');
-    const { default: autoTable } = await import('jspdf-autotable');
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    // Add Arabic font support
-    doc.setFont('helvetica');
-    // Header - Naashah branding
-    doc.setFillColor(30, 70, 50);
-    doc.rect(0, 0, 210, 35, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.text('Naashah', 105, 15, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text('Tax Invoice / Simplified', 105, 25, { align: 'center' });
-    // Invoice info
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.text(`Invoice #: ${invoice.invoiceNumber}`, 15, 45);
-    doc.text(`Date: ${new Date(invoice.createdAt).toLocaleDateString('en-SA')}`, 15, 52);
-    doc.text(`Due Date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-SA') : 'N/A'}`, 15, 59);
-    doc.text(`Status: ${invoice.status?.toUpperCase()}`, 140, 45);
-    if (invoice.paidAt) doc.text(`Paid: ${new Date(invoice.paidAt).toLocaleDateString('en-SA')}`, 140, 52);
-    // Child & Parent info
-    doc.setFontSize(11);
-    doc.text('Child:', 15, 72);
-    doc.text(invoice.childName || '-', 50, 72);
-    doc.text('Parent:', 15, 79);
-    doc.text(invoice.parentName || '-', 50, 79);
-    doc.text('Email:', 15, 86);
-    doc.text(invoice.parentEmail || '-', 50, 86);
-    doc.text('Phone:', 15, 93);
-    doc.text(invoice.parentPhone || '-', 50, 93);
-    // Table
-    autoTable(doc, {
-      startY: 105,
-      head: [['Description', 'Amount (SAR)']],
-      body: [
-        [invoice.description || 'Service', Number(invoice.subtotal || 0).toLocaleString('en-SA')],
-      ],
-      foot: [
-        ['Subtotal', `${Number(invoice.subtotal || 0).toLocaleString('en-SA')} SAR`],
-        [`VAT (${Number(invoice.vatRate || 15)}%)`, `${Number(invoice.vatAmount || 0).toLocaleString('en-SA')} SAR`],
-        ['Total', `${Number(invoice.total || 0).toLocaleString('en-SA')} SAR`],
-      ],
-      theme: 'grid',
-      headStyles: { fillColor: [30, 70, 50] },
-      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-    });
-    // Payment method
-    const finalY = (doc as any).lastAutoTable?.finalY || 160;
-    if (invoice.paymentMethod) {
-      doc.setFontSize(10);
-      doc.text(`Payment Method: ${paymentMethodLabels[invoice.paymentMethod] || invoice.paymentMethod}`, 15, finalY + 10);
+    try {
+      await generateInvoicePDF(invoice as any);
+      toast.success('تم تحميل الفاتورة بنجاح');
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      toast.error('حدث خطأ أثناء توليد الفاتورة');
     }
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Naashah - Thank you for your trust', 105, 280, { align: 'center' });
-    doc.save(`Invoice-${invoice.invoiceNumber}.pdf`);
-    toast.success('تم تحميل الفاتورة بنجاح');
   };
 
   const openEditDialog = () => {
@@ -288,7 +242,10 @@ export default function InvoiceDetail() {
                 <Printer className="h-4 w-4 ml-2" />طباعة
               </Button>
               <Button variant="outline" onClick={() => sendToParent.mutate({ id: invoiceId })} disabled={sendToParent.isPending}>
-                <Send className="h-4 w-4 ml-2" />{sendToParent.isPending ? "جاري..." : "إرسال لولي الأمر"}
+                <Send className="h-4 w-4 ml-2" />{sendToParent.isPending ? "جاري..." : "تذكير"}
+              </Button>
+              <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => sendInvoiceEmail.mutate({ id: invoiceId })} disabled={sendInvoiceEmail.isPending}>
+                <Mail className="h-4 w-4 ml-2" />{sendInvoiceEmail.isPending ? "جاري..." : "إرسال إيميل"}
               </Button>
             </div>
           </CardContent>

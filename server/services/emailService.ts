@@ -664,3 +664,99 @@ export async function sendAssessmentReportEmail(
 
   return sendEmail(email, subject, baseTemplate(content));
 }
+
+/**
+ * Send detailed invoice email with full breakdown to parent
+ */
+export async function sendDetailedInvoiceEmail(
+  email: string,
+  parentName: string,
+  invoice: {
+    invoiceNumber: string;
+    description?: string | null;
+    subtotal: string | number;
+    vatRate: string | number;
+    vatAmount: string | number;
+    total: string | number;
+    paidAmount?: string | number;
+    status: string;
+    dueDate: string | Date;
+    paidAt?: string | Date | null;
+    paymentMethod?: string | null;
+    invoiceType?: string;
+    createdAt: string | Date;
+    childName?: string;
+  }
+): Promise<EmailSendResult> {
+  const statusLabels: Record<string, string> = {
+    pending: 'معلقة',
+    paid: 'مدفوعة',
+    overdue: 'متأخرة',
+    cancelled: 'ملغاة',
+    partially_paid: 'مدفوعة جزئياً',
+  };
+  const paymentMethodLabels: Record<string, string> = {
+    cash: 'نقدي',
+    bank_transfer: 'تحويل بنكي',
+    card: 'بطاقة ائتمانية',
+    apple_pay: 'Apple Pay',
+    mada: 'مدى',
+    stc_pay: 'STC Pay',
+  };
+  const invoiceTypeLabels: Record<string, string> = {
+    tuition: 'رسوم دراسية',
+    activity: 'نشاط',
+    trip: 'رحلة',
+    uniform: 'زي مدرسي',
+    registration: 'تسجيل',
+    other: 'أخرى',
+  };
+
+  const statusText = statusLabels[invoice.status] || invoice.status;
+  const statusColor = invoice.status === 'paid' ? '#16a34a' : invoice.status === 'overdue' ? '#dc2626' : '#d97706';
+  const dueDate = new Date(invoice.dueDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const createdDate = new Date(invoice.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const subject = `فاتورة ${invoice.invoiceNumber} - ${invoice.childName || ''} | نشأة`;
+
+  const paymentInfo = invoice.paymentMethod ? `
+    <div class="invoice-row"><span>طريقة الدفع:</span><span>${paymentMethodLabels[invoice.paymentMethod] || invoice.paymentMethod}</span></div>` : '';
+
+  const paidAtInfo = invoice.paidAt ? `
+    <div class="invoice-row"><span>تاريخ الدفع:</span><span>${new Date(invoice.paidAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>` : '';
+
+  const content = `
+    <p class="message">مرحباً ${parentName || 'ولي الأمر'}،</p>
+    <p class="message">نرفق لكم تفاصيل الفاتورة الخاصة بطفلكم <strong>${invoice.childName || ''}</strong>:</p>
+    
+    <div class="info-box">
+      <p style="margin: 0; font-weight: 600;">رقم الفاتورة: ${invoice.invoiceNumber}</p>
+      <p style="margin: 6px 0 0;">الطفل: ${invoice.childName || '-'}</p>
+      <p style="margin: 6px 0 0;">تاريخ الإصدار: ${createdDate}</p>
+      <p style="margin: 6px 0 0;">النوع: ${invoiceTypeLabels[invoice.invoiceType || 'tuition'] || 'رسوم دراسية'}</p>
+      <p style="margin: 6px 0 0;">الحالة: <span style="color: ${statusColor}; font-weight: 700;">${statusText}</span></p>
+    </div>
+
+    <div class="invoice-box">
+      <div class="invoice-row"><span>الوصف:</span><span>${invoice.description || 'خدمات تعليمية'}</span></div>
+      <div class="invoice-row"><span>المبلغ قبل الضريبة:</span><span>${Number(invoice.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
+      <div class="invoice-row"><span>ضريبة القيمة المضافة (${Number(invoice.vatRate || 15)}%):</span><span>${Number(invoice.vatAmount).toLocaleString('ar-SA')} ر.س</span></div>
+      <div class="invoice-row" style="font-size: 18px; color: #1a5632;"><span>الإجمالي المستحق:</span><span><strong>${Number(invoice.total).toLocaleString('ar-SA')} ر.س</strong></span></div>
+      <div class="invoice-row"><span>تاريخ الاستحقاق:</span><span>${dueDate}</span></div>
+      ${paymentInfo}
+      ${paidAtInfo}
+    </div>
+
+    ${invoice.status !== 'paid' ? `
+    <p class="message">يرجى تسديد الفاتورة قبل تاريخ الاستحقاق. يمكنك الدفع عبر التطبيق.</p>
+    <div class="cta">
+      <a href="${APP_URL}/parent/finance">دفع الفاتورة الآن</a>
+    </div>` : `
+    <p class="message" style="color: #16a34a;">تم تسديد هذه الفاتورة بنجاح. شكراً لكم.</p>`}
+
+    <div class="warning">
+      هذه فاتورة إلكترونية صادرة من منصة نشأة. يمكنك تحميلها كملف PDF من التطبيق.
+    </div>`;
+
+  return sendEmail(email, subject, baseTemplate(content));
+}

@@ -1141,6 +1141,36 @@ export const appRouter = router({
       });
       return { success: true };
     }),
+    sendInvoiceEmail: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      const invoice = await db.getInvoiceById(input.id);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      if (!invoice.parentEmail) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد بريد إلكتروني لولي الأمر' });
+      const { sendDetailedInvoiceEmail } = await import('./services/emailService');
+      const result = await sendDetailedInvoiceEmail(
+        invoice.parentEmail,
+        invoice.parentName || 'ولي الأمر',
+        {
+          invoiceNumber: invoice.invoiceNumber,
+          description: invoice.description,
+          subtotal: invoice.subtotal,
+          vatRate: invoice.vatRate,
+          vatAmount: invoice.vatAmount,
+          total: invoice.total,
+          paidAmount: invoice.paidAmount,
+          status: invoice.status,
+          dueDate: invoice.dueDate,
+          paidAt: invoice.paidAt,
+          paymentMethod: invoice.paymentMethod,
+          invoiceType: invoice.invoiceType,
+          createdAt: invoice.createdAt,
+          childName: invoice.childName,
+        }
+      );
+      if (!result.sent) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.message || 'فشل إرسال البريد الإلكتروني' });
+      }
+      return { success: true, message: 'تم إرسال الفاتورة بالبريد الإلكتروني بنجاح' };
+    }),
     summary: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user?.role === 'parent') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
