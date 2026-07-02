@@ -60,48 +60,10 @@ const INVOICE_TYPE_LABELS: Record<string, string> = {
   other: "أخرى",
 };
 
-// Font loading cache
-let fontRegularBase64: string | null = null;
-let fontBoldBase64: string | null = null;
-
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      // Remove data:...;base64, prefix to get raw base64
-      const base64 = dataUrl.split(',')[1];
-      if (base64) resolve(base64);
-      else reject(new Error('Failed to convert blob to base64'));
-    };
-    reader.onerror = () => reject(new Error('FileReader error'));
-    reader.readAsDataURL(blob);
-  });
-}
-
+// Load fonts from embedded data (no network fetch needed)
 async function loadArabicFont(): Promise<{ regular: string; bold: string }> {
-  if (fontRegularBase64 && fontBoldBase64) {
-    return { regular: fontRegularBase64, bold: fontBoldBase64 };
-  }
-
-  const [regularResp, boldResp] = await Promise.all([
-    fetch('/manus-storage/NotoSansArabic-Regular_45c2e652.ttf'),
-    fetch('/manus-storage/NotoSansArabic-Bold_3a0e721d.ttf'),
-  ]);
-
-  if (!regularResp.ok || !boldResp.ok) {
-    throw new Error(`فشل تحميل الخطوط العربية: Regular=${regularResp.status}, Bold=${boldResp.status}`);
-  }
-
-  const [regularBlob, boldBlob] = await Promise.all([
-    regularResp.blob(),
-    boldResp.blob(),
-  ]);
-
-  fontRegularBase64 = await blobToBase64(regularBlob);
-  fontBoldBase64 = await blobToBase64(boldBlob);
-
-  return { regular: fontRegularBase64, bold: fontBoldBase64 };
+  const { NOTO_SANS_ARABIC_REGULAR, NOTO_SANS_ARABIC_BOLD } = await import('./arabicFontData');
+  return { regular: NOTO_SANS_ARABIC_REGULAR, bold: NOTO_SANS_ARABIC_BOLD };
 }
 
 /**
