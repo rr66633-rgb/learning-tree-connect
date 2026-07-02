@@ -107,7 +107,7 @@ function getApiKey(): string {
  * Get the Moyasar publishable key (for frontend)
  */
 export function getMoyasarPublishableKey(): string | null {
-  return process.env.MOYASAR_PUBLISHABLE_KEY || null;
+  return process.env.VITE_MOYASAR_PUBLISHABLE_KEY || process.env.MOYASAR_PUBLISHABLE_KEY || null;
 }
 
 /**

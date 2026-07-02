@@ -23,6 +23,7 @@ import { capiRouter } from "./capiRouter";
 import { assessmentRouter } from "./assessmentRouter";
 import { curriculumRouter } from "./curriculumRouter";
 import { customAssessmentRouter } from "./customAssessmentRouter";
+import { subscriptionPaymentRouter } from "./subscriptionPaymentRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
@@ -3087,5 +3088,7 @@ export const appRouter = router({
   assessment: assessmentRouter,
   curriculum: curriculumRouter,
   customAssessment: customAssessmentRouter,
+  // ============ SUBSCRIPTION PAYMENT (MOYASAR) ============
+  subscriptionPayment: subscriptionPaymentRouter,
 });
 export type AppRouter = typeof appRouter;

@@ -99,6 +99,10 @@ const AIMarketingMediaCaption = lazy(() => import("./pages/ai/AIMarketingMediaCa
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
+// Payment Pages
+const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
+const PaymentCallback = lazy(() => import("./pages/PaymentCallback"));
+
 
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -474,6 +478,14 @@ function RoleRouter() {
         </Route>
         <Route path="/super-admin">
           {isSuperAdminRole(userRole) ? <SuperAdminDashboard /> : <Redirect to={basePath} />}
+        </Route>
+
+        {/* Payment routes - accessible by authenticated users */}
+        <Route path="/checkout">
+          <SubscriptionCheckout />
+        </Route>
+        <Route path="/payment-callback">
+          <PaymentCallback />
         </Route>
 
         {/* Onboarding wizard - accessible by authenticated users */}

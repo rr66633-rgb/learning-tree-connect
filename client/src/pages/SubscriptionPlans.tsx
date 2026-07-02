@@ -117,9 +117,9 @@ export default function SubscriptionPlans() {
                 <Button
                   className="w-full mt-4 rounded-xl"
                   variant={plan.tier === "professional" ? "default" : "outline"}
-                  onClick={() => navigate(`/onboarding?plan=${plan.id}`)}
+                  onClick={() => navigate(`/checkout?plan=${plan.id}&cycle=yearly`)}
                 >
-                  {plan.tier === "professional" ? "الأكثر شعبية - ابدأ الآن" : "اختر هذه الخطة"}
+                  {plan.tier === "professional" ? "الأكثر شعبية - اشترك الآن" : "اختر هذه الخطة"}
                 </Button>
               </CardContent>
             </Card>
