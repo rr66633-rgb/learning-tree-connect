@@ -83,7 +83,7 @@ export default function Landing() {
             {/* Desktop nav links - centered */}
             <div className="hidden md:flex items-center gap-6 lg:gap-8">
               <a href="#features" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">المزايا</a>
-              <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">الأسعار</a>
+              <a href="/pricing" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">الأسعار</a>
               <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">تواصل معنا</a>
             </div>
 
@@ -120,7 +120,7 @@ export default function Landing() {
           <div className="sm:hidden bg-white border-t border-gray-100 shadow-lg animate-in slide-in-from-top-2 duration-200">
             <div className="px-5 py-5 space-y-1">
               <a href="#features" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>المزايا</a>
-              <a href="#pricing" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>الأسعار</a>
+              <a href="/pricing" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>الأسعار</a>
               <a href="#contact" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>تواصل معنا</a>
               <div className="pt-4 mt-2 border-t border-gray-100 flex flex-col gap-2.5">
                 <Button 
@@ -378,7 +378,7 @@ export default function Landing() {
               <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-slate-800">المنصة</h4>
               <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs md:text-sm text-gray-600">
                 <li><a href="#features" className="hover:text-[#00C9B7] transition-colors duration-200">المزايا</a></li>
-                <li><a href="#pricing" className="hover:text-[#00C9B7] transition-colors duration-200">الأسعار</a></li>
+                <li><a href="/pricing" className="hover:text-[#00C9B7] transition-colors duration-200">الأسعار</a></li>
                 <li><a href="/privacy" className="hover:text-[#00C9B7] transition-colors duration-200">سياسة الخصوصية</a></li>
                 <li><a href="/terms" className="hover:text-[#00C9B7] transition-colors duration-200">شروط الخدمة</a></li>
               </ul>

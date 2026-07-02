@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Landing Page
 const Landing = lazy(() => import("./pages/Landing"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 
 // Staff/Admin Pages
 const StaffDashboard = lazy(() => import("./pages/staff/Dashboard"));
@@ -346,6 +347,15 @@ function RoleRouter() {
     );
   }
 
+  // Pricing page - always accessible, full-screen layout
+  if (location === "/pricing") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Pricing />
+      </Suspense>
+    );
+  }
+
   if (loading) return <PageLoader />;
 
   // Not logged in - show auth pages or landing page
@@ -360,6 +370,7 @@ function RoleRouter() {
           <Route path="/register-nursery" component={NurseryRegister} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/pricing" component={Pricing} />
           <Route component={Landing} />
         </Switch>
       </Suspense>
