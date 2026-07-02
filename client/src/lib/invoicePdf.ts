@@ -1,6 +1,7 @@
 /**
  * توليد فاتورة PDF احترافية بالعربي
- * يستخدم jsPDF مع خط Noto Sans Arabic + QR Code + الرقم الضريبي
+ * يستخدم html2canvas لتحويل HTML إلى صورة ثم jsPDF لإنشاء PDF
+ * هذا يضمن عرض صحيح 100% للنصوص العربية والأرقام والرموز
  */
 
 interface InvoiceData {
@@ -42,6 +43,14 @@ const STATUS_LABELS: Record<string, string> = {
   partially_paid: "مدفوعة جزئياً",
 };
 
+const STATUS_COLORS: Record<string, string> = {
+  pending: "#ca8a04",
+  paid: "#16a34a",
+  overdue: "#dc2626",
+  cancelled: "#6b7280",
+  partially_paid: "#2563eb",
+};
+
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: "نقدي",
   bank_transfer: "تحويل بنكي",
@@ -60,23 +69,11 @@ const INVOICE_TYPE_LABELS: Record<string, string> = {
   other: "أخرى",
 };
 
-// Load fonts from embedded data (no network fetch needed)
-async function loadArabicFont(): Promise<{ regular: string; bold: string }> {
-  const { NOTO_SANS_ARABIC_REGULAR, NOTO_SANS_ARABIC_BOLD } = await import('./arabicFontData');
-  return { regular: NOTO_SANS_ARABIC_REGULAR, bold: NOTO_SANS_ARABIC_BOLD };
-}
-
-/**
- * Format number as Arabic currency string
- */
 function formatCurrency(value: string | number): string {
   const num = Number(value || 0);
   return num.toFixed(2) + ' ر.س';
 }
 
-/**
- * Format date in Arabic
- */
 function formatDate(date: string | Date): string {
   try {
     const d = new Date(date);
@@ -87,17 +84,18 @@ function formatDate(date: string | Date): string {
 }
 
 /**
- * Generate QR code as data URL for ZATCA-style invoice
+ * Generate ZATCA QR code as base64 data URL
  */
-async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<string | null> {
+async function generateQRDataUrl(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<string | null> {
   try {
     const sellerName = centerInfo?.centerName || 'نشأة';
     const vatNumber = centerInfo?.vatNumber || '';
+    if (!vatNumber) return null;
+
     const timestamp = new Date(invoice.createdAt).toISOString();
     const total = Number(invoice.total || 0).toFixed(2);
     const vatAmount = Number(invoice.vatAmount || 0).toFixed(2);
 
-    // TLV encoding for ZATCA QR (Tag-Length-Value)
     const tlvEncode = (tag: number, value: string): Uint8Array => {
       const encoder = new TextEncoder();
       const valueBytes = encoder.encode(value);
@@ -108,338 +106,226 @@ async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo):
       return result;
     };
 
-    const tag1 = tlvEncode(1, sellerName);
-    const tag2 = tlvEncode(2, vatNumber);
-    const tag3 = tlvEncode(3, timestamp);
-    const tag4 = tlvEncode(4, total);
-    const tag5 = tlvEncode(5, vatAmount);
+    const parts = [
+      tlvEncode(1, sellerName),
+      tlvEncode(2, vatNumber),
+      tlvEncode(3, timestamp),
+      tlvEncode(4, total),
+      tlvEncode(5, vatAmount),
+    ];
 
-    const combined = new Uint8Array(tag1.length + tag2.length + tag3.length + tag4.length + tag5.length);
+    const totalLen = parts.reduce((sum, p) => sum + p.length, 0);
+    const combined = new Uint8Array(totalLen);
     let offset = 0;
-    combined.set(tag1, offset); offset += tag1.length;
-    combined.set(tag2, offset); offset += tag2.length;
-    combined.set(tag3, offset); offset += tag3.length;
-    combined.set(tag4, offset); offset += tag4.length;
-    combined.set(tag5, offset);
-
-    let tlvBinary = '';
-    for (let i = 0; i < combined.length; i++) {
-      tlvBinary += String.fromCharCode(combined[i]);
+    for (const part of parts) {
+      combined.set(part, offset);
+      offset += part.length;
     }
-    const base64Data = btoa(tlvBinary);
+
+    let binary = '';
+    for (let i = 0; i < combined.length; i++) {
+      binary += String.fromCharCode(combined[i]);
+    }
+    const base64Data = btoa(binary);
 
     const QRCode = await import('qrcode');
-    const qrDataUrl = await QRCode.toDataURL(base64Data, {
-      width: 150,
-      margin: 1,
-      errorCorrectionLevel: 'M',
-    });
-
-    return qrDataUrl;
+    return await QRCode.toDataURL(base64Data, { width: 150, margin: 1, errorCorrectionLevel: 'M' });
   } catch (err) {
-    console.warn('[PDF] QR generation failed, skipping:', err);
+    console.warn('[PDF] QR generation failed:', err);
     return null;
   }
 }
 
 export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<void> {
-  console.log('[PDF] Starting PDF generation...');
-  
-  let jsPDF: any;
-  let autoTable: any;
-  try {
-    const jspdfModule = await import('jspdf');
-    jsPDF = jspdfModule.default || jspdfModule.jsPDF;
-    console.log('[PDF] jsPDF loaded');
-  } catch (e) {
-    console.error('[PDF] Failed to load jsPDF:', e);
-    throw new Error('فشل تحميل مكتبة PDF');
-  }
+  console.log('[PDF] Starting PDF generation with html2canvas approach...');
 
-  try {
-    const atModule = await import('jspdf-autotable');
-    autoTable = atModule.autoTable || atModule.default;
-    console.log('[PDF] autoTable loaded');
-  } catch (e) {
-    console.error('[PDF] Failed to load autoTable:', e);
-    throw new Error('فشل تحميل مكتبة الجداول');
-  }
+  // Load libraries
+  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+    import('jspdf'),
+    import('html2canvas'),
+  ]);
+  console.log('[PDF] Libraries loaded');
 
-  // Load Arabic fonts
-  let fonts: { regular: string; bold: string };
-  try {
-    fonts = await loadArabicFont();
-    console.log('[PDF] Fonts loaded');
-  } catch (e) {
-    console.error('[PDF] Failed to load fonts:', e);
-    throw new Error('فشل تحميل الخطوط العربية');
-  }
+  // Generate QR code
+  const qrDataUrl = await generateQRDataUrl(invoice, centerInfo);
 
-  // Generate QR code (non-blocking, fallback to null)
-  let qrDataUrl: string | null = null;
-  try {
-    qrDataUrl = await generateInvoiceQR(invoice, centerInfo);
-    console.log('[PDF] QR generated:', !!qrDataUrl);
-  } catch (e) {
-    console.warn('[PDF] QR generation failed, skipping:', e);
-  }
-
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-  // Register Arabic fonts
-  doc.addFileToVFS('NotoSansArabic-Regular.ttf', fonts.regular);
-  doc.addFont('NotoSansArabic-Regular.ttf', 'NotoSansArabic', 'normal');
-  doc.addFileToVFS('NotoSansArabic-Bold.ttf', fonts.bold);
-  doc.addFont('NotoSansArabic-Bold.ttf', 'NotoSansArabic', 'bold');
-
-  const pageWidth = 210;
-  const margin = 15;
-
-  // RTL text options for jsPDF
-  const rtlOpts = { isInputRtl: true, isOutputRtl: true, isInputVisual: false, isOutputVisual: false };
-
-  // Helper to draw RTL text
-  const drawText = (text: string, x: number, y: number, options: any = {}) => {
-    doc.text(text, x, y, { ...rtlOpts, ...options });
-  };
-
-  // ============ HEADER ============
-  doc.setFillColor(26, 86, 50); // Forest green
-  doc.rect(0, 0, pageWidth, 40, 'F');
-
-  // Accent strip
-  doc.setFillColor(0, 201, 183); // Teal accent
-  doc.rect(0, 38, pageWidth, 2, 'F');
-
-  // Logo if available
-  if (centerInfo?.logoUrl) {
-    try {
-      const logoImg = await loadImageAsBase64(centerInfo.logoUrl);
-      if (logoImg) {
-        doc.addImage(logoImg, 'PNG', pageWidth / 2 - 8, 3, 16, 16);
-      }
-    } catch (e) {
-      // Skip logo if failed to load
-    }
-  }
-
-  // Header text
-  doc.setFont('NotoSansArabic', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(centerInfo?.logoUrl ? 14 : 22);
-  const headerY = centerInfo?.logoUrl ? 24 : 16;
+  // Build invoice HTML
   const centerName = centerInfo?.centerName || 'نشأة';
-  drawText(centerName, pageWidth / 2, headerY, { align: 'center' });
-
-  doc.setFont('NotoSansArabic', 'normal');
-  doc.setFontSize(11);
-  drawText('فاتورة ضريبية مبسطة', pageWidth / 2, headerY + 8, { align: 'center' });
-
-  // VAT number in header if available
   const vatNumber = centerInfo?.vatNumber || '';
-  if (vatNumber) {
-    doc.setFontSize(8);
-    drawText('الرقم الضريبي: ' + vatNumber, pageWidth / 2, 37, { align: 'center' });
+  const commercialRegister = centerInfo?.commercialRegister || '';
+  const logoUrl = centerInfo?.logoUrl || '';
+  const statusLabel = STATUS_LABELS[invoice.status] || invoice.status;
+  const statusColor = STATUS_COLORS[invoice.status] || '#333';
+  const subtotal = Number(invoice.subtotal || 0);
+  const vatAmount = Number(invoice.vatAmount || 0);
+  const total = Number(invoice.total || 0);
+  const vatRate = Number(invoice.vatRate || 15);
+
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '-9999px';
+  container.style.left = '-9999px';
+  container.style.width = '794px';
+  container.style.backgroundColor = '#ffffff';
+  container.style.zIndex = '-1';
+
+  container.innerHTML = `
+    <div style="font-family: 'Noto Sans Arabic', Tahoma, Arial, sans-serif; direction: rtl; color: #1a1a1a; padding: 40px; box-sizing: border-box;">
+      
+      <!-- Header Bar -->
+      <div style="background: linear-gradient(135deg, #0d7c3d, #065f2e); color: white; padding: 25px 30px; border-radius: 10px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          ${logoUrl ? `<img src="${logoUrl}" style="max-height: 50px; max-width: 150px; margin-bottom: 8px; display: block;" crossorigin="anonymous" />` : ''}
+          <h2 style="margin: 0; font-size: 20px; font-weight: bold;">${centerName}</h2>
+          ${vatNumber ? `<p style="margin: 4px 0 0 0; font-size: 11px; opacity: 0.9;">الرقم الضريبي: ${vatNumber}</p>` : ''}
+          ${commercialRegister ? `<p style="margin: 2px 0 0 0; font-size: 11px; opacity: 0.9;">السجل التجاري: ${commercialRegister}</p>` : ''}
+        </div>
+        <div style="text-align: left;">
+          <h1 style="margin: 0; font-size: 26px; font-weight: bold;">فاتورة ضريبية</h1>
+          <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;">${invoice.invoiceNumber}</p>
+        </div>
+      </div>
+
+      <!-- Invoice Meta -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px;">
+        <div>
+          <p style="margin: 4px 0;"><strong>تاريخ الإصدار:</strong> ${formatDate(invoice.createdAt)}</p>
+          <p style="margin: 4px 0;"><strong>تاريخ الاستحقاق:</strong> ${formatDate(invoice.dueDate)}</p>
+          ${invoice.paidAt ? `<p style="margin: 4px 0;"><strong>تاريخ الدفع:</strong> ${formatDate(invoice.paidAt)}</p>` : ''}
+        </div>
+        <div style="text-align: left;">
+          <span style="background: ${statusColor}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">${statusLabel}</span>
+        </div>
+      </div>
+
+      <!-- Parties -->
+      <div style="display: flex; gap: 30px; margin-bottom: 25px; background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #dcfce7;">
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #0d7c3d;">معلومات الطفل</h4>
+          <p style="margin: 3px 0; font-size: 13px;">${invoice.childName || '-'}</p>
+          <p style="margin: 3px 0; font-size: 12px; color: #666;">${INVOICE_TYPE_LABELS[invoice.invoiceType || ''] || invoice.invoiceType || ''}</p>
+        </div>
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #0d7c3d;">معلومات ولي الأمر</h4>
+          <p style="margin: 3px 0; font-size: 13px;">${invoice.parentName || '-'}</p>
+          ${invoice.parentPhone ? `<p style="margin: 3px 0; font-size: 12px; color: #666;">${invoice.parentPhone}</p>` : ''}
+          ${invoice.parentEmail ? `<p style="margin: 3px 0; font-size: 12px; color: #666;">${invoice.parentEmail}</p>` : ''}
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+        <thead>
+          <tr style="background: #0d7c3d; color: white;">
+            <th style="padding: 12px 15px; text-align: right; border-radius: 0 8px 0 0;">الوصف</th>
+            <th style="padding: 12px 15px; text-align: left; width: 140px; border-radius: 8px 0 0 0;">المبلغ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 12px 15px;">${invoice.description || 'خدمات تعليمية'}</td>
+            <td style="padding: 12px 15px; text-align: left;">${subtotal.toFixed(2)} ر.س</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Totals -->
+      <div style="width: 280px; margin-right: auto; margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
+          <span>المبلغ قبل الضريبة</span>
+          <span>${subtotal.toFixed(2)} ر.س</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
+          <span>ضريبة القيمة المضافة (${vatRate}%)</span>
+          <span>${vatAmount.toFixed(2)} ر.س</span>
+        </div>
+        ${invoice.paymentMethod ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-size: 12px; color: #666;">
+          <span>طريقة الدفع</span>
+          <span>${PAYMENT_METHOD_LABELS[invoice.paymentMethod] || invoice.paymentMethod}</span>
+        </div>` : ''}
+        <div style="display: flex; justify-content: space-between; padding: 12px; background: #0d7c3d; color: white; border-radius: 0 0 8px 8px; font-weight: bold; font-size: 15px;">
+          <span>الإجمالي المستحق</span>
+          <span>${total.toFixed(2)} ر.س</span>
+        </div>
+      </div>
+
+      <!-- QR Code & Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 2px solid #e5e7eb; padding-top: 20px;">
+        <div>
+          ${qrDataUrl ? `
+            <img src="${qrDataUrl}" style="width: 100px; height: 100px;" />
+            <p style="font-size: 10px; color: #999; margin: 4px 0 0 0; text-align: center;">رمز التحقق الضريبي</p>
+          ` : ''}
+        </div>
+        <div style="text-align: left; font-size: 10px; color: #999;">
+          ${centerInfo?.address ? `<p style="margin: 2px 0;">${centerInfo.address}</p>` : ''}
+          ${centerInfo?.phone ? `<p style="margin: 2px 0;">هاتف: ${centerInfo.phone}</p>` : ''}
+          ${centerInfo?.email ? `<p style="margin: 2px 0;">بريد: ${centerInfo.email}</p>` : ''}
+          <p style="margin: 6px 0 0 0; font-size: 9px;">تم إصدار هذه الفاتورة إلكترونياً ولا تحتاج إلى توقيع أو ختم</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(container);
+
+  // Wait for images to load
+  const images = container.querySelectorAll('img');
+  if (images.length > 0) {
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        setTimeout(resolve, 3000);
+      });
+    }));
   }
 
-  // ============ INVOICE INFO ============
-  let y = 48;
+  console.log('[PDF] Rendering HTML to canvas...');
 
-  // Invoice number
-  doc.setFont('NotoSansArabic', 'bold');
-  doc.setTextColor(26, 86, 50);
-  doc.setFontSize(13);
-  drawText('فاتورة رقم: ' + invoice.invoiceNumber, pageWidth - margin, y, { align: 'right' });
-
-  y += 8;
-  doc.setFont('NotoSansArabic', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(50, 50, 50);
-  drawText('تاريخ الإصدار: ' + formatDate(invoice.createdAt), pageWidth - margin, y, { align: 'right' });
-
-  y += 6;
-  drawText('تاريخ الاستحقاق: ' + formatDate(invoice.dueDate), pageWidth - margin, y, { align: 'right' });
-
-  y += 6;
-  const statusText = STATUS_LABELS[invoice.status] || invoice.status;
-  drawText('الحالة: ' + statusText, pageWidth - margin, y, { align: 'right' });
-
-  if (invoice.paidAt) {
-    y += 6;
-    drawText('تاريخ الدفع: ' + formatDate(invoice.paidAt), pageWidth - margin, y, { align: 'right' });
-  }
-
-  // ============ PARTIES INFO ============
-  y += 10;
-
-  // Divider
-  doc.setDrawColor(0, 201, 183);
-  doc.setLineWidth(0.5);
-  doc.line(margin, y, pageWidth - margin, y);
-
-  y += 8;
-
-  // Two columns
-  doc.setFont('NotoSansArabic', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(26, 86, 50);
-  drawText('معلومات الطفل', pageWidth - margin, y, { align: 'right' });
-  drawText('معلومات ولي الأمر', pageWidth / 2 - 10, y, { align: 'right' });
-
-  y += 7;
-  doc.setFont('NotoSansArabic', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-
-  drawText(invoice.childName || '-', pageWidth - margin, y, { align: 'right' });
-  drawText(invoice.parentName || '-', pageWidth / 2 - 10, y, { align: 'right' });
-
-  y += 6;
-  if (invoice.invoiceType) {
-    drawText(INVOICE_TYPE_LABELS[invoice.invoiceType] || invoice.invoiceType, pageWidth - margin, y, { align: 'right' });
-  }
-  if (invoice.parentPhone) {
-    drawText(invoice.parentPhone, pageWidth / 2 - 10, y, { align: 'right' });
-  }
-
-  y += 6;
-  if (invoice.parentEmail) {
-    drawText(invoice.parentEmail, pageWidth / 2 - 10, y, { align: 'right' });
-  }
-
-  // ============ INVOICE TABLE ============
-  y += 10;
-
-  const subtotalStr = formatCurrency(invoice.subtotal);
-  const vatAmountStr = formatCurrency(invoice.vatAmount);
-  const totalStr = formatCurrency(invoice.total);
-  const vatRateStr = Number(invoice.vatRate || 15) + '%';
-
-  autoTable(doc, {
-    startY: y,
-    head: [['المبلغ', 'الوصف']],
-    body: [
-      [subtotalStr, invoice.description || 'خدمات تعليمية'],
-    ],
-    foot: [
-      [subtotalStr, 'المبلغ قبل الضريبة'],
-      [vatAmountStr, 'ضريبة القيمة المضافة (' + vatRateStr + ')'],
-      [totalStr, 'الإجمالي المستحق'],
-    ],
-    theme: 'grid',
-    styles: {
-      font: 'NotoSansArabic',
-      halign: 'right',
-      fontSize: 10,
-      cellPadding: 5,
-    },
-    headStyles: {
-      fillColor: [26, 86, 50],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      halign: 'center',
-    },
-    footStyles: {
-      fillColor: [240, 253, 244],
-      textColor: [26, 86, 50],
-      fontStyle: 'bold',
-    },
-    columnStyles: {
-      0: { cellWidth: 50, halign: 'center' },
-      1: { cellWidth: 'auto', halign: 'right' },
-    },
-    didParseCell: (data: any) => {
-      // Apply RTL processing to all cells
-      if (data.cell && data.cell.text) {
-        data.cell.styles.font = 'NotoSansArabic';
-      }
-    },
+  // Convert to canvas
+  const canvas = await html2canvas(container, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    logging: false,
   });
 
-  // ============ PAYMENT INFO ============
-  const finalY = (doc as any).lastAutoTable?.finalY || y + 50;
-  let currentY = finalY + 10;
+  // Remove container
+  document.body.removeChild(container);
 
-  if (invoice.paymentMethod) {
-    doc.setFont('NotoSansArabic', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(60, 60, 60);
-    drawText('طريقة الدفع: ' + (PAYMENT_METHOD_LABELS[invoice.paymentMethod] || invoice.paymentMethod), pageWidth - margin, currentY, { align: 'right' });
-    currentY += 6;
-  }
+  console.log('[PDF] Creating PDF from canvas...');
 
-  if (invoice.paidAmount && Number(invoice.paidAmount) > 0) {
-    drawText('المبلغ المدفوع: ' + formatCurrency(invoice.paidAmount), pageWidth - margin, currentY, { align: 'right' });
-    currentY += 6;
-    const remaining = Number(invoice.total) - Number(invoice.paidAmount);
-    if (remaining > 0) {
-      doc.setTextColor(200, 50, 50);
-      drawText('المبلغ المتبقي: ' + formatCurrency(remaining), pageWidth - margin, currentY, { align: 'right' });
-      currentY += 6;
+  // Create PDF
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+
+  const imgWidth = pdfWidth;
+  const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+  if (imgHeight <= pdfHeight) {
+    pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+  } else {
+    // Multi-page
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
+    while (heightLeft > 0) {
+      position -= pdfHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
     }
   }
 
-  // ============ QR CODE ============
-  if (qrDataUrl) {
-    const qrSize = 30;
-    const qrX = margin;
-    const qrY = 250;
-    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-
-    doc.setFont('NotoSansArabic', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    drawText('رمز الفاتورة الإلكترونية', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
-  }
-
-  // ============ TAX INFO ============
-  const infoY = 250;
-  doc.setFont('NotoSansArabic', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(60, 60, 60);
-  
-  if (vatNumber) {
-    drawText('الرقم الضريبي: ' + vatNumber, pageWidth - margin, infoY + 5, { align: 'right' });
-  }
-  if (centerInfo?.commercialRegister) {
-    drawText('السجل التجاري: ' + centerInfo.commercialRegister, pageWidth - margin, infoY + 11, { align: 'right' });
-  }
-  if (centerInfo?.address) {
-    drawText('العنوان: ' + centerInfo.address, pageWidth - margin, infoY + 17, { align: 'right' });
-  }
-
-  // ============ FOOTER ============
-  doc.setDrawColor(26, 86, 50);
-  doc.setLineWidth(0.3);
-  doc.line(margin, 287, pageWidth - margin, 287);
-
-  doc.setFont('NotoSansArabic', 'normal');
-  doc.setFontSize(7);
-  doc.setTextColor(120, 120, 120);
-  drawText('نشأة - منصة إدارة الحضانات والروضات', pageWidth / 2, 291, { align: 'center' });
-  drawText('تم إصدار هذه الفاتورة إلكترونياً ولا تحتاج إلى توقيع أو ختم', pageWidth / 2, 295, { align: 'center' });
-
-  // Save the PDF
-  console.log('[PDF] Saving PDF...');
-  doc.save('فاتورة-' + invoice.invoiceNumber + '.pdf');
-  console.log('[PDF] Done!');
-}
-
-/**
- * Load image from URL as base64 data URL for jsPDF
- */
-async function loadImageAsBase64(url: string): Promise<string | null> {
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const blob = await resp.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
+  // Save
+  const fileName = `فاتورة-${invoice.invoiceNumber}.pdf`;
+  pdf.save(fileName);
+  console.log('[PDF] Done! Saved as:', fileName);
 }
