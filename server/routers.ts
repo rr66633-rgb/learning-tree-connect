@@ -1834,6 +1834,7 @@ export const appRouter = router({
       timezone: z.string().optional(),
       vatNumber: z.string().optional(),
       commercialRegister: z.string().optional(),
+      logoUrl: z.string().optional(),
     })).mutation(async ({ input }) => {
       const mapped: any = {};
       if (input.name) mapped.centerName = input.name;
@@ -1844,6 +1845,7 @@ export const appRouter = router({
       if (input.workingHoursEnd) mapped.workingHoursEnd = input.workingHoursEnd;
       if (input.vatNumber !== undefined) mapped.vatNumber = input.vatNumber;
       if (input.commercialRegister !== undefined) mapped.commercialRegister = input.commercialRegister;
+      if (input.logoUrl !== undefined) mapped.logoUrl = input.logoUrl;
       return db.updateCenterSettings(mapped);
     }),
   }),

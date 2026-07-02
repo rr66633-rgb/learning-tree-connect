@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { MapPin, Clock, Building2, Save, Bell, Send, CheckCircle2, XCircle } from "lucide-react";
+import { MapPin, Clock, Building2, Save, Bell, Send, CheckCircle2, XCircle, Upload, Image, X } from "lucide-react";
 import ChangePassword from "@/components/ChangePassword";
 import { NotificationSoundSettings } from "@/components/NotificationSoundSettings";
 import { PushNotificationToggle } from "@/components/PushNotificationBanner";
@@ -188,6 +188,8 @@ export default function StaffSettings() {
   const [workEnd, setWorkEnd] = useState("");
   const [vatNumber, setVatNumber] = useState("");
   const [commercialRegister, setCommercialRegister] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -199,6 +201,7 @@ export default function StaffSettings() {
       setWorkEnd(settings.workingHoursEnd || "17:00");
       setVatNumber((settings as any).vatNumber || "");
       setCommercialRegister((settings as any).commercialRegister || "");
+      setLogoUrl((settings as any).logoUrl || "");
     }
   }, [settings]);
 
@@ -212,6 +215,7 @@ export default function StaffSettings() {
       workingHoursEnd: workEnd,
       vatNumber: vatNumber,
       commercialRegister: commercialRegister,
+      logoUrl: logoUrl,
     });
   };
 
@@ -249,6 +253,64 @@ export default function StaffSettings() {
             <Label>اسم المركز</Label>
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="مركز شجرة التعلم" />
           </div>
+          {/* Logo Upload */}
+          <div>
+            <Label>شعار المركز</Label>
+            <p className="text-xs text-muted-foreground mb-2">يظهر في ترويسة الفاتورة عند الطباعة أو التصدير ك PDF</p>
+            <div className="flex items-center gap-4">
+              {logoUrl ? (
+                <div className="relative">
+                  <img src={logoUrl} alt="شعار المركز" className="h-16 w-16 object-contain rounded border p-1" />
+                  <button onClick={() => setLogoUrl('')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="h-16 w-16 border-2 border-dashed rounded flex items-center justify-center text-muted-foreground">
+                  <Image className="h-6 w-6" />
+                </div>
+              )}
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="logo-upload"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      toast.error('حجم الصورة يجب أن يكون أقل من 2 ميغابايت');
+                      return;
+                    }
+                    setUploading(true);
+                    try {
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      const resp = await fetch('/api/upload-logo', { method: 'POST', body: formData });
+                      const data = await resp.json();
+                      if (data.url) {
+                        setLogoUrl(data.url);
+                        toast.success('تم رفع الشعار بنجاح');
+                      } else {
+                        toast.error('فشل رفع الشعار');
+                      }
+                    } catch {
+                      toast.error('فشل رفع الشعار');
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                />
+                <Button variant="outline" size="sm" disabled={uploading} onClick={() => document.getElementById('logo-upload')?.click()}>
+                  <Upload className="h-4 w-4 ml-1" />
+                  {uploading ? 'جاري الرفع...' : 'رفع شعار'}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">PNG أو JPG - أقل من 2 ميغا</p>
+              </div>
+            </div>
+          </div>
+          <Separator />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>الرقم الضريبي (VAT)</Label>

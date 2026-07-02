@@ -326,7 +326,8 @@ export default function StaffFinance() {
                                 <Undo2 className="h-3 w-3 ml-1" />استرداد
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={async () => { try { await generateInvoicePDF(inv as any, { centerName: centerSettings?.centerName, phone: centerSettings?.phone || undefined, email: centerSettings?.email || undefined, address: centerSettings?.address || undefined, vatNumber: centerSettings?.vatNumber || undefined, commercialRegister: centerSettings?.commercialRegister || undefined }); toast.success('تم تحميل PDF'); } catch { toast.error('خطأ في توليد PDF'); } }}>
+                            <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={async () => { try { await generateInvoicePDF(inv as any, { centerName: centerSettings?.centerName, phone: centerSettings?.phone || undefined, email: centerSettings?.email || undefined, address: centerSettings?.address || undefined, vatNumber: (centerSettings as any)?.vatNumber || undefined, commercialRegister: (centerSettings as any)?.commercialRegister || undefined, logoUrl: (centerSettings as any)?.logoUrl || undefined }); 
+toast.success('تم تحميل PDF'); } catch { toast.error('خطأ في توليد PDF'); } }}>
                               <Download className="h-3 w-3 ml-1" />PDF
                             </Button>
                             <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => sendInvoiceEmail.mutate({ id: inv.id })} disabled={sendInvoiceEmail.isPending}>

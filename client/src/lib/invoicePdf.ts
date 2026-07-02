@@ -2,7 +2,6 @@
  * توليد فاتورة PDF احترافية بالعربي
  * يستخدم jsPDF مع خط Noto Sans Arabic + QR Code + الرقم الضريبي
  */
-import QRCode from 'qrcode';
 
 interface InvoiceData {
   id: number;
@@ -32,6 +31,7 @@ interface CenterInfo {
   address?: string;
   vatNumber?: string;
   commercialRegister?: string;
+  logoUrl?: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -87,10 +87,12 @@ async function loadArabicFont(): Promise<{ regular: string; bold: string }> {
   const toBase64 = (buf: ArrayBuffer) => {
     const bytes = new Uint8Array(buf);
     let binary = '';
-    const chunkSize = 8192;
+    const chunkSize = 1024;
     for (let i = 0; i < bytes.byteLength; i += chunkSize) {
       const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.byteLength));
-      binary += String.fromCharCode.apply(null, Array.from(chunk));
+      for (let j = 0; j < chunk.length; j++) {
+        binary += String.fromCharCode(chunk[j]);
+      }
     }
     return btoa(binary);
   };
@@ -104,62 +106,71 @@ async function loadArabicFont(): Promise<{ regular: string; bold: string }> {
 /**
  * Generate QR code as data URL for ZATCA-style invoice
  */
-async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<string> {
-  // ZATCA simplified invoice QR contains: seller name, VAT number, timestamp, total, VAT amount
-  const sellerName = centerInfo?.centerName || 'نشأة';
-  const vatNumber = centerInfo?.vatNumber || '';
-  const timestamp = new Date(invoice.createdAt).toISOString();
-  const total = Number(invoice.total || 0).toFixed(2);
-  const vatAmount = Number(invoice.vatAmount || 0).toFixed(2);
+async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<string | null> {
+  try {
+    // ZATCA simplified invoice QR contains: seller name, VAT number, timestamp, total, VAT amount
+    const sellerName = centerInfo?.centerName || 'نشأة';
+    const vatNumber = centerInfo?.vatNumber || '';
+    const timestamp = new Date(invoice.createdAt).toISOString();
+    const total = Number(invoice.total || 0).toFixed(2);
+    const vatAmount = Number(invoice.vatAmount || 0).toFixed(2);
 
-  // TLV encoding for ZATCA QR (Tag-Length-Value)
-  const tlvEncode = (tag: number, value: string): Uint8Array => {
-    const encoder = new TextEncoder();
-    const valueBytes = encoder.encode(value);
-    const result = new Uint8Array(2 + valueBytes.length);
-    result[0] = tag;
-    result[1] = valueBytes.length;
-    result.set(valueBytes, 2);
-    return result;
-  };
+    // TLV encoding for ZATCA QR (Tag-Length-Value)
+    const tlvEncode = (tag: number, value: string): Uint8Array => {
+      const encoder = new TextEncoder();
+      const valueBytes = encoder.encode(value);
+      const result = new Uint8Array(2 + valueBytes.length);
+      result[0] = tag;
+      result[1] = valueBytes.length;
+      result.set(valueBytes, 2);
+      return result;
+    };
 
-  const tag1 = tlvEncode(1, sellerName);
-  const tag2 = tlvEncode(2, vatNumber);
-  const tag3 = tlvEncode(3, timestamp);
-  const tag4 = tlvEncode(4, total);
-  const tag5 = tlvEncode(5, vatAmount);
+    const tag1 = tlvEncode(1, sellerName);
+    const tag2 = tlvEncode(2, vatNumber);
+    const tag3 = tlvEncode(3, timestamp);
+    const tag4 = tlvEncode(4, total);
+    const tag5 = tlvEncode(5, vatAmount);
 
-  // Combine all TLV tags
-  const combined = new Uint8Array(tag1.length + tag2.length + tag3.length + tag4.length + tag5.length);
-  let offset = 0;
-  combined.set(tag1, offset); offset += tag1.length;
-  combined.set(tag2, offset); offset += tag2.length;
-  combined.set(tag3, offset); offset += tag3.length;
-  combined.set(tag4, offset); offset += tag4.length;
-  combined.set(tag5, offset);
+    // Combine all TLV tags
+    const combined = new Uint8Array(tag1.length + tag2.length + tag3.length + tag4.length + tag5.length);
+    let offset = 0;
+    combined.set(tag1, offset); offset += tag1.length;
+    combined.set(tag2, offset); offset += tag2.length;
+    combined.set(tag3, offset); offset += tag3.length;
+    combined.set(tag4, offset); offset += tag4.length;
+    combined.set(tag5, offset);
 
-  // Base64 encode the TLV data
-  const base64Data = btoa(String.fromCharCode.apply(null, Array.from(combined)));
+    // Base64 encode the TLV data
+    let tlvBinary = '';
+    for (let i = 0; i < combined.length; i++) {
+      tlvBinary += String.fromCharCode(combined[i]);
+    }
+    const base64Data = btoa(tlvBinary);
 
-  // Generate QR code as data URL
-  const qrDataUrl = await QRCode.toDataURL(base64Data, {
-    width: 150,
-    margin: 1,
-    errorCorrectionLevel: 'M',
-  });
+    // Dynamic import qrcode
+    const QRCode = await import('qrcode');
+    const qrDataUrl = await QRCode.toDataURL(base64Data, {
+      width: 150,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+    });
 
-  return qrDataUrl;
+    return qrDataUrl;
+  } catch (err) {
+    console.warn('QR generation failed, skipping:', err);
+    return null;
+  }
 }
 
 export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<void> {
   const { default: jsPDF } = await import('jspdf');
-  // Import autotable as side-effect (it patches jsPDF prototype)
-  await import('jspdf-autotable');
+  const { autoTable } = await import('jspdf-autotable');
 
   // Load Arabic fonts
   const fonts = await loadArabicFont();
 
-  // Generate QR code
+  // Generate QR code (non-blocking, fallback to null)
   const qrDataUrl = await generateInvoiceQR(invoice, centerInfo);
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -181,25 +192,35 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   doc.setFillColor(0, 201, 183); // Teal accent
   doc.rect(0, 38, pageWidth, 2, 'F');
 
+  // Logo if available
+  if (centerInfo?.logoUrl) {
+    try {
+      const logoImg = await loadImageAsBase64(centerInfo.logoUrl);
+      if (logoImg) {
+        doc.addImage(logoImg, 'PNG', pageWidth / 2 - 8, 3, 16, 16);
+      }
+    } catch (e) {
+      // Skip logo if failed to load
+    }
+  }
+
   // Header text
   doc.setFont('NotoSansArabic', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.text('نشأة', pageWidth / 2, 16, { align: 'center' });
+  doc.setFontSize(centerInfo?.logoUrl ? 14 : 22);
+  const headerY = centerInfo?.logoUrl ? 24 : 16;
+  const centerName = centerInfo?.centerName || 'نشأة';
+  doc.text(centerName, pageWidth / 2, headerY, { align: 'center' });
 
   doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(11);
-  doc.text('فاتورة ضريبية مبسطة', pageWidth / 2, 26, { align: 'center' });
-
-  doc.setFontSize(9);
-  const centerName = centerInfo?.centerName || 'نشأة لإدارة الحضانات';
-  doc.text(centerName, pageWidth / 2, 33, { align: 'center' });
+  doc.text('فاتورة ضريبية مبسطة', pageWidth / 2, headerY + 8, { align: 'center' });
 
   // VAT number in header if available
   const vatNumber = centerInfo?.vatNumber || '';
   if (vatNumber) {
     doc.setFontSize(8);
-    doc.text(`الرقم الضريبي: ${vatNumber}`, pageWidth / 2, 38, { align: 'center' });
+    doc.text(`الرقم الضريبي: ${vatNumber}`, pageWidth / 2, 37, { align: 'center' });
   }
 
   // ============ INVOICE INFO ============
@@ -270,7 +291,7 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   // ============ INVOICE TABLE ============
   y += 8;
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['المبلغ (ر.س)', 'الوصف', '#']],
     body: [
@@ -334,30 +355,32 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   }
 
   // ============ QR CODE ============
-  // Add QR code at bottom-left
-  const qrSize = 30;
-  const qrX = margin;
-  const qrY = 250;
-  doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+  if (qrDataUrl) {
+    const qrSize = 30;
+    const qrX = margin;
+    const qrY = 250;
+    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
-  // QR label
-  doc.setFont('NotoSansArabic', 'normal');
-  doc.setFontSize(7);
-  doc.setTextColor(100, 100, 100);
-  doc.text('رمز الفاتورة الإلكترونية', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
+    // QR label
+    doc.setFont('NotoSansArabic', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text('رمز الفاتورة الإلكترونية', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
+  }
 
-  // ============ TAX INFO (right of QR) ============
+  // ============ TAX INFO ============
+  const infoY = 250;
   if (vatNumber) {
     doc.setFont('NotoSansArabic', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(60, 60, 60);
-    doc.text(`الرقم الضريبي: ${vatNumber}`, pageWidth - margin, qrY + 5, { align: 'right' });
+    doc.text(`الرقم الضريبي: ${vatNumber}`, pageWidth - margin, infoY + 5, { align: 'right' });
   }
   if (centerInfo?.commercialRegister) {
-    doc.text(`السجل التجاري: ${centerInfo.commercialRegister}`, pageWidth - margin, qrY + 11, { align: 'right' });
+    doc.text(`السجل التجاري: ${centerInfo.commercialRegister}`, pageWidth - margin, infoY + 11, { align: 'right' });
   }
   if (centerInfo?.address) {
-    doc.text(`العنوان: ${centerInfo.address}`, pageWidth - margin, qrY + 17, { align: 'right' });
+    doc.text(`العنوان: ${centerInfo.address}`, pageWidth - margin, infoY + 17, { align: 'right' });
   }
 
   // ============ FOOTER ============
@@ -373,4 +396,23 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
 
   // Save the PDF
   doc.save(`فاتورة-${invoice.invoiceNumber}.pdf`);
+}
+
+/**
+ * Load image from URL as base64 data URL for jsPDF
+ */
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
 }

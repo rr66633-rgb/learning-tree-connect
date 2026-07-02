@@ -84,8 +84,9 @@ export default function InvoiceDetail() {
         phone: centerSettings?.phone || undefined,
         email: centerSettings?.email || undefined,
         address: centerSettings?.address || undefined,
-        vatNumber: centerSettings?.vatNumber || undefined,
-        commercialRegister: centerSettings?.commercialRegister || undefined,
+        vatNumber: (centerSettings as any)?.vatNumber || undefined,
+        commercialRegister: (centerSettings as any)?.commercialRegister || undefined,
+        logoUrl: (centerSettings as any)?.logoUrl || undefined,
       });
       toast.success('تم تحميل الفاتورة بنجاح');
     } catch (err) {
