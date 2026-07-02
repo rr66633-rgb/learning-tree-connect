@@ -67,11 +67,30 @@ async function loadArabicFont(): Promise<{ regular: string; bold: string }> {
 }
 
 /**
+ * Format number as Arabic currency string
+ */
+function formatCurrency(value: string | number): string {
+  const num = Number(value || 0);
+  return num.toFixed(2) + ' ر.س';
+}
+
+/**
+ * Format date in Arabic
+ */
+function formatDate(date: string | Date): string {
+  try {
+    const d = new Date(date);
+    return d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch {
+    return String(date);
+  }
+}
+
+/**
  * Generate QR code as data URL for ZATCA-style invoice
  */
 async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<string | null> {
   try {
-    // ZATCA simplified invoice QR contains: seller name, VAT number, timestamp, total, VAT amount
     const sellerName = centerInfo?.centerName || 'نشأة';
     const vatNumber = centerInfo?.vatNumber || '';
     const timestamp = new Date(invoice.createdAt).toISOString();
@@ -95,7 +114,6 @@ async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo):
     const tag4 = tlvEncode(4, total);
     const tag5 = tlvEncode(5, vatAmount);
 
-    // Combine all TLV tags
     const combined = new Uint8Array(tag1.length + tag2.length + tag3.length + tag4.length + tag5.length);
     let offset = 0;
     combined.set(tag1, offset); offset += tag1.length;
@@ -104,14 +122,12 @@ async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo):
     combined.set(tag4, offset); offset += tag4.length;
     combined.set(tag5, offset);
 
-    // Base64 encode the TLV data
     let tlvBinary = '';
     for (let i = 0; i < combined.length; i++) {
       tlvBinary += String.fromCharCode(combined[i]);
     }
     const base64Data = btoa(tlvBinary);
 
-    // Dynamic import qrcode
     const QRCode = await import('qrcode');
     const qrDataUrl = await QRCode.toDataURL(base64Data, {
       width: 150,
@@ -121,7 +137,7 @@ async function generateInvoiceQR(invoice: InvoiceData, centerInfo?: CenterInfo):
 
     return qrDataUrl;
   } catch (err) {
-    console.warn('QR generation failed, skipping:', err);
+    console.warn('[PDF] QR generation failed, skipping:', err);
     return null;
   }
 }
@@ -153,7 +169,7 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   let fonts: { regular: string; bold: string };
   try {
     fonts = await loadArabicFont();
-    console.log('[PDF] Fonts loaded, regular length:', fonts.regular.length, 'bold length:', fonts.bold.length);
+    console.log('[PDF] Fonts loaded');
   } catch (e) {
     console.error('[PDF] Failed to load fonts:', e);
     throw new Error('فشل تحميل الخطوط العربية');
@@ -178,6 +194,14 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
 
   const pageWidth = 210;
   const margin = 15;
+
+  // RTL text options for jsPDF
+  const rtlOpts = { isInputRtl: true, isOutputRtl: true, isInputVisual: false, isOutputVisual: false };
+
+  // Helper to draw RTL text
+  const drawText = (text: string, x: number, y: number, options: any = {}) => {
+    doc.text(text, x, y, { ...rtlOpts, ...options });
+  };
 
   // ============ HEADER ============
   doc.setFillColor(26, 86, 50); // Forest green
@@ -205,44 +229,44 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   doc.setFontSize(centerInfo?.logoUrl ? 14 : 22);
   const headerY = centerInfo?.logoUrl ? 24 : 16;
   const centerName = centerInfo?.centerName || 'نشأة';
-  doc.text(centerName, pageWidth / 2, headerY, { align: 'center' });
+  drawText(centerName, pageWidth / 2, headerY, { align: 'center' });
 
   doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(11);
-  doc.text('فاتورة ضريبية مبسطة', pageWidth / 2, headerY + 8, { align: 'center' });
+  drawText('فاتورة ضريبية مبسطة', pageWidth / 2, headerY + 8, { align: 'center' });
 
   // VAT number in header if available
   const vatNumber = centerInfo?.vatNumber || '';
   if (vatNumber) {
     doc.setFontSize(8);
-    doc.text(`الرقم الضريبي: ${vatNumber}`, pageWidth / 2, 37, { align: 'center' });
+    drawText('الرقم الضريبي: ' + vatNumber, pageWidth / 2, 37, { align: 'center' });
   }
 
   // ============ INVOICE INFO ============
   let y = 48;
 
-  // Invoice number and date
+  // Invoice number
   doc.setFont('NotoSansArabic', 'bold');
   doc.setTextColor(26, 86, 50);
   doc.setFontSize(13);
-  doc.text(`فاتورة رقم: ${invoice.invoiceNumber}`, pageWidth - margin, y, { align: 'right' });
+  drawText('فاتورة رقم: ' + invoice.invoiceNumber, pageWidth - margin, y, { align: 'right' });
 
-  y += 7;
+  y += 8;
   doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(50, 50, 50);
-  doc.text(`تاريخ الإصدار: ${new Date(invoice.createdAt).toLocaleDateString('ar-SA')}`, pageWidth - margin, y, { align: 'right' });
+  drawText('تاريخ الإصدار: ' + formatDate(invoice.createdAt), pageWidth - margin, y, { align: 'right' });
 
   y += 6;
-  doc.text(`تاريخ الاستحقاق: ${new Date(invoice.dueDate).toLocaleDateString('ar-SA')}`, pageWidth - margin, y, { align: 'right' });
+  drawText('تاريخ الاستحقاق: ' + formatDate(invoice.dueDate), pageWidth - margin, y, { align: 'right' });
 
   y += 6;
   const statusText = STATUS_LABELS[invoice.status] || invoice.status;
-  doc.text(`الحالة: ${statusText}`, pageWidth - margin, y, { align: 'right' });
+  drawText('الحالة: ' + statusText, pageWidth - margin, y, { align: 'right' });
 
   if (invoice.paidAt) {
     y += 6;
-    doc.text(`تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDateString('ar-SA')}`, pageWidth - margin, y, { align: 'right' });
+    drawText('تاريخ الدفع: ' + formatDate(invoice.paidAt), pageWidth - margin, y, { align: 'right' });
   }
 
   // ============ PARTIES INFO ============
@@ -259,54 +283,55 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   doc.setFont('NotoSansArabic', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(26, 86, 50);
-  doc.text('معلومات الطفل', pageWidth - margin, y, { align: 'right' });
-  doc.text('معلومات ولي الأمر', pageWidth / 2 - 10, y, { align: 'right' });
+  drawText('معلومات الطفل', pageWidth - margin, y, { align: 'right' });
+  drawText('معلومات ولي الأمر', pageWidth / 2 - 10, y, { align: 'right' });
 
-  y += 6;
+  y += 7;
   doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
 
-  doc.text(`الاسم: ${invoice.childName || '-'}`, pageWidth - margin, y, { align: 'right' });
-  doc.text(`الاسم: ${invoice.parentName || '-'}`, pageWidth / 2 - 10, y, { align: 'right' });
+  drawText(invoice.childName || '-', pageWidth - margin, y, { align: 'right' });
+  drawText(invoice.parentName || '-', pageWidth / 2 - 10, y, { align: 'right' });
 
-  y += 5;
+  y += 6;
   if (invoice.invoiceType) {
-    doc.text(`النوع: ${INVOICE_TYPE_LABELS[invoice.invoiceType] || invoice.invoiceType}`, pageWidth - margin, y, { align: 'right' });
+    drawText(INVOICE_TYPE_LABELS[invoice.invoiceType] || invoice.invoiceType, pageWidth - margin, y, { align: 'right' });
   }
   if (invoice.parentPhone) {
-    doc.text(`الجوال: ${invoice.parentPhone}`, pageWidth / 2 - 10, y, { align: 'right' });
+    drawText(invoice.parentPhone, pageWidth / 2 - 10, y, { align: 'right' });
   }
 
-  y += 5;
+  y += 6;
   if (invoice.parentEmail) {
-    doc.text(`البريد: ${invoice.parentEmail}`, pageWidth / 2 - 10, y, { align: 'right' });
+    drawText(invoice.parentEmail, pageWidth / 2 - 10, y, { align: 'right' });
   }
 
   // ============ INVOICE TABLE ============
-  y += 8;
+  y += 10;
+
+  const subtotalStr = formatCurrency(invoice.subtotal);
+  const vatAmountStr = formatCurrency(invoice.vatAmount);
+  const totalStr = formatCurrency(invoice.total);
+  const vatRateStr = Number(invoice.vatRate || 15) + '%';
 
   autoTable(doc, {
     startY: y,
-    head: [['المبلغ (ر.س)', 'الوصف', '#']],
+    head: [['المبلغ', 'الوصف']],
     body: [
-      [
-        `${Number(invoice.subtotal || 0).toLocaleString('ar-SA')} ر.س`,
-        invoice.description || 'خدمات تعليمية',
-        '1',
-      ],
+      [subtotalStr, invoice.description || 'خدمات تعليمية'],
     ],
     foot: [
-      [`${Number(invoice.subtotal || 0).toLocaleString('ar-SA')} ر.س`, 'المبلغ قبل الضريبة', ''],
-      [`${Number(invoice.vatAmount || 0).toLocaleString('ar-SA')} ر.س`, `ضريبة القيمة المضافة (${Number(invoice.vatRate || 15)}%)`, ''],
-      [`${Number(invoice.total || 0).toLocaleString('ar-SA')} ر.س`, 'الإجمالي المستحق', ''],
+      [subtotalStr, 'المبلغ قبل الضريبة'],
+      [vatAmountStr, 'ضريبة القيمة المضافة (' + vatRateStr + ')'],
+      [totalStr, 'الإجمالي المستحق'],
     ],
     theme: 'grid',
     styles: {
       font: 'NotoSansArabic',
       halign: 'right',
-      fontSize: 9,
-      cellPadding: 4,
+      fontSize: 10,
+      cellPadding: 5,
     },
     headStyles: {
       fillColor: [26, 86, 50],
@@ -320,9 +345,14 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
       fontStyle: 'bold',
     },
     columnStyles: {
-      0: { cellWidth: 45, halign: 'center' },
-      1: { cellWidth: 'auto' },
-      2: { cellWidth: 12, halign: 'center' },
+      0: { cellWidth: 50, halign: 'center' },
+      1: { cellWidth: 'auto', halign: 'right' },
+    },
+    didParseCell: (data: any) => {
+      // Apply RTL processing to all cells
+      if (data.cell && data.cell.text) {
+        data.cell.styles.font = 'NotoSansArabic';
+      }
     },
   });
 
@@ -334,17 +364,17 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
     doc.setFont('NotoSansArabic', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(60, 60, 60);
-    doc.text(`طريقة الدفع: ${PAYMENT_METHOD_LABELS[invoice.paymentMethod] || invoice.paymentMethod}`, pageWidth - margin, currentY, { align: 'right' });
+    drawText('طريقة الدفع: ' + (PAYMENT_METHOD_LABELS[invoice.paymentMethod] || invoice.paymentMethod), pageWidth - margin, currentY, { align: 'right' });
     currentY += 6;
   }
 
   if (invoice.paidAmount && Number(invoice.paidAmount) > 0) {
-    doc.text(`المبلغ المدفوع: ${Number(invoice.paidAmount).toLocaleString('ar-SA')} ر.س`, pageWidth - margin, currentY, { align: 'right' });
+    drawText('المبلغ المدفوع: ' + formatCurrency(invoice.paidAmount), pageWidth - margin, currentY, { align: 'right' });
     currentY += 6;
     const remaining = Number(invoice.total) - Number(invoice.paidAmount);
     if (remaining > 0) {
       doc.setTextColor(200, 50, 50);
-      doc.text(`المبلغ المتبقي: ${remaining.toLocaleString('ar-SA')} ر.س`, pageWidth - margin, currentY, { align: 'right' });
+      drawText('المبلغ المتبقي: ' + formatCurrency(remaining), pageWidth - margin, currentY, { align: 'right' });
       currentY += 6;
     }
   }
@@ -356,26 +386,26 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
     const qrY = 250;
     doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
-    // QR label
     doc.setFont('NotoSansArabic', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
-    doc.text('رمز الفاتورة الإلكترونية', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
+    drawText('رمز الفاتورة الإلكترونية', qrX + qrSize / 2, qrY + qrSize + 4, { align: 'center' });
   }
 
   // ============ TAX INFO ============
   const infoY = 250;
+  doc.setFont('NotoSansArabic', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(60, 60, 60);
+  
   if (vatNumber) {
-    doc.setFont('NotoSansArabic', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`الرقم الضريبي: ${vatNumber}`, pageWidth - margin, infoY + 5, { align: 'right' });
+    drawText('الرقم الضريبي: ' + vatNumber, pageWidth - margin, infoY + 5, { align: 'right' });
   }
   if (centerInfo?.commercialRegister) {
-    doc.text(`السجل التجاري: ${centerInfo.commercialRegister}`, pageWidth - margin, infoY + 11, { align: 'right' });
+    drawText('السجل التجاري: ' + centerInfo.commercialRegister, pageWidth - margin, infoY + 11, { align: 'right' });
   }
   if (centerInfo?.address) {
-    doc.text(`العنوان: ${centerInfo.address}`, pageWidth - margin, infoY + 17, { align: 'right' });
+    drawText('العنوان: ' + centerInfo.address, pageWidth - margin, infoY + 17, { align: 'right' });
   }
 
   // ============ FOOTER ============
@@ -386,11 +416,13 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   doc.setFont('NotoSansArabic', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(120, 120, 120);
-  doc.text('نشأة - منصة إدارة الحضانات والروضات | www.naashah.com', pageWidth / 2, 291, { align: 'center' });
-  doc.text('تم إصدار هذه الفاتورة إلكترونياً ولا تحتاج إلى توقيع أو ختم', pageWidth / 2, 295, { align: 'center' });
+  drawText('نشأة - منصة إدارة الحضانات والروضات', pageWidth / 2, 291, { align: 'center' });
+  drawText('تم إصدار هذه الفاتورة إلكترونياً ولا تحتاج إلى توقيع أو ختم', pageWidth / 2, 295, { align: 'center' });
 
   // Save the PDF
-  doc.save(`فاتورة-${invoice.invoiceNumber}.pdf`);
+  console.log('[PDF] Saving PDF...');
+  doc.save('فاتورة-' + invoice.invoiceNumber + '.pdf');
+  console.log('[PDF] Done!');
 }
 
 /**
