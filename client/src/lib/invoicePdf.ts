@@ -170,10 +170,10 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   container.style.zIndex = '-1';
 
   container.innerHTML = `
-    <div style="font-family: 'Noto Sans Arabic', Tahoma, Arial, sans-serif; direction: rtl; color: #1a1a1a; padding: 40px; box-sizing: border-box;">
+    <div style="font-family: 'Noto Sans Arabic', Tahoma, Arial, sans-serif; direction: rtl; color: #1a1a1a; padding: 30px; box-sizing: border-box;">
       
       <!-- Header Bar -->
-      <div style="background: linear-gradient(135deg, #0d7c3d, #065f2e); color: white; padding: 25px 30px; border-radius: 10px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="background: linear-gradient(135deg, #5bb8e8, #2980b9); color: white; padding: 20px 25px; border-radius: 10px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;">
         <div>
           ${logoUrl ? `<img src="${logoUrl}" style="max-height: 50px; max-width: 150px; margin-bottom: 8px; display: block;" crossorigin="anonymous" />` : ''}
           <h2 style="margin: 0; font-size: 20px; font-weight: bold;">${centerName}</h2>
@@ -187,7 +187,7 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
       </div>
 
       <!-- Invoice Meta -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px;">
         <div>
           <p style="margin: 4px 0;"><strong>تاريخ الإصدار:</strong> ${formatDate(invoice.createdAt)}</p>
           <p style="margin: 4px 0;"><strong>تاريخ الاستحقاق:</strong> ${formatDate(invoice.dueDate)}</p>
@@ -199,14 +199,14 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
       </div>
 
       <!-- Parties -->
-      <div style="display: flex; gap: 30px; margin-bottom: 25px; background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #dcfce7;">
+      <div style="display: flex; gap: 30px; margin-bottom: 18px; background: #eef7fc; padding: 15px; border-radius: 8px; border: 1px solid #d0e8f5;">
         <div style="flex: 1;">
-          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #0d7c3d;">معلومات الطفل</h4>
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #2980b9;">معلومات الطفل</h4>
           <p style="margin: 3px 0; font-size: 13px;">${invoice.childName || '-'}</p>
           <p style="margin: 3px 0; font-size: 12px; color: #666;">${INVOICE_TYPE_LABELS[invoice.invoiceType || ''] || invoice.invoiceType || ''}</p>
         </div>
         <div style="flex: 1;">
-          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #0d7c3d;">معلومات ولي الأمر</h4>
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #2980b9;">معلومات ولي الأمر</h4>
           <p style="margin: 3px 0; font-size: 13px;">${invoice.parentName || '-'}</p>
           ${invoice.parentPhone ? `<p style="margin: 3px 0; font-size: 12px; color: #666;">${invoice.parentPhone}</p>` : ''}
           ${invoice.parentEmail ? `<p style="margin: 3px 0; font-size: 12px; color: #666;">${invoice.parentEmail}</p>` : ''}
@@ -214,9 +214,9 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
       </div>
 
       <!-- Items Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px;">
         <thead>
-          <tr style="background: #0d7c3d; color: white;">
+          <tr style="background: #2980b9; color: white;">
             <th style="padding: 12px 15px; text-align: right; border-radius: 0 8px 0 0;">الوصف</th>
             <th style="padding: 12px 15px; text-align: left; width: 140px; border-radius: 8px 0 0 0;">المبلغ</th>
           </tr>
@@ -230,7 +230,7 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
       </table>
 
       <!-- Totals -->
-      <div style="width: 280px; margin-right: auto; margin-bottom: 30px;">
+      <div style="width: 280px; margin-right: auto; margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
           <span>المبلغ قبل الضريبة</span>
           <span>${subtotal.toFixed(2)} ر.س</span>
@@ -244,7 +244,7 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
           <span>طريقة الدفع</span>
           <span>${PAYMENT_METHOD_LABELS[invoice.paymentMethod] || invoice.paymentMethod}</span>
         </div>` : ''}
-        <div style="display: flex; justify-content: space-between; padding: 12px; background: #0d7c3d; color: white; border-radius: 0 0 8px 8px; font-weight: bold; font-size: 15px;">
+        <div style="display: flex; justify-content: space-between; padding: 12px; background: #2980b9; color: white; border-radius: 0 0 8px 8px; font-weight: bold; font-size: 15px;">
           <span>الإجمالي المستحق</span>
           <span>${total.toFixed(2)} ر.س</span>
         </div>
@@ -352,10 +352,10 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
   const vatRate = Number(invoice.vatRate || 15);
 
   const invoiceHtml = `
-    <div style="font-family: 'Noto Sans Arabic', Tahoma, Arial, sans-serif; direction: rtl; color: #1a1a1a; padding: 40px; box-sizing: border-box; max-width: 794px; margin: 0 auto;">
+    <div style="font-family: 'Noto Sans Arabic', Tahoma, Arial, sans-serif; direction: rtl; color: #1a1a1a; padding: 30px; box-sizing: border-box; max-width: 794px; margin: 0 auto;">
       
       <!-- Header Bar -->
-      <div style="background: linear-gradient(135deg, #0d7c3d, #065f2e); color: white; padding: 25px 30px; border-radius: 10px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="background: linear-gradient(135deg, #5bb8e8, #2980b9); color: white; padding: 20px 25px; border-radius: 10px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;">
         <div>
           ${logoUrl ? `<img src="${logoUrl}" style="max-height: 50px; max-width: 150px; margin-bottom: 8px; display: block;" />` : ''}
           <h2 style="margin: 0; font-size: 20px; font-weight: bold;">${centerName}</h2>
@@ -369,7 +369,7 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
       </div>
 
       <!-- Invoice Meta -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px;">
         <div>
           <p style="margin: 4px 0;"><strong>تاريخ الإصدار:</strong> ${formatDate(invoice.createdAt)}</p>
           <p style="margin: 4px 0;"><strong>تاريخ الاستحقاق:</strong> ${formatDate(invoice.dueDate)}</p>
@@ -381,14 +381,14 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
       </div>
 
       <!-- Parties -->
-      <div style="display: flex; gap: 30px; margin-bottom: 25px; background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #dcfce7;">
+      <div style="display: flex; gap: 30px; margin-bottom: 18px; background: #eef7fc; padding: 15px; border-radius: 8px; border: 1px solid #d0e8f5;">
         <div style="flex: 1;">
-          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #0d7c3d;">معلومات الطفل</h4>
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #2980b9;">معلومات الطفل</h4>
           <p style="margin: 3px 0; font-size: 13px;">${invoice.childName || '-'}</p>
           <p style="margin: 3px 0; font-size: 12px; color: #666;">${INVOICE_TYPE_LABELS[invoice.invoiceType || ''] || invoice.invoiceType || ''}</p>
         </div>
         <div style="flex: 1;">
-          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #0d7c3d;">معلومات ولي الأمر</h4>
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #2980b9;">معلومات ولي الأمر</h4>
           <p style="margin: 3px 0; font-size: 13px;">${invoice.parentName || '-'}</p>
           ${invoice.parentPhone ? `<p style="margin: 3px 0; font-size: 12px; color: #666;">${invoice.parentPhone}</p>` : ''}
           ${invoice.parentEmail ? `<p style="margin: 3px 0; font-size: 12px; color: #666;">${invoice.parentEmail}</p>` : ''}
@@ -396,9 +396,9 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
       </div>
 
       <!-- Items Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px;">
         <thead>
-          <tr style="background: #0d7c3d; color: white;">
+          <tr style="background: #2980b9; color: white;">
             <th style="padding: 12px 15px; text-align: right; border-radius: 0 8px 0 0;">الوصف</th>
             <th style="padding: 12px 15px; text-align: left; width: 140px; border-radius: 8px 0 0 0;">المبلغ</th>
           </tr>
@@ -412,7 +412,7 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
       </table>
 
       <!-- Totals -->
-      <div style="width: 280px; margin-right: auto; margin-bottom: 30px;">
+      <div style="width: 280px; margin-right: auto; margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
           <span>المبلغ قبل الضريبة</span>
           <span>${subtotal.toFixed(2)} ر.س</span>
@@ -426,7 +426,7 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
           <span>طريقة الدفع</span>
           <span>${PAYMENT_METHOD_LABELS[invoice.paymentMethod] || invoice.paymentMethod}</span>
         </div>` : ''}
-        <div style="display: flex; justify-content: space-between; padding: 12px; background: #0d7c3d; color: white; border-radius: 0 0 8px 8px; font-weight: bold; font-size: 15px;">
+        <div style="display: flex; justify-content: space-between; padding: 12px; background: #2980b9; color: white; border-radius: 0 0 8px 8px; font-weight: bold; font-size: 15px;">
           <span>الإجمالي المستحق</span>
           <span>${total.toFixed(2)} ر.س</span>
         </div>
