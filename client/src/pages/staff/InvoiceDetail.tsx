@@ -14,7 +14,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowRight, CheckCircle2, Clock, Trash2, Pencil, Download, Printer, Send, Mail, CreditCard, Banknote, Building2 } from "lucide-react";
-import { generateInvoicePDF } from "@/lib/invoicePdf";
+import { generateInvoicePDF, printInvoice } from "@/lib/invoicePdf";
 
 const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة" };
 const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-green-100 text-green-700", overdue: "bg-red-100 text-red-700", cancelled: "bg-gray-100 text-gray-700" };
@@ -72,8 +72,22 @@ export default function InvoiceDetail() {
     onError: (e: any) => toast.error(e.message || 'فشل إرسال البريد الإلكتروني'),
   });
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (!invoice) return;
+    try {
+      await printInvoice(invoice as any, {
+        centerName: centerSettings?.centerName,
+        phone: centerSettings?.phone || undefined,
+        email: centerSettings?.email || undefined,
+        address: centerSettings?.address || undefined,
+        vatNumber: (centerSettings as any)?.vatNumber || undefined,
+        commercialRegister: (centerSettings as any)?.commercialRegister || undefined,
+        logoUrl: (centerSettings as any)?.logoUrl || undefined,
+      });
+    } catch (err) {
+      console.error('Print error:', err);
+      toast.error('حدث خطأ أثناء الطباعة');
+    }
   };
 
   const handleDownloadPDF = async () => {

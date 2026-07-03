@@ -11,8 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, CreditCard, TrendingUp, Clock, AlertTriangle, Send, RefreshCw, Download, FileText, Receipt, Undo2, CalendarClock, DollarSign, Search, Filter, Mail } from "lucide-react";
-import { generateInvoicePDF } from "@/lib/invoicePdf";
+import { Plus, CreditCard, TrendingUp, Clock, AlertTriangle, Send, RefreshCw, Download, FileText, Receipt, Undo2, CalendarClock, DollarSign, Search, Filter, Mail, Printer } from "lucide-react";
+import { generateInvoicePDF, printInvoice } from "@/lib/invoicePdf";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -329,6 +329,9 @@ export default function StaffFinance() {
                             <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={async () => { try { await generateInvoicePDF(inv as any, { centerName: centerSettings?.centerName, phone: centerSettings?.phone || undefined, email: centerSettings?.email || undefined, address: centerSettings?.address || undefined, vatNumber: (centerSettings as any)?.vatNumber || undefined, commercialRegister: (centerSettings as any)?.commercialRegister || undefined, logoUrl: (centerSettings as any)?.logoUrl || undefined }); 
 toast.success('تم تحميل PDF'); } catch (err) { console.error('PDF generation error:', err); toast.error('خطأ في توليد PDF: ' + (err instanceof Error ? err.message : 'خطأ غير معروف')); } }}>
                               <Download className="h-3 w-3 ml-1" />PDF
+                            </Button>
+                            <Button size="sm" variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50" onClick={async () => { try { await printInvoice(inv as any, { centerName: centerSettings?.centerName, phone: centerSettings?.phone || undefined, email: centerSettings?.email || undefined, address: centerSettings?.address || undefined, vatNumber: (centerSettings as any)?.vatNumber || undefined, commercialRegister: (centerSettings as any)?.commercialRegister || undefined, logoUrl: (centerSettings as any)?.logoUrl || undefined }); } catch (err) { toast.error('خطأ في الطباعة'); } }}>
+                              <Printer className="h-3 w-3 ml-1" />طباعة
                             </Button>
                             <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => sendInvoiceEmail.mutate({ id: inv.id })} disabled={sendInvoiceEmail.isPending}>
                               <Mail className="h-3 w-3 ml-1" />إيميل
