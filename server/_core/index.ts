@@ -70,6 +70,17 @@ async function startServer() {
     },
   });
 
+  // Temporary diagnostic endpoint - check moyasar key status
+  app.get('/api/debug-moyasar-key', (req, res) => {
+    const key = process.env.MOYASAR_SECRET_KEY || '';
+    res.json({ 
+      keyPrefix: key.substring(0, 15) + '...',
+      keyLength: key.length,
+      isConfigured: !!key,
+      envSource: process.env.NODE_ENV || 'unknown'
+    });
+  });
+
   // CSRF token endpoint - frontend fetches this before making state-changing requests
   app.get('/api/csrf-token', (req, res) => {
     const token = generateCsrfToken(req, res);
