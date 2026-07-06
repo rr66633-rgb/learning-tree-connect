@@ -10,9 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Receipt, CreditCard, Clock, FileText, Download, AlertTriangle, CheckCircle2, XCircle, History } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { trackPurchase } from "@/lib/metaPixel";
+
+declare global {
+  interface Window {
+    Moyasar: any;
+  }
+}
 
 const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة", partially_paid: "مدفوعة جزئياً" };
 const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-green-100 text-green-700", overdue: "bg-red-100 text-red-700", cancelled: "bg-gray-100 text-gray-700", partially_paid: "bg-blue-100 text-blue-700" };
@@ -66,13 +72,72 @@ export default function ParentFinance() {
     setOpenPayDialog(true);
   };
 
+  const moyasarFormRef = useRef<HTMLDivElement>(null);
+  const [moyasarInitialized, setMoyasarInitialized] = useState(false);
+
+  // Initialize Moyasar form when dialog opens
+  useEffect(() => {
+    if (!openPayDialog || !selectedInvoice || !gatewayStatus?.publishableKey) return;
+    if (!moyasarFormRef.current) return;
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (!moyasarFormRef.current) return;
+      moyasarFormRef.current.innerHTML = '';
+      setMoyasarInitialized(false);
+
+      try {
+        const amountInHalalas = Math.round((Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)) * 100);
+        
+        // Determine supported networks based on selected method
+        let methods: string[] = ['creditcard'];
+        let supportedNetworks = ['visa', 'mastercard', 'mada'];
+        if (paymentMethod === 'apple_pay') {
+          methods = ['applepay'];
+          supportedNetworks = ['visa', 'mastercard', 'mada'];
+        } else if (paymentMethod === 'stc_pay') {
+          methods = ['stcpay'];
+          supportedNetworks = [];
+        }
+
+        window.Moyasar.init({
+          element: moyasarFormRef.current,
+          amount: amountInHalalas,
+          currency: 'SAR',
+          description: `فاتورة ${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
+          publishable_api_key: gatewayStatus.publishableKey,
+          callback_url: `${window.location.origin}/payment-callback?invoiceId=${selectedInvoice.id}`,
+          methods: methods,
+          supported_networks: supportedNetworks,
+          language: 'ar',
+          metadata: {
+            invoiceId: String(selectedInvoice.id),
+            invoiceNumber: selectedInvoice.invoiceNumber,
+          },
+          on_initiating: function() {
+            trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), 'SAR');
+          },
+        });
+        setMoyasarInitialized(true);
+      } catch (err) {
+        console.error('Moyasar init error:', err);
+        toast.error('حدث خطأ في تهيئة بوابة الدفع');
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [openPayDialog, selectedInvoice, gatewayStatus, paymentMethod]);
+
   const handleInitiatePayment = () => {
+    // This is now handled by Moyasar form submit button
+    // Keep for backward compatibility
     if (!selectedInvoice) return;
-    initiatePayment.mutate({
-      invoiceId: selectedInvoice.id,
-      method: paymentMethod as any,
-      callbackUrl: `${window.location.origin}/parent/payment-callback`,
-    });
+    if (!gatewayStatus?.publishableKey) {
+      toast.error('بوابة الدفع غير مفعلة حالياً');
+      return;
+    }
+    // The Moyasar form handles the payment directly
+    toast.info('يرجى إدخال بيانات البطاقة في النموذج أدناه');
   };
 
   const handleViewDetails = (invoice: any) => {
@@ -307,9 +372,12 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
         </TabsContent>
       </Tabs>
 
-      {/* Payment Dialog */}
-      <Dialog open={openPayDialog} onOpenChange={setOpenPayDialog}>
-        <DialogContent>
+      {/* Payment Dialog - Using Moyasar Form */}
+      <Dialog open={openPayDialog} onOpenChange={(open) => {
+        setOpenPayDialog(open);
+        if (!open) setMoyasarInitialized(false);
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>دفع الفاتورة</DialogTitle></DialogHeader>
           {selectedInvoice && (
             <div className="space-y-4">
@@ -317,46 +385,21 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
                 <div className="flex justify-between"><span className="text-muted-foreground">رقم الفاتورة</span><span className="font-mono">{selectedInvoice.invoiceNumber}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">الطفل</span><span>{selectedInvoice.childName}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">الوصف</span><span>{selectedInvoice.description}</span></div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2"><span>المبلغ المطلوب</span><span>{Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</span></div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2"><span>المبلغ المطلوب</span><span>{(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)).toLocaleString('ar-SA')} ر.س</span></div>
               </div>
 
-              {!gatewayStatus?.isConfigured && (
+              {!gatewayStatus?.isConfigured ? (
                 <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm text-amber-700">
                   <AlertTriangle className="h-4 w-4 inline ml-1" />
                   بوابة الدفع الإلكتروني قيد التفعيل. سيتم تفعيل الدفع الإلكتروني قريباً.
                 </div>
+              ) : (
+                <div ref={moyasarFormRef} className="moyasar-form" />
               )}
-
-              <div>
-                <Label className="mb-2 block">طريقة الدفع</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: "mada", label: "مدى", icon: "💳" },
-                    { value: "visa", label: "فيزا", icon: "💳" },
-                    { value: "mastercard", label: "ماستركارد", icon: "💳" },
-                    { value: "apple_pay", label: "Apple Pay", icon: "🍎" },
-                    { value: "stc_pay", label: "STC Pay", icon: "📱" },
-                  ].map(method => (
-                    <Button
-                      key={method.value}
-                      type="button"
-                      variant={paymentMethod === method.value ? "default" : "outline"}
-                      className="justify-start"
-                      onClick={() => setPaymentMethod(method.value)}
-                    >
-                      <span className="ml-2">{method.icon}</span>
-                      {method.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenPayDialog(false)}>إلغاء</Button>
-            <Button onClick={handleInitiatePayment} disabled={initiatePayment.isPending}>
-              {initiatePayment.isPending ? "جارٍ المعالجة..." : "ادفع الآن"}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

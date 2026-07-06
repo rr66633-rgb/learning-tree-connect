@@ -70,17 +70,6 @@ async function startServer() {
     },
   });
 
-  // Temporary diagnostic endpoint - check moyasar key status
-  app.get('/api/debug-moyasar-key', (req, res) => {
-    const envKey = process.env.MOYASAR_SECRET_KEY || '';
-    const hardcodedKey = 'sk_live_J5Z9nSfUVMCPZKNsK8zpqbS9dqvkyMMtkbtNW1U7';
-    res.json({ 
-      envKeyPrefix: envKey.substring(0, 15) + '...',
-      hardcodedKeyPrefix: hardcodedKey.substring(0, 15) + '...',
-      usingHardcoded: true,
-      envSource: process.env.NODE_ENV || 'unknown'
-    });
-  });
 
   // CSRF token endpoint - frontend fetches this before making state-changing requests
   app.get('/api/csrf-token', (req, res) => {
