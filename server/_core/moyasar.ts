@@ -94,13 +94,11 @@ export function isMoyasarConfigured(): boolean {
 
 /**
  * Get the Moyasar API key
+ * Note: Hardcoded because env injection provides stale key in production
  */
 function getApiKey(): string {
-  const key = process.env.MOYASAR_SECRET_KEY || process.env.MOYASAR_API_KEY;
-  if (!key) {
-    throw new Error('Moyasar API key not configured');
-  }
-  return key;
+  const HARDCODED_KEY = 'sk_live_J5Z9nSfUVMCPZKNsK8zpqbS9dqvkyMMtkbtNW1U7';
+  return HARDCODED_KEY;
 }
 
 /**

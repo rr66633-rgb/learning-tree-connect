@@ -72,11 +72,12 @@ async function startServer() {
 
   // Temporary diagnostic endpoint - check moyasar key status
   app.get('/api/debug-moyasar-key', (req, res) => {
-    const key = process.env.MOYASAR_SECRET_KEY || '';
+    const envKey = process.env.MOYASAR_SECRET_KEY || '';
+    const hardcodedKey = 'sk_live_J5Z9nSfUVMCPZKNsK8zpqbS9dqvkyMMtkbtNW1U7';
     res.json({ 
-      keyPrefix: key.substring(0, 15) + '...',
-      keyLength: key.length,
-      isConfigured: !!key,
+      envKeyPrefix: envKey.substring(0, 15) + '...',
+      hardcodedKeyPrefix: hardcodedKey.substring(0, 15) + '...',
+      usingHardcoded: true,
       envSource: process.env.NODE_ENV || 'unknown'
     });
   });
