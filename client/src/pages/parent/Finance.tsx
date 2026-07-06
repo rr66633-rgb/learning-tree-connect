@@ -72,61 +72,45 @@ export default function ParentFinance() {
     setOpenPayDialog(true);
   };
 
-  const moyasarFormRef = useRef<HTMLDivElement>(null);
   const [moyasarInitialized, setMoyasarInitialized] = useState(false);
 
-  // Initialize Moyasar form when dialog opens
-  useEffect(() => {
-    if (!openPayDialog || !selectedInvoice || !gatewayStatus?.publishableKey) return;
-    if (!moyasarFormRef.current) return;
+  // Use callback ref to initialize Moyasar form when the DOM element mounts
+  const moyasarFormRef = useRef<HTMLDivElement>(null);
+  const initMoyasarForm = (node: HTMLDivElement | null) => {
+    moyasarFormRef.current = node;
+    if (!node || !selectedInvoice || !gatewayStatus?.publishableKey) return;
+    
+    // Clear and initialize
+    node.innerHTML = '';
+    setMoyasarInitialized(false);
 
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      if (!moyasarFormRef.current) return;
-      moyasarFormRef.current.innerHTML = '';
-      setMoyasarInitialized(false);
-
-      try {
-        const amountInHalalas = Math.round((Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)) * 100);
-        
-        // Determine supported networks based on selected method
-        let methods: string[] = ['creditcard'];
-        let supportedNetworks = ['visa', 'mastercard', 'mada'];
-        if (paymentMethod === 'apple_pay') {
-          methods = ['applepay'];
-          supportedNetworks = ['visa', 'mastercard', 'mada'];
-        } else if (paymentMethod === 'stc_pay') {
-          methods = ['stcpay'];
-          supportedNetworks = [];
-        }
-
-        window.Moyasar.init({
-          element: moyasarFormRef.current,
-          amount: amountInHalalas,
-          currency: 'SAR',
-          description: `فاتورة ${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
-          publishable_api_key: gatewayStatus.publishableKey,
-          callback_url: `${window.location.origin}/payment-callback?invoiceId=${selectedInvoice.id}`,
-          methods: methods,
-          supported_networks: supportedNetworks,
-          language: 'ar',
-          metadata: {
-            invoiceId: String(selectedInvoice.id),
-            invoiceNumber: selectedInvoice.invoiceNumber,
-          },
-          on_initiating: function() {
-            trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), 'SAR');
-          },
-        });
-        setMoyasarInitialized(true);
-      } catch (err) {
-        console.error('Moyasar init error:', err);
-        toast.error('حدث خطأ في تهيئة بوابة الدفع');
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [openPayDialog, selectedInvoice, gatewayStatus, paymentMethod]);
+    try {
+      const amountInHalalas = Math.round((Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)) * 100);
+      
+      window.Moyasar.init({
+        element: node,
+        amount: amountInHalalas,
+        currency: 'SAR',
+        description: `فاتورة ${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
+        publishable_api_key: gatewayStatus.publishableKey,
+        callback_url: `${window.location.origin}/payment-callback?invoiceId=${selectedInvoice.id}`,
+        methods: ['creditcard'],
+        supported_networks: ['visa', 'mastercard', 'mada'],
+        language: 'ar',
+        metadata: {
+          invoiceId: String(selectedInvoice.id),
+          invoiceNumber: selectedInvoice.invoiceNumber,
+        },
+        on_initiating: function() {
+          trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), 'SAR');
+        },
+      });
+      setMoyasarInitialized(true);
+    } catch (err) {
+      console.error('Moyasar init error:', err);
+      toast.error('حدث خطأ في تهيئة بوابة الدفع');
+    }
+  };
 
   const handleInitiatePayment = () => {
     // This is now handled by Moyasar form submit button
@@ -394,7 +378,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
                   بوابة الدفع الإلكتروني قيد التفعيل. سيتم تفعيل الدفع الإلكتروني قريباً.
                 </div>
               ) : (
-                <div ref={moyasarFormRef} className="moyasar-form" />
+                <div ref={initMoyasarForm} className="moyasar-form" />
               )}
             </div>
           )}
