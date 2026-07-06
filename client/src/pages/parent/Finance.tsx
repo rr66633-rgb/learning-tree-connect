@@ -98,7 +98,7 @@ export default function ParentFinance() {
         supported_networks: ['visa', 'mastercard', 'mada'],
         apple_pay: {
           country: 'SA',
-          label: 'نشأة',
+          label: 'Naashah',
           validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
           version: 6,
           supported_countries: ['SA'],
@@ -109,7 +109,7 @@ export default function ParentFinance() {
           invoiceId: String(selectedInvoice.id),
           invoiceNumber: selectedInvoice.invoiceNumber,
         },
-        on_initiating: function() {
+        on_initiating: async function() {
           trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), 'SAR');
         },
         on_completed: async function(payment: any) {

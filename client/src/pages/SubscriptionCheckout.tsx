@@ -65,14 +65,14 @@ export default function SubscriptionCheckout() {
         supported_networks: ["visa", "mastercard", "mada"],
         apple_pay: {
           country: 'SA',
-          label: 'نشأة',
+          label: 'Naashah',
           validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
           version: 6,
           supported_countries: ['SA'],
         },
         language: "ar",
         fixed_width: false,
-        on_initiating: function() {
+        on_initiating: async function() {
           setPaymentInitiated(true);
         },
         metadata: {
