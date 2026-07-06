@@ -94,8 +94,13 @@ export default function ParentFinance() {
         description: `فاتورة ${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
         publishable_api_key: gatewayStatus.publishableKey,
         callback_url: `${window.location.origin}/payment-callback?invoiceId=${selectedInvoice.id}`,
-        methods: ['creditcard'],
+        methods: ['creditcard', 'applepay', 'stcpay'],
         supported_networks: ['visa', 'mastercard', 'mada'],
+        apple_pay: {
+          country: 'SA',
+          label: 'نعشة - دفع فاتورة',
+          validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
+        },
         language: 'ar',
         metadata: {
           invoiceId: String(selectedInvoice.id),
