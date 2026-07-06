@@ -14,7 +14,7 @@
 
 import { ENV } from './env';
 
-// Moyasar API configuration
+// Moyasar API configuration - key updated 2026-07-06
 const MOYASAR_API_URL = 'https://api.moyasar.com/v1';
 
 export type PaymentMethod = 'apple_pay' | 'mada' | 'visa' | 'mastercard' | 'stc_pay';
