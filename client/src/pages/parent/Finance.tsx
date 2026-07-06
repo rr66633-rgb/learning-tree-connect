@@ -98,7 +98,7 @@ export default function ParentFinance() {
         supported_networks: ['visa', 'mastercard', 'mada'],
         apple_pay: {
           country: 'SA',
-          label: 'نشأة - دفع فاتورة',
+          label: 'Naashah',
           validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
         },
         language: 'ar',
