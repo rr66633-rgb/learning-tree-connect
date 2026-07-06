@@ -1244,6 +1244,34 @@ export const appRouter = router({
         isConfigured: isMoyasarConfigured(),
       };
     }),
+    // Save payment record from Moyasar on_completed callback (before redirect)
+    saveFromMoyasar: protectedProcedure.input(z.object({
+      moyasarPaymentId: z.string(),
+      invoiceId: z.number(),
+      amount: z.number(),
+      method: z.enum(['apple_pay', 'mada', 'visa', 'mastercard', 'stc_pay']),
+      status: z.string(),
+    })).mutation(async ({ input, ctx }) => {
+      // Check if payment already exists
+      const existing = await db.getPaymentByMoyasarId(input.moyasarPaymentId);
+      if (existing) return { paymentId: existing.id, status: 'exists' };
+      // Verify invoice belongs to this parent
+      const invoice = await db.getInvoiceById(input.invoiceId);
+      if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: '\u0627\u0644\u0641\u0627\u062a\u0648\u0631\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629' });
+      if (invoice.parentId !== ctx.user!.id) throw new TRPCError({ code: 'FORBIDDEN' });
+      // Create payment record
+      const payment = await db.createPayment({
+        invoiceId: input.invoiceId,
+        parentId: ctx.user!.id,
+        amount: String(input.amount),
+        currency: 'SAR',
+        method: input.method,
+        status: input.status === 'paid' ? 'paid' : 'initiated',
+        moyasarPaymentId: input.moyasarPaymentId,
+        callbackUrl: '',
+      });
+      return { paymentId: payment.id, status: 'created' };
+    }),
     verify: protectedProcedure.input(z.object({
       paymentId: z.number().optional(),
       moyasarPaymentId: z.string().optional(),

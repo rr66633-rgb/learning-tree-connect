@@ -61,9 +61,17 @@ export default function SubscriptionCheckout() {
         description: `اشتراك ${selectedPlan.nameAr} - ${billingCycle === "yearly" ? "سنوي" : "شهري"}`,
         publishable_api_key: gatewayStatus.publishableKey,
         callback_url: `${window.location.origin}/payment-callback?plan=${planId}&cycle=${billingCycle}&org=${orgId || ""}`,
-        methods: ["creditcard"],
+        methods: ["creditcard", "applepay"],
         supported_networks: ["visa", "mastercard", "mada"],
+        apple_pay: {
+          country: 'SA',
+          label: 'نشأة',
+          validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
+          version: 6,
+          supported_countries: ['SA'],
+        },
         language: "ar",
+        fixed_width: false,
         on_initiating: function() {
           setPaymentInitiated(true);
         },
@@ -193,9 +201,9 @@ export default function SubscriptionCheckout() {
 
         {/* Supported Networks */}
         <div className="flex items-center justify-center gap-4 opacity-60">
-          <img src="https://cdn.moyasar.com/mpf/1.14.0/assets/mada.svg" alt="مدى" className="h-6" />
-          <img src="https://cdn.moyasar.com/mpf/1.14.0/assets/visa.svg" alt="Visa" className="h-6" />
-          <img src="https://cdn.moyasar.com/mpf/1.14.0/assets/mastercard.svg" alt="Mastercard" className="h-6" />
+          <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mada.svg" alt="مدى" className="h-6" />
+          <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/visa.svg" alt="Visa" className="h-6" />
+          <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mastercard.svg" alt="Mastercard" className="h-6" />
         </div>
 
         {/* Back Button */}

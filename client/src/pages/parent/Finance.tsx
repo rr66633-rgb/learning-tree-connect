@@ -98,16 +98,48 @@ export default function ParentFinance() {
         supported_networks: ['visa', 'mastercard', 'mada'],
         apple_pay: {
           country: 'SA',
-          label: 'Naashah',
+          label: 'نشأة',
           validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
+          version: 6,
+          supported_countries: ['SA'],
         },
         language: 'ar',
+        fixed_width: false,
         metadata: {
           invoiceId: String(selectedInvoice.id),
           invoiceNumber: selectedInvoice.invoiceNumber,
         },
         on_initiating: function() {
           trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), 'SAR');
+        },
+        on_completed: async function(payment: any) {
+          // Save payment to our server immediately after Moyasar creates it
+          try {
+            const response = await fetch('/api/trpc/payments.saveFromMoyasar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                json: {
+                  moyasarPaymentId: payment.id,
+                  invoiceId: selectedInvoice.id,
+                  amount: amountInHalalas / 100,
+                  method: payment.source?.type === 'applepay' ? 'apple_pay' : 
+                          payment.source?.type === 'stcpay' ? 'stc_pay' :
+                          payment.source?.company === 'mada' ? 'mada' :
+                          payment.source?.company === 'visa' ? 'visa' : 'mastercard',
+                  status: payment.status,
+                },
+              }),
+            });
+            console.log('Payment saved to server:', response.status);
+          } catch (err) {
+            console.error('Failed to save payment to server:', err);
+          }
+        },
+        on_failure: async function(error: any) {
+          console.error('Moyasar payment failed:', error);
+          toast.error('فشلت عملية الدفع: ' + (typeof error === 'string' ? error : 'يرجى المحاولة مرة أخرى'));
         },
       });
       setMoyasarInitialized(true);

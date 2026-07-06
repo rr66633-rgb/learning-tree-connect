@@ -2062,3 +2062,14 @@
 - [x] Hardcode المفتاح العام (publishable key) لضمان عمله في الإنتاج
 - [x] إصلاح callback_url لاستخدام المسار الصحيح /payment-callback
 - [x] إزالة endpoint التشخيصي المؤقت
+
+## إصلاح Apple Pay "عملية الدفع غير مكتملة" (7 يوليو 2026)
+- [x] ترقية Moyasar SDK من 1.14.0 إلى 2.2.9 (أحدث إصدار مع دعم أفضل لـ Apple Pay)
+- [x] إضافة on_completed callback لحفظ الدفع في الخادم فوراً بعد إنشائه
+- [x] إضافة on_failure callback لعرض رسالة خطأ واضحة
+- [x] إضافة saveFromMoyasar procedure في الخادم لحفظ الدفع من on_completed
+- [x] إصلاح PaymentCallback لمعالجة فواتير الأهل (verify payment + update invoice)
+- [x] إضافة Apple Pay config كامل (version, supported_countries, label بالعربي)
+- [x] تفعيل Apple Pay في صفحة الاشتراكات أيضاً
+- [x] تحديث روابط SVG لشعارات البطاقات إلى الإصدار الجديد
+- [ ] تسجيل الدومين في Moyasar Dashboard > Apple Pay (مطلوب من صاحب الحساب)
