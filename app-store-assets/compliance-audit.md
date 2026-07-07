@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This audit evaluates the Learning Tree Kids Center iOS application against Apple's App Store Review Guidelines to assess readiness for submission and identify potential rejection risks.
+This audit evaluates the نشأة iOS application against Apple's App Store Review Guidelines to assess readiness for submission and identify potential rejection risks.
 
 ---
 

@@ -1,8 +1,8 @@
-# Privacy Policy - Learning Tree Kids Center
+# Privacy Policy - نشأة
 
 **Last Updated:** June 20, 2026
 
-Learning Tree Kids Center ("we," "our," or "us") operates the Learning Tree Kids Center mobile application (the "App"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our App.
+نشأة ("we," "our," or "us") operates the نشأة mobile application (the "App"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our App.
 
 ---
 
@@ -102,8 +102,8 @@ We may update this Privacy Policy from time to time. We will notify you of any c
 
 If you have questions about this Privacy Policy, please contact:
 
-- **Email:** privacy@learningtreeco.com
-- **Website:** https://portal.learningtreeco.com
+- **Email:** privacy@naashahco.com
+- **Website:** https://portal.naashahco.com
 
 ---
 

@@ -2114,3 +2114,14 @@
 - [x] إنشاء دالة sendNewDeviceLoginAlert في emailService
 - [x] إرسال بريد تنبيه أمني عند تسجيل دخول من جهاز جديد
 - [x] عرض سجل الأجهزة في صفحة إعدادات الحساب
+
+## تغليف التطبيق كتطبيق أصلي (Capacitor)
+- [x] تثبيت Capacitor وتهيئة المشروع
+- [x] إعداد capacitor.config.ts مع إعدادات نشأة (com.naashah.app)
+- [x] إضافة منصة iOS (كانت موجودة - تم تحديثها)
+- [x] إضافة منصة Android
+- [x] إعداد أيقونات التطبيق بجميع المقاسات (موجودة في app-store-assets)
+- [x] إعداد شاشات البداية (Splash Screen)
+- [x] إعداد إشعارات Push Notifications (APNs + FCM)
+- [x] إنشاء دليل نشر شامل لـ App Store
+- [x] إنشاء دليل نشر شامل لـ Google Play

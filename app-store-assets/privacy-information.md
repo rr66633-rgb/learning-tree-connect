@@ -2,7 +2,7 @@
 
 ## Privacy Policy
 
-This document outlines the data collection and usage practices for the Learning Tree Kids Center iOS application, as required by Apple's App Store Connect privacy questionnaire.
+This document outlines the data collection and usage practices for the نشأة iOS application, as required by Apple's App Store Connect privacy questionnaire.
 
 ---
 

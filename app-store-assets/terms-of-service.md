@@ -1,8 +1,8 @@
-# Terms of Service - Learning Tree Kids Center
+# Terms of Service - نشأة
 
 **Last Updated:** June 20, 2026
 
-These Terms of Service ("Terms") govern your use of the Learning Tree Kids Center mobile application ("App") operated by Learning Tree Kids Center ("we," "our," or "us").
+These Terms of Service ("Terms") govern your use of the نشأة mobile application ("App") operated by نشأة ("we," "our," or "us").
 
 By using the App, you agree to be bound by these Terms. If you do not agree, do not use the App.
 
@@ -71,7 +71,7 @@ You agree NOT to:
 
 ## 7. Privacy
 
-Your use of the App is also governed by our Privacy Policy, available at https://portal.learningtreeco.com/privacy.
+Your use of the App is also governed by our Privacy Policy, available at https://portal.naashahco.com/privacy.
 
 ---
 
@@ -108,5 +108,5 @@ These Terms are governed by the laws of the Kingdom of Saudi Arabia.
 
 For questions about these Terms, contact:
 
-- **Email:** support@learningtreeco.com
-- **Website:** https://portal.learningtreeco.com
+- **Email:** support@naashahco.com
+- **Website:** https://portal.naashahco.com

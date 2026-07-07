@@ -1,15 +1,15 @@
 {
   "expo": {
     "name": "Naashah",
-    "slug": "learning-tree-connect",
+    "slug": "naashah",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": { "image": "./assets/splash.png", "resizeMode": "contain", "backgroundColor": "#059669" },
     "assetBundlePatterns": ["**/*"],
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.learningtree.connect", "buildNumber": "1" },
-    "android": { "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#059669" }, "package": "com.learningtree.connect", "versionCode": 1 },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.naashah.app", "buildNumber": "1" },
+    "android": { "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#059669" }, "package": "com.naashah.app", "versionCode": 1 },
     "plugins": ["expo-camera", "expo-notifications"],
     "extra": { "eas": { "projectId": "learning-tree-connect" } }
   }

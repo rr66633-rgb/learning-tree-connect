@@ -1,12 +1,13 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.learningtree.connect',
-  appName: 'Learning Tree',
+  appId: 'com.naashah.app',
+  appName: 'نشأة',
   webDir: 'dist/public',
   server: {
     androidScheme: 'https',
     iosScheme: 'https',
+    hostname: 'naashah.com',
   },
   plugins: {
     PushNotifications: {
@@ -40,9 +41,15 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     preferredContentMode: 'mobile',
-    scheme: 'Learning Tree',
+    scheme: 'naashah',
     backgroundColor: '#FFFFFF',
     allowsLinkPreview: true,
+  },
+  android: {
+    backgroundColor: '#FFFFFF',
+    allowMixedContent: false,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
   },
 };
 

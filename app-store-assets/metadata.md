@@ -1,141 +1,148 @@
-# App Store Connect - Metadata
+# بيانات المتجر - نشأة
 
-## App Information
+## معلومات التطبيق
 
-| Field | Value |
-|-------|-------|
-| App Name | Learning Tree Kids Center |
-| Subtitle | Nursery Management & Parent Portal |
-| Bundle ID | com.learningtree.connect |
-| SKU | LTREE-CONNECT-001 |
-| Primary Language | Arabic |
-| Category | Education |
-| Secondary Category | Lifestyle |
-| Content Rating | 4+ |
-| Price | Free |
+| الحقل | القيمة |
+|-------|--------|
+| اسم التطبيق | نشأة |
+| العنوان الفرعي | إدارة الحضانة وبوابة أولياء الأمور |
+| Bundle ID | com.naashah.app |
+| SKU | NAASHAH-APP-001 |
+| اللغة الأساسية | العربية |
+| التصنيف الرئيسي | تعليم (Education) |
+| التصنيف الثانوي | أسلوب حياة (Lifestyle) |
+| تصنيف المحتوى | +4 |
+| السعر | مدفوع (اشتراك شهري) |
 
-## Version Information
+## معلومات الإصدار
 
-| Field | Value |
-|-------|-------|
-| Version | 1.0.0 |
-| Build | 1 |
-| Copyright | 2024 Learning Tree Kids Center |
+| الحقل | القيمة |
+|-------|--------|
+| الإصدار | 1.0.0 |
+| رقم البناء | 1 |
+| حقوق النشر | 2025 نشأة |
 
-## App Description (Arabic)
+## وصف التطبيق (عربي)
 
-تطبيق Learning Tree Kids Center هو نظام متكامل لإدارة الحضانة والتواصل بين المعلمات وأولياء الأمور. يوفر التطبيق تجربة سلسة وآمنة لمتابعة أطفالكم يومياً.
+نشأة هو نظام متكامل لإدارة الحضانات ومراكز رعاية الأطفال، يوفر تجربة سلسة وآمنة للتواصل بين المعلمات وأولياء الأمور ومتابعة أطفالكم يومياً.
 
 ### المميزات الرئيسية:
 
 **لأولياء الأمور:**
-- متابعة حضور وانصراف الأطفال يومياً
-- استلام التقارير اليومية والملاحظات
-- نظام استلام الأطفال الذكي مع إشعارات فورية
-- التواصل المباشر مع المعلمات
-- عرض الصور والفيديوهات
+- متابعة حضور وانصراف الأطفال يومياً مع إشعارات فورية
+- استلام التقارير اليومية التفصيلية (وجبات، نوم، أنشطة، حفاضات)
+- نظام استلام الأطفال مع إشعارات فورية
+- التواصل المباشر مع المعلمات عبر الرسائل
+- عرض الصور والأنشطة اليومية
 - متابعة الفواتير والمدفوعات
-- عرض التقييمات والملاحظات التطويرية
+- عرض التقييمات التطويرية (EYFS)
+- إدارة المستندات والتوقيع الرقمي
 
 **للمعلمات والإدارة:**
-- إدارة الحضور والانصراف
-- كتابة التقارير اليومية
+- إدارة الحضور والانصراف بنقرة واحدة
+- كتابة التقارير اليومية الشاملة
 - نظام الرسائل الآمن
-- إدارة طلبات الاستلام
-- متابعة الفصول والأطفال
+- إدارة الفصول والأطفال
 - التقويم والفعاليات
 - إدارة المستندات والوثائق
+- تقارير مالية وإحصائية
+- حضور الموظفين بالموقع الجغرافي
 
 **الأمان:**
 - تسجيل دخول آمن بالبصمة أو Face ID
 - تشفير جميع البيانات
 - صلاحيات محددة لكل مستخدم
+- إشعارات أمنية عند تسجيل الدخول من جهاز جديد
 - سجل كامل لجميع العمليات
 
-## App Description (English)
+## وصف التطبيق (إنجليزي)
 
-Learning Tree Kids Center is a comprehensive nursery management and parent communication platform. The app provides a seamless and secure experience for parents to stay connected with their children's daily activities.
+Naashah is a comprehensive nursery and childcare center management platform, providing a seamless and secure experience for staff-parent communication and daily child monitoring.
 
 ### Key Features:
 
 **For Parents:**
-- Real-time attendance tracking
-- Daily reports and observations
-- Smart pickup system with instant notifications
+- Real-time attendance tracking with instant notifications
+- Detailed daily reports (meals, sleep, activities, diapers)
+- Smart pickup system with instant alerts
 - Direct messaging with teachers
-- Photo and video gallery
+- Photo and activity gallery
 - Invoice and payment tracking
-- Developmental assessments
+- Developmental assessments (EYFS)
+- Document management with digital signatures
 
 **For Teachers & Admin:**
-- Attendance management
-- Daily report writing
+- One-tap attendance management
+- Comprehensive daily report writing
 - Secure messaging system
-- Pickup request management
 - Classroom and child management
 - Calendar and events
 - Document management
+- Financial and statistical reports
+- GPS-based staff attendance
 
 **Security:**
 - Biometric authentication (Face ID / Touch ID)
 - End-to-end data encryption
 - Role-based access control
+- Security alerts for new device logins
 - Complete audit trail
 
-## Keywords
+## الكلمات المفتاحية
 
-حضانة, أطفال, تعليم, أولياء أمور, معلمات, حضور, تقارير, رسائل, استلام, nursery, kids, education, parents, teachers, attendance, reports
+حضانة, أطفال, تعليم, أولياء أمور, معلمات, حضور, تقارير, رسائل, نشأة, رعاية, nursery, kids, education, parents, childcare, attendance, naashah
 
-## What's New (Version 1.0.0)
+## ما الجديد (الإصدار 1.0.0)
 
-الإصدار الأول من تطبيق Learning Tree Kids Center يتضمن:
-- نظام إدارة الحضور والانصراف
-- التقارير اليومية التفصيلية
+الإصدار الأول من تطبيق نشأة يتضمن:
+- نظام إدارة الحضور والانصراف الشامل
+- التقارير اليومية التفصيلية (14 نوع نشاط)
 - نظام الرسائل الآمن بين المعلمات وأولياء الأمور
-- نظام استلام الأطفال الذكي مع تتبع مباشر
+- نظام استلام الأطفال مع تتبع مباشر
 - إشعارات فورية لجميع الأحداث المهمة
 - دعم Face ID و Touch ID
-- العمل بدون إنترنت (وضع عدم الاتصال)
+- تسجيل الدخول برقم الجوال + OTP
+- صفحة إعدادات الحساب الشاملة
+- إشعارات أمنية عند تسجيل الدخول من جهاز جديد
 
-## Support URL
+## روابط
 
-https://learningtree.manus.space/support
-
-## Privacy Policy URL
-
-https://learningtree.manus.space/privacy
-
-## Marketing URL
-
-https://learningtree.manus.space
+| الرابط | العنوان |
+|--------|---------|
+| رابط الدعم | https://naashah.com/support |
+| سياسة الخصوصية | https://naashah.com/privacy |
+| الموقع التسويقي | https://naashah.com |
 
 ---
 
-## Screenshots Required
+## لقطات الشاشة المطلوبة
 
-### iPhone 6.7" (iPhone 15 Pro Max) - Required
-1. Parent Dashboard - showing child info and daily summary
-2. Pickup System - showing "I'm here" button and status tracking
-3. Messages - showing conversation with teacher
-4. Daily Reports - showing child's daily activities
-5. Attendance - showing monthly attendance calendar
+### iPhone 6.7" (iPhone 15 Pro Max) - مطلوب
+1. لوحة تحكم ولي الأمر - ملخص يومي للطفل
+2. نظام الاستلام - زر "أنا هنا" وتتبع الحالة
+3. الرسائل - محادثة مع المعلمة
+4. الأطفال - ملف الطفل والأنشطة
+5. الحضور - تقويم الحضور الشهري
+6. المالية - الفواتير والمدفوعات
+7. التقارير اليومية - أنشطة الطفل
+8. الإعدادات - إعدادات الحساب
 
-### iPhone 6.1" (iPhone 15 Pro) - Required
-Same 5 screenshots as above
+### iPhone 6.1" (iPhone 15 Pro) - مطلوب
+نفس اللقطات أعلاه
 
-### iPad Pro 12.9" (6th gen) - Optional
-Same 5 screenshots adapted for tablet layout
+### iPad Pro 12.9" (الجيل السادس) - اختياري
+نفس اللقطات مع تصميم الجهاز اللوحي
 
 ---
 
-## App Review Information
+## معلومات مراجعة التطبيق
 
-| Field | Value |
-|-------|-------|
-| Contact First Name | Learning Tree |
-| Contact Last Name | Admin |
-| Contact Phone | +966-XX-XXX-XXXX |
-| Contact Email | admin@learningtree.com |
-| Demo Account Username | demo@learningtree.com |
-| Demo Account Password | (to be provided) |
-| Notes for Reviewer | This app is a nursery management system used by Learning Tree Kids Center staff and parents. It requires an account created by the nursery administration. A demo account is provided for review purposes. The app uses Face ID/Touch ID for quick re-authentication after initial login. Push notifications are used for pickup alerts, messages, and daily reports. |
+| الحقل | القيمة |
+|-------|--------|
+| الاسم الأول | نشأة |
+| الاسم الأخير | الدعم الفني |
+| رقم الهاتف | +966-XX-XXX-XXXX |
+| البريد الإلكتروني | support@naashah.com |
+| حساب تجريبي (المستخدم) | demo@naashah.com |
+| حساب تجريبي (كلمة المرور) | (يتم توفيرها عند التقديم) |
+| ملاحظات للمراجع | هذا التطبيق هو نظام إدارة حضانات يستخدمه طاقم العمل وأولياء الأمور في مراكز رعاية الأطفال. يتطلب حساباً يتم إنشاؤه من قبل إدارة الحضانة. تم توفير حساب تجريبي لأغراض المراجعة. يستخدم التطبيق Face ID/Touch ID لإعادة المصادقة السريعة بعد تسجيل الدخول الأولي. تُستخدم الإشعارات الفورية لتنبيهات الاستلام والرسائل والتقارير اليومية. |

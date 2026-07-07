@@ -166,7 +166,7 @@
 
 **الملف:** `app-store-assets/privacy-policy.md`
 
-**الرابط المقترح للنشر:** `https://portal.learningtreeco.com/privacy`
+**الرابط المقترح للنشر:** `https://portal.naashahco.com/privacy`
 
 يجب نشر محتوى هذا الملف كصفحة ويب على الرابط أعلاه قبل إرسال التطبيق للمراجعة.
 
@@ -176,7 +176,7 @@
 
 **الملف:** `app-store-assets/terms-of-service.md`
 
-**الرابط المقترح للنشر:** `https://portal.learningtreeco.com/terms`
+**الرابط المقترح للنشر:** `https://portal.naashahco.com/terms`
 
 يجب نشر محتوى هذا الملف كصفحة ويب على الرابط أعلاه.
 
