@@ -10,7 +10,8 @@ import { useAuth } from "./_core/hooks/useAuth";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { useNativeInit } from "./hooks/useNativeInit";
 import { useWeeklyPlanPdf } from "./hooks/useWeeklyPlanPdf";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useCallback } from "react";
+import { SplashScreen } from "./components/SplashScreen";
 import { useMetaPixelPageView } from "./hooks/useMetaPixel";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -552,11 +553,23 @@ function RoleRouter() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    // Show splash only on first load (not on HMR or navigation)
+    const hasShown = sessionStorage.getItem('splash_shown');
+    return !hasShown;
+  });
+
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+    sessionStorage.setItem('splash_shown', 'true');
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
           <RoleRouter />
         </TooltipProvider>
       </ThemeProvider>
