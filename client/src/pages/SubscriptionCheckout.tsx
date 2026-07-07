@@ -74,6 +74,7 @@ export default function SubscriptionCheckout() {
         fixed_width: false,
         on_initiating: async function() {
           setPaymentInitiated(true);
+          return true;
         },
         metadata: {
           planId: String(planId),

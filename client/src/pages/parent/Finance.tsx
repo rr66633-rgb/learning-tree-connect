@@ -111,6 +111,7 @@ export default function ParentFinance() {
         },
         on_initiating: async function() {
           trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), 'SAR');
+          return true;
         },
         on_completed: async function(payment: any) {
           // Save payment to our server immediately after Moyasar creates it
