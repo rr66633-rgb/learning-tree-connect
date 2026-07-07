@@ -122,7 +122,7 @@ export function SplashScreen({ onComplete, minDuration = 2200 }: SplashScreenPro
           style={{ transitionDelay: "550ms" }}
         >
           <p className="text-base text-gray-500 font-medium">
-            نربّي المستقبل معاً
+            عينك عليهم
           </p>
         </div>
 
