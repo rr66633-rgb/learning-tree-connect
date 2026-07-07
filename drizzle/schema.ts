@@ -681,6 +681,7 @@ export const loginAttempts = mysqlTable("login_attempts", {
   userId: int("userId"),
   identifier: varchar("identifier", { length: 320 }),
   ip: varchar("ip", { length: 45 }),
+  userAgent: text("userAgent"),
   success: boolean("success").default(false).notNull(),
   reason: varchar("reason", { length: 200 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

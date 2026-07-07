@@ -253,6 +253,7 @@ export async function recordLoginAttempt(params: {
   userId?: number;
   identifier: string;
   ip?: string;
+  userAgent?: string;
   success: boolean;
   reason?: string;
 }): Promise<void> {
@@ -261,6 +262,7 @@ export async function recordLoginAttempt(params: {
     userId: params.userId || null,
     identifier: params.identifier,
     ip: params.ip || null,
+    userAgent: params.userAgent || null,
     success: params.success,
     reason: params.reason || null,
   });

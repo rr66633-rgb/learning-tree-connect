@@ -760,3 +760,81 @@ export async function sendDetailedInvoiceEmail(
 
   return sendEmail(email, subject, baseTemplate(content));
 }
+
+
+/**
+ * Send new device login alert email
+ */
+export async function sendNewDeviceLoginAlert(
+  email: string,
+  userName: string,
+  loginInfo: {
+    ip: string;
+    userAgent: string;
+    time: Date;
+  }
+): Promise<EmailSendResult> {
+  const subject = 'تنبيه أمني: تسجيل دخول من جهاز جديد - نشأة';
+  const timeStr = loginInfo.time.toLocaleString('ar-SA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Riyadh',
+  });
+  
+  // Parse user agent for readable device info
+  const deviceInfo = parseUserAgent(loginInfo.userAgent);
+  
+  const content = `
+    <p class="message">مرحباً ${userName}،</p>
+    <p class="message">تم تسجيل دخول جديد إلى حسابك من جهاز لم يُستخدم سابقاً:</p>
+    <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 16px 0;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #92400e;">الجهاز:</td>
+          <td style="padding: 8px 0; color: #78350f;">${deviceInfo}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #92400e;">عنوان IP:</td>
+          <td style="padding: 8px 0; color: #78350f;" dir="ltr">${loginInfo.ip}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #92400e;">الوقت:</td>
+          <td style="padding: 8px 0; color: #78350f;">${timeStr}</td>
+        </tr>
+      </table>
+    </div>
+    <p class="message">إذا كنت أنت من قام بتسجيل الدخول، يمكنك تجاهل هذه الرسالة.</p>
+    <p class="message" style="color: #dc2626; font-weight: bold;">إذا لم تكن أنت، يرجى تغيير كلمة المرور فوراً من إعدادات الحساب.</p>`;
+  return sendEmail(email, subject, baseTemplate(content));
+}
+
+/**
+ * Parse user agent string into readable device info
+ */
+function parseUserAgent(ua: string): string {
+  if (!ua) return 'جهاز غير معروف';
+  
+  let device = '';
+  let browser = '';
+  
+  // Detect device/OS
+  if (ua.includes('iPhone')) device = 'iPhone';
+  else if (ua.includes('iPad')) device = 'iPad';
+  else if (ua.includes('Android')) device = 'Android';
+  else if (ua.includes('Windows')) device = 'Windows';
+  else if (ua.includes('Mac')) device = 'Mac';
+  else if (ua.includes('Linux')) device = 'Linux';
+  else device = 'جهاز غير معروف';
+  
+  // Detect browser
+  if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
+  else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+  else if (ua.includes('Firefox')) browser = 'Firefox';
+  else if (ua.includes('Edg')) browser = 'Edge';
+  else browser = '';
+  
+  return browser ? `${device} - ${browser}` : device;
+}

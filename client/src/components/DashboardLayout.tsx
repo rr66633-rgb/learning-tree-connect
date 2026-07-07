@@ -500,6 +500,13 @@ function DashboardLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 rounded-xl">
                 <DropdownMenuItem
+                  onClick={() => setLocation(`${basePath}/account-settings`)}
+                  className="cursor-pointer rounded-lg"
+                >
+                  <Settings className="ml-2 h-4 w-4" />
+                  <span>إعدادات الحساب</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive rounded-lg"
                 >

@@ -6,7 +6,11 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
+import { getDb as getSharedDb } from "./db";
 import * as authService from "./_core/authService";
+import { loginAttempts } from "../drizzle/schema";
+import { eq, and, desc } from "drizzle-orm";
+import { sendNewDeviceLoginAlert } from "./services/emailService";
 import { aiRouter } from "./aiRouter";
 import { weeklyPlanRouter } from "./weeklyPlanRouter";
 import { calendarRouter } from "./calendarRouter";
@@ -113,8 +117,35 @@ export const appRouter = router({
         }
 
         // Successful login - reset failed attempts
+        const userAgent = ctx.req.headers['user-agent'] || '';
         await authService.resetFailedAttempts(user.id);
-        await authService.recordLoginAttempt({ userId: user.id, identifier: input.identifier, ip, success: true });
+        await authService.recordLoginAttempt({ userId: user.id, identifier: input.identifier, ip, userAgent, success: true });
+
+        // Check if this is a new device (IP + userAgent combination not seen before)
+        try {
+          const dbInstance = await getSharedDb();
+          if (dbInstance && user.email) {
+            const previousLogins = await dbInstance.select()
+              .from(loginAttempts)
+              .where(and(
+                eq(loginAttempts.userId, user.id),
+                eq(loginAttempts.success, true)
+              ))
+              .orderBy(desc(loginAttempts.createdAt))
+              .limit(50);
+            // Check if this IP+UA combo was seen before (excluding the one we just inserted)
+            const isNewDevice = !previousLogins.some(l => 
+              l.ip === ip && l.userAgent === userAgent && l.id !== undefined
+            ) || previousLogins.length <= 1;
+            if (isNewDevice && previousLogins.length > 1) {
+              // Send new device alert email (non-blocking)
+              sendNewDeviceLoginAlert(user.email, user.name || '', { ip, userAgent, time: new Date() }).catch(() => {});
+            }
+          }
+        } catch (e) {
+          // Non-critical - don't block login
+          console.error('[Auth] New device check failed:', e);
+        }
 
         // Set session cookie
         const sessionToken = await sdk.createSessionToken(user.openId, {
@@ -395,6 +426,148 @@ export const appRouter = router({
 
         return { success: true, message: 'تم إرسال رمز تحقق جديد.', expiresAt: expiresAt.getTime() };
       }),
+
+    // ============ PHONE OTP LOGIN (passwordless) ============
+    sendPhoneOtp: publicProcedure
+      .input(z.object({
+        phone: z.string().min(9),
+      }))
+      .mutation(async ({ input }) => {
+        // Rate limit check
+        const canRequest = await authService.canRequestOtp(input.phone);
+        if (!canRequest.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: `يرجى الانتظار ${canRequest.waitSeconds} ثانية قبل طلب رمز جديد.` });
+        }
+
+        // Find user by phone
+        const user = await db.findUserByIdentifier(input.phone);
+        if (!user) {
+          // Don't reveal whether user exists - still return success
+          return { success: true, message: 'إذا كان الرقم مسجلاً، سيتم إرسال رمز التحقق.', expiresAt: Date.now() + 5 * 60 * 1000 };
+        }
+
+        // Check if account is locked
+        const lockStatus = await authService.isAccountLocked(user.id);
+        if (lockStatus.locked) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'تم قفل الحساب مؤقتاً. يرجى المحاولة لاحقاً.' });
+        }
+
+        // Check if account is active
+        if (!user.isActive) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'حسابك غير مفعل. يرجى التواصل مع الإدارة.' });
+        }
+
+        // Generate and send OTP
+        const { code, expiresAt } = await authService.createOtp({
+          userId: user.id,
+          phone: input.phone,
+          type: 'login_verification',
+        });
+
+        // Send OTP via SMS, or email if SMS not configured
+        if (user.email) {
+          await authService.sendEmailOtp(user.email, code, user.name || undefined);
+        } else {
+          await authService.sendSmsOtp(input.phone, code);
+        }
+
+        return { success: true, message: 'تم إرسال رمز التحقق.', expiresAt: expiresAt.getTime() };
+      }),
+
+    // ============ VERIFY PHONE OTP & LOGIN ============
+    verifyPhoneOtp: publicProcedure
+      .input(z.object({
+        phone: z.string().min(9),
+        code: z.string().length(6),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const ip = ctx.req.headers['x-forwarded-for'] as string || ctx.req.socket.remoteAddress || '';
+
+        // Find user
+        const user = await db.findUserByIdentifier(input.phone);
+        if (!user) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'رمز التحقق غير صحيح' });
+        }
+
+        // Verify OTP
+        const result = await authService.verifyOtp({
+          identifier: input.phone,
+          code: input.code,
+          type: 'login_verification',
+        });
+
+        if (!result.valid) {
+          await authService.recordLoginAttempt({ userId: user.id, identifier: input.phone, ip, success: false, reason: 'invalid_otp' });
+          throw new TRPCError({ code: 'BAD_REQUEST', message: result.error || 'رمز التحقق غير صحيح' });
+        }
+
+        // Successful login
+        await authService.resetFailedAttempts(user.id);
+        await authService.recordLoginAttempt({ userId: user.id, identifier: input.phone, ip, success: true });
+
+        // Set session cookie
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name || '',
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+        return { success: true, user: { id: user.id, name: user.name, role: user.role, email: user.email } };
+      }),
+
+    // ============ UPDATE PROFILE ============
+    updateProfile: protectedProcedure
+      .input(z.object({
+        name: z.string().min(2).optional(),
+        email: z.string().email().optional(),
+        phone: z.string().min(9).optional(),
+        language: z.enum(['ar', 'en']).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = ctx.user!;
+        const updateData: Record<string, any> = {};
+
+        // Check if email is already taken by another user
+        if (input.email && input.email !== user.email) {
+          const existing = await db.findUserByIdentifier(input.email);
+          if (existing && existing.id !== user.id) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'البريد الإلكتروني مستخدم من حساب آخر' });
+          }
+          updateData.email = input.email;
+        }
+
+        // Check if phone is already taken by another user
+        if (input.phone && input.phone !== user.phone) {
+          const existing = await db.findUserByIdentifier(input.phone);
+          if (existing && existing.id !== user.id) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'رقم الجوال مستخدم من حساب آخر' });
+          }
+          updateData.phone = input.phone;
+        }
+
+        if (input.name) updateData.name = input.name;
+        if (input.language) updateData.language = input.language;
+
+        if (Object.keys(updateData).length === 0) {
+          return { success: true, message: 'لا توجد تغييرات' };
+        }
+
+        await db.updateUser(user.id, updateData);
+        return { success: true, message: 'تم تحديث البيانات بنجاح' };
+      }),
+
+    // ============ GET LOGIN SESSIONS ============
+    getLoginSessions: protectedProcedure.query(async ({ ctx }) => {
+      const dbInstance = await getSharedDb();
+      if (!dbInstance) return [];
+      const sessions = await dbInstance.select()
+        .from(loginAttempts)
+        .where(and(eq(loginAttempts.userId, ctx.user!.id), eq(loginAttempts.success, true)))
+        .orderBy(desc(loginAttempts.createdAt))
+        .limit(20);
+      return sessions;
+    }),
 
     // ============ GET AUTH CONSTANTS (for frontend) ============
     getAuthConfig: publicProcedure.query(() => ({
