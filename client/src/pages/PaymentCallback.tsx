@@ -58,10 +58,11 @@ export default function PaymentCallback() {
       console.error("Payment verification failed:", err);
       if (err.data?.code === 'NOT_FOUND' && paymentId && invoiceId) {
         // Payment record not found - try to save it first
+        // Amount will be corrected from Moyasar API during verify
         savePayment.mutate({
           moyasarPaymentId: paymentId,
           invoiceId: Number(invoiceId),
-          amount: 0,
+          amount: 0, // Will be updated from Moyasar API during verification
           method: 'apple_pay',
           status: status || 'initiated',
         });

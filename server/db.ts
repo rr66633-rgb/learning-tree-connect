@@ -1676,7 +1676,7 @@ export async function getPaymentByMoyasarId(moyasarPaymentId: string) {
   return result[0];
 }
 
-export async function updatePayment(id: number, data: Partial<{ status: string; paidAt: Date; moyasarPaymentId: string; moyasarPaymentUrl: string; metadata: any }>) {
+export async function updatePayment(id: number, data: Partial<{ status: string; paidAt: Date; moyasarPaymentId: string; moyasarPaymentUrl: string; metadata: any; amount: string }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(payments).set(data as any).where(eq(payments.id, id));

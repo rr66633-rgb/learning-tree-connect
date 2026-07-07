@@ -1296,12 +1296,14 @@ export const appRouter = router({
       const moyasarPayment = await fetchMoyasarPayment(payment.moyasarPaymentId!);
       
       if (moyasarPayment.status === 'paid') {
-        await db.updatePayment(payment.id, { status: 'paid', paidAt: new Date() });
+        // Use amount from Moyasar API (in halalas, convert to SAR) if local amount is 0 or missing
+        const paymentAmount = Number(payment.amount) > 0 ? Number(payment.amount) : (moyasarPayment.amount / 100);
+        await db.updatePayment(payment.id, { status: 'paid', paidAt: new Date(), amount: String(paymentAmount) });
         
         // Update invoice
         const invoice = await db.getInvoiceById(payment.invoiceId);
         if (invoice) {
-          const newPaidAmount = Number(invoice.paidAmount || 0) + Number(payment.amount);
+          const newPaidAmount = Number(invoice.paidAmount || 0) + paymentAmount;
           const totalAmount = Number(invoice.total);
           const newStatus = newPaidAmount >= totalAmount ? 'paid' : 'partially_paid';
           await db.updateInvoice(payment.invoiceId, {
