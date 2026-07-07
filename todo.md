@@ -2072,4 +2072,5 @@
 - [x] إضافة Apple Pay config كامل (version, supported_countries, label بالعربي)
 - [x] تفعيل Apple Pay في صفحة الاشتراكات أيضاً
 - [x] تحديث روابط SVG لشعارات البطاقات إلى الإصدار الجديد
-- [ ] تسجيل الدومين في Moyasar Dashboard > Apple Pay (مطلوب من صاحب الحساب)
+- [x] تسجيل الدومين في Moyasar Dashboard > Apple Pay (تم تسجيل naashah.manus.space + naashah.com)
+- [x] إصلاح مشكلة "مدفوعة جزئياً" - verify يأخذ المبلغ من Moyasar API إذا كان المحلي 0
