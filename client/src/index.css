@@ -161,6 +161,21 @@
   input[type="checkbox"]:not(:disabled),
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* iOS/iPadOS Safe Area and touch fixes */
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-touch-callout: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Ensure buttons have minimum touch target size on iPad */
+  button, [role="button"], a[href], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
   }
 
   /* Premium heading styles */

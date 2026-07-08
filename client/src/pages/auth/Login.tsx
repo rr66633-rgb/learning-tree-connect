@@ -127,8 +127,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd] p-4" dir="rtl">
-      <Card className="w-full max-w-md shadow-xl border-0">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd] p-4 md:p-8" dir="rtl">
+      <Card className="w-full max-w-md md:max-w-lg shadow-xl border-0">
         <CardHeader className="text-center pb-2">
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
@@ -231,7 +231,7 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] text-white font-medium h-11"
+                className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] active:bg-[#009E93] text-white font-medium h-12 md:h-14 text-base md:text-lg rounded-xl active:scale-[0.97] transition-all duration-150"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -274,7 +274,7 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] text-white font-medium h-11"
+                className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] active:bg-[#009E93] text-white font-medium h-12 md:h-14 text-base md:text-lg rounded-xl active:scale-[0.97] transition-all duration-150"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -329,7 +329,7 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] text-white font-medium h-11"
+                className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] active:bg-[#009E93] text-white font-medium h-12 md:h-14 text-base md:text-lg rounded-xl active:scale-[0.97] transition-all duration-150"
                 disabled={isLoading || otpCode.length !== 6}
               >
                 {isLoading ? (

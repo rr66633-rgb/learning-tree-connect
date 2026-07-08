@@ -52,7 +52,13 @@ let csrfTokenFetching: Promise<string> | null = null;
 
 async function fetchCsrfToken(): Promise<string> {
   try {
-    const res = await fetch('/api/csrf-token', { credentials: 'include' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch('/api/csrf-token', { 
+      credentials: 'include',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
     if (!res.ok) {
       console.warn('[CSRF] Token fetch failed with status:', res.status);
       return '';
