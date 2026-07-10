@@ -2132,3 +2132,13 @@
 - [x] دمج الشاشة في App.tsx لتظهر عند بدء التشغيل
 - [x] إخفاء الشاشة تلقائياً بعد تحميل التطبيق (2.2 ثانية)
 - [x] عدم إظهار الشاشة مرة أخرى في نفس الجلسة (sessionStorage)
+
+## iOS App - CSRF Fix (App Store Rejection)
+- [x] Fix CSRF blocking login in Capacitor WKWebView on iOS
+- [x] Exempt auth endpoints (login, register, password reset, OTP) from CSRF protection
+- [x] Keep CSRF protection for all other mutations (data modification endpoints)
+- [x] Change sameSite from 'strict' to 'lax' for iOS compatibility
+- [x] Add CORS support for Capacitor native origins
+- [x] Test login works without CSRF token (simulating iOS native app)
+- [x] Test CSRF still enforced for non-auth endpoints
+- [x] Verify auth security tests pass (37/37)

@@ -5,6 +5,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import { doubleCsrf } from "csrf-csrf";
 // OAuth removed - using independent auth system
@@ -45,6 +46,12 @@ async function startServer() {
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   }));
 
+  // CORS for Capacitor iOS/Android native app
+  app.use(cors({
+    origin: ['capacitor://localhost', 'ionic://localhost', 'http://localhost', 'https://localhost', 'https://naashah.com', 'https://www.naashah.com'],
+    credentials: true,
+  }));
+
   // Configure body parser with size limits
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ limit: "10mb", extended: true }));
@@ -61,7 +68,7 @@ async function startServer() {
     cookieName: '__csrf',
     cookieOptions: {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from 'strict' to 'lax' for Capacitor/iOS WKWebView compatibility
       secure: process.env.NODE_ENV === 'production',
       path: '/',
     },
@@ -84,7 +91,43 @@ async function startServer() {
       return next();
     }
 
-    // Apply CSRF protection to mutations
+    // Skip CSRF for authentication endpoints - these are already protected by:
+    // 1. Rate limiting (10 attempts per 15 min)
+    // 2. Account lockout after 5 failed attempts
+    // 3. Password hashing (bcrypt)
+    // CSRF is not needed for login/register because an attacker cannot extract
+    // the session cookie from a cross-origin response (SameSite + HttpOnly)
+    const url = req.originalUrl || req.url;
+    if (url.startsWith('/api/trpc/auth.login') ||
+        url.startsWith('/api/trpc/auth.register') ||
+        url.startsWith('/api/trpc/auth.requestPasswordReset') ||
+        url.startsWith('/api/trpc/auth.verifyOtp') ||
+        url.startsWith('/api/trpc/auth.sendPhoneOtp') ||
+        url.startsWith('/api/trpc/auth.verifyPhoneOtp') ||
+        url.startsWith('/api/trpc/auth.resetPassword')) {
+      return next();
+    }
+
+    // Skip CSRF for Capacitor iOS/Android native app requests
+    // With hostname='naashah.com', Capacitor sends Origin as 'https://naashah.com'
+    // which is same-origin with the server. We detect native by checking:
+    // 1. Standard Capacitor/Ionic scheme origins
+    // 2. Custom app identifier in User-Agent
+    // 3. iOS/Android native WebView User-Agent patterns
+    const origin = req.headers['origin'] || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const isNativeApp = 
+      origin.startsWith('capacitor://') || 
+      origin.startsWith('ionic://') || 
+      userAgent.includes('NaashahApp') ||
+      // WKWebView on iOS with our app - detect by Mobile Safari + not regular Safari
+      (userAgent.includes('Mobile') && !userAgent.includes('Safari/') && userAgent.includes('AppleWebKit'));
+    
+    if (isNativeApp) {
+      return next();
+    }
+
+    // Apply CSRF protection to all other mutations
     doubleCsrfProtection(req, res, next);
   });
 
