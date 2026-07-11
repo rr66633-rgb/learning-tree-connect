@@ -2142,3 +2142,9 @@
 - [x] Test login works without CSRF token (simulating iOS native app)
 - [x] Test CSRF still enforced for non-auth endpoints
 - [x] Verify auth security tests pass (37/37)
+
+## iOS App - CapacitorHttp Fix (Root Cause of Load Failed)
+
+- [x] Identified root cause: Capacitor intercepts ALL fetch requests when hostname='naashah.com' because it treats them as local asset requests
+- [x] Enabled CapacitorHttp plugin in capacitor.config.ts - this patches fetch/XMLHttpRequest to use native HTTP libraries, bypassing WKWebView interception
+- [ ] User needs to rebuild iOS app (Build 3) with: pnpm build → npx cap sync ios → Archive in Xcode

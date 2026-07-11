@@ -10,6 +10,9 @@ const config: CapacitorConfig = {
     hostname: 'naashah.com',
   },
   plugins: {
+    CapacitorHttp: {
+      enabled: true,
+    },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
