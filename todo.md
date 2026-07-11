@@ -2147,4 +2147,8 @@
 
 - [x] Identified root cause: Capacitor intercepts ALL fetch requests when hostname='naashah.com' because it treats them as local asset requests
 - [x] Enabled CapacitorHttp plugin in capacitor.config.ts - this patches fetch/XMLHttpRequest to use native HTTP libraries, bypassing WKWebView interception
-- [ ] User needs to rebuild iOS app (Build 3) with: pnpm build → npx cap sync ios → Archive in Xcode
+- [x] Updated iOS Splash Screen from Learning Tree logo to Naashah logo (2732x2732)
+- [x] Updated iOS App Icon from Learning Tree logo to Naashah logo (1024x1024)
+- [x] Updated all Android splash screens (all densities) to Naashah logo
+- [x] Updated all Android launcher icons (all densities) to Naashah logo
+- [ ] User needs to rebuild iOS app (Build 4) with: git pull → pnpm build → npx cap sync ios → Archive in Xcode
