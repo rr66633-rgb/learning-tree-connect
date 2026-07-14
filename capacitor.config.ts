@@ -5,9 +5,11 @@ const config: CapacitorConfig = {
   appName: 'نشأة',
   webDir: 'dist/public',
   server: {
-    androidScheme: 'https',
-    iosScheme: 'https',
-    hostname: 'naashah.com',
+    // Load the app directly from the production server
+    // This ensures all API calls work correctly without hostname conflicts
+    url: 'https://naashah.com',
+    // Allow navigation to our domain
+    allowNavigation: ['naashah.com', '*.naashah.com'],
   },
   plugins: {
     CapacitorHttp: {
