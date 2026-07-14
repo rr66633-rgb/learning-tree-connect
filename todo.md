@@ -2168,7 +2168,7 @@
 - [x] Extend splash screen duration: increased to 4 seconds (both native and web) to cover initial load
 - [x] Disabled CapacitorHttp (not needed with server.url approach)
 - [x] Increased CSRF token fetch timeout to 15s with 3 retries
-- [ ] User needs to test on TestFlight then submit Build 5 to Apple
+- [x] User needs to test on TestFlight then submit Build 5 to Apple (superseded by Build 7)
 
 ## Build 6 - Fix iOS "Load failed" & Branding Cleanup
 - [x] Root cause: iOS Safari throws "Load failed" TypeError which wasn't detected as network error
@@ -2184,7 +2184,7 @@
 - [x] Fix webPush.ts VAPID_SUBJECT from learningtree.sa to naashah.com
 - [x] Fix iOS entitlements from portal.learningtreeco.com to naashah.com
 - [x] Fix service worker cache name from learning-tree-v1 to naashah-v1
-- [ ] Update build number to 6 (user must do in Xcode)
+- [x] Update build number to 6 (user must do in Xcode) (superseded by Build 7)
 
 ## Build 6 - Silent Retry (Cold Start Fix)
 - [x] Make login mutation silently retry on network error (3 retries, no toast during retries)
