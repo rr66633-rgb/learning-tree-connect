@@ -1,5 +1,5 @@
 // Naashah - Service Worker for Push Notifications
-const CACHE_NAME = 'learning-tree-v1';
+const CACHE_NAME = 'naashah-v1';
 
 // Install event
 self.addEventListener('install', (event) => {

@@ -42,8 +42,8 @@ export const brandingRouter = router({
     return {
       organizationId: org?.id || 1,
       organizationName: org?.name || "نشأة",
-      organizationNameAr: org?.nameAr || "حضانة شجرة التعلم",
-      edition: org?.edition || "learning_tree",
+      organizationNameAr: org?.nameAr || "نشأة",
+      edition: org?.edition || "nashaa",
       primaryColor: branding?.primaryColor || "#10b981",
       secondaryColor: branding?.secondaryColor || "#059669",
       accentColor: branding?.accentColor || "#34d399",

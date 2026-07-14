@@ -162,12 +162,12 @@ export default function PrivacyPolicy() {
           <p>If you have questions about this Privacy Policy, please contact:</p>
           <ul className="list-none pl-0 space-y-1">
             <li>
-              <strong>Email:</strong> privacy@learningtreeco.com
+              <strong>Email:</strong> privacy@naashah.com
             </li>
             <li>
               <strong>Website:</strong>{" "}
-              <a href="https://portal.learningtreeco.com" className="text-primary hover:underline">
-                https://portal.learningtreeco.com
+              <a href="https://naashah.com" className="text-primary hover:underline">
+                https://naashah.com
               </a>
             </li>
           </ul>

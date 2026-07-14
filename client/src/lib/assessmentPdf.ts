@@ -106,7 +106,7 @@ export async function generateAssessmentPDF(assessment: AssessmentData): Promise
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("Learning Tree Developmental Assessment Report", pageWidth / 2, 26, { align: "center" });
+  doc.text("Naashah Developmental Assessment Report", pageWidth / 2, 26, { align: "center" });
 
   doc.setFontSize(9);
   doc.text("Early Detection of Developmental Delays Scale", pageWidth / 2, 33, { align: "center" });
@@ -440,7 +440,7 @@ export async function generateAssessmentPDF(assessment: AssessmentData): Promise
     doc.setTextColor(120, 120, 120);
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
-    doc.text("Naashah - Learning Tree Developmental Assessment", margin, pageHeight - 10);
+    doc.text("Naashah Developmental Assessment", margin, pageHeight - 10);
     doc.text("This report is for informational purposes. Consult a specialist for clinical evaluation.", margin, pageHeight - 6);
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: "right" });
   }

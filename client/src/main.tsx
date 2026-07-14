@@ -113,9 +113,11 @@ const trpcClient = trpc.createClient({
       },
       async fetch(input, init) {
         // Retry logic for network failures (handles cold start / slow connections)
+        // iOS Safari throws "Load failed" TypeError on network errors
+        const MAX_RETRIES = 4;
         let response: Response;
         let lastError: Error | null = null;
-        for (let attempt = 1; attempt <= 3; attempt++) {
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
@@ -129,9 +131,10 @@ const trpcClient = trpc.createClient({
             break;
           } catch (err: any) {
             lastError = err;
-            console.warn(`[tRPC] Fetch failed (attempt ${attempt}/3):`, err.message);
-            if (attempt < 3) {
-              await new Promise(r => setTimeout(r, 1500 * attempt));
+            console.warn(`[tRPC] Fetch failed (attempt ${attempt}/${MAX_RETRIES}):`, err.message);
+            if (attempt < MAX_RETRIES) {
+              // Exponential backoff: 2s, 4s, 6s (gives server time to wake from cold start)
+              await new Promise(r => setTimeout(r, 2000 * attempt));
             }
           }
         }

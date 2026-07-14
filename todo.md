@@ -2169,3 +2169,19 @@
 - [x] Disabled CapacitorHttp (not needed with server.url approach)
 - [x] Increased CSRF token fetch timeout to 15s with 3 retries
 - [ ] User needs to test on TestFlight then submit Build 5 to Apple
+
+## Build 6 - Fix iOS "Load failed" & Branding Cleanup
+- [x] Root cause: iOS Safari throws "Load failed" TypeError which wasn't detected as network error
+- [x] Fix: Set Capacitor SplashScreen launchAutoHide=false (native splash stays until JS hides it)
+- [x] Fix: Increase launchShowDuration to 15s as safety fallback
+- [x] Fix: Login error handler now detects "Load failed" (iOS lowercase 'f') as network error
+- [x] Fix: All mutation error handlers show Arabic-friendly message instead of raw "Load failed"
+- [x] Fix: Increased tRPC fetch retries from 3 to 4 with better exponential backoff (2s, 4s, 6s)
+- [x] Fix remaining "Learning Tree" references in PrivacyPolicy.tsx (learningtreeco.com → naashah.com)
+- [x] Fix remaining "Learning Tree" references in TermsOfService.tsx (learningtreeco.com → naashah.com)
+- [x] Fix remaining "Learning Tree" references in assessmentPdf.ts
+- [x] Fix brandingRouter default from learning_tree to nashaa
+- [x] Fix webPush.ts VAPID_SUBJECT from learningtree.sa to naashah.com
+- [x] Fix iOS entitlements from portal.learningtreeco.com to naashah.com
+- [x] Fix service worker cache name from learning-tree-v1 to naashah-v1
+- [ ] Update build number to 6 (user must do in Xcode)

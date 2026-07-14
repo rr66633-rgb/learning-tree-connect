@@ -20,8 +20,10 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     SplashScreen: {
-      launchShowDuration: 4000,
-      launchAutoHide: true,
+      // Keep native splash visible until JS explicitly hides it
+      // This prevents "Load failed" flash during server cold start
+      launchShowDuration: 15000, // Safety fallback: auto-hide after 15s if JS never calls hide
+      launchAutoHide: false, // JS controls when to hide via SplashScreen.hide()
       backgroundColor: '#FFFFFF',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',

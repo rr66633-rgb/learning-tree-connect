@@ -46,14 +46,20 @@ export default function Login() {
       window.location.reload();
     },
     onError: (error) => {
+      // Detect network errors - includes iOS Safari's "Load failed" (lowercase 'f')
+      const msg = error.message.toLowerCase();
+      const isNetworkError = 
+        msg.includes('fetch') ||
+        msg.includes('network') ||
+        msg.includes('failed') ||
+        msg.includes('abort') ||
+        msg.includes('timeout') ||
+        msg.includes('load failed') ||
+        msg.includes('the internet connection appears to be offline') ||
+        msg.includes('a server with the specified hostname could not be found');
+      
       // Auto-retry on network errors (up to 2 times)
-      if (loginRetryCount < 2 && (
-        error.message.includes('fetch') ||
-        error.message.includes('network') ||
-        error.message.includes('Failed') ||
-        error.message.includes('abort') ||
-        error.message.includes('timeout')
-      )) {
+      if (loginRetryCount < 2 && isNetworkError) {
         setLoginRetryCount(prev => prev + 1);
         toast.info("جاري إعادة المحاولة...");
         setTimeout(() => {
@@ -62,7 +68,7 @@ export default function Login() {
         return;
       }
       // Show user-friendly error message
-      const friendlyMessage = error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed')
+      const friendlyMessage = isNetworkError
         ? "حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى."
         : error.message;
       toast.error(friendlyMessage);
@@ -70,6 +76,15 @@ export default function Login() {
       setLoginRetryCount(0);
     },
   });
+
+  // Helper to get user-friendly error message
+  const getFriendlyError = (error: { message: string }) => {
+    const msg = error.message.toLowerCase();
+    const isNetwork = msg.includes('fetch') || msg.includes('network') || msg.includes('failed') ||
+      msg.includes('abort') || msg.includes('timeout') || msg.includes('load failed') ||
+      msg.includes('the internet connection appears to be offline');
+    return isNetwork ? "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى." : error.message;
+  };
 
   const sendPhoneOtpMutation = trpc.auth.sendPhoneOtp.useMutation({
     onSuccess: (data) => {
@@ -80,22 +95,20 @@ export default function Login() {
       setIsLoading(false);
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getFriendlyError(error));
       setIsLoading(false);
     },
   });
-
   const verifyPhoneOtpMutation = trpc.auth.verifyPhoneOtp.useMutation({
     onSuccess: () => {
       toast.success("تم تسجيل الدخول بنجاح");
       window.location.reload();
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getFriendlyError(error));
       setIsLoading(false);
     },
   });
-
   const resendOtpMutation = trpc.auth.resendOtp.useMutation({
     onSuccess: (data) => {
       toast.success("تم إرسال رمز تحقق جديد");
@@ -103,7 +116,7 @@ export default function Login() {
       setCountdown(60);
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getFriendlyError(error));
     },
   });
 

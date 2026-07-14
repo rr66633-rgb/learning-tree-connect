@@ -129,7 +129,7 @@ export default function TermsOfService() {
           <p>
             Your use of the App is also governed by our Privacy Policy, available at{" "}
             <a href="/privacy" className="text-primary hover:underline">
-              https://portal.learningtreeco.com/privacy
+              https://naashah.com/privacy
             </a>
             .
           </p>
@@ -182,12 +182,12 @@ export default function TermsOfService() {
           <p>For questions about these Terms, contact:</p>
           <ul className="list-none pl-0 space-y-1">
             <li>
-              <strong>Email:</strong> support@learningtreeco.com
+              <strong>Email:</strong> support@naashah.com
             </li>
             <li>
               <strong>Website:</strong>{" "}
-              <a href="https://portal.learningtreeco.com" className="text-primary hover:underline">
-                https://portal.learningtreeco.com
+              <a href="https://naashah.com" className="text-primary hover:underline">
+                https://naashah.com
               </a>
             </li>
           </ul>

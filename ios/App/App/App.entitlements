@@ -6,8 +6,8 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:portal.learningtreeco.com</string>
-		<string>webcredentials:portal.learningtreeco.com</string>
+		<string>applinks:naashah.com</string>
+		<string>webcredentials:naashah.com</string>
 	</array>
 </dict>
 </plist>
