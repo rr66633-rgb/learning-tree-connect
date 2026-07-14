@@ -9,6 +9,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Send, Plus, Paperclip, Check, CheckCheck, MessageCircle, User, FileText, Users } from "lucide-react";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function StaffMessages() {
   const { user } = useAuth();
@@ -93,7 +94,7 @@ export default function StaffMessages() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch("/api/upload-document", { method: "POST", body: formData, credentials: "include" });
+      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error("فشل الرفع");
       const data = await res.json();
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";

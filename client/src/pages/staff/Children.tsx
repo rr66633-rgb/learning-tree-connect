@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera, Download } from "lucide-react";
 import { useLocation } from "wouter";
+import { apiUrl } from "@/lib/apiBase";
 
 
 const initialFormState = {
@@ -151,7 +152,7 @@ export default function StaffChildren() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/upload-photo', { method: 'POST', body: formData, credentials: 'include' });
+      const res = await fetch(apiUrl('/api/upload-photo'), { method: 'POST', body: formData, credentials: 'include' });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       setForm(prev => ({ ...prev, photo: data.url }));

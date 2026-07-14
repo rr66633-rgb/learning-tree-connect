@@ -1,10 +1,12 @@
 // CSRF Token helper for non-tRPC API calls (file uploads, etc.)
+import { apiUrl } from './apiBase';
+
 let csrfToken: string | null = null;
 let csrfTokenFetching: Promise<string> | null = null;
 
 async function fetchCsrfToken(): Promise<string> {
   try {
-    const res = await fetch('/api/csrf-token', { credentials: 'include' });
+    const res = await fetch(apiUrl('/api/csrf-token'), { credentials: 'include' });
     if (!res.ok) return '';
     const data = await res.json();
     return data.csrfToken || '';

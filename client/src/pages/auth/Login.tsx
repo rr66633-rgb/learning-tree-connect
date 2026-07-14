@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone } from "lucide-react";
+import { apiUrl } from "@/lib/apiBase";
 
 type LoginMode = "password" | "otp";
 type OtpStep = "phone" | "verify";
@@ -41,7 +42,7 @@ export default function Login() {
 
   // Warm-up ping: wake up the server as soon as login page loads
   useEffect(() => {
-    fetch('/api/csrf-token', { credentials: 'include' }).catch(() => {});
+    fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
   }, []);
 
   const loginMutation = trpc.auth.login.useMutation({

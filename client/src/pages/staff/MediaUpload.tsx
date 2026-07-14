@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/apiBase";
 import {
   Camera, Video, Upload, X, Image as ImageIcon, Film, Plus,
   Trash2, Eye, Loader2, CheckCircle2, Sparkles, Wand2, UserCheck
@@ -142,7 +143,7 @@ export default function StaffMediaUpload() {
       // First upload the file temporarily to get a URL for the AI
       const formData = new FormData();
       formData.append('file', file.file);
-      const uploadRes = await fetch('/api/upload-media', {
+      const uploadRes = await fetch(apiUrl('/api/upload-media'), {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -189,7 +190,7 @@ export default function StaffMediaUpload() {
       if (!imageUrl) {
         const formData = new FormData();
         formData.append('file', firstPhoto.file);
-        const uploadRes = await fetch('/api/upload-media', {
+        const uploadRes = await fetch(apiUrl('/api/upload-media'), {
           method: 'POST',
           body: formData,
           credentials: 'include',
@@ -267,7 +268,7 @@ export default function StaffMediaUpload() {
         const formData = new FormData();
         formData.append('file', files[i].file);
 
-        const response = await fetch('/api/upload-media', {
+        const response = await fetch(apiUrl('/api/upload-media'), {
           method: 'POST',
           body: formData,
           credentials: 'include',

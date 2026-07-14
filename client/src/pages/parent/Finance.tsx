@@ -93,7 +93,7 @@ export default function ParentFinance() {
         currency: 'SAR',
         description: `فاتورة ${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
         publishable_api_key: gatewayStatus.publishableKey,
-        callback_url: `${window.location.origin}/payment-callback?invoiceId=${selectedInvoice.id}`,
+        callback_url: `https://naashah.com/payment-callback?invoiceId=${selectedInvoice.id}`,
         methods: ['creditcard', 'applepay', 'stcpay'],
         supported_networks: ['visa', 'mastercard', 'mada'],
         apple_pay: {

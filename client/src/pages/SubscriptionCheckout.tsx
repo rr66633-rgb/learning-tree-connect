@@ -60,7 +60,7 @@ export default function SubscriptionCheckout() {
         currency: "SAR",
         description: `اشتراك ${selectedPlan.nameAr} - ${billingCycle === "yearly" ? "سنوي" : "شهري"}`,
         publishable_api_key: gatewayStatus.publishableKey,
-        callback_url: `${window.location.origin}/payment-callback?plan=${planId}&cycle=${billingCycle}&org=${orgId || ""}`,
+        callback_url: `https://naashah.com/payment-callback?plan=${planId}&cycle=${billingCycle}&org=${orgId || ""}`,
         methods: ["creditcard", "applepay"],
         supported_networks: ["visa", "mastercard", "mada"],
         apple_pay: {

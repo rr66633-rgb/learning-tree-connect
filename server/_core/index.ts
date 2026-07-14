@@ -47,8 +47,25 @@ async function startServer() {
   }));
 
   // CORS for Capacitor iOS/Android native app
+  // With CapacitorHttp enabled + local webDir, requests come from capacitor://localhost
+  // or with no origin (native HTTP). We allow all known origins.
   app.use(cors({
-    origin: ['capacitor://localhost', 'ionic://localhost', 'http://localhost', 'https://localhost', 'https://naashah.com', 'https://www.naashah.com'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (native apps, server-to-server)
+      if (!origin) return callback(null, true);
+      const allowed = [
+        'capacitor://localhost',
+        'ionic://localhost', 
+        'http://localhost',
+        'https://localhost',
+        'https://naashah.com',
+        'https://www.naashah.com',
+      ];
+      if (allowed.includes(origin) || origin.endsWith('.manus.computer') || origin.endsWith('.manus.space')) {
+        return callback(null, true);
+      }
+      callback(null, false);
+    },
     credentials: true,
   }));
 
@@ -109,18 +126,18 @@ async function startServer() {
     }
 
     // Skip CSRF for Capacitor iOS/Android native app requests
-    // With hostname='naashah.com', Capacitor sends Origin as 'https://naashah.com'
-    // which is same-origin with the server. We detect native by checking:
-    // 1. Standard Capacitor/Ionic scheme origins
-    // 2. Custom app identifier in User-Agent
-    // 3. iOS/Android native WebView User-Agent patterns
+    // With CapacitorHttp enabled + local webDir:
+    // - Requests come with Origin: capacitor://localhost
+    // - Or with no Origin at all (native HTTP plugin)
+    // - Or with the NaashahApp User-Agent identifier
     const origin = req.headers['origin'] || '';
     const userAgent = req.headers['user-agent'] || '';
     const isNativeApp = 
+      !origin || // No origin = native HTTP request (CapacitorHttp)
       origin.startsWith('capacitor://') || 
       origin.startsWith('ionic://') || 
       userAgent.includes('NaashahApp') ||
-      // WKWebView on iOS with our app - detect by Mobile Safari + not regular Safari
+      // WKWebView on iOS with our app
       (userAgent.includes('Mobile') && !userAgent.includes('Safari/') && userAgent.includes('AppleWebKit'));
     
     if (isNativeApp) {

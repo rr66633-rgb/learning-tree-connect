@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Upload, User, Briefcase, GraduationCap, CreditCard, Phone as PhoneIcon, Save } from "lucide-react";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function EditStaff() {
   const params = useParams<{ id: string }>();
@@ -83,7 +84,7 @@ export default function EditStaff() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload-photo", { method: "POST", body: formData, credentials: "include" });
+      const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error();
       const data = await res.json();
       setForm(f => ({ ...f, photo: data.url }));

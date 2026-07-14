@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Baby, Heart, Phone, AlertTriangle, Camera, Edit, FileText, Upload, CheckCircle2, Clock, XCircle, Download, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/apiBase";
 
 function ChildEmergencyContacts({ childId }: { childId: number }) {
   const { data: contacts, isLoading } = trpc.emergencyContacts.list.useQuery({ childId });
@@ -53,7 +54,7 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload-document", { method: "POST", body: formData });
+      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "فشل الرفع"); }
       const { url, mimeType } = await res.json();
       await createDoc.mutateAsync({ childId, type: docType as any, name: docName.trim(), fileUrl: url, mimeType });
@@ -232,7 +233,7 @@ export default function ParentChildren() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload-photo", { method: "POST", body: formData });
+      const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData });
       if (!res.ok) throw new Error("فشل رفع الصورة");
       const { url } = await res.json();
       await updateChild.mutateAsync({ id: childId, photo: url });

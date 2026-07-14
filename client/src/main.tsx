@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { BrandingProvider } from "./contexts/BrandingContext";
 import { LOGIN_PATH } from "./const";
+import { apiUrl } from "./lib/apiBase";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -47,8 +48,8 @@ queryClient.getMutationCache().subscribe(event => {
 });
 
 // Warm-up ping: wake up the server immediately when JS loads
-// This fires before React renders, giving the server time to wake from cold start
-fetch('/api/csrf-token', { credentials: 'include' }).catch(() => {});
+// This fires before React renders, giving the server time to respond
+fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
 
 // CSRF Token management with retry and invalidation
 let csrfToken: string | null = null;
@@ -59,7 +60,7 @@ async function fetchCsrfToken(retries = 3): Promise<string> {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch('/api/csrf-token', { 
+      const res = await fetch(apiUrl('/api/csrf-token'), { 
         credentials: 'include',
         signal: controller.signal,
       });
@@ -109,7 +110,7 @@ function invalidateCsrfToken() {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: apiUrl("/api/trpc"),
       transformer: superjson,
       async headers() {
         const token = await getCsrfToken();
@@ -117,7 +118,6 @@ const trpcClient = trpc.createClient({
       },
       async fetch(input, init) {
         // Retry logic for network failures (handles cold start / slow connections)
-        // iOS Safari throws "Load failed" TypeError on network errors
         const MAX_RETRIES = 4;
         let response: Response;
         let lastError: Error | null = null;
@@ -137,7 +137,7 @@ const trpcClient = trpc.createClient({
             lastError = err;
             console.warn(`[tRPC] Fetch failed (attempt ${attempt}/${MAX_RETRIES}):`, err.message);
             if (attempt < MAX_RETRIES) {
-              // Exponential backoff: 2s, 4s, 6s (gives server time to wake from cold start)
+              // Exponential backoff: 2s, 4s, 6s (gives server time to respond)
               await new Promise(r => setTimeout(r, 2000 * attempt));
             }
           }
@@ -148,7 +148,6 @@ const trpcClient = trpc.createClient({
         response = response!;
 
         // If we get a 403, the CSRF token might be stale - invalidate it
-        // so the next request will fetch a fresh token
         if (response.status === 403) {
           const cloned = response.clone();
           try {
@@ -168,8 +167,6 @@ const trpcClient = trpc.createClient({
               return globalThis.fetch(input, retryInit);
             }
           } catch {
-            // If we can't parse the 403 response as JSON, it might be the HTML error page
-            // Invalidate token and retry
             invalidateCsrfToken();
             const freshToken = await getCsrfToken();
             const retryInit = {

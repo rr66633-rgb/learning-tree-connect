@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/apiBase";
 import {
   ArrowRight, Edit, Trash2, User, Briefcase, Calendar, FileText, MessageSquare,
   FolderOpen, Plus, Phone, Mail, MapPin, Clock, CheckCircle, XCircle, AlertCircle,
@@ -141,7 +142,7 @@ export default function StaffProfile() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload-document", { method: "POST", body: formData, credentials: "include" });
+      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error();
       const data = await res.json();
       createDocument.mutate({

@@ -16,6 +16,8 @@
  * - Purchase: When a payment/invoice is completed
  */
 
+import { apiUrl } from './apiBase';
+
 // Extend Window interface for fbq
 declare global {
   interface Window {
@@ -88,7 +90,7 @@ function sendToServer(
   const getToken = async () => {
     if (csrfToken) return csrfToken;
     try {
-      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      const res = await fetch(apiUrl('/api/csrf-token'), { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         return data.csrfToken || '';
@@ -100,7 +102,7 @@ function sendToServer(
   // CAPI disabled temporarily - Meta access token needs renewal
   // Re-enable when a valid token is configured in Events Manager
   // getToken().then(token => {
-  //   fetch('/api/trpc/capi.trackEvent', {
+  //   fetch(apiUrl('/api/trpc/capi.trackEvent'), {
   //     method: 'POST',
   //     headers: { 
   //       'Content-Type': 'application/json',

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Download, ArrowRight, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { getCsrfToken } from "@/lib/csrf";
+import { apiUrl } from "@/lib/apiBase";
 
 type ParsedRow = {
   row: number;
@@ -75,7 +76,7 @@ export default function ImportStaff() {
     formData.append("file", file);
     try {
       const csrfToken = await getCsrfToken();
-      const res = await fetch("/api/import-staff?mode=preview", {
+      const res = await fetch(apiUrl('/api/import-staff?mode=preview'), {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -104,7 +105,7 @@ export default function ImportStaff() {
     try {
       setImportProgress(30);
       const csrfToken2 = await getCsrfToken();
-      const res = await fetch("/api/import-staff", {
+      const res = await fetch(apiUrl('/api/import-staff'), {
         method: "POST",
         body: formData,
         credentials: "include",

@@ -13,6 +13,7 @@ import { PushNotificationToggle } from "@/components/PushNotificationBanner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { apiUrl } from "@/lib/apiBase";
 
 function PickupAlertSettingsSection() {
   const { user } = useAuth();
@@ -287,7 +288,7 @@ export default function StaffSettings() {
                     try {
                       const formData = new FormData();
                       formData.append('file', file);
-                      const resp = await fetch('/api/upload-logo', { method: 'POST', body: formData });
+                      const resp = await fetch(apiUrl('/api/upload-logo'), { method: 'POST', body: formData });
                       const data = await resp.json();
                       if (data.url) {
                         setLogoUrl(data.url);

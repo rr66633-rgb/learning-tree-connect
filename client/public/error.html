@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>نشأة</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #f0fdf9 0%, #f8fafc 50%, #fef3f2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .container { text-align: center; padding: 2rem; }
+    .title { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 0.95rem; color: #6b7280; margin-bottom: 2rem; }
+    .dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 2rem; }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #00C9B7;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+    .dot:nth-child(3) { animation-delay: 0s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    .retry-btn {
+      display: none; background: #00C9B7; color: white; border: none;
+      padding: 12px 32px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;
+    }
+    .retry-btn:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">نشأة</h1>
+    <p class="subtitle" id="status">جاري الاتصال...</p>
+    <div class="dots" id="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <button class="retry-btn" id="retryBtn" onclick="retryLoad()">إعادة المحاولة</button>
+  </div>
+  <script>
+    var retryCount = 0;
+    function retryLoad() {
+      document.getElementById('status').textContent = 'جاري الاتصال...';
+      document.getElementById('dots').style.display = 'flex';
+      document.getElementById('retryBtn').style.display = 'none';
+      retryCount++;
+      setTimeout(function() { window.location.href = 'https://naashah.com'; }, 1500);
+    }
+    function autoRetry() {
+      if (retryCount < 5) {
+        retryCount++;
+        setTimeout(function() { window.location.href = 'https://naashah.com'; }, 2000 * retryCount);
+      } else {
+        document.getElementById('status').textContent = 'تعذر الاتصال. تأكد من اتصال الإنترنت.';
+        document.getElementById('dots').style.display = 'none';
+        document.getElementById('retryBtn').style.display = 'inline-block';
+      }
+    }
+    setTimeout(autoRetry, 2000);
+  </script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getCsrfToken, invalidateCsrfToken } from "@/lib/csrf";
 import { FileText, Trash2, Upload, BookOpen, Loader2 } from "lucide-react";
+import { apiUrl } from "@/lib/apiBase";
 
 const LEVEL_LABELS: Record<string, string> = {
   nursery: "حضانة",
@@ -68,7 +69,7 @@ export default function CurriculumManagement() {
       const formData = new FormData();
       formData.append("file", file);
       const csrfToken = await getCsrfToken();
-      let res = await fetch("/api/upload-curriculum", {
+      let res = await fetch(apiUrl('/api/upload-curriculum'), {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -79,7 +80,7 @@ export default function CurriculumManagement() {
       if (res.status === 403) {
         invalidateCsrfToken();
         const newToken = await getCsrfToken();
-        res = await fetch("/api/upload-curriculum", {
+        res = await fetch(apiUrl('/api/upload-curriculum'), {
           method: "POST",
           body: formData,
           credentials: "include",

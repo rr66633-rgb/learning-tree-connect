@@ -2189,3 +2189,12 @@
 ## Build 6 - Silent Retry (Cold Start Fix)
 - [x] Make login mutation silently retry on network error (3 retries, no toast during retries)
 - [x] Add warm-up ping on app load (main.tsx + Login.tsx) to wake up server before user interacts
+
+## Build 7 - Fix iOS Load Failed (Switch to Local Assets)
+- [x] Remove server.url from capacitor.config.ts (use local webDir instead)
+- [x] Update tRPC client to use absolute URL when in native app context
+- [x] Update CSRF token fetch to use absolute URL in native context
+- [x] Update warm-up ping to use absolute URL in native context
+- [x] Update CORS to allow all origins for native app requests
+- [x] Fix cookie settings for cross-origin native app requests
+- [x] Test and verify the changes work

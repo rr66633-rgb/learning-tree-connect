@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Upload, User, Briefcase, GraduationCap, CreditCard, Phone as PhoneIcon, Save } from "lucide-react";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function AddStaff() {
   const [, navigate] = useLocation();
@@ -72,7 +73,7 @@ export default function AddStaff() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload-photo", {
+      const res = await fetch(apiUrl('/api/upload-photo'), {
         method: "POST",
         body: formData,
         credentials: "include",

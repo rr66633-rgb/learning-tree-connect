@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, FileText, Loader2, Camera, X, Image as ImageIcon } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/apiBase";
 
 const moodLabels: Record<string, string> = { happy: "سعيد", calm: "هادئ", tired: "متعب", upset: "منزعج", excited: "متحمس" };
 const moodColors: Record<string, string> = { happy: "bg-green-100 text-green-700", calm: "bg-blue-100 text-blue-700", tired: "bg-amber-100 text-amber-700", upset: "bg-red-100 text-red-700", excited: "bg-purple-100 text-purple-700" };
@@ -66,7 +67,7 @@ export default function DailyReports() {
       reader.onload = async () => {
         try {
           const base64 = (reader.result as string).split(',')[1];
-          const response = await fetch('/api/upload', {
+          const response = await fetch(apiUrl('/api/upload'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

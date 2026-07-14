@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowRight, Copy, Loader2, Sparkles, Upload, Video, X } from "lucide-react";
 import { Link } from "wouter";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function AIMarketingMediaCaption() {
   const [form, setForm] = useState({
@@ -60,7 +61,7 @@ export default function AIMarketingMediaCaption() {
       if (files.length > 0) {
         const formData = new FormData();
         formData.append("files", files[0]);
-        const res = await fetch("/api/upload-media", { method: "POST", body: formData });
+        const res = await fetch(apiUrl('/api/upload-media'), { method: "POST", body: formData });
         if (res.ok) {
           const data = await res.json();
           mediaUrl = data.urls?.[0] || data.url || "";

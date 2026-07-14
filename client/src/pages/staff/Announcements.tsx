@@ -12,6 +12,7 @@ import { Plus, Megaphone, Pencil, Trash2, Pin, PinOff, ImagePlus, X, Clock, User
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function StaffAnnouncements() {
   const { user } = useAuth();
@@ -98,7 +99,7 @@ export default function StaffAnnouncements() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload-photo", { method: "POST", body: formData, credentials: "include" });
+      const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error("فشل رفع الصورة");
       const data = await res.json();
       if (isEdit) setEditImageUrl(data.url);

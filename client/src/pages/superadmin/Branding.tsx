@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Palette, Save, RotateCcw, Upload, X, Image as ImageIcon } from "lucide-react";
+import { apiUrl } from "@/lib/apiBase";
 
 interface LogoUploadProps {
   label: string;
@@ -36,7 +37,7 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/upload-logo', {
+      const res = await fetch(apiUrl('/api/upload-logo'), {
         method: 'POST',
         body: formData,
       });

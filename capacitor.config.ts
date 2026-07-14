@@ -5,23 +5,25 @@ const config: CapacitorConfig = {
   appName: 'نشأة',
   webDir: 'dist/public',
   server: {
-    // Load the app directly from the production server
-    // This ensures all API calls work correctly without hostname conflicts
-    url: 'https://naashah.com',
-    // Allow navigation to our domain
+    // NO server.url - app loads from local webDir (instant, no network dependency)
+    // API calls use absolute URLs via apiBase.ts when in native context
+    // This eliminates "Load failed" errors on iOS completely
+    androidScheme: 'https',
+    iosScheme: 'https',
+    // Allow navigation to our domain for OAuth callbacks etc.
     allowNavigation: ['naashah.com', '*.naashah.com'],
   },
   plugins: {
     CapacitorHttp: {
-      // Disabled - not needed when using server.url (app loads from remote server directly)
-      enabled: false,
+      // Enable CapacitorHttp to use native HTTP for cross-origin API calls
+      // This bypasses WKWebView CORS restrictions and provides reliable networking
+      enabled: true,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     SplashScreen: {
       // Keep native splash visible until JS explicitly hides it
-      // This prevents "Load failed" flash during server cold start
       launchShowDuration: 15000, // Safety fallback: auto-hide after 15s if JS never calls hide
       launchAutoHide: false, // JS controls when to hide via SplashScreen.hide()
       backgroundColor: '#FFFFFF',
