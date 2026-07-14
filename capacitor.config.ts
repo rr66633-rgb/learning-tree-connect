@@ -7,7 +7,6 @@ const config: CapacitorConfig = {
   server: {
     // NO server.url - app loads from local webDir (instant, no network dependency)
     // API calls use absolute URLs via apiBase.ts when in native context
-    // This eliminates "Load failed" errors on iOS completely
     androidScheme: 'https',
     iosScheme: 'https',
     // Allow navigation to our domain for OAuth callbacks etc.
@@ -15,9 +14,15 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorHttp: {
-      // Enable CapacitorHttp to use native HTTP for cross-origin API calls
-      // This bypasses WKWebView CORS restrictions and provides reliable networking
-      enabled: true,
+      // DISABLED: CapacitorHttp patches window.fetch to use native URLSession.
+      // When URLSession encounters ANY network error (timeout, DNS, cold start),
+      // iOS shows a native "Load failed" banner at the bottom of the screen.
+      // This banner is NOT controllable from JavaScript - even .catch() cannot suppress it.
+      // With enabled: false, standard WKWebView fetch is used instead, which:
+      // - Handles errors silently in JS (no native UI banner)
+      // - Supports CORS properly (we have CORS configured on the server)
+      // - Works with SameSite=None + Secure cookies for cross-origin
+      enabled: false,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

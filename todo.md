@@ -2205,3 +2205,21 @@
 - [x] Skip CSRF token entirely on native platform (server already bypasses CSRF for native)
 - [x] Add proper timeout using Promise.race instead of AbortController
 - [x] Test production API responds correctly
+
+## Build 9 - Fix WKWebView native "Load failed" banner (Apple Review)
+
+Root cause: CapacitorHttp patches window.fetch to use native URLSession.
+When URLSession encounters any network error (timeout, DNS, cold start),
+iOS shows a native "Load failed" banner at the bottom of the screen.
+This banner is NOT controlled by JavaScript - even .catch() cannot suppress it.
+The warm-up ping fires immediately and if the server is cold (3-4s), the native
+layer shows the error banner before JS even gets the error.
+
+Fix: Disable CapacitorHttp and use standard WKWebView fetch instead.
+Standard WKWebView fetch handles errors silently in JS without native UI banners.
+
+- [x] Disable CapacitorHttp (enabled: false) in capacitor.config.ts
+- [x] Remove warm-up ping on native platform (no background requests before user action)
+- [x] Ensure standard WKWebView fetch works with CORS + SameSite=None cookies
+- [x] Keep retry logic in tRPC fetch wrapper for reliability
+- [x] Verify login flow works without CapacitorHttp

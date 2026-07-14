@@ -13,7 +13,7 @@ async function fetchCsrfToken(): Promise<string> {
   if (IS_NATIVE) return '';
   
   try {
-    const res = await window.fetch(apiUrl('/api/csrf-token'), { credentials: 'include' });
+    const res = await fetch(apiUrl('/api/csrf-token'), { credentials: 'include' });
     if (!res.ok) return '';
     const data = await res.json();
     return data.csrfToken || '';

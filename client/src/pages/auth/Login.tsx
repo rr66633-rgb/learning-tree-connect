@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { Capacitor } from '@capacitor/core';
 
 type LoginMode = "password" | "otp";
 type OtpStep = "phone" | "verify";
@@ -41,9 +42,12 @@ export default function Login() {
   const loginRetryRef = useRef(0);
 
   // Warm-up ping: wake up the server as soon as login page loads
-  // Uses window.fetch (patched by CapacitorHttp on native iOS)
+  // On NATIVE: Skip warm-up to avoid iOS "Load failed" banner from WKWebView
+  // On WEB: Fire warm-up to reduce perceived latency
   useEffect(() => {
-    window.fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
+    if (!Capacitor.isNativePlatform()) {
+      fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
+    }
   }, []);
 
   const loginMutation = trpc.auth.login.useMutation({

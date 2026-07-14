@@ -51,30 +51,20 @@ queryClient.getMutationCache().subscribe(event => {
 });
 
 // Warm-up ping: wake up the server immediately when JS loads
-// This fires before React renders, giving the server time to respond
-// On native: use window.fetch (patched by CapacitorHttp) without signal
-window.fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
+// On NATIVE: Do NOT fire warm-up ping - it can trigger iOS native "Load failed" banner
+// if the server is cold (3-4s response time). The login button handles retries instead.
+// On WEB: Fire warm-up to reduce perceived latency for the user.
+if (!IS_NATIVE) {
+  fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
+}
 
 // ============================================================
 // CSRF Token management
-// On native iOS (CapacitorHttp), CSRF is bypassed server-side,
-// so we skip CSRF token fetching entirely to avoid fetch issues.
+// On native iOS, CSRF is bypassed server-side,
+// so we skip CSRF token fetching entirely.
 // ============================================================
 let csrfToken: string | null = null;
 let csrfTokenFetching: Promise<string> | null = null;
-
-/**
- * Timeout helper using Promise.race (works with CapacitorHttp native patch)
- * AbortController.signal is NOT supported by CapacitorHttp on iOS native.
- */
-function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
-  return Promise.race([
-    window.fetch(url, options),
-    new Promise<Response>((_, reject) =>
-      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs)
-    ),
-  ]);
-}
 
 async function fetchCsrfToken(retries = 3): Promise<string> {
   // On native platform, CSRF is bypassed server-side - return empty string
@@ -84,11 +74,15 @@ async function fetchCsrfToken(retries = 3): Promise<string> {
   
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const res = await fetchWithTimeout(
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      const res = await fetch(
         apiUrl('/api/csrf-token'),
-        { credentials: 'include' },
-        15000
+        { credentials: 'include', signal: controller.signal }
       );
+      clearTimeout(timeoutId);
+      
       if (!res.ok) {
         console.warn(`[CSRF] Token fetch failed (attempt ${attempt}/${retries}):`, res.status);
         if (attempt < retries) {
@@ -149,35 +143,34 @@ const trpcClient = trpc.createClient({
       },
       async fetch(input, init) {
         // Retry logic for network failures (handles cold start / slow connections)
-        // IMPORTANT: Uses window.fetch (patched by CapacitorHttp on native iOS)
-        // IMPORTANT: Strips AbortController.signal on native (not supported by CapacitorHttp)
+        // With CapacitorHttp DISABLED, standard WKWebView fetch is used on iOS.
+        // Standard fetch supports AbortController.signal properly.
         const MAX_RETRIES = 4;
         const TIMEOUT_MS = IS_NATIVE ? 45000 : 30000; // Longer timeout for native (cold start)
         let response: Response;
         let lastError: Error | null = null;
         
-        // On native, strip signal from init (CapacitorHttp doesn't support AbortController)
-        const cleanInit = IS_NATIVE
-          ? (() => { const { signal, ...rest } = (init ?? {}) as any; return rest; })()
-          : (init ?? {});
-        
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
-            response = await fetchWithTimeout(
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+            
+            response = await fetch(
               input as string,
               {
-                ...cleanInit,
+                ...(init ?? {}),
                 credentials: "include",
-              },
-              TIMEOUT_MS
+                signal: controller.signal,
+              }
             );
+            clearTimeout(timeoutId);
             lastError = null;
             break;
           } catch (err: any) {
             lastError = err;
             console.warn(`[tRPC] Fetch failed (attempt ${attempt}/${MAX_RETRIES}):`, err.message);
             if (attempt < MAX_RETRIES) {
-              // Exponential backoff: 2s, 4s, 6s (gives server time to respond)
+              // Exponential backoff: 2s, 4s, 6s (gives server time to wake up from cold start)
               await new Promise(r => setTimeout(r, 2000 * attempt));
             }
           }
@@ -197,27 +190,27 @@ const trpcClient = trpc.createClient({
               // Retry the request once with a fresh token
               const freshToken = await getCsrfToken();
               const retryInit = {
-                ...cleanInit,
+                ...(init ?? {}),
                 credentials: "include" as RequestCredentials,
                 headers: {
                   ...(init?.headers || {}),
                   'x-csrf-token': freshToken,
                 },
               };
-              return window.fetch(input as string, retryInit);
+              return fetch(input as string, retryInit);
             }
           } catch {
             invalidateCsrfToken();
             const freshToken = await getCsrfToken();
             const retryInit = {
-              ...cleanInit,
+              ...(init ?? {}),
               credentials: "include" as RequestCredentials,
               headers: {
                 ...(init?.headers || {}),
                 'x-csrf-token': freshToken,
               },
             };
-            return window.fetch(input as string, retryInit);
+            return fetch(input as string, retryInit);
           }
         }
 
