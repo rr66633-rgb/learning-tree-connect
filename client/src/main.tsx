@@ -46,6 +46,10 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+// Warm-up ping: wake up the server immediately when JS loads
+// This fires before React renders, giving the server time to wake from cold start
+fetch('/api/csrf-token', { credentials: 'include' }).catch(() => {});
+
 // CSRF Token management with retry and invalidation
 let csrfToken: string | null = null;
 let csrfTokenFetching: Promise<string> | null = null;

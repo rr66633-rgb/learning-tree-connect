@@ -2185,3 +2185,7 @@
 - [x] Fix iOS entitlements from portal.learningtreeco.com to naashah.com
 - [x] Fix service worker cache name from learning-tree-v1 to naashah-v1
 - [ ] Update build number to 6 (user must do in Xcode)
+
+## Build 6 - Silent Retry (Cold Start Fix)
+- [x] Make login mutation silently retry on network error (3 retries, no toast during retries)
+- [x] Add warm-up ping on app load (main.tsx + Login.tsx) to wake up server before user interacts

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,12 +37,17 @@ export default function Login() {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  const [loginRetryCount, setLoginRetryCount] = useState(0);
+  const loginRetryRef = useRef(0);
+
+  // Warm-up ping: wake up the server as soon as login page loads
+  useEffect(() => {
+    fetch('/api/csrf-token', { credentials: 'include' }).catch(() => {});
+  }, []);
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
       toast.success("تم تسجيل الدخول بنجاح");
-      setLoginRetryCount(0);
+      loginRetryRef.current = 0;
       window.location.reload();
     },
     onError: (error) => {
@@ -58,22 +63,22 @@ export default function Login() {
         msg.includes('the internet connection appears to be offline') ||
         msg.includes('a server with the specified hostname could not be found');
       
-      // Auto-retry on network errors (up to 2 times)
-      if (loginRetryCount < 2 && isNetworkError) {
-        setLoginRetryCount(prev => prev + 1);
-        toast.info("جاري إعادة المحاولة...");
+      // Silent auto-retry on network errors (up to 3 times) - no toast shown during retries
+      if (loginRetryRef.current < 3 && isNetworkError) {
+        loginRetryRef.current += 1;
+        // Silently retry after increasing delay (2s, 4s, 6s)
         setTimeout(() => {
           loginMutation.mutate({ identifier, password });
-        }, 2000);
+        }, 2000 * loginRetryRef.current);
         return;
       }
-      // Show user-friendly error message
+      // Only show error after all retries exhausted
       const friendlyMessage = isNetworkError
         ? "حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى."
         : error.message;
       toast.error(friendlyMessage);
       setIsLoading(false);
-      setLoginRetryCount(0);
+      loginRetryRef.current = 0;
     },
   });
 
