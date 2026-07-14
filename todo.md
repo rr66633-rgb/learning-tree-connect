@@ -2198,3 +2198,10 @@
 - [x] Update CORS to allow all origins for native app requests
 - [x] Fix cookie settings for cross-origin native app requests
 - [x] Test and verify the changes work
+
+## Build 8 - Fix CapacitorHttp fetch compatibility (Apple Review Load Failed)
+- [x] Remove AbortController.signal from fetch calls (not supported by CapacitorHttp native patch)
+- [x] Replace globalThis.fetch with window.fetch (CapacitorHttp only patches window.fetch)
+- [x] Skip CSRF token entirely on native platform (server already bypasses CSRF for native)
+- [x] Add proper timeout using Promise.race instead of AbortController
+- [x] Test production API responds correctly

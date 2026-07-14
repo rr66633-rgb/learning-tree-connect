@@ -41,8 +41,9 @@ export default function Login() {
   const loginRetryRef = useRef(0);
 
   // Warm-up ping: wake up the server as soon as login page loads
+  // Uses window.fetch (patched by CapacitorHttp on native iOS)
   useEffect(() => {
-    fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
+    window.fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
   }, []);
 
   const loginMutation = trpc.auth.login.useMutation({

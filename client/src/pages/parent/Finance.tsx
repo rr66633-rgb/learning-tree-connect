@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { trackPurchase } from "@/lib/metaPixel";
+import { apiUrl } from "@/lib/apiBase";
 
 declare global {
   interface Window {
@@ -116,10 +117,10 @@ export default function ParentFinance() {
         on_completed: async function(payment: any) {
           // Save payment to our server immediately after Moyasar creates it
           try {
-            const response = await fetch('/api/trpc/payments.saveFromMoyasar', {
+            const response = await fetch(apiUrl('/api/trpc/payments.saveFromMoyasar'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              credentials: 'same-origin',
+              credentials: 'include',
               body: JSON.stringify({
                 json: {
                   moyasarPaymentId: payment.id,
