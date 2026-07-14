@@ -50,25 +50,36 @@ queryClient.getMutationCache().subscribe(event => {
 let csrfToken: string | null = null;
 let csrfTokenFetching: Promise<string> | null = null;
 
-async function fetchCsrfToken(): Promise<string> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch('/api/csrf-token', { 
-      credentials: 'include',
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    if (!res.ok) {
-      console.warn('[CSRF] Token fetch failed with status:', res.status);
+async function fetchCsrfToken(retries = 3): Promise<string> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch('/api/csrf-token', { 
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        console.warn(`[CSRF] Token fetch failed (attempt ${attempt}/${retries}):`, res.status);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        return '';
+      }
+      const data = await res.json();
+      return data.csrfToken || '';
+    } catch (err) {
+      console.warn(`[CSRF] Token fetch error (attempt ${attempt}/${retries}):`, err);
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+        continue;
+      }
       return '';
     }
-    const data = await res.json();
-    return data.csrfToken || '';
-  } catch (err) {
-    console.warn('[CSRF] Token fetch error:', err);
-    return '';
   }
+  return '';
 }
 
 async function getCsrfToken(): Promise<string> {
@@ -101,10 +112,33 @@ const trpcClient = trpc.createClient({
         return { 'x-csrf-token': token };
       },
       async fetch(input, init) {
-        const response = await globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
+        // Retry logic for network failures (handles cold start / slow connections)
+        let response: Response;
+        let lastError: Error | null = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+            response = await globalThis.fetch(input, {
+              ...(init ?? {}),
+              credentials: "include",
+              signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            lastError = null;
+            break;
+          } catch (err: any) {
+            lastError = err;
+            console.warn(`[tRPC] Fetch failed (attempt ${attempt}/3):`, err.message);
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, 1500 * attempt));
+            }
+          }
+        }
+        if (lastError) {
+          throw lastError;
+        }
+        response = response!;
 
         // If we get a 403, the CSRF token might be stale - invalidate it
         // so the next request will fetch a fresh token

@@ -37,14 +37,37 @@ export default function Login() {
     return () => clearInterval(timer);
   }, [countdown]);
 
+  const [loginRetryCount, setLoginRetryCount] = useState(0);
+
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
       toast.success("تم تسجيل الدخول بنجاح");
+      setLoginRetryCount(0);
       window.location.reload();
     },
     onError: (error) => {
-      toast.error(error.message);
+      // Auto-retry on network errors (up to 2 times)
+      if (loginRetryCount < 2 && (
+        error.message.includes('fetch') ||
+        error.message.includes('network') ||
+        error.message.includes('Failed') ||
+        error.message.includes('abort') ||
+        error.message.includes('timeout')
+      )) {
+        setLoginRetryCount(prev => prev + 1);
+        toast.info("جاري إعادة المحاولة...");
+        setTimeout(() => {
+          loginMutation.mutate({ identifier, password });
+        }, 2000);
+        return;
+      }
+      // Show user-friendly error message
+      const friendlyMessage = error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed')
+        ? "حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى."
+        : error.message;
+      toast.error(friendlyMessage);
       setIsLoading(false);
+      setLoginRetryCount(0);
     },
   });
 

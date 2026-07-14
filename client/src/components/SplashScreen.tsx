@@ -5,7 +5,7 @@ interface SplashScreenProps {
   minDuration?: number;
 }
 
-export function SplashScreen({ onComplete, minDuration = 2200 }: SplashScreenProps) {
+export function SplashScreen({ onComplete, minDuration = 4000 }: SplashScreenProps) {
   const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
 
   useEffect(() => {

@@ -2151,4 +2151,21 @@
 - [x] Updated iOS App Icon from Learning Tree logo to Naashah logo (1024x1024)
 - [x] Updated all Android splash screens (all densities) to Naashah logo
 - [x] Updated all Android launcher icons (all densities) to Naashah logo
-- [ ] User needs to rebuild iOS app (Build 4) with: git pull → pnpm build → npx cap sync ios → Archive in Xcode
+- [x] User rebuilt iOS app (Build 4) - still rejected by Apple (same Load failed issue)
+
+## iOS App - Final Fix: server.url (Build 5)
+
+- [x] Root cause confirmed: hostname='naashah.com' makes Capacitor intercept ALL requests (including API) as local static assets — CapacitorHttp does NOT fix this
+- [x] Solution: Changed capacitor.config.ts to use server.url='https://naashah.com' instead of hostname — app now loads directly from production server
+- [x] All API calls work naturally since they're same-origin with the loaded page
+- [x] Updated build number to 5
+- [x] User needs to rebuild iOS app (Build 5) with: git pull → npx cap sync ios → Archive in Xcode
+
+## iOS App - Fix Cold Start & All Remaining Issues (Build 5)
+- [x] Fix cold start: NOT needed - pickup-escalation job runs every minute keeping server warm
+- [x] Improve login UX: added auto-retry on network errors (up to 2 retries) with user-friendly Arabic error messages
+- [x] Add retry logic for API calls: added 3-retry with 30s timeout on all tRPC fetch calls
+- [x] Extend splash screen duration: increased to 4 seconds (both native and web) to cover initial load
+- [x] Disabled CapacitorHttp (not needed with server.url approach)
+- [x] Increased CSRF token fetch timeout to 15s with 3 retries
+- [ ] User needs to test on TestFlight then submit Build 5 to Apple

@@ -13,13 +13,14 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorHttp: {
-      enabled: true,
+      // Disabled - not needed when using server.url (app loads from remote server directly)
+      enabled: false,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 4000,
       launchAutoHide: true,
       backgroundColor: '#FFFFFF',
       androidSplashResourceName: 'splash',
