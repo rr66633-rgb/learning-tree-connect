@@ -149,8 +149,8 @@ const trpcClient = trpc.createClient({
       },
       async fetch(input, init) {
         // Retry logic for network failures (handles cold start / slow connections)
-        // With CapacitorHttp DISABLED, standard WKWebView fetch is used on iOS.
-        // Standard fetch supports AbortController.signal properly.
+        // On native iOS (WKWebView), AbortController.signal can sometimes trigger
+        // the native "Load failed" banner. Use Promise.race for timeout on native.
         const MAX_RETRIES = 4;
         const TIMEOUT_MS = IS_NATIVE ? 45000 : 30000; // Longer timeout for native (cold start)
         let response: Response;
@@ -158,18 +158,35 @@ const trpcClient = trpc.createClient({
         
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-            
-            response = await fetch(
-              input as string,
-              {
-                ...(init ?? {}),
-                credentials: "include",
-                signal: controller.signal,
-              }
-            );
-            clearTimeout(timeoutId);
+            if (IS_NATIVE) {
+              // On native: use Promise.race for timeout (no AbortController signal)
+              // This avoids WKWebView showing native error banners from signal abort
+              const { signal, ...restInit } = (init ?? {}) as any;
+              const fetchPromise = window.fetch(
+                input as string,
+                {
+                  ...restInit,
+                  credentials: "include",
+                }
+              );
+              const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Request timeout')), TIMEOUT_MS)
+              );
+              response = await Promise.race([fetchPromise, timeoutPromise]);
+            } else {
+              // On web: use AbortController normally
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+              response = await fetch(
+                input as string,
+                {
+                  ...(init ?? {}),
+                  credentials: "include",
+                  signal: controller.signal,
+                }
+              );
+              clearTimeout(timeoutId);
+            }
             lastError = null;
             break;
           } catch (err: any) {

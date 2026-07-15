@@ -2,6 +2,10 @@
  * Native Initialization Hook
  * Sets up all native Capacitor features when the app starts.
  * Handles push notification registration, biometric setup, and app lifecycle.
+ * 
+ * IMPORTANT: Push notification registration is deferred until after login
+ * to avoid triggering any network activity before user interaction on iOS.
+ * This prevents the "Load failed" native banner on cold start.
  */
 import { useEffect, useRef } from 'react';
 import {
@@ -11,20 +15,56 @@ import {
   initializeNativeFeatures,
   haptics,
 } from '../lib/native';
+import { useAuth } from '@/_core/hooks/useAuth';
 
 export function useNativeInit() {
   const initialized = useRef(false);
+  const pushRegistered = useRef(false);
+  const { user } = useAuth();
 
+  // Phase 1: Initialize native features (non-network: status bar, splash, keyboard)
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
-    async function init() {
+    async function initCore() {
       if (!isNativePlatform()) return;
 
       // Initialize native features (status bar, splash screen, keyboard)
+      // These are LOCAL operations - no network involved
       await initializeNativeFeatures();
 
+      // Handle app returning to foreground
+      appLifecycle.onStateChange(({ isActive }) => {
+        if (isActive) {
+          // Clear notification badges
+          nativePush.removeAll();
+          // Trigger data refresh
+          window.dispatchEvent(new Event('app-foreground'));
+        }
+      });
+
+      // Handle deep links
+      appLifecycle.onUrlOpen((url) => {
+        const path = new URL(url).pathname;
+        if (path) {
+          window.location.href = path;
+        }
+      });
+    }
+
+    initCore().catch(console.error);
+  }, []);
+
+  // Phase 2: Register push notifications ONLY after user is logged in
+  // This prevents any network activity before the user explicitly logs in
+  useEffect(() => {
+    if (!user) return; // Not logged in yet
+    if (pushRegistered.current) return;
+    if (!isNativePlatform()) return;
+    pushRegistered.current = true;
+
+    async function registerPush() {
       // Register for push notifications
       const token = await nativePush.register();
       if (token) {
@@ -58,26 +98,8 @@ export function useNativeInit() {
           window.location.href = '/parent/reports';
         }
       });
-
-      // Handle app returning to foreground
-      appLifecycle.onStateChange(({ isActive }) => {
-        if (isActive) {
-          // Clear notification badges
-          nativePush.removeAll();
-          // Trigger data refresh
-          window.dispatchEvent(new Event('app-foreground'));
-        }
-      });
-
-      // Handle deep links
-      appLifecycle.onUrlOpen((url) => {
-        const path = new URL(url).pathname;
-        if (path) {
-          window.location.href = path;
-        }
-      });
     }
 
-    init().catch(console.error);
-  }, []);
+    registerPush().catch(console.error);
+  }, [user]);
 }

@@ -2248,3 +2248,14 @@ Load them dynamically only when needed and only on web platform.
 - [x] Replace /manus-storage/ favicon with local /assets/favicon.ico
 - [x] Create externalResources.ts for dynamic loading on web only
 - [x] Update Moyasar to load on-demand in SubscriptionCheckout and Finance pages
+
+## Build 11: Fix iOS "Load failed" - Zero Network Requests on Launch
+- [x] Root cause: auth.me + branding.getMyBranding queries fire immediately on app launch, hitting cold server
+- [x] Fix useAuth: skip auth.me query on native if no prior session (localStorage 'naashah-has-session' flag)
+- [x] Fix BrandingContext: skip branding query on native if no prior session
+- [x] Fix useNativeInit: defer push notification registration until after login (user exists)
+- [x] Fix main.tsx: strip AbortController signal on native, use Promise.race timeout instead
+- [x] Fix Login.tsx: set 'naashah-has-session' flag on successful password and OTP login
+- [x] Fix useAuth: clear session flag on logout
+- [x] Fix DebugOverlay: increase z-index to 999999 to show above splash screen
+- [x] Result: ZERO network requests fire on app launch on native iOS until user taps Login

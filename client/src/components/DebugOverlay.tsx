@@ -102,7 +102,7 @@ export function DebugOverlay() {
           position: "fixed",
           bottom: 80,
           right: 10,
-          zIndex: 99999,
+          zIndex: 999999,
           background: "#ff0000",
           color: "#fff",
           padding: "8px 12px",
@@ -120,12 +120,12 @@ export function DebugOverlay() {
   return (
     <div
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: "40vh",
-        zIndex: 99999,
+      position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "40vh",
+          zIndex: 999999,
         background: "rgba(0,0,0,0.95)",
         color: "#fff",
         fontFamily: "monospace",

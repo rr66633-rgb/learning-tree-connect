@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { Capacitor } from '@capacitor/core';
+
+const IS_NATIVE = Capacitor.isNativePlatform();
 
 export interface BrandingConfig {
   organizationId: number;
@@ -51,16 +54,35 @@ const BrandingContext = createContext<BrandingContextType>({
   refreshBranding: () => {},
 });
 
+/**
+ * On native iOS, skip the branding query if the user hasn't logged in yet.
+ * This prevents a network request on app launch that can trigger the
+ * iOS "Load failed" native banner when the server is cold.
+ */
+function shouldEnableBrandingQuery(): boolean {
+  if (!IS_NATIVE) return true; // Always enable on web
+  const hasSession = localStorage.getItem('naashah-has-session');
+  return hasSession === 'true';
+}
+
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const [branding, setBranding] = useState<BrandingConfig>(defaultBranding);
   const [isLoading, setIsLoading] = useState(true);
 
+  const enabled = shouldEnableBrandingQuery();
+
   const { data: brandingData, refetch } = trpc.branding.getMyBranding.useQuery(undefined, {
     retry: 1,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled, // Skip on native if no session
   });
 
   useEffect(() => {
+    if (!enabled) {
+      // On native without session, use defaults immediately
+      setIsLoading(false);
+      return;
+    }
     if (brandingData) {
       setBranding(brandingData);
       setIsLoading(false);
@@ -69,7 +91,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     } else {
       setIsLoading(false);
     }
-  }, [brandingData]);
+  }, [brandingData, enabled]);
 
   const refreshBranding = () => {
     refetch();
