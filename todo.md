@@ -2283,3 +2283,22 @@ Fix:
 - [x] Only retry on server errors (5xx) and network failures
 - [x] Fix warm-up ping to use window.fetch on native (avoid iOS banner)
 - [x] Update iOS build number to 15
+
+## Build 16: Fix iOS "Load failed" - Same-Origin Approach (DEFINITIVE FIX)
+
+### Root Cause Identified via Safari Web Inspector
+- Error: `[tRPC] Fetch failed (attempt 1/4): – "Load failed"`
+- WKWebView blocks cross-origin fetch from https://localhost to https://naashah.com
+- This affects ALL network requests, not just login
+
+### Solution: server.url in Capacitor Config
+- [x] Set `server.url: 'https://naashah.com'` in capacitor.config.ts
+- [x] App now loads directly from production server (same-origin)
+- [x] Updated capacitor.config.json (the file Xcode actually uses)
+- [x] Simplified apiBase.ts - always use relative paths (same-origin)
+- [x] Fixed csrf.ts - native now gets CSRF tokens like web (same-origin)
+- [x] Simplified NativeSessionGate - always allow network (no-op wrapper)
+- [x] Simplified Login.tsx - uses tRPC directly (no separate nativeLogin)
+- [x] Simplified main.tsx - removed native-specific fetch workarounds
+- [x] Build number updated to 16
+- [x] Build compiles successfully

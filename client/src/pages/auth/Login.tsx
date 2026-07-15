@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
-import { Capacitor } from '@capacitor/core';
+
 import { useNativeSessionGate } from "@/contexts/NativeSessionGate";
 
 type LoginMode = "password" | "otp";
@@ -44,102 +44,10 @@ export default function Login() {
   const loginRetryRef = useRef(0);
 
   // Warm-up ping: wake up the server as soon as login page loads
-  // On NATIVE: Fire a lightweight warm-up to wake the server from cold start
-  // Uses window.fetch without AbortController to avoid iOS "Load failed" banner
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      // On native: use window.fetch without signal to avoid iOS banner
-      window.fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
-    } else {
-      fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
-    }
+    fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
   }, []);
 
-  // Direct fetch login for native iOS - bypasses tRPC batch link retry (which causes silent 3-min hangs)
-  // KEY FIXES (Build 15):
-  // 1. Uses NON-BATCH endpoint: /api/trpc/auth.login (no ?batch=1)
-  //    Body format: {"json": {"identifier": ..., "password": ...}}
-  //    Response format: {"result": {"data": {"json": {...}}}} for success
-  // 2. Uses Promise.race for timeout instead of AbortController.signal
-  //    (AbortController.signal causes iOS WKWebView "Load failed" banner)
-  // 3. Properly parses tRPC single-call response format
-  const nativeLogin = async (id: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-    const url = apiUrl('/api/trpc/auth.login');
-    const body = JSON.stringify({ json: { identifier: id, password: pass } });
-    
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        console.log(`[NativeLogin] attempt ${attempt}/3 - URL: ${url}`);
-        
-        // Use Promise.race for timeout (NOT AbortController - it causes iOS Load failed banner)
-        const fetchPromise = window.fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-          credentials: 'include',
-        });
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT')), 25000)
-        );
-        
-        const res = await Promise.race([fetchPromise, timeoutPromise]);
-        
-        const text = await res.text();
-        console.log(`[NativeLogin] response status: ${res.status}, body: ${text.substring(0, 500)}`);
-        
-        let data: any = null;
-        try { data = JSON.parse(text); } catch { /* not JSON */ }
-        
-        // tRPC single-call response format:
-        // Success: {"result": {"data": {"json": {"success": true, "user": {...}}}}}
-        // Error: {"error": {"json": {"message": "...", "code": ...}}}
-        if (data) {
-          // Check for tRPC error response
-          if (data.error) {
-            const errMsg = data.error?.json?.message || data.error?.message || 'خطأ في تسجيل الدخول';
-            // Don't retry on auth errors (wrong password, locked account, etc.)
-            return { success: false, error: errMsg };
-          }
-          // Check for success response
-          if (data.result?.data) {
-            return { success: true };
-          }
-        }
-        
-        // If HTTP status is not OK and we couldn't parse a tRPC error
-        if (!res.ok) {
-          // Rate limited - don't retry
-          if (res.status === 429) {
-            return { success: false, error: 'تم تجاوز عدد المحاولات المسموح. يرجى المحاولة لاحقاً.' };
-          }
-          // Server error - retry
-          if (attempt < 3) {
-            console.warn(`[NativeLogin] Server error ${res.status}, retrying...`);
-            await new Promise(r => setTimeout(r, 2000 * attempt));
-            continue;
-          }
-          return { success: false, error: `خطأ من السيرفر (${res.status})` };
-        }
-        
-        // If we got a 200 but couldn't parse the expected format, assume success
-        // (the cookie should have been set by the server)
-        return { success: true };
-      } catch (err: any) {
-        console.warn(`[NativeLogin] attempt ${attempt}/3 failed:`, err.message);
-        if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 2000 * attempt)); // Exponential backoff
-          continue;
-        }
-        // Final attempt failed
-        const isTimeout = err.message === 'TIMEOUT';
-        const errDetail = isTimeout 
-          ? 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.'
-          : `خطأ اتصال: ${err.message}`;
-        return { success: false, error: errDetail };
-      }
-    }
-    return { success: false, error: 'حدث خطأ غير متوقع' };
-  };
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
@@ -222,22 +130,9 @@ export default function Login() {
       return;
     }
     setIsLoading(true);
-    
-    if (Capacitor.isNativePlatform()) {
-      // Use direct fetch on native to avoid tRPC batch link silent retry hang
-      const result = await nativeLogin(identifier, password);
-      if (result.success) {
-        toast.success("تم تسجيل الدخول بنجاح");
-        enableNetwork();
-        window.location.reload();
-      } else {
-        toast.error(result.error || 'خطأ في تسجيل الدخول');
-        setIsLoading(false);
-      }
-    } else {
-      // Web: use tRPC mutation normally
-      loginMutation.mutate({ identifier, password });
-    }
+    // With server.url in capacitor.config.ts, native app loads from naashah.com
+    // All requests are same-origin, so tRPC works normally on both web and native
+    loginMutation.mutate({ identifier, password });
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {

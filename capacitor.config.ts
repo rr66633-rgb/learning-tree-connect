@@ -5,32 +5,26 @@ const config: CapacitorConfig = {
   appName: 'نشأة',
   webDir: 'dist/public',
   server: {
-    // NO server.url - app loads from local webDir (instant, no network dependency)
-    // API calls use absolute URLs via apiBase.ts when in native context
-    androidScheme: 'https',
-    iosScheme: 'https',
+    // Load the app directly from the production server.
+    // This makes ALL requests same-origin (no CORS, no cross-origin cookie issues).
+    // WKWebView treats the app as if it's running on naashah.com itself.
+    // This eliminates the "Load failed" error caused by cross-origin fetch from localhost.
+    url: 'https://naashah.com',
     // Allow navigation to our domain for OAuth callbacks etc.
     allowNavigation: ['naashah.com', '*.naashah.com'],
   },
   plugins: {
     CapacitorHttp: {
-      // DISABLED: CapacitorHttp patches window.fetch to use native URLSession.
-      // When URLSession encounters ANY network error (timeout, DNS, cold start),
-      // iOS shows a native "Load failed" banner at the bottom of the screen.
-      // This banner is NOT controllable from JavaScript - even .catch() cannot suppress it.
-      // With enabled: false, standard WKWebView fetch is used instead, which:
-      // - Handles errors silently in JS (no native UI banner)
-      // - Supports CORS properly (we have CORS configured on the server)
-      // - Works with SameSite=None + Secure cookies for cross-origin
+      // DISABLED: Not needed when using server.url (same-origin).
       enabled: false,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     SplashScreen: {
-      // Keep native splash visible until JS explicitly hides it
-      launchShowDuration: 15000, // Safety fallback: auto-hide after 15s if JS never calls hide
-      launchAutoHide: false, // JS controls when to hide via SplashScreen.hide()
+      // Keep native splash visible until the web page loads
+      launchShowDuration: 20000, // Safety fallback: auto-hide after 20s
+      launchAutoHide: true, // Auto-hide when webview finishes loading
       backgroundColor: '#FFFFFF',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',

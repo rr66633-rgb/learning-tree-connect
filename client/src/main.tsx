@@ -9,11 +9,8 @@ import { BrandingProvider } from "./contexts/BrandingContext";
 import { NativeSessionGateProvider } from "./contexts/NativeSessionGate";
 import { LOGIN_PATH } from "./const";
 import { apiUrl } from "./lib/apiBase";
-import { Capacitor } from '@capacitor/core';
 import { initExternalResources } from './lib/externalResources';
 import "./index.css";
-
-const IS_NATIVE = Capacitor.isNativePlatform();
 
 // Load external resources (Meta Pixel, Fonts, Analytics) dynamically
 // On native: minimal loading (only fonts after delay)
@@ -57,28 +54,17 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Warm-up ping: wake up the server immediately when JS loads
-// On NATIVE: Do NOT fire warm-up ping - it can trigger iOS native "Load failed" banner
-// if the server is cold (3-4s response time). The login button handles retries instead.
-// On WEB: Fire warm-up to reduce perceived latency for the user.
-if (!IS_NATIVE) {
-  fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
-}
+// Warm-up ping: wake up the server from cold start
+// With server.url, native app loads from naashah.com (same-origin), so this works fine
+fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
 
 // ============================================================
 // CSRF Token management
-// On native iOS, CSRF is bypassed server-side,
-// so we skip CSRF token fetching entirely.
 // ============================================================
 let csrfToken: string | null = null;
 let csrfTokenFetching: Promise<string> | null = null;
 
 async function fetchCsrfToken(retries = 3): Promise<string> {
-  // On native platform, CSRF is bypassed server-side - return empty string
-  if (IS_NATIVE) {
-    return '';
-  }
-  
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
@@ -113,9 +99,6 @@ async function fetchCsrfToken(retries = 3): Promise<string> {
 }
 
 async function getCsrfToken(): Promise<string> {
-  // Native apps don't need CSRF tokens (server bypasses CSRF for native requests)
-  if (IS_NATIVE) return '';
-  
   if (csrfToken) return csrfToken;
 
   // Prevent concurrent fetches
@@ -150,51 +133,30 @@ const trpcClient = trpc.createClient({
       },
       async fetch(input, init) {
         // Retry logic for network failures (handles cold start / slow connections)
-        // On native iOS (WKWebView), AbortController.signal can sometimes trigger
-        // the native "Load failed" banner. Use Promise.race for timeout on native.
         const MAX_RETRIES = 4;
-        const TIMEOUT_MS = IS_NATIVE ? 45000 : 30000; // Longer timeout for native (cold start)
+        const TIMEOUT_MS = 30000;
         let response: Response;
         let lastError: Error | null = null;
         
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
-            if (IS_NATIVE) {
-              // On native: use Promise.race for timeout (no AbortController signal)
-              // This avoids WKWebView showing native error banners from signal abort
-              const { signal, ...restInit } = (init ?? {}) as any;
-              const fetchPromise = window.fetch(
-                input as string,
-                {
-                  ...restInit,
-                  credentials: "include",
-                }
-              );
-              const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Request timeout')), TIMEOUT_MS)
-              );
-              response = await Promise.race([fetchPromise, timeoutPromise]);
-            } else {
-              // On web: use AbortController normally
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-              response = await fetch(
-                input as string,
-                {
-                  ...(init ?? {}),
-                  credentials: "include",
-                  signal: controller.signal,
-                }
-              );
-              clearTimeout(timeoutId);
-            }
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+            response = await fetch(
+              input as string,
+              {
+                ...(init ?? {}),
+                credentials: "include",
+                signal: controller.signal,
+              }
+            );
+            clearTimeout(timeoutId);
             lastError = null;
             break;
           } catch (err: any) {
             lastError = err;
             console.warn(`[tRPC] Fetch failed (attempt ${attempt}/${MAX_RETRIES}):`, err.message);
             if (attempt < MAX_RETRIES) {
-              // Exponential backoff: 2s, 4s, 6s (gives server time to wake up from cold start)
               await new Promise(r => setTimeout(r, 2000 * attempt));
             }
           }
@@ -204,14 +166,13 @@ const trpcClient = trpc.createClient({
         }
         response = response!;
 
-        // If we get a 403 on web, the CSRF token might be stale - invalidate it
-        if (!IS_NATIVE && response.status === 403) {
+        // If we get a 403, the CSRF token might be stale - invalidate it
+        if (response.status === 403) {
           const cloned = response.clone();
           try {
             const body = await cloned.json();
             if (body?.code === 'EBADCSRFTOKEN' || body?.error === 'invalid csrf token') {
               invalidateCsrfToken();
-              // Retry the request once with a fresh token
               const freshToken = await getCsrfToken();
               const retryInit = {
                 ...(init ?? {}),
