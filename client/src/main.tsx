@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { BrandingProvider } from "./contexts/BrandingContext";
+import { NativeSessionGateProvider } from "./contexts/NativeSessionGate";
 import { LOGIN_PATH } from "./const";
 import { apiUrl } from "./lib/apiBase";
 import { Capacitor } from '@capacitor/core';
@@ -246,9 +247,11 @@ const trpcClient = trpc.createClient({
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <BrandingProvider>
-        <App />
-      </BrandingProvider>
+      <NativeSessionGateProvider>
+        <BrandingProvider>
+          <App />
+        </BrandingProvider>
+      </NativeSessionGateProvider>
     </QueryClientProvider>
   </trpc.Provider>
 );

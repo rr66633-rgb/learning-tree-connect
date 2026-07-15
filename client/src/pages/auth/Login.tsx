@@ -9,12 +9,14 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
 import { Capacitor } from '@capacitor/core';
+import { useNativeSessionGate } from "@/contexts/NativeSessionGate";
 
 type LoginMode = "password" | "otp";
 type OtpStep = "phone" | "verify";
 
 export default function Login() {
   const [, setLocation] = useLocation();
+  const { enableNetwork } = useNativeSessionGate();
   const [loginMode, setLoginMode] = useState<LoginMode>("password");
   
   // Password login state
@@ -54,8 +56,8 @@ export default function Login() {
     onSuccess: () => {
       toast.success("تم تسجيل الدخول بنجاح");
       loginRetryRef.current = 0;
-      // Mark session as active for native iOS (enables auth.me on next app open)
-      localStorage.setItem('naashah-has-session', 'true');
+      // Open the network gate so auth.me and branding queries can fire
+      enableNetwork();
       window.location.reload();
     },
     onError: (error) => {
@@ -115,8 +117,8 @@ export default function Login() {
   const verifyPhoneOtpMutation = trpc.auth.verifyPhoneOtp.useMutation({
     onSuccess: () => {
       toast.success("تم تسجيل الدخول بنجاح");
-      // Mark session as active for native iOS
-      localStorage.setItem('naashah-has-session', 'true');
+      // Open the network gate so auth.me and branding queries can fire
+      enableNetwork();
       window.location.reload();
     },
     onError: (error) => {

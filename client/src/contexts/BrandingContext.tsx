@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Capacitor } from '@capacitor/core';
-
-const IS_NATIVE = Capacitor.isNativePlatform();
+import { useNativeSessionGate } from "@/contexts/NativeSessionGate";
 
 export interface BrandingConfig {
   organizationId: number;
@@ -54,22 +52,14 @@ const BrandingContext = createContext<BrandingContextType>({
   refreshBranding: () => {},
 });
 
-/**
- * On native iOS, skip the branding query if the user hasn't logged in yet.
- * This prevents a network request on app launch that can trigger the
- * iOS "Load failed" native banner when the server is cold.
- */
-function shouldEnableBrandingQuery(): boolean {
-  if (!IS_NATIVE) return true; // Always enable on web
-  const hasSession = localStorage.getItem('naashah-has-session');
-  return hasSession === 'true';
-}
-
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const [branding, setBranding] = useState<BrandingConfig>(defaultBranding);
   const [isLoading, setIsLoading] = useState(true);
+  const { isNetworkAllowed } = useNativeSessionGate();
 
-  const enabled = shouldEnableBrandingQuery();
+  // On native: only fetch branding if the NativeSessionGate allows network
+  // On web: always fetch (isNetworkAllowed is always true on web)
+  const enabled = isNetworkAllowed;
 
   const { data: brandingData, refetch } = trpc.branding.getMyBranding.useQuery(undefined, {
     retry: 1,
@@ -79,7 +69,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!enabled) {
-      // On native without session, use defaults immediately
+      // On native before login, use defaults immediately (no network request)
       setIsLoading(false);
       return;
     }
