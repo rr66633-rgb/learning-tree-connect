@@ -2259,3 +2259,27 @@ Load them dynamically only when needed and only on web platform.
 - [x] Fix useAuth: clear session flag on logout
 - [x] Fix DebugOverlay: increase z-index to 999999 to show above splash screen
 - [x] Result: ZERO network requests fire on app launch on native iOS until user taps Login
+
+## Build 15: Fix Native iOS Login Failure (Definitive Fix)
+
+Root cause analysis:
+The nativeLogin() function had TWO critical bugs:
+1. Used AbortController.signal which causes iOS WKWebView "Load failed" error silently
+2. Used batch endpoint format (?batch=1 with {"0": {...}}) - while this technically works,
+   the response parsing was fragile and the non-batch format is simpler and more reliable
+
+The server-side tests confirm the correct non-batch format:
+- URL: /api/trpc/auth.login (no ?batch=1)
+- Body: {"json": {"identifier": "...", "password": "..."}}
+- Response: {"result": {"data": {"json": {...}}}} for success
+- Response: {"error": {"json": {"message": "..."}}} for error
+
+Fix:
+- [x] Switch nativeLogin to non-batch endpoint format (simpler, matches server tests)
+- [x] Replace AbortController.signal with Promise.race timeout (avoids iOS Load failed)
+- [x] Increase retries from 2 to 3 with exponential backoff
+- [x] Increase timeout from 20s to 25s (handles cold start)
+- [x] Don't retry on auth errors (wrong password, locked account, rate limited)
+- [x] Only retry on server errors (5xx) and network failures
+- [x] Fix warm-up ping to use window.fetch on native (avoid iOS banner)
+- [x] Update iOS build number to 15
