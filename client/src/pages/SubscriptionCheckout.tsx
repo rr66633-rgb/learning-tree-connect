@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Shield, CreditCard, CheckCircle2, Loader2 } from "lucide-react";
+import { loadMoyasar } from "@/lib/externalResources";
 
 declare global {
   interface Window {
@@ -50,11 +51,15 @@ export default function SubscriptionCheckout() {
     if (!moyasarRef.current) return;
     if (amountInHalalas < 100) return; // Minimum 1 SAR
 
-    // Clear previous form
-    moyasarRef.current.innerHTML = "";
+    // Load Moyasar SDK dynamically (no longer in index.html)
+    loadMoyasar().then(() => {
+      if (!moyasarRef.current || !window.Moyasar) return;
 
-    try {
-      window.Moyasar.init({
+      // Clear previous form
+      moyasarRef.current.innerHTML = "";
+
+      try {
+        window.Moyasar.init({
         element: moyasarRef.current,
         amount: amountInHalalas,
         currency: "SAR",
@@ -82,11 +87,12 @@ export default function SubscriptionCheckout() {
           organizationId: orgId || "",
           type: "subscription",
         },
-      });
-    } catch (err) {
-      console.error("Moyasar init error:", err);
-      toast.error("حدث خطأ في تهيئة بوابة الدفع");
-    }
+        });
+      } catch (err) {
+        console.error("Moyasar init error:", err);
+        toast.error("حدث خطأ في تهيئة بوابة الدفع");
+      }
+    });
   }, [selectedPlan, gatewayStatus, amountInHalalas, planId, billingCycle, orgId, paymentInitiated]);
 
   if (plansLoading) {

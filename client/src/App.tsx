@@ -289,7 +289,7 @@ function PendingRolePage() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd]">
       <div className="flex flex-col items-center gap-6 p-8 max-w-md w-full text-center">
         <img
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+          src="/assets/logo.webp"
           alt="نشأة"
           className="w-24 h-24 object-contain"
         />

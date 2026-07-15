@@ -4,7 +4,7 @@ export default function TermsOfService() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-8 flex items-center gap-3">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+            src="/assets/logo.webp"
             alt="نشأة"
             className="w-12 h-12 object-contain"
           />

@@ -9,9 +9,15 @@ import { BrandingProvider } from "./contexts/BrandingContext";
 import { LOGIN_PATH } from "./const";
 import { apiUrl } from "./lib/apiBase";
 import { Capacitor } from '@capacitor/core';
+import { initExternalResources } from './lib/externalResources';
 import "./index.css";
 
 const IS_NATIVE = Capacitor.isNativePlatform();
+
+// Load external resources (Meta Pixel, Fonts, Analytics) dynamically
+// On native: minimal loading (only fonts after delay)
+// On web: full loading (pixel, fonts, analytics)
+initExternalResources();
 
 const queryClient = new QueryClient({
   defaultOptions: {

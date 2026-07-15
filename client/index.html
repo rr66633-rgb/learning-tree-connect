@@ -28,52 +28,26 @@
     <meta name="msapplication-TileColor" content="#00C9B7" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/manus-storage/favicon_edd03722.ico" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/manus-storage/naashah-icon-32x32_906dd5be.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/manus-storage/naashah-icon-16x16_549ef17a.png" />
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/manus-storage/naashah-icon-180x180_94648dab.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/icon-180.png" />
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Meta Pixel Code -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '1314391127472452');
-      fbq('track', 'PageView');
-    </script>
-    <!-- End Meta Pixel Code -->
-
-    <!-- Moyasar Payment Form -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/moyasar.css" />
-    <script src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/moyasar.umd.min.js"></script>
-
-    <!-- Fonts - Premium Arabic typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!--
+      IMPORTANT: All external resources (Meta Pixel, Moyasar, Google Fonts, Analytics)
+      are loaded DYNAMICALLY by JavaScript only on WEB platform.
+      On NATIVE iOS/Android, NO external resources are loaded from index.html.
+      This prevents WKWebView "Load failed" banner when any CDN is unreachable.
+      See: client/src/lib/externalResources.ts
+    -->
   </head>
 
   <body>
-    <!-- Meta Pixel noscript fallback -->
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=1314391127472452&ev=PageView&noscript=1"
-    /></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
   </body>
 
 </html>

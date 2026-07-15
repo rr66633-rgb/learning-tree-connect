@@ -178,7 +178,7 @@ export default function Login() {
       <Card className="w-full max-w-md md:max-w-lg shadow-xl border-0">
         <CardHeader className="text-center pb-2">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+            src="/assets/logo.webp"
             alt="نشأة"
             className="w-20 h-20 mx-auto mb-3 object-contain"
           />

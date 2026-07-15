@@ -9,7 +9,7 @@ import {
 import { useState, useEffect } from "react";
 import { trackViewContent } from "@/lib/metaPixel";
 
-const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp";
+const LOGO_URL = "/assets/logo.webp";
 
 export default function Landing() {
   const [, setLocation] = useLocation();

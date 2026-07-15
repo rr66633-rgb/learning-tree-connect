@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { trackPurchase } from "@/lib/metaPixel";
 import { apiUrl } from "@/lib/apiBase";
+import { loadMoyasar } from "@/lib/externalResources";
 
 declare global {
   interface Window {
@@ -81,14 +82,17 @@ export default function ParentFinance() {
     moyasarFormRef.current = node;
     if (!node || !selectedInvoice || !gatewayStatus?.publishableKey) return;
     
-    // Clear and initialize
-    node.innerHTML = '';
-    setMoyasarInitialized(false);
+    // Load Moyasar SDK dynamically then initialize
+    loadMoyasar().then(() => {
+      if (!node || !window.Moyasar) return;
+      // Clear and initialize
+      node.innerHTML = '';
+      setMoyasarInitialized(false);
 
-    try {
-      const amountInHalalas = Math.round((Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)) * 100);
+      try {
+        const amountInHalalas = Math.round((Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)) * 100);
       
-      window.Moyasar.init({
+        window.Moyasar.init({
         element: node,
         amount: amountInHalalas,
         currency: 'SAR',
@@ -143,12 +147,13 @@ export default function ParentFinance() {
           console.error('Moyasar payment failed:', error);
           toast.error('فشلت عملية الدفع: ' + (typeof error === 'string' ? error : 'يرجى المحاولة مرة أخرى'));
         },
-      });
-      setMoyasarInitialized(true);
-    } catch (err) {
-      console.error('Moyasar init error:', err);
-      toast.error('حدث خطأ في تهيئة بوابة الدفع');
-    }
+        });
+        setMoyasarInitialized(true);
+      } catch (err) {
+        console.error('Moyasar init error:', err);
+        toast.error('حدث خطأ في تهيئة بوابة الدفع');
+      }
+    });
   };
 
   const handleInitiatePayment = () => {

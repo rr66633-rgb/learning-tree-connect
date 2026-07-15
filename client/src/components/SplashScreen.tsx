@@ -89,7 +89,7 @@ export function SplashScreen({ onComplete, minDuration = 4000 }: SplashScreenPro
           style={{ transitionDelay: "150ms" }}
         >
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+            src="/assets/logo.webp"
             alt="نشأة"
             className="w-28 h-28 object-contain drop-shadow-lg"
           />

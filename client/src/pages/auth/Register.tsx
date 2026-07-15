@@ -116,7 +116,7 @@ export default function Register() {
       <Card className="w-full max-w-md shadow-xl border-0">
         <CardHeader className="text-center pb-2">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663757302822/cscUgnSZqDVGFSpPSQMsV9/nashaa-official-logo-B6wEWwsMZLrsNvxGDzxUwN.webp"
+            src="/assets/logo.webp"
             alt="نشأة"
             className="w-16 h-16 mx-auto mb-2 object-contain"
           />

@@ -2223,3 +2223,28 @@ Standard WKWebView fetch handles errors silently in JS without native UI banners
 - [x] Ensure standard WKWebView fetch works with CORS + SameSite=None cookies
 - [x] Keep retry logic in tRPC fetch wrapper for reliability
 - [x] Verify login flow works without CapacitorHttp
+
+## Build 10 - Fix REAL cause of Load failed: external resources in index.html
+
+Root cause FOUND: index.html loads 5 external resources synchronously:
+1. Facebook Meta Pixel (connect.facebook.net) - likely BLOCKED in Apple review environment
+2. Moyasar CSS (cdn.jsdelivr.net) - external CDN
+3. Moyasar JS (cdn.jsdelivr.net) - external CDN  
+4. Google Fonts (fonts.googleapis.com) - external CDN
+5. Facebook noscript tracking pixel - likely BLOCKED
+
+When ANY of these fail to load, WKWebView shows the native "Load failed" banner.
+Apple's review environment may block tracking scripts (Facebook pixel).
+
+Fix: Remove all external resources from index.html for native app builds.
+Load them dynamically only when needed and only on web platform.
+
+- [x] Remove Meta Pixel from index.html (load dynamically only on web)
+- [x] Remove Moyasar from index.html (load dynamically only on payment pages)
+- [x] Make Google Fonts load dynamically only on web (native uses system fonts)
+- [x] Remove noscript Facebook pixel image
+- [x] Ensure index.html has ZERO external network dependencies for native app
+- [x] Replace external CDN logo URL with local /assets/logo.webp in all components
+- [x] Replace /manus-storage/ favicon with local /assets/favicon.ico
+- [x] Create externalResources.ts for dynamic loading on web only
+- [x] Update Moyasar to load on-demand in SubscriptionCheckout and Finance pages
