@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
+import { DebugOverlay } from "./components/DebugOverlay";
 import { Route, Switch, Redirect, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -571,6 +572,7 @@ function App() {
           <Toaster />
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
           <RoleRouter />
+          <DebugOverlay />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
