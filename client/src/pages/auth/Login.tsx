@@ -52,14 +52,15 @@ export default function Login() {
 
   // Direct fetch login for native - bypasses tRPC batch link retry (which causes silent 3-min hangs)
   const nativeLogin = async (id: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-    const url = apiUrl('/api/trpc/auth.login');
+    const url = apiUrl('/api/trpc/auth.login?batch=1');
     const body = JSON.stringify({ "0": { json: { identifier: id, password: pass } } });
     
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
         
+        console.log(`[NativeLogin] attempt ${attempt} - URL: ${url}`);
         const res = await window.fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -69,20 +70,40 @@ export default function Login() {
         });
         clearTimeout(timeoutId);
         
+        const data = await res.json().catch(() => null);
+        console.log(`[NativeLogin] response status: ${res.status}, data:`, JSON.stringify(data));
+        
+        // tRPC batch response: [{result: {data: {json: ...}}}] for success
+        // or [{error: {json: {message: ...}}}] for error
+        if (data && Array.isArray(data)) {
+          const item = data[0];
+          if (item?.result?.data) {
+            // Success!
+            return { success: true };
+          }
+          if (item?.error) {
+            const errMsg = item.error?.json?.message || item.error?.message || 'خطأ في تسجيل الدخول';
+            return { success: false, error: errMsg };
+          }
+        }
+        
         if (!res.ok) {
-          const data = await res.json().catch(() => null);
-          const errMsg = data?.[0]?.error?.json?.message || data?.[0]?.error?.message || 'خطأ في تسجيل الدخول';
-          return { success: false, error: errMsg };
+          return { success: false, error: `خطأ من السيرفر (${res.status})` };
         }
         
         return { success: true };
       } catch (err: any) {
-        console.warn(`[NativeLogin] attempt ${attempt} failed:`, err.message);
+        console.warn(`[NativeLogin] attempt ${attempt} failed:`, err.name, err.message);
         if (attempt < 2) {
           await new Promise(r => setTimeout(r, 3000)); // Wait 3s before retry
           continue;
         }
-        return { success: false, error: 'حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى.' };
+        // Show the actual error for debugging
+        const isTimeout = err.name === 'AbortError';
+        const errDetail = isTimeout 
+          ? 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.'
+          : `خطأ اتصال: ${err.message}`;
+        return { success: false, error: errDetail };
       }
     }
     return { success: false, error: 'حدث خطأ غير متوقع' };
