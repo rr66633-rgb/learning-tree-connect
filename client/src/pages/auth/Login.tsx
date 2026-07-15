@@ -44,13 +44,49 @@ export default function Login() {
   const loginRetryRef = useRef(0);
 
   // Warm-up ping: wake up the server as soon as login page loads
-  // On NATIVE: Skip warm-up to avoid iOS "Load failed" banner from WKWebView
-  // On WEB: Fire warm-up to reduce perceived latency
+  // On NATIVE: Also fire a lightweight warm-up to wake the server from cold start
+  // This ensures the server is ready when user taps login
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) {
-      fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
-    }
+    fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
   }, []);
+
+  // Direct fetch login for native - bypasses tRPC batch link retry (which causes silent 3-min hangs)
+  const nativeLogin = async (id: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const url = apiUrl('/api/trpc/auth.login');
+    const body = JSON.stringify({ "0": { json: { identifier: id, password: pass } } });
+    
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        
+        const res = await window.fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          const errMsg = data?.[0]?.error?.json?.message || data?.[0]?.error?.message || 'خطأ في تسجيل الدخول';
+          return { success: false, error: errMsg };
+        }
+        
+        return { success: true };
+      } catch (err: any) {
+        console.warn(`[NativeLogin] attempt ${attempt} failed:`, err.message);
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 3000)); // Wait 3s before retry
+          continue;
+        }
+        return { success: false, error: 'حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى.' };
+      }
+    }
+    return { success: false, error: 'حدث خطأ غير متوقع' };
+  };
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
@@ -61,7 +97,6 @@ export default function Login() {
       window.location.reload();
     },
     onError: (error) => {
-      // Detect network errors - includes iOS Safari's "Load failed" (lowercase 'f')
       const msg = error.message.toLowerCase();
       const isNetworkError = 
         msg.includes('fetch') ||
@@ -73,16 +108,6 @@ export default function Login() {
         msg.includes('the internet connection appears to be offline') ||
         msg.includes('a server with the specified hostname could not be found');
       
-      // Silent auto-retry on network errors (up to 3 times) - no toast shown during retries
-      if (loginRetryRef.current < 3 && isNetworkError) {
-        loginRetryRef.current += 1;
-        // Silently retry after increasing delay (2s, 4s, 6s)
-        setTimeout(() => {
-          loginMutation.mutate({ identifier, password });
-        }, 2000 * loginRetryRef.current);
-        return;
-      }
-      // Only show error after all retries exhausted
       const friendlyMessage = isNetworkError
         ? "حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى."
         : error.message;
@@ -144,7 +169,22 @@ export default function Login() {
       return;
     }
     setIsLoading(true);
-    loginMutation.mutate({ identifier, password });
+    
+    if (Capacitor.isNativePlatform()) {
+      // Use direct fetch on native to avoid tRPC batch link silent retry hang
+      const result = await nativeLogin(identifier, password);
+      if (result.success) {
+        toast.success("تم تسجيل الدخول بنجاح");
+        enableNetwork();
+        window.location.reload();
+      } else {
+        toast.error(result.error || 'خطأ في تسجيل الدخول');
+        setIsLoading(false);
+      }
+    } else {
+      // Web: use tRPC mutation normally
+      loginMutation.mutate({ identifier, password });
+    }
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
