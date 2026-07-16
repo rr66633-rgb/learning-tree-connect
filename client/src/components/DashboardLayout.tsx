@@ -532,6 +532,13 @@ function DashboardLayoutContent({
         {!isMobile && (
           <div className="flex border-b border-border/50 h-12 items-center justify-between bg-background/80 px-4 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40">
             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleSidebar}
+                className="h-8 w-8 flex items-center justify-center hover:bg-accent/60 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="تبديل القائمة"
+              >
+                <PanelLeft className="h-4 w-4 text-muted-foreground" />
+              </button>
               <span className="font-semibold text-foreground text-sm">
                 {activeMenuItem?.label ?? "القائمة"}
               </span>

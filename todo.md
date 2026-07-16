@@ -2302,3 +2302,6 @@ Fix:
 - [x] Simplified main.tsx - removed native-specific fetch workarounds
 - [x] Build number updated to 16
 - [x] Build compiles successfully
+
+## Sidebar Toggle on Desktop
+- [x] Add collapse/expand button for sidebar on desktop screens
