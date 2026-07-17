@@ -89,7 +89,8 @@ export default function ParentDashboard() {
           const att = childAttendanceMap[child.id];
           const statusInfo = att ? getStatusInfo(att.status) : null;
           return (
-            <Card key={child.id} className="border-0 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200">
+            <Link key={child.id} href="/parent/children">
+            <Card className="border-0 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]">
               <CardContent className="p-0">
                 {/* Child header with gradient */}
                 <div className="bg-gradient-to-l from-primary/8 via-primary/4 to-transparent p-5">
@@ -148,6 +149,7 @@ export default function ParentDashboard() {
                 </div>
               </CardContent>
             </Card>
+            </Link>
           );
         })}
       </div>
