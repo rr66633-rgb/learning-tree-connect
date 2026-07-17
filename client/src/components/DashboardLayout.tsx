@@ -320,8 +320,12 @@ export default function DashboardLayout({
     );
   }
 
+  // On iPad/tablet (768-1024px), start with sidebar closed to avoid crowded interface
+  const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth <= 1024;
+
   return (
     <SidebarProvider
+      defaultOpen={!isTablet}
       style={
         {
           "--sidebar-width": `${sidebarWidth}px`,

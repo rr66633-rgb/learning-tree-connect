@@ -2313,3 +2313,4 @@ Fix:
 - [x] Improve login page layout on iPad
 - [x] Improve dashboard cards spacing on iPad
 - [x] Ensure all buttons and controls are easily tappable on iPad Air 11-inch
+- [x] Make sidebar closed by default on iPad/tablet (768-1024px) to reduce crowding
