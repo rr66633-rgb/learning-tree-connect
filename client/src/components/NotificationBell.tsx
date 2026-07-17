@@ -113,10 +113,10 @@ export function NotificationBell() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9 rounded-xl hover:bg-accent/60 transition-all duration-200"
+          className="relative h-10 w-10 rounded-xl hover:bg-accent/60 transition-all duration-200"
           aria-label="الإشعارات"
         >
-          <Bell className="h-[18px] w-[18px] text-muted-foreground" />
+          <Bell className="h-5 w-5 text-muted-foreground" />
           {count > 0 && (
             <span className="absolute -top-0.5 -left-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-[#EC4899] rounded-full shadow-sm animate-in zoom-in-50 duration-200">
               {count > 99 ? "99+" : count}

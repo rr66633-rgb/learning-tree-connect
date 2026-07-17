@@ -153,70 +153,70 @@ export default function ParentDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href="/parent/daily-report">
           <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="h-11 w-11 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-2.5">
-                <BookOpen className="h-5 w-5 text-blue-600" />
+            <CardContent className="p-5 text-center">
+              <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                <BookOpen className="h-6 w-6 text-blue-600" />
               </div>
-              <p className="text-xs font-medium text-foreground">التقرير اليومي</p>
+              <p className="text-sm font-medium text-foreground">التقرير اليومي</p>
             </CardContent>
           </Card>
         </Link>
         <Link href="/parent/engagement">
           <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="h-11 w-11 rounded-xl bg-green-100 flex items-center justify-center mx-auto mb-2.5">
-                <Heart className="h-5 w-5 text-green-600" />
+            <CardContent className="p-5 text-center">
+              <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center mx-auto mb-3">
+                <Heart className="h-6 w-6 text-green-600" />
               </div>
-              <p className="text-xs font-medium text-foreground">مشاركة الأسرة</p>
+              <p className="text-sm font-medium text-foreground">مشاركة الأسرة</p>
             </CardContent>
           </Card>
         </Link>
         <Link href="/parent/messages">
           <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="h-11 w-11 rounded-xl bg-purple-100 flex items-center justify-center mx-auto mb-2.5">
-                <MessageCircle className="h-5 w-5 text-purple-600" />
+            <CardContent className="p-5 text-center">
+              <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center mx-auto mb-3">
+                <MessageCircle className="h-6 w-6 text-purple-600" />
               </div>
-              <p className="text-xs font-medium text-foreground">الرسائل</p>
+              <p className="text-sm font-medium text-foreground">الرسائل</p>
             </CardContent>
           </Card>
         </Link>
         <Link href="/parent/engagement/chatbot">
           <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-violet-50/50 to-transparent">
-            <CardContent className="p-4 text-center">
-              <div className="h-11 w-11 rounded-xl bg-violet-100 flex items-center justify-center mx-auto mb-2.5">
-                <Sparkles className="h-5 w-5 text-violet-600" />
+            <CardContent className="p-5 text-center">
+              <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center mx-auto mb-3">
+                <Sparkles className="h-6 w-6 text-violet-600" />
               </div>
-              <p className="text-xs font-medium text-foreground">المساعد الذكي</p>
+              <p className="text-sm font-medium text-foreground">المساعد الذكي</p>
             </CardContent>
           </Card>
         </Link>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <Bell className="h-5 w-5 text-amber-600" />
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Bell className="h-6 w-6 text-amber-600" />
             </div>
             <div>
               <p className="text-xl font-bold text-foreground">{notifications ?? 0}</p>
-              <p className="text-[11px] text-muted-foreground">إشعارات جديدة</p>
+              <p className="text-xs text-muted-foreground">إشعارات جديدة</p>
             </div>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center">
-              <Baby className="h-5 w-5 text-green-600" />
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
+              <Baby className="h-6 w-6 text-green-600" />
             </div>
             <div>
               <p className="text-xl font-bold text-foreground">{children?.length ?? 0}</p>
-              <p className="text-[11px] text-muted-foreground">أطفالي</p>
+              <p className="text-xs text-muted-foreground">أطفالي</p>
             </div>
           </CardContent>
         </Card>
@@ -234,9 +234,9 @@ export default function ParentDashboard() {
                 آخر الإعلانات
               </CardTitle>
               <Link href="/parent/announcements">
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1 rounded-lg">
+                <Button variant="ghost" size="sm" className="text-sm text-muted-foreground hover:text-primary gap-1.5 rounded-lg">
                   عرض الكل
-                  <ArrowUpRight className="h-3 w-3" />
+                  <ArrowUpRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>

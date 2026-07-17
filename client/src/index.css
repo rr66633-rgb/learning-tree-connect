@@ -317,6 +317,52 @@
   --ring: #0d7377 !important;
 }
 
+/* iPad/Tablet specific improvements for better touch targets and spacing */
+@media (min-width: 768px) and (max-width: 1199px) {
+  /* Increase minimum touch targets on tablet */
+  button, [role="button"], a[href], input[type="submit"] {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Larger form inputs on tablet */
+  input, select, textarea {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  /* More spacing in sidebar menu items */
+  [data-sidebar="menu-button"] {
+    min-height: 48px !important;
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+    gap: 12px;
+  }
+
+  /* Larger sidebar menu icons */
+  [data-sidebar="menu-button"] svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* More padding in sidebar content */
+  [data-sidebar="content"] {
+    padding: 8px 12px;
+  }
+
+  /* Larger dropdown menu items */
+  [role="menuitem"] {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  /* Better card spacing */
+  .stat-card {
+    padding: 1.5rem;
+  }
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .page-enter {

@@ -169,7 +169,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0f7f4] via-white to-[#e8f4fd] p-4 md:p-8" dir="rtl">
-      <Card className="w-full max-w-md md:max-w-lg shadow-xl border-0">
+      <Card className="w-full max-w-md md:max-w-xl shadow-xl border-0">
         <CardHeader className="text-center pb-2">
           <img
             src="/assets/logo.webp"
@@ -181,38 +181,38 @@ export default function Login() {
             مرحباً بك في نشأة
           </p>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-6">
           {/* Mode Toggle */}
-          <div className="flex rounded-lg bg-muted p-1 gap-1">
+          <div className="flex rounded-xl bg-muted p-1.5 gap-1.5">
             <button
               type="button"
               onClick={() => switchMode("password")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
                 loginMode === "password"
                   ? "bg-white text-slate-800 shadow-sm"
                   : "text-muted-foreground hover:text-slate-600"
               }`}
             >
-              <Lock className="h-4 w-4" />
+              <Lock className="h-5 w-5" />
               كلمة المرور
             </button>
             <button
               type="button"
               onClick={() => switchMode("otp")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
                 loginMode === "otp"
                   ? "bg-white text-slate-800 shadow-sm"
                   : "text-muted-foreground hover:text-slate-600"
               }`}
             >
-              <Smartphone className="h-4 w-4" />
+              <Smartphone className="h-5 w-5" />
               رمز التحقق
             </button>
           </div>
 
           {/* PASSWORD LOGIN */}
           {loginMode === "password" && (
-            <form onSubmit={handlePasswordLogin} className="space-y-4">
+            <form onSubmit={handlePasswordLogin} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="identifier" className="text-sm font-medium">
                   البريد الإلكتروني أو رقم الجوال
@@ -264,7 +264,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setLocation("/forgot-password")}
-                  className="text-sm text-primary hover:underline font-medium"
+                  className="text-sm text-primary hover:underline font-medium py-2 px-1"
                 >
                   نسيت كلمة المرور؟
                 </button>
@@ -289,7 +289,7 @@ export default function Login() {
 
           {/* OTP LOGIN */}
           {loginMode === "otp" && otpStep === "phone" && (
-            <form onSubmit={handleSendOtp} className="space-y-4">
+            <form onSubmit={handleSendOtp} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-sm font-medium">
                   رقم الجوال
@@ -331,11 +331,11 @@ export default function Login() {
           )}
 
           {loginMode === "otp" && otpStep === "verify" && (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <form onSubmit={handleVerifyOtp} className="space-y-5">
               <button
                 type="button"
                 onClick={() => { setOtpStep("phone"); setOtpCode(""); }}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               >
                 <ArrowRight className="h-4 w-4" />
                 تغيير الرقم

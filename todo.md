@@ -2305,3 +2305,11 @@ Fix:
 
 ## Sidebar Toggle on Desktop
 - [x] Add collapse/expand button for sidebar on desktop screens
+
+## iPad Design Fix (Apple Guideline 4 - Design)
+- [x] Increase touch target sizes to minimum 44x44px on iPad
+- [x] Improve spacing between interactive elements on iPad
+- [x] Reduce sidebar menu crowding on iPad (larger menu items, more padding)
+- [x] Improve login page layout on iPad
+- [x] Improve dashboard cards spacing on iPad
+- [x] Ensure all buttons and controls are easily tappable on iPad Air 11-inch

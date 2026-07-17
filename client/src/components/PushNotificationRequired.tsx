@@ -77,8 +77,8 @@ export function PushNotificationRequired() {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-sm flex items-center justify-center p-6">
+      <Card className="w-full max-w-md md:max-w-lg">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
             <BellRing className="h-10 w-10 text-primary" />
@@ -102,21 +102,21 @@ export function PushNotificationRequired() {
           </div>
 
           {/* Benefits */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-base">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
               <span>تنبيه فوري عند طلب استلام طفل</span>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="flex items-center gap-3 text-base">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
               <span>صوت واضح يسهل سماعه في الفصل</span>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="flex items-center gap-3 text-base">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
               <span>يعمل حتى عند استخدام تطبيق آخر</span>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="flex items-center gap-3 text-base">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
               <span>يمكنك التحكم بمستوى الصوت والنغمة لاحقاً</span>
             </div>
           </div>
@@ -142,7 +142,7 @@ export function PushNotificationRequired() {
             </Button>
             <Button
               variant="ghost"
-              className="w-full text-sm text-muted-foreground"
+              className="w-full h-12 text-base text-muted-foreground"
               onClick={handleSkip}
             >
               تخطي (غير مستحسن)

@@ -409,10 +409,10 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-primary/10 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                className="h-10 w-10 flex items-center justify-center hover:bg-primary/10 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
                 aria-label="تبديل القائمة"
               >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
+                <PanelLeft className="h-5 w-5 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -447,7 +447,7 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-2 space-y-0.5">
+            <SidebarMenu className="px-2 py-3 space-y-1">
               {menuItems.map((item: MenuItem) => {
                 const fullPath = item.path.startsWith("/ai") ? item.path : basePath + item.path;
                 const isActive = location === fullPath || (item.path === "" && location === basePath);
@@ -457,7 +457,7 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => setLocation(fullPath)}
                       tooltip={item.label}
-                      className={`h-10 rounded-xl transition-all duration-200 font-medium text-[13px] ${
+                      className={`h-11 md:h-12 rounded-xl transition-all duration-200 font-medium text-sm ${
                         isActive 
                           ? "shadow-sm" 
                           : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
@@ -465,7 +465,7 @@ function DashboardLayoutContent({
                       style={isActive && item.color ? { backgroundColor: `${item.color}10`, color: item.color } : undefined}
                     >
                       <item.icon
-                        className="h-[18px] w-[18px] transition-colors"
+                        className="h-5 w-5 transition-colors"
                         style={item.color ? { color: isActive ? item.color : undefined } : undefined}
                       />
                       <span>{item.label}</span>
@@ -530,20 +530,20 @@ function DashboardLayoutContent({
       <SidebarInset className="overflow-y-auto bg-background">
         {/* Desktop top bar */}
         {!isMobile && (
-          <div className="flex border-b border-border/50 h-12 items-center justify-between bg-background/80 px-4 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40">
+          <div className="flex border-b border-border/50 h-14 items-center justify-between bg-background/80 px-5 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent/60 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-10 w-10 flex items-center justify-center hover:bg-accent/60 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="تبديل القائمة"
               >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
+                <PanelLeft className="h-5 w-5 text-muted-foreground" />
               </button>
-              <span className="font-semibold text-foreground text-sm">
+              <span className="font-semibold text-foreground text-base">
                 {activeMenuItem?.label ?? "القائمة"}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <NotificationBell />
             </div>
           </div>
