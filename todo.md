@@ -2316,3 +2316,5 @@ Fix:
 - [x] Make sidebar closed by default on iPad/tablet (768-1024px) to reduce crowding
 - [x] Make child cards on parent dashboard clickable (navigates to children page)
 - [x] Make engagement dashboard stat cards (activities, challenges, journal, goals) clickable with navigation
+- [x] Improve Observations page tabs design with more colors and better styling
+- [x] Add more colors to the app overall for a more vibrant look

@@ -157,9 +157,9 @@ export default function ParentDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href="/parent/daily-report">
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-blue-50 to-transparent">
             <CardContent className="p-5 text-center">
-              <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3">
+              <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-blue-200">
                 <BookOpen className="h-6 w-6 text-blue-600" />
               </div>
               <p className="text-sm font-medium text-foreground">التقرير اليومي</p>
@@ -167,19 +167,19 @@ export default function ParentDashboard() {
           </Card>
         </Link>
         <Link href="/parent/engagement">
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-transparent">
             <CardContent className="p-5 text-center">
-              <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center mx-auto mb-3">
-                <Heart className="h-6 w-6 text-green-600" />
+              <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-emerald-200">
+                <Heart className="h-6 w-6 text-emerald-600" />
               </div>
               <p className="text-sm font-medium text-foreground">مشاركة الأسرة</p>
             </CardContent>
           </Card>
         </Link>
         <Link href="/parent/messages">
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-purple-50 to-transparent">
             <CardContent className="p-5 text-center">
-              <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center mx-auto mb-3">
+              <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-purple-200">
                 <MessageCircle className="h-6 w-6 text-purple-600" />
               </div>
               <p className="text-sm font-medium text-foreground">الرسائل</p>
@@ -187,9 +187,9 @@ export default function ParentDashboard() {
           </Card>
         </Link>
         <Link href="/parent/engagement/chatbot">
-          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-violet-50/50 to-transparent">
+          <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-0 shadow-sm bg-gradient-to-br from-violet-50 to-transparent">
             <CardContent className="p-5 text-center">
-              <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center mx-auto mb-3">
+              <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-violet-200">
                 <Sparkles className="h-6 w-6 text-violet-600" />
               </div>
               <p className="text-sm font-medium text-foreground">المساعد الذكي</p>
