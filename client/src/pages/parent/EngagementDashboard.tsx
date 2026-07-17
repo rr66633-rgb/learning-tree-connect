@@ -112,26 +112,34 @@ export default function EngagementDashboard() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-2">
-        <Card className="text-center p-3">
-          <BookOpen className="h-5 w-5 mx-auto text-blue-500 mb-1" />
-          <p className="text-lg font-bold">{score?.activitiesCompleted || 0}</p>
-          <p className="text-[10px] text-muted-foreground">أنشطة</p>
-        </Card>
-        <Card className="text-center p-3">
-          <Target className="h-5 w-5 mx-auto text-purple-500 mb-1" />
-          <p className="text-lg font-bold">{score?.challengesCompleted || 0}</p>
-          <p className="text-[10px] text-muted-foreground">تحديات</p>
-        </Card>
-        <Card className="text-center p-3">
-          <Camera className="h-5 w-5 mx-auto text-pink-500 mb-1" />
-          <p className="text-lg font-bold">{score?.journalEntries || 0}</p>
-          <p className="text-[10px] text-muted-foreground">يوميات</p>
-        </Card>
-        <Card className="text-center p-3">
-          <Star className="h-5 w-5 mx-auto text-amber-500 mb-1" />
-          <p className="text-lg font-bold">{score?.goalsCompleted || 0}</p>
-          <p className="text-[10px] text-muted-foreground">أهداف</p>
-        </Card>
+        <Link href="/parent/engagement/activities">
+          <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
+            <BookOpen className="h-5 w-5 mx-auto text-blue-500 mb-1" />
+            <p className="text-lg font-bold">{score?.activitiesCompleted || 0}</p>
+            <p className="text-[10px] text-muted-foreground">أنشطة</p>
+          </Card>
+        </Link>
+        <Link href="/parent/engagement/challenges">
+          <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
+            <Target className="h-5 w-5 mx-auto text-purple-500 mb-1" />
+            <p className="text-lg font-bold">{score?.challengesCompleted || 0}</p>
+            <p className="text-[10px] text-muted-foreground">تحديات</p>
+          </Card>
+        </Link>
+        <Link href="/parent/engagement/journal">
+          <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
+            <Camera className="h-5 w-5 mx-auto text-pink-500 mb-1" />
+            <p className="text-lg font-bold">{score?.journalEntries || 0}</p>
+            <p className="text-[10px] text-muted-foreground">يوميات</p>
+          </Card>
+        </Link>
+        <Link href="/parent/engagement/goals">
+          <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
+            <Star className="h-5 w-5 mx-auto text-amber-500 mb-1" />
+            <p className="text-lg font-bold">{score?.goalsCompleted || 0}</p>
+            <p className="text-[10px] text-muted-foreground">أهداف</p>
+          </Card>
+        </Link>
       </div>
 
       {/* Quick Actions */}
