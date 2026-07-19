@@ -2318,3 +2318,9 @@ Fix:
 - [x] Make engagement dashboard stat cards (activities, challenges, journal, goals) clickable with navigation
 - [x] Improve Observations page tabs design with more colors and better styling
 - [x] Add more colors to the app overall for a more vibrant look
+
+## Account Deletion (Apple Guideline 5.1.1(v))
+- [x] Add backend endpoint for account deletion (deleteAccount tRPC procedure with password verification)
+- [x] Add "Delete Account" button in profile/settings page (DeleteAccountSection in AccountSettings.tsx)
+- [x] Add confirmation dialog with warning about data deletion (AlertDialog with password + "حذف" text confirmation)
+- [x] Ensure child data remains linked to nursery after parent account deletion (parentId set to null, child records preserved)

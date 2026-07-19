@@ -910,8 +910,13 @@ export async function updateUser(id: number, data: { name?: string; email?: stri
 export async function deleteUser(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Unlink children from this parent before deleting
+  // Clean up parentChildren links
+  await db.delete(parentChildren).where(eq(parentChildren.parentId, id));
+  // Unlink children from this parent (legacy parentId column)
   await db.update(children).set({ parentId: null }).where(eq(children.parentId, id));
+  // Remove push subscriptions
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, id));
+  // Delete the user record
   await db.delete(users).where(eq(users.id, id));
   return { success: true };
 }

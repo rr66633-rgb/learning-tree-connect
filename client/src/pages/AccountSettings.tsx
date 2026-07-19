@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle2, Shield, Clock, Globe } from "lucide-react";
+import { User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle2, Shield, Clock, Globe, Trash2, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 function ProfileSection() {
   const { user } = useAuth();
@@ -397,6 +398,125 @@ function LoginSessionsSection() {
   );
 }
 
+function DeleteAccountSection() {
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+
+  const deleteAccountMutation = trpc.auth.deleteAccount.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف حسابك بنجاح");
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1500);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleDelete = () => {
+    if (!password) {
+      toast.error("يرجى إدخال كلمة المرور");
+      return;
+    }
+    deleteAccountMutation.mutate({ password });
+  };
+
+  const canDelete = password.length > 0 && confirmText === "حذف";
+
+  return (
+    <Card className="border-red-200 bg-red-50/30">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-red-700">
+          <Trash2 className="h-5 w-5" />
+          حذف الحساب
+        </CardTitle>
+        <CardDescription className="text-red-600/80">
+          حذف حسابك بشكل نهائي. هذا الإجراء لا يمكن التراجع عنه.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-amber-800">تنبيه مهم</p>
+            <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+              <li>سيتم حذف بياناتك الشخصية (الاسم، البريد، رقم الجوال) بشكل نهائي</li>
+              <li>بيانات طفلك التعليمية (الحضور، التقارير، التقييمات) ستبقى محفوظة لدى الحضانة</li>
+              <li>لن تتمكن من استعادة الحساب بعد الحذف</li>
+            </ul>
+          </div>
+        </div>
+
+        <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full sm:w-auto">
+              <Trash2 className="h-4 w-4 ml-2" />
+              حذف حسابي نهائياً
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-red-700">
+                <AlertTriangle className="h-5 w-5" />
+                تأكيد حذف الحساب
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-right">
+                هذا الإجراء نهائي ولا يمكن التراجع عنه. سيتم حذف جميع بياناتك الشخصية.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>كلمة المرور للتأكيد</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="أدخل كلمة المرور"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>اكتب "حذف" للتأكيد</Label>
+                <Input
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder="حذف"
+                  dir="rtl"
+                />
+              </div>
+            </div>
+            <AlertDialogFooter className="flex-row-reverse gap-2 sm:flex-row-reverse">
+              <AlertDialogCancel onClick={() => { setPassword(""); setConfirmText(""); }}>
+                إلغاء
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={!canDelete || deleteAccountMutation.isPending}
+                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+              >
+                {deleteAccountMutation.isPending ? "جاري الحذف..." : "حذف الحساب نهائياً"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AccountSettings() {
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6" dir="rtl">
@@ -408,6 +528,7 @@ export default function AccountSettings() {
       <ProfileSection />
       <ChangePasswordSection />
       <LoginSessionsSection />
+      <DeleteAccountSection />
     </div>
   );
 }

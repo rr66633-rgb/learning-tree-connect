@@ -577,6 +577,29 @@ export const appRouter = router({
       lockoutMinutes: authService.AUTH_CONSTANTS.ACCOUNT_LOCKOUT_MINUTES,
       sessionTimeoutMinutes: authService.AUTH_CONSTANTS.SESSION_TIMEOUT_MINUTES,
     })),
+
+    // ============ DELETE ACCOUNT ============
+    deleteAccount: protectedProcedure
+      .input(z.object({ password: z.string().min(1) }))
+      .mutation(async ({ input, ctx }) => {
+        const user = ctx.user!;
+        // Verify password
+        if (!user.password) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم تعيين كلمة مرور لهذا الحساب. يرجى التواصل مع الإدارة لحذف حسابك.' });
+        }
+        const isValid = await authService.verifyPassword(input.password, user.password);
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'كلمة المرور غير صحيحة' });
+        }
+        // Delete user-related data (child educational data preserved with nursery)
+        // deleteUser() in db.ts unlinks children (sets parentId=null) then deletes user record
+        await db.deleteAllNotifications(user.id);
+        await db.deleteUser(user.id);
+        // Clear session cookie
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+        return { success: true, message: 'تم حذف حسابك بنجاح' };
+      }),
   }),
 
   dashboard: router({
