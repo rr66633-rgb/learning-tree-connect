@@ -1181,6 +1181,11 @@ async function startServer() {
     await eventRemindersHandler(req, res);
   });
 
+  app.post('/api/scheduled/account-cleanup', async (req, res) => {
+    const { accountCleanupHandler } = await import('../account-cleanup');
+    await accountCleanupHandler(req, res);
+  });
+
   // Email Health Check API
   app.get('/api/email/health', async (req, res) => {
     try {
