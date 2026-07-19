@@ -405,12 +405,12 @@ function DeleteAccountSection() {
   const [confirmText, setConfirmText] = useState("");
 
   const deleteAccountMutation = trpc.auth.deleteAccount.useMutation({
-    onSuccess: () => {
-      toast.success("تم حذف حسابك بنجاح");
+    onSuccess: (data) => {
+      toast.success(data.message);
       // Redirect to login page after a short delay
       setTimeout(() => {
         window.location.href = "/login";
-      }, 1500);
+      }, 2500);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -435,7 +435,7 @@ function DeleteAccountSection() {
           حذف الحساب
         </CardTitle>
         <CardDescription className="text-red-600/80">
-          حذف حسابك بشكل نهائي. هذا الإجراء لا يمكن التراجع عنه.
+          طلب حذف حسابك. سيتم منحك فترة سماح 30 يوم قبل الحذف النهائي.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -444,28 +444,34 @@ function DeleteAccountSection() {
           <div className="space-y-1">
             <p className="text-sm font-medium text-amber-800">تنبيه مهم</p>
             <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
-              <li>سيتم حذف بياناتك الشخصية (الاسم، البريد، رقم الجوال) بشكل نهائي</li>
+              <li>سيتم تعطيل حسابك فوراً وحذفه نهائياً بعد 30 يوم</li>
+              <li>يمكنك استعادة حسابك خلال فترة السماح من صفحة تسجيل الدخول</li>
               <li>بيانات طفلك التعليمية (الحضور، التقارير، التقييمات) ستبقى محفوظة لدى الحضانة</li>
-              <li>لن تتمكن من استعادة الحساب بعد الحذف</li>
+              <li>سيتم إرسال بريد إلكتروني تأكيدي بتفاصيل الحذف</li>
             </ul>
           </div>
+        </div>
+
+        <div className="text-xs text-muted-foreground">
+          لمزيد من التفاصيل حول بياناتك، اطلع على{" "}
+          <a href="/privacy" className="text-primary underline">سياسة الخصوصية</a>
         </div>
 
         <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" className="w-full sm:w-auto">
               <Trash2 className="h-4 w-4 ml-2" />
-              حذف حسابي نهائياً
+              طلب حذف الحساب
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent dir="rtl">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-red-700">
                 <AlertTriangle className="h-5 w-5" />
-                تأكيد حذف الحساب
+                تأكيد طلب حذف الحساب
               </AlertDialogTitle>
               <AlertDialogDescription className="text-right">
-                هذا الإجراء نهائي ولا يمكن التراجع عنه. سيتم حذف جميع بياناتك الشخصية.
+                سيتم تعطيل حسابك فوراً وحذفه نهائياً بعد 30 يوم. يمكنك استعادة حسابك خلال هذه الفترة.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 py-2">
@@ -507,7 +513,7 @@ function DeleteAccountSection() {
                 disabled={!canDelete || deleteAccountMutation.isPending}
                 className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
               >
-                {deleteAccountMutation.isPending ? "جاري الحذف..." : "حذف الحساب نهائياً"}
+                {deleteAccountMutation.isPending ? "جاري تقديم الطلب..." : "تأكيد حذف الحساب"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

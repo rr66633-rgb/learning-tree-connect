@@ -21,6 +21,8 @@ export const users = mysqlTable("users", {
   accountLockedUntil: timestamp("accountLockedUntil"),
   passwordChangedAt: timestamp("passwordChangedAt"),
   organizationId: int("organizationId").default(1),
+  deletionRequestedAt: timestamp("deletionRequestedAt"),
+  deletionScheduledAt: timestamp("deletionScheduledAt"),
 });
 
 export type User = typeof users.$inferSelect;

@@ -2324,3 +2324,13 @@ Fix:
 - [x] Add "Delete Account" button in profile/settings page (DeleteAccountSection in AccountSettings.tsx)
 - [x] Add confirmation dialog with warning about data deletion (AlertDialog with password + "حذف" text confirmation)
 - [x] Ensure child data remains linked to nursery after parent account deletion (parentId set to null, child records preserved)
+
+## Account Deletion Enhancements
+- [x] Add deletionRequestedAt and deletionScheduledAt columns to users table
+- [x] Modify deleteAccount procedure to soft-delete (mark for deletion) instead of immediate delete
+- [x] Add recoverAccount tRPC procedure to cancel deletion during grace period
+- [x] Send confirmation email after account deletion request
+- [x] Add account recovery login flow (show recovery option if account is pending deletion)
+- [x] Create privacy policy page (/privacy) explaining data handling in Arabic
+- [x] Add link to privacy policy in account settings delete section
+- [ ] Add scheduled job to permanently delete accounts after 30-day grace period

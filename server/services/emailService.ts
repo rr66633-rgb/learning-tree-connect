@@ -838,3 +838,77 @@ function parseUserAgent(ua: string): string {
   
   return browser ? `${device} - ${browser}` : device;
 }
+
+// ─── Account Deletion & Recovery Emails ──────────────────────────────────────
+
+/**
+ * Send account deletion confirmation email with grace period info
+ */
+export async function sendAccountDeletionEmail(
+  email: string,
+  userName: string,
+  scheduledDate: Date
+): Promise<EmailSendResult> {
+  const formattedDate = scheduledDate.toLocaleDateString('ar-SA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const subject = 'تأكيد طلب حذف حسابك - نشأة';
+  const content = `
+    <div class="message">
+      <p>مرحباً ${userName || 'عزيزي المستخدم'}،</p>
+      <p>تم استلام طلبك لحذف حسابك على منصة نشأة.</p>
+    </div>
+    <div class="danger">
+      <strong>⚠️ تنبيه مهم:</strong><br/>
+      سيتم حذف حسابك نهائياً بتاريخ <strong>${formattedDate}</strong> (بعد 30 يوم من تاريخ الطلب).
+    </div>
+    <div class="info-box">
+      <p><strong>ماذا سيحدث عند الحذف النهائي:</strong></p>
+      <ul style="padding-right: 20px; margin: 10px 0;">
+        <li>حذف بياناتك الشخصية (الاسم، البريد، رقم الجوال) بشكل نهائي</li>
+        <li>بيانات طفلك التعليمية (الحضور، التقارير، التقييمات) ستبقى محفوظة لدى الحضانة</li>
+        <li>لن تتمكن من استعادة الحساب بعد انتهاء فترة السماح</li>
+      </ul>
+    </div>
+    <div class="message" style="margin-top: 20px;">
+      <p><strong>هل غيرت رأيك؟</strong></p>
+      <p>يمكنك استعادة حسابك في أي وقت خلال فترة الـ 30 يوم من خلال صفحة تسجيل الدخول واختيار "استعادة الحساب".</p>
+    </div>
+    <div class="warning">
+      إذا لم تقم أنت بطلب حذف الحساب، يرجى التواصل معنا فوراً على info@naashah.com
+    </div>
+  `;
+
+  return sendEmail(email, subject, baseTemplate(content));
+}
+
+/**
+ * Send account recovery confirmation email
+ */
+export async function sendAccountRecoveryEmail(
+  email: string,
+  userName: string
+): Promise<EmailSendResult> {
+  const subject = 'تم استعادة حسابك بنجاح - نشأة';
+  const content = `
+    <div class="message">
+      <p>مرحباً ${userName || 'عزيزي المستخدم'}،</p>
+      <p>يسعدنا إبلاغك بأنه تم إلغاء طلب حذف حسابك واستعادته بنجاح.</p>
+    </div>
+    <div class="info-box">
+      <p><strong>✅ حسابك نشط الآن</strong></p>
+      <p>يمكنك تسجيل الدخول واستخدام جميع خدمات المنصة كالمعتاد.</p>
+    </div>
+    <div class="message" style="margin-top: 20px;">
+      <p>جميع بياناتك وبيانات أطفالك محفوظة ولم يتم حذف أي شيء.</p>
+    </div>
+    <div class="warning">
+      إذا لم تقم أنت باستعادة الحساب، يرجى تغيير كلمة المرور فوراً والتواصل معنا على info@naashah.com
+    </div>
+  `;
+
+  return sendEmail(email, subject, baseTemplate(content));
+}

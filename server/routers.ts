@@ -591,14 +591,48 @@ export const appRouter = router({
         if (!isValid) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'كلمة المرور غير صحيحة' });
         }
-        // Delete user-related data (child educational data preserved with nursery)
-        // deleteUser() in db.ts unlinks children (sets parentId=null) then deletes user record
-        await db.deleteAllNotifications(user.id);
-        await db.deleteUser(user.id);
+        // Mark account for deletion with 30-day grace period
+        const now = new Date();
+        const scheduledDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+        await db.markAccountForDeletion(user.id, now, scheduledDate);
+        // Send confirmation email
+        if (user.email) {
+          const { sendAccountDeletionEmail } = await import('./services/emailService');
+          await sendAccountDeletionEmail(user.email, user.name || '', scheduledDate);
+        }
         // Clear session cookie
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-        return { success: true, message: 'تم حذف حسابك بنجاح' };
+        return { success: true, message: 'تم تقديم طلب حذف حسابك. سيتم حذف الحساب نهائياً بعد 30 يوم. يمكنك استعادة حسابك خلال هذه الفترة.', scheduledDate: scheduledDate.toISOString() };
+      }),
+
+    // ============ RECOVER ACCOUNT ============
+    recoverAccount: publicProcedure
+      .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const user = await db.getUserByEmail(input.email);
+        if (!user || !user.deletionRequestedAt) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد طلب حذف لهذا الحساب' });
+        }
+        if (!user.password) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكن استعادة هذا الحساب. يرجى التواصل مع الإدارة.' });
+        }
+        const isValid = await authService.verifyPassword(input.password, user.password);
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'كلمة المرور غير صحيحة' });
+        }
+        // Check if grace period has expired
+        if (user.deletionScheduledAt && new Date() > new Date(user.deletionScheduledAt)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'انتهت فترة السماح. تم حذف الحساب نهائياً.' });
+        }
+        // Cancel deletion
+        await db.cancelAccountDeletion(user.id);
+        // Send recovery confirmation email
+        if (user.email) {
+          const { sendAccountRecoveryEmail } = await import('./services/emailService');
+          await sendAccountRecoveryEmail(user.email, user.name || '');
+        }
+        return { success: true, message: 'تم استعادة حسابك بنجاح. يمكنك تسجيل الدخول الآن.' };
       }),
   }),
 

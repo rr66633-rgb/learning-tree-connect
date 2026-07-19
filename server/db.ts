@@ -907,6 +907,40 @@ export async function updateUser(id: number, data: { name?: string; email?: stri
   return getUserById(id);
 }
 
+export async function markAccountForDeletion(id: number, requestedAt: Date, scheduledAt: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({
+    deletionRequestedAt: requestedAt,
+    deletionScheduledAt: scheduledAt,
+    isActive: false,
+  }).where(eq(users.id, id));
+  return { success: true };
+}
+
+export async function cancelAccountDeletion(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({
+    deletionRequestedAt: null,
+    deletionScheduledAt: null,
+    isActive: true,
+  }).where(eq(users.id, id));
+  return { success: true };
+}
+
+export async function getAccountsPendingDeletion() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  return db.select().from(users).where(
+    and(
+      sql`${users.deletionScheduledAt} IS NOT NULL`,
+      lte(users.deletionScheduledAt, now)
+    )
+  );
+}
+
 export async function deleteUser(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
