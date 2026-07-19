@@ -2333,4 +2333,4 @@ Fix:
 - [x] Add account recovery login flow (show recovery option if account is pending deletion)
 - [x] Create privacy policy page (/privacy) explaining data handling in Arabic
 - [x] Add link to privacy policy in account settings delete section
-- [ ] Add scheduled job to permanently delete accounts after 30-day grace period
+- [x] Add scheduled job to permanently delete accounts after 30-day grace period (Heartbeat cron: daily 3:30 AM UTC, task_uid: 7iS6BbxKhyXi5JeZUtwzLb)
