@@ -105,6 +105,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 // Payment Pages
 const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
 const PaymentCallback = lazy(() => import("./pages/PaymentCallback"));
+const StorePaymentCallback = lazy(() => import("./pages/StorePaymentCallback"));
 
 
 // Auth Pages
@@ -146,6 +147,13 @@ const ParentEngagementScore = lazy(() => import("./pages/parent/EngagementScore"
 const ParentEngagementBadges = lazy(() => import("./pages/parent/EngagementBadges"));
 const ParentCurriculumLibrary = lazy(() => import("./pages/parent/CurriculumLibrary"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
+const StoreProducts = lazy(() => import("./pages/staff/StoreProducts"));
+const StoreOrders = lazy(() => import("./pages/staff/StoreOrders"));
+const ParentStore = lazy(() => import("./pages/parent/Store"));
+const ParentCart = lazy(() => import("./pages/parent/Cart"));
+const ParentStoreOrders = lazy(() => import("./pages/parent/StoreOrders"));
+const StoreCheckout = lazy(() => import("./pages/parent/StoreCheckout"));
+const SuperAdminStore = lazy(() => import("./pages/superadmin/Store"));
 
 function PageLoader() {
   return (
@@ -229,6 +237,8 @@ function StaffRouter() {
         <Route path="/staff/import-staff" component={ImportStaff} />
         <Route path="/staff/import-children" component={ImportChildren} />
         <Route path="/staff/curriculum" component={StaffCurriculumManagement} />
+        <Route path="/staff/store/orders" component={StoreOrders} />
+        <Route path="/staff/store" component={StoreProducts} />
         <Route path="/staff/account-settings" component={AccountSettings} />
         <Route component={NotFound} />
       </Switch>
@@ -273,6 +283,10 @@ function ParentRouter() {
         <Route path="/parent/engagement/score" component={ParentEngagementScore} />
         <Route path="/parent/engagement/badges" component={ParentEngagementBadges} />
         <Route path="/parent/curriculum" component={ParentCurriculumLibrary} />
+        <Route path="/parent/store/orders" component={ParentStoreOrders} />
+        <Route path="/parent/store/cart" component={ParentCart} />
+        <Route path="/parent/store/checkout" component={StoreCheckout} />
+        <Route path="/parent/store" component={ParentStore} />
         <Route path="/parent/account-settings" component={AccountSettings} />
         <Route component={NotFound} />
       </Switch>
@@ -495,6 +509,9 @@ function RoleRouter() {
         <Route path="/super-admin/notification-settings">
           {isSuperAdminRole(userRole) ? <StaffNotificationSettings /> : <Redirect to={basePath} />}
         </Route>
+        <Route path="/super-admin/store">
+          {isSuperAdminRole(userRole) ? <SuperAdminStore /> : <Redirect to={basePath} />}
+        </Route>
         <Route path="/super-admin">
           {isSuperAdminRole(userRole) ? <SuperAdminDashboard /> : <Redirect to={basePath} />}
         </Route>
@@ -505,6 +522,9 @@ function RoleRouter() {
         </Route>
         <Route path="/payment-callback">
           <PaymentCallback />
+        </Route>
+        <Route path="/store-payment-callback">
+          <StorePaymentCallback />
         </Route>
 
         {/* Onboarding wizard - accessible by authenticated users */}

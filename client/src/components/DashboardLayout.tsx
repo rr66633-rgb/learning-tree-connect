@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt, ShoppingBag
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -67,6 +67,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: Megaphone, label: "الإعلانات", path: "/announcements", color: "#EC4899" },
   { icon: CalendarDays, label: "الخطة الأسبوعية", path: "/weekly-plan", color: "#7C3AED" },
   { icon: Library, label: "مكتبة المناهج", path: "/curriculum", color: "#10B981" },
+  { icon: ShoppingBag, label: "المتجر", path: "/store", color: "#10B981" },
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai/assistant", color: "#F97316" },
 ];
 
@@ -135,6 +136,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: Sparkles, label: "المساعد الذكي", path: "/ai", color: "#F97316" },
   { icon: UserCheck, label: "طلبات الموافقة", path: "/pending-approvals", color: "#00C9B7" },
   { icon: Shield, label: "سجل المراجعة", path: "/audit-log", color: "#EC4899" },
+  { icon: ShoppingBag, label: "المتجر", path: "/store", color: "#10B981" },
   { icon: Settings, label: "الإعدادات", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", path: "/notification-settings", color: "#00C9B7" },
 ];
@@ -200,6 +202,7 @@ const superAdminMenuItems: MenuItem[] = [
   { icon: Building2, label: "المنظمات", path: "/organizations", color: "#7C3AED" },
   { icon: Crown, label: "إدارة الاشتراكات", path: "/plans", color: "#F97316" },
   { icon: Receipt, label: "تقرير المدفوعات", path: "/payments-report", color: "#10B981" },
+  { icon: ShoppingBag, label: "المتجر", path: "/store", color: "#10B981" },
   { icon: Palette, label: "الهوية البصرية", path: "/branding", color: "#EC4899" },
   { icon: Users, label: "المستخدمون", path: "/users", color: "#7C3AED" },
   { icon: Settings, label: "الإعدادات", path: "/settings", color: "#00C9B7" },

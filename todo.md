@@ -2318,3 +2318,20 @@ Fix:
 - [x] Make engagement dashboard stat cards (activities, challenges, journal, goals) clickable with navigation
 - [x] Improve Observations page tabs design with more colors and better styling
 - [x] Add more colors to the app overall for a more vibrant look
+
+## Nursery Marketplace / Store
+- [x] Design database schema (products, categories, cart, orders, orderItems)
+- [x] Create migration SQL and apply to database
+- [x] Backend: Product CRUD procedures (nursery adds/edits/deletes products with images)
+- [x] Backend: Cart procedures (add to cart, remove, update quantity, get cart)
+- [x] Backend: Order procedures (create order, get orders, update order status)
+- [x] Backend: Moyasar payment integration for checkout (10% commission)
+- [x] Nursery Admin UI: Product management page (add/edit/delete products with images)
+- [x] Nursery Admin UI: Orders page (view incoming orders, update status)
+- [x] Parent UI: Store page with nursery selector dropdown
+- [x] Parent UI: Product listing with images and prices
+- [x] Parent UI: Cart page with quantity management
+- [x] Parent UI: Checkout with Moyasar payment
+- [x] Parent UI: Order history page
+- [x] Super Admin UI: All orders overview with commission tracking
+- [x] Add store link to navigation menus

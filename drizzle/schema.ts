@@ -1610,3 +1610,81 @@ export const customAssessmentResponses = mysqlTable("custom_assessment_responses
 
 export type CustomAssessmentResponse = typeof customAssessmentResponses.$inferSelect;
 export type InsertCustomAssessmentResponse = typeof customAssessmentResponses.$inferInsert;
+
+// ============ MARKETPLACE / STORE ============
+export const storeCategories = mysqlTable("store_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  nameAr: varchar("nameAr", { length: 200 }).notNull(),
+  icon: varchar("icon", { length: 50 }),
+  sortOrder: int("sortOrder").default(0),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type StoreCategory = typeof storeCategories.$inferSelect;
+export type InsertStoreCategory = typeof storeCategories.$inferInsert;
+
+export const storeProducts = mysqlTable("store_products", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  categoryId: int("categoryId"),
+  name: varchar("name", { length: 300 }).notNull(),
+  nameAr: varchar("nameAr", { length: 300 }).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  compareAtPrice: decimal("compareAtPrice", { precision: 10, scale: 2 }),
+  imageUrl: text("imageUrl"),
+  images: json("images").$type<string[]>(),
+  type: mysqlEnum("type", ["product", "service"]).default("product").notNull(),
+  stock: int("stock").default(0),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StoreProduct = typeof storeProducts.$inferSelect;
+export type InsertStoreProduct = typeof storeProducts.$inferInsert;
+
+export const storeCart = mysqlTable("store_cart", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  productId: int("productId").notNull(),
+  quantity: int("quantity").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StoreCartItem = typeof storeCart.$inferSelect;
+export type InsertStoreCartItem = typeof storeCart.$inferInsert;
+
+export const storeOrders = mysqlTable("store_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  orderNumber: varchar("orderNumber", { length: 50 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  commission: decimal("commission", { precision: 10, scale: 2 }).notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "processing", "ready", "completed", "cancelled", "refunded"]).default("pending").notNull(),
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  moyasarPaymentId: varchar("moyasarPaymentId", { length: 255 }),
+  moyasarPaymentUrl: text("moyasarPaymentUrl"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StoreOrder = typeof storeOrders.$inferSelect;
+export type InsertStoreOrder = typeof storeOrders.$inferInsert;
+
+export const storeOrderItems = mysqlTable("store_order_items", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  productId: int("productId").notNull(),
+  productName: varchar("productName", { length: 300 }).notNull(),
+  productNameAr: varchar("productNameAr", { length: 300 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  quantity: int("quantity").notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+});
+export type StoreOrderItem = typeof storeOrderItems.$inferSelect;
+export type InsertStoreOrderItem = typeof storeOrderItems.$inferInsert;
