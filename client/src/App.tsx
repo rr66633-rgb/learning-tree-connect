@@ -114,6 +114,7 @@ const Register = lazy(() => import("./pages/auth/Register"));
 const NurseryRegister = lazy(() => import("./pages/auth/NurseryRegister"));
 const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const RecoverAccount = lazy(() => import("./pages/auth/RecoverAccount"));
 
 // Parent Pages
 const ParentDashboard = lazy(() => import("./pages/parent/Dashboard"));
@@ -389,6 +390,7 @@ function RoleRouter() {
           <Route path="/register-nursery" component={NurseryRegister} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/recover-account" component={RecoverAccount} />
           <Route path="/pricing" component={Pricing} />
           <Route component={Landing} />
         </Switch>
@@ -430,6 +432,9 @@ function RoleRouter() {
           <Redirect to={basePath} />
         </Route>
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/recover-account">
+          <Redirect to={basePath} />
+        </Route>
 
         {/* AI routes - accessible by staff roles */}
         <Route path="/ai">

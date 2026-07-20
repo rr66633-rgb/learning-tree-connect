@@ -907,11 +907,50 @@ export async function updateUser(id: number, data: { name?: string; email?: stri
   return getUserById(id);
 }
 
+export async function markAccountForDeletion(id: number, requestedAt: Date, scheduledAt: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({
+    deletionRequestedAt: requestedAt,
+    deletionScheduledAt: scheduledAt,
+    isActive: false,
+  }).where(eq(users.id, id));
+  return { success: true };
+}
+
+export async function cancelAccountDeletion(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({
+    deletionRequestedAt: null,
+    deletionScheduledAt: null,
+    isActive: true,
+  }).where(eq(users.id, id));
+  return { success: true };
+}
+
+export async function getAccountsPendingDeletion() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  return db.select().from(users).where(
+    and(
+      sql`${users.deletionScheduledAt} IS NOT NULL`,
+      lte(users.deletionScheduledAt, now)
+    )
+  );
+}
+
 export async function deleteUser(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Unlink children from this parent before deleting
+  // Clean up parentChildren links
+  await db.delete(parentChildren).where(eq(parentChildren.parentId, id));
+  // Unlink children from this parent (legacy parentId column)
   await db.update(children).set({ parentId: null }).where(eq(children.parentId, id));
+  // Remove push subscriptions
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, id));
+  // Delete the user record
   await db.delete(users).where(eq(users.id, id));
   return { success: true };
 }

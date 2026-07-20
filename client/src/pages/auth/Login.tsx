@@ -268,6 +268,13 @@ export default function Login() {
                 >
                   نسيت كلمة المرور؟
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setLocation("/recover-account")}
+                  className="text-sm text-amber-600 hover:underline font-medium py-2 px-1"
+                >
+                  استعادة حساب محذوف
+                </button>
               </div>
 
               <Button
