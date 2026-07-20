@@ -150,6 +150,7 @@ const ParentCurriculumLibrary = lazy(() => import("./pages/parent/CurriculumLibr
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const StoreProducts = lazy(() => import("./pages/staff/StoreProducts"));
 const StoreOrders = lazy(() => import("./pages/staff/StoreOrders"));
+const StoreSalesReport = lazy(() => import("./pages/staff/StoreSalesReport"));
 const ParentStore = lazy(() => import("./pages/parent/Store"));
 const ParentCart = lazy(() => import("./pages/parent/Cart"));
 const ParentStoreOrders = lazy(() => import("./pages/parent/StoreOrders"));
@@ -238,6 +239,7 @@ function StaffRouter() {
         <Route path="/staff/import-staff" component={ImportStaff} />
         <Route path="/staff/import-children" component={ImportChildren} />
         <Route path="/staff/curriculum" component={StaffCurriculumManagement} />
+        <Route path="/staff/store/reports" component={StoreSalesReport} />
         <Route path="/staff/store/orders" component={StoreOrders} />
         <Route path="/staff/store" component={StoreProducts} />
         <Route path="/staff/account-settings" component={AccountSettings} />

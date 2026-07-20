@@ -2351,3 +2351,8 @@ Fix:
 - [x] Parent UI: Order history page
 - [x] Super Admin UI: All orders overview with commission tracking
 - [x] Add store link to navigation menus
+
+## Store Enhancements
+- [x] إشعارات فورية للحضانة عند ورود طلب جديد
+- [x] خاصية البحث في المنتجات وفلترة حسب السعر في صفحة ولي الأمر
+- [x] تقرير مبيعات مفصل للحضانة مع رسوم بيانية

@@ -1,7 +1,7 @@
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, gte, lte } from "drizzle-orm";
 import {
   storeCategories,
   storeProducts,
@@ -9,6 +9,8 @@ import {
   storeOrders,
   storeOrderItems,
   organizations,
+  users,
+  notifications,
 } from "../drizzle/schema";
 import { getDb } from "./db";
 
@@ -265,6 +267,32 @@ export const storeRouter = router({
 
       // Clear cart
       await db.delete(storeCart).where(eq(storeCart.userId, ctx.user.id));
+
+      // Send notification to nursery admin/staff
+      try {
+        const orgStaff = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(and(
+            eq(users.organizationId, organizationId),
+            inArray(users.role, ["admin", "principal", "receptionist"]),
+            eq(users.isActive, true)
+          ));
+        for (const staff of orgStaff) {
+          await db.insert(notifications).values({
+            userId: staff.id,
+            title: "New Store Order",
+            titleAr: "طلب جديد من المتجر",
+            body: `New order #${orderNumber} received - Total: ${total} SAR`,
+            bodyAr: `تم استلام طلب جديد #${orderNumber} - المبلغ: ${total} ر.س`,
+            type: "payment",
+            link: "/staff/store",
+            metadata: { orderId, orderNumber, total },
+          });
+        }
+      } catch (e) {
+        console.error("Failed to send store order notification:", e);
+      }
 
       return { orderId, orderNumber, total };
     }),
@@ -556,6 +584,98 @@ export const storeRouter = router({
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(storeOrders.createdAt));
       return orders;
+    }),
+
+  // ============ NURSERY ADMIN: Sales Report ============
+  adminGetSalesReport: protectedProcedure
+    .input(z.object({ period: z.enum(["week", "month", "year"]).default("month") }).optional())
+    .query(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const orgId = ctx.user.organizationId;
+      if (!orgId) throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
+
+      const period = input?.period || "month";
+      const now = new Date();
+      let startDate: Date;
+      if (period === "week") {
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (period === "month") {
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      } else {
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      }
+
+      // Summary stats
+      const [summary] = await db
+        .select({
+          totalOrders: sql<number>`COUNT(*)`,
+          totalRevenue: sql<string>`COALESCE(SUM(total), 0)`,
+          totalCommission: sql<string>`COALESCE(SUM(commission), 0)`,
+          paidOrders: sql<number>`SUM(CASE WHEN status IN ('paid', 'processing', 'ready', 'completed') THEN 1 ELSE 0 END)`,
+          cancelledOrders: sql<number>`SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)`,
+          pendingOrders: sql<number>`SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)`,
+        })
+        .from(storeOrders)
+        .where(and(eq(storeOrders.organizationId, orgId), gte(storeOrders.createdAt, startDate)));
+
+      // Daily sales for chart
+      const dailySales = await db
+        .select({
+          date: sql<string>`DATE(createdAt)`,
+          revenue: sql<string>`COALESCE(SUM(total), 0)`,
+          orders: sql<number>`COUNT(*)`,
+        })
+        .from(storeOrders)
+        .where(and(
+          eq(storeOrders.organizationId, orgId),
+          gte(storeOrders.createdAt, startDate),
+          inArray(storeOrders.status, ["paid", "processing", "ready", "completed"])
+        ))
+        .groupBy(sql`DATE(createdAt)`)
+        .orderBy(sql`DATE(createdAt)`);
+
+      // Top selling products
+      const topProducts = await db
+        .select({
+          productName: storeOrderItems.productNameAr,
+          totalQuantity: sql<number>`SUM(${storeOrderItems.quantity})`,
+          totalRevenue: sql<string>`SUM(${storeOrderItems.total})`,
+        })
+        .from(storeOrderItems)
+        .innerJoin(storeOrders, eq(storeOrderItems.orderId, storeOrders.id))
+        .where(and(
+          eq(storeOrders.organizationId, orgId),
+          gte(storeOrders.createdAt, startDate),
+          inArray(storeOrders.status, ["paid", "processing", "ready", "completed"])
+        ))
+        .groupBy(storeOrderItems.productNameAr)
+        .orderBy(desc(sql`SUM(${storeOrderItems.quantity})`))
+        .limit(10);
+
+      // Orders by status for pie chart
+      const ordersByStatus = await db
+        .select({
+          status: storeOrders.status,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(storeOrders)
+        .where(and(eq(storeOrders.organizationId, orgId), gte(storeOrders.createdAt, startDate)))
+        .groupBy(storeOrders.status);
+
+      return {
+        summary: {
+          totalOrders: summary?.totalOrders || 0,
+          totalRevenue: summary?.totalRevenue || "0",
+          totalCommission: summary?.totalCommission || "0",
+          netRevenue: String(Number(summary?.totalRevenue || 0) - Number(summary?.totalCommission || 0)),
+          paidOrders: summary?.paidOrders || 0,
+          cancelledOrders: summary?.cancelledOrders || 0,
+          pendingOrders: summary?.pendingOrders || 0,
+        },
+        dailySales,
+        topProducts,
+        ordersByStatus,
+      };
     }),
 
   superAdminGetCommissionReport: protectedProcedure.query(async ({ ctx }) => {
