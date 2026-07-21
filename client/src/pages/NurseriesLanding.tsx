@@ -543,13 +543,15 @@ export default function NurseriesLanding() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { title: "الحضانات ورياض الأطفال", icon: "🏫" },
-              { title: "مراكز التأهيل والتدخل المبكر", icon: "🌱" },
-              { title: "مراكز الرعاية النهارية", icon: "☀️" },
-              { title: "المدارس التمهيدية", icon: "📚" },
+              { title: "الحضانات ورياض الأطفال", Icon: Users },
+              { title: "مراكز التأهيل والتدخل المبكر", Icon: Heart },
+              { title: "مراكز الرعاية النهارية", Icon: Shield },
+              { title: "المدارس التمهيدية", Icon: BookOpen },
             ].map((item, i) => (
               <div key={i} className="bg-white rounded-xl p-5 sm:p-6 text-center shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="text-3xl sm:text-4xl mb-3">{item.icon}</div>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#00C9B7]/10 flex items-center justify-center mx-auto mb-3">
+                  <item.Icon className="w-6 h-6 sm:w-7 sm:h-7 text-[#00C9B7]" />
+                </div>
                 <h3 className="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">{item.title}</h3>
               </div>
             ))}
@@ -557,61 +559,7 @@ export default function NurseriesLanding() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10 sm:mb-14">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-3 sm:mb-4">
-              ماذا يقول عملاؤنا؟
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
-              آراء أصحاب الحضانات والمراكز الذين يستخدمون نشأة
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-            {[
-              {
-                name: "سيتم الإضافة قريباً",
-                role: "مديرة حضانة",
-                city: "الرياض",
-                text: "سيتم إضافة شهادات العملاء بعد اشتراك أول مجموعة من الحضانات",
-                stars: 5
-              },
-              {
-                name: "سيتم الإضافة قريباً",
-                role: "مالكة مركز تأهيل",
-                city: "جدة",
-                text: "سيتم إضافة شهادات العملاء بعد اشتراك أول مجموعة من الحضانات",
-                stars: 5
-              },
-              {
-                name: "سيتم الإضافة قريباً",
-                role: "مديرة رعاية نهارية",
-                city: "الدمام",
-                text: "سيتم إضافة شهادات العملاء بعد اشتراك أول مجموعة من الحضانات",
-                stars: 5
-              },
-            ].map((testimonial, i) => (
-              <div key={i} className="bg-[#F8FAFB] rounded-xl p-5 sm:p-6 relative">
-                <Quote className="w-8 h-8 text-[#00C9B7]/20 absolute top-4 left-4" />
-                <div className="flex gap-0.5 mb-3">
-                  {Array.from({ length: testimonial.stars }).map((_, j) => (
-                    <Star key={j} className="w-4 h-4 text-[#FFB020] fill-[#FFB020]" />
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed mb-4 min-h-[60px]">
-                  "{testimonial.text}"
-                </p>
-                <div className="border-t border-gray-200 pt-3">
-                  <p className="text-sm font-bold text-slate-800">{testimonial.name}</p>
-                  <p className="text-xs text-gray-500">{testimonial.role} - {testimonial.city}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Demo Booking Form Section */}
       <section id="demo" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-[#F8FAFB]">
