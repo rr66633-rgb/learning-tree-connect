@@ -11,7 +11,7 @@ import { getDb } from "./db";
 // Middleware: only teachers and admins can use AI features
 const aiProcedure = protectedProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
-  if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'teacher' && role !== 'assistant') {
+  if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'owner' && role !== 'teacher' && role !== 'assistant') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'AI features are restricted to staff members' });
   }
   return next({ ctx });

@@ -474,7 +474,7 @@ async function startServer() {
       let user;
       try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
-      if (!['super_admin', 'admin', 'principal'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+      if (!['super_admin', 'admin', 'principal', 'owner'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
       const file = (req as any).file;
       if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
       const XLSX = await import('xlsx');
@@ -630,7 +630,7 @@ async function startServer() {
       let user;
       try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
-      if (!['super_admin', 'admin', 'principal'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+      if (!['super_admin', 'admin', 'principal', 'owner'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
       const file = (req as any).file;
       if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
       const XLSX = await import('xlsx');
@@ -988,7 +988,7 @@ async function startServer() {
       let user;
       try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
-      if (!['super_admin', 'admin', 'principal'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+      if (!['super_admin', 'admin', 'principal', 'owner'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
 
       const { getDb } = await import('../db');
       const db = await getDb();
@@ -1088,7 +1088,7 @@ async function startServer() {
       let user;
       try { user = await sdk.authenticateRequest(req); } catch (e) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
-      if (!['super_admin', 'admin', 'principal', 'teacher'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
+      if (!['super_admin', 'admin', 'principal', 'owner', 'teacher'].includes(user.role)) { res.status(403).json({ error: 'ليس لديك صلاحية' }); return; }
 
       const { getDb } = await import('../db');
       const db = await getDb();

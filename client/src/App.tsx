@@ -173,7 +173,7 @@ function isParentRole(role?: string): boolean {
 
 /** Determine if a role is a "staff" type role (any non-parent authenticated role) */
 function isStaffRole(role?: string): boolean {
-  const staffRoles = ["admin", "super_admin", "principal", "teacher", "assistant", "accountant", "receptionist"];
+  const staffRoles = ["admin", "super_admin", "principal", "owner", "teacher", "assistant", "accountant", "receptionist"];
   return staffRoles.includes(role || "");
 }
 

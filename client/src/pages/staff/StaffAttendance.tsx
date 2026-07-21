@@ -15,7 +15,7 @@ import { MapPin, Clock, LogIn, LogOut, CheckCircle2, AlertCircle, UserX, UserChe
 
 export default function StaffStaffAttendance() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal";
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal" || user?.role === "owner";
   const today = new Date().toISOString().split("T")[0];
 
   const { data: todayAttendance, isLoading: todayLoading } = trpc.staffAttendance.today.useQuery();

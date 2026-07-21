@@ -13,7 +13,7 @@ import { apiUrl } from "@/lib/apiBase";
 
 export default function StaffMessages() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal";
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal" || user?.role === "owner";
   const { data: adminConvs, isLoading: loadingAdminConvs } = trpc.messages.allConversations.useQuery(
     { search: undefined },
     { enabled: isAdmin, refetchInterval: 10000 }

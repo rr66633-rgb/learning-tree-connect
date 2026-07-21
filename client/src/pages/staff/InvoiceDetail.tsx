@@ -27,7 +27,7 @@ export default function InvoiceDetail() {
   const pathParts = window.location.pathname.split('/');
   const idIndex = pathParts.indexOf('invoice') + 1;
   const invoiceId = parseInt(pathParts[idIndex] || "0");
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'principal' || user?.role === 'accountant';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'principal' || user?.role === 'owner' || user?.role === 'accountant';
 
   const { data: invoice, isLoading } = trpc.finance.getById.useQuery({ id: invoiceId }, { enabled: invoiceId > 0 });
   const { data: centerSettings } = trpc.centerSettings.get.useQuery();

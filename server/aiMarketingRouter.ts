@@ -7,7 +7,7 @@ import { invokeLLM } from "./_core/llm";
 // Only staff can use marketing features
 const marketingProcedure = protectedProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
-  if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'teacher' && role !== 'assistant') {
+  if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'owner' && role !== 'teacher' && role !== 'assistant') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Marketing features are restricted to staff members' });
   }
   return next({ ctx });

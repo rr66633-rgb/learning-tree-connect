@@ -375,7 +375,7 @@ export const engagementRouter = router({
         pointsReward: z.number().default(10),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (!["admin", "principal", "super_admin"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "super_admin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
@@ -442,7 +442,7 @@ export const engagementRouter = router({
         isHighlighted: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (!["admin", "principal", "teacher", "assistant"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "teacher", "assistant"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
@@ -461,7 +461,7 @@ export const engagementRouter = router({
     // Teacher: list pending reviews
     pendingReviews: protectedProcedure
       .query(async ({ ctx }) => {
-        if (!["admin", "principal", "teacher", "assistant"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "teacher", "assistant"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
@@ -532,7 +532,7 @@ export const engagementRouter = router({
         teacherNotes: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (!["admin", "principal", "teacher", "assistant"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "teacher", "assistant"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
@@ -550,7 +550,7 @@ export const engagementRouter = router({
     // Teacher: list pending observations
     pendingReview: protectedProcedure
       .query(async ({ ctx }) => {
-        if (!["admin", "principal", "teacher", "assistant"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "teacher", "assistant"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
@@ -738,7 +738,7 @@ export const engagementRouter = router({
   analytics: router({
     overview: protectedProcedure
       .query(async ({ ctx }) => {
-        if (!["admin", "principal", "teacher", "super_admin"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "teacher", "super_admin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
@@ -770,7 +770,7 @@ export const engagementRouter = router({
 
     engagementByFamily: protectedProcedure
       .query(async ({ ctx }) => {
-        if (!["admin", "principal", "teacher", "super_admin"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "teacher", "super_admin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
@@ -911,7 +911,7 @@ Return as JSON: {"title": "Report title", "sections": [{"heading": "Section head
         defaultLanguage: z.enum(["ar", "en", "both"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (!["admin", "principal", "super_admin"].includes(ctx.user.role)) {
+        if (!["admin", "principal", "owner", "super_admin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;

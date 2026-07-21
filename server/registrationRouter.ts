@@ -195,7 +195,7 @@ export const registrationRouter = router({
       status: z.enum(["pending", "approved", "rejected", "converted", "all"]).optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
-      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin') {
+      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin' && ctx.user?.role !== 'owner') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'صلاحيات غير كافية' });
       }
       const status = input?.status === 'all' ? undefined : input?.status;
@@ -206,7 +206,7 @@ export const registrationRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin') {
+      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin' && ctx.user?.role !== 'owner') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'صلاحيات غير كافية' });
       }
       const registration = await db.getNurseryRegistrationById(input.id);
@@ -225,7 +225,7 @@ export const registrationRouter = router({
       rejectionReason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin') {
+      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin' && ctx.user?.role !== 'owner') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'صلاحيات غير كافية' });
       }
       

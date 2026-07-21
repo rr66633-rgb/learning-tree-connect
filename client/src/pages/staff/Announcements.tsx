@@ -50,7 +50,7 @@ export default function StaffAnnouncements() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = user?.role === "admin" || user?.role === "principal" || user?.role === "super_admin";
+  const isAdmin = user?.role === "admin" || user?.role === "principal" || user?.role === "super_admin" || user?.role === "owner";
 
   const create = trpc.announcements.create.useMutation({
     onSuccess: () => {

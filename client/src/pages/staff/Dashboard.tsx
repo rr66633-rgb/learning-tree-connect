@@ -68,7 +68,7 @@ export default function StaffDashboard() {
     );
   };
 
-  const isAdmin = user?.role === "admin" || user?.role === "principal";
+  const isAdmin = user?.role === "admin" || user?.role === "principal" || user?.role === "owner" || user?.role === "super_admin";
   const attendanceRate = stats?.totalChildren ? Math.round((stats.presentToday / stats.totalChildren) * 100) : 0;
 
   const greeting = () => {

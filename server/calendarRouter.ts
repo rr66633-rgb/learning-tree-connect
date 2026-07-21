@@ -6,7 +6,7 @@ import { sendPushToUser, sendPushToUsers, PushPayload } from "./_core/webPush";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
-  if (role !== "admin" && role !== "super_admin" && role !== "principal") {
+  if (role !== "admin" && role !== "super_admin" && role !== "principal" && role !== "owner") {
     throw new TRPCError({ code: "FORBIDDEN", message: "صلاحية الإدارة مطلوبة" });
   }
   return next({ ctx });
@@ -14,7 +14,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
-  if (role !== "admin" && role !== "super_admin" && role !== "principal" && role !== "teacher") {
+  if (role !== "admin" && role !== "super_admin" && role !== "principal" && role !== "owner" && role !== "teacher") {
     throw new TRPCError({ code: "FORBIDDEN", message: "صلاحية الموظفين مطلوبة" });
   }
   return next({ ctx });
@@ -160,7 +160,7 @@ export const calendarRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const role = ctx.user?.role;
-      const isStaff = role === "admin" || role === "super_admin" || role === "principal" || role === "teacher";
+      const isStaff = role === "admin" || role === "super_admin" || role === "principal" || role === "owner" || role === "teacher";
       
       const filters: any = {};
       if (input?.month) filters.month = input.month;
@@ -193,7 +193,7 @@ export const calendarRouter = router({
       
       // Parents can only see published events
       const role = ctx.user?.role;
-      const isStaff = role === "admin" || role === "super_admin" || role === "principal" || role === "teacher";
+      const isStaff = role === "admin" || role === "super_admin" || role === "principal" || role === "owner" || role === "teacher";
       if (!isStaff && event.status !== "published") {
         throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
       }

@@ -6,7 +6,7 @@ import { customAssessments, assessmentQuestions, customAssessmentResponses, chil
 import { eq, and, inArray, desc, asc } from "drizzle-orm";
 
 const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
-  const staffRoles = ['admin', 'super_admin', 'principal', 'teacher', 'assistant'];
+  const staffRoles = ['admin', 'super_admin', 'principal', 'owner', 'teacher', 'assistant'];
   if (!staffRoles.includes(ctx.user?.role || '')) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Staff access required' });
   }

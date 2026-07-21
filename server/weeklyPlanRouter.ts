@@ -12,7 +12,7 @@ import { getDb } from "./db";
 // Middleware: only teachers and admins can use weekly plan features
 const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
-  if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'teacher' && role !== 'assistant') {
+  if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'owner' && role !== 'teacher' && role !== 'assistant') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Weekly plan features are restricted to staff members' });
   }
   return next({ ctx });

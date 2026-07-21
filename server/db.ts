@@ -808,7 +808,7 @@ export async function getDashboardStats(organizationId?: number) {
   const childConditions = [eq(children.status, 'active')];
   if (organizationId) childConditions.push(eq(children.organizationId, organizationId));
   const allChildren = await db.select({ count: sql<number>`count(*)` }).from(children).where(and(...childConditions));
-  const staffConditions = [sql`${users.role} IN ('admin', 'principal', 'teacher', 'assistant', 'accountant', 'receptionist', 'super_admin')`];
+  const staffConditions = [sql`${users.role} IN ('admin', 'principal', 'owner', 'teacher', 'assistant', 'accountant', 'receptionist', 'super_admin')`];
   if (organizationId) staffConditions.push(eq(users.organizationId, organizationId));
   const allStaff = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(...staffConditions));
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -829,7 +829,7 @@ export async function getUsersByRole(role?: string, search?: string, organizatio
     conditions.push(eq(users.role, role as any));
   } else {
     // Exclude 'user' role (unassigned), show all active roles
-    conditions.push(sql`${users.role} IN ('admin', 'principal', 'teacher', 'assistant', 'accountant', 'receptionist', 'parent')`);
+    conditions.push(sql`${users.role} IN ('admin', 'principal', 'owner', 'teacher', 'assistant', 'accountant', 'receptionist', 'parent')`);
   }
   if (search) {
     conditions.push(
@@ -2497,7 +2497,7 @@ export async function getStaffUsers() {
   return db.select({ id: users.id, name: users.name, role: users.role })
     .from(users)
     .where(and(
-      inArray(users.role, ['super_admin', 'admin', 'principal', 'teacher', 'assistant', 'receptionist']),
+      inArray(users.role, ['super_admin', 'admin', 'principal', 'owner', 'teacher', 'assistant', 'receptionist']),
       eq(users.isActive, true)
     ));
 }
@@ -2546,7 +2546,7 @@ export async function getOnDutyStaffIds(): Promise<number[]> {
   // Staff who are ON DUTY (either explicitly set or have no record = default on duty)
   const allStaff = await db.select({ id: users.id }).from(users).where(
     and(
-      inArray(users.role, ['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'super_admin'] as any),
+      inArray(users.role, ['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'owner', 'super_admin'] as any),
       eq(users.isActive, true)
     )
   );

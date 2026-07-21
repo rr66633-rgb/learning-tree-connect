@@ -275,7 +275,7 @@ export const storeRouter = router({
           .from(users)
           .where(and(
             eq(users.organizationId, organizationId),
-            inArray(users.role, ["admin", "principal", "receptionist"]),
+            inArray(users.role, ["admin", "principal", "owner", "receptionist"]),
             eq(users.isActive, true)
           ));
         for (const staff of orgStaff) {

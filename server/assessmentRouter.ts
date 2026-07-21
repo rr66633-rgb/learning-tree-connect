@@ -111,7 +111,7 @@ export const assessmentRouter = router({
       const assessment = await db.getAssessmentById(input.id);
       if (!assessment) throw new TRPCError({ code: "NOT_FOUND" });
       // Only assessor or admin can delete
-      if (assessment.assessorId !== ctx.user?.id && ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') {
+      if (assessment.assessorId !== ctx.user?.id && ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'owner' && ctx.user?.role !== 'principal') {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
       await db.deleteDevelopmentalAssessment(input.id);

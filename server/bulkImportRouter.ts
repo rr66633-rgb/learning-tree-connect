@@ -5,7 +5,7 @@ import * as db from "./db";
 import * as XLSX from "xlsx";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') {
+  if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'owner' && ctx.user?.role !== 'principal') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   }
   return next({ ctx });

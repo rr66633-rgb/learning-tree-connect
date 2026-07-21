@@ -1137,7 +1137,7 @@ export const appRouter = router({
       // Verify user is participant or admin
       const conv = await db.getConversationById(input.conversationId);
       if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
-      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin';
+      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin' || ctx.user?.role === 'owner' || ctx.user?.role === 'principal';
       if (!isAdmin && conv.participantOneId !== ctx.user!.id && conv.participantTwoId !== ctx.user!.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح بالوصول' });
       }
@@ -1155,7 +1155,7 @@ export const appRouter = router({
       // Verify user is participant or admin
       const conv = await db.getConversationById(input.conversationId);
       if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
-      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin';
+      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin' || ctx.user?.role === 'owner' || ctx.user?.role === 'principal';
       if (!isAdmin && conv.participantOneId !== ctx.user!.id && conv.participantTwoId !== ctx.user!.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح بالإرسال' });
       }
@@ -2338,7 +2338,7 @@ export const appRouter = router({
         return db.getMediaForChildren(childIds, input?.limit);
       }
       // Admin sees all
-      if (ctx.user?.role === 'admin') {
+      if (ctx.user?.role === 'admin' || ctx.user?.role === 'owner' || ctx.user?.role === 'principal' || ctx.user?.role === 'super_admin') {
         return db.getAllMedia(input?.limit);
       }
       // Teacher sees by class
@@ -2354,7 +2354,7 @@ export const appRouter = router({
       // Only admin or the uploader can delete
       const item = await db.getMediaById(input.id);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
-      if (ctx.user?.role !== 'admin' && item.uploadedBy !== ctx.user!.id) {
+      if (!['admin', 'owner', 'principal', 'super_admin'].includes(ctx.user?.role || '') && item.uploadedBy !== ctx.user!.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: '\u0644\u0627 \u064a\u0645\u0643\u0646\u0643 \u062d\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641' });
       }
       await db.deleteMedia(input.id);
@@ -2477,7 +2477,7 @@ export const appRouter = router({
 
   announcements: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'principal' || ctx.user?.role === 'super_admin';
+      const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'principal' || ctx.user?.role === 'super_admin' || ctx.user?.role === 'owner';
       if (ctx.user?.role === 'parent') {
         return db.getAnnouncements('parents', false);
       }

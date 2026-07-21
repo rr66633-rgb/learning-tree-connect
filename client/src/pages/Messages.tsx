@@ -20,7 +20,7 @@ import { apiUrl } from "@/lib/apiBase";
 
 export default function Messages() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "owner" || user?.role === "principal";
 
   // Admin uses allConversations, others use regular conversations
   const [searchQuery, setSearchQuery] = useState("");

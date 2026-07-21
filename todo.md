@@ -2372,3 +2372,25 @@ Fix:
 
 ## Bug Fix - Dashboard Cards Not Clickable
 - [x] أزرار لوحة التحكم (أطفال حاضرون، إجمالي الأطفال، الموظفون، الإيرادات) لا تعمل عند الضغط عليها
+
+## Owner Role Full Permissions
+- [x] Add 'owner' to users table role enum in database
+- [x] Add 'owner' to schema.ts role enum
+- [x] Add 'owner' to isStaffRole in frontend App.tsx
+- [x] Add 'owner' to DashboardLayout getMenuItems (same menus as admin)
+- [x] Add 'owner' to DashboardLayout getRoleDisplayName
+- [x] Add 'owner' to OAuth redirect path
+- [x] Add 'owner' to adminProcedure and teacherProcedure in routers.ts
+- [x] Add 'owner' to all role checks in server/_core/index.ts (import/export endpoints)
+- [x] Add 'owner' to all isAdmin checks in routers.ts (messages, media, announcements)
+- [x] Add 'owner' to aiRouter, aiMarketingRouter, weeklyPlanRouter staffProcedure
+- [x] Add 'owner' to calendarRouter admin and staff procedures
+- [x] Add 'owner' to bulkImportRouter adminProcedure
+- [x] Add 'owner' to assessmentRouter delete check
+- [x] Add 'owner' to staffManagementRouter assertAdminOrPrincipal
+- [x] Add 'owner' to engagementRouter all role checks
+- [x] Add 'owner' to registrationRouter admin checks
+- [x] Add 'owner' to storeRouter notification recipients
+- [x] Add 'owner' to customAssessmentRouter staffRoles
+- [x] Add 'owner' to db.ts staff queries (dashboard stats, user management, duty status)
+- [x] Add 'owner' to frontend isAdmin checks (Messages, Announcements, Dashboard, InvoiceDetail, StaffAttendance, staff Messages)

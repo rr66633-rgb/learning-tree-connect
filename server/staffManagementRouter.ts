@@ -7,7 +7,7 @@ import { eq, and, or, like, desc, asc, sql, inArray } from "drizzle-orm";
 
 // Helper: check if user is admin or principal
 function assertAdminOrPrincipal(role: string) {
-  if (role !== 'admin' && role !== 'principal') {
+  if (role !== 'admin' && role !== 'principal' && role !== 'owner' && role !== 'super_admin') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية للوصول لهذه الميزة' });
   }
 }

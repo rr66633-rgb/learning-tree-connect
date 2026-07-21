@@ -217,6 +217,7 @@ function getMenuItems(role?: string, basePath?: string): MenuItem[] {
   switch (role) {
     case "admin":
     case "super_admin":
+    case "owner":
       return adminMenuItems;
     case "principal":
       return principalMenuItems;
@@ -240,6 +241,8 @@ function getRoleDisplayName(role?: string): string {
       return "المدير العام";
     case "admin":
       return "مدير النظام";
+    case "owner":
+      return "المالك";
     case "principal":
       return "مدير/ة";
     case "teacher":

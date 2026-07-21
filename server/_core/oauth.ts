@@ -17,6 +17,7 @@ function getRedirectPathForRole(role: string): string {
     case "super_admin":
       return "/super-admin";
     case "admin":
+    case "owner":
     case "principal":
     case "teacher":
     case "assistant":
