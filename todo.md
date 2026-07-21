@@ -2399,3 +2399,13 @@ Fix:
 - [x] Exclude super_admin from pickup push notifications (pushTriggers.ts)
 - [x] Exclude super_admin from pickup escalation notifications (pickup-escalation.ts)
 - [x] Exclude super_admin from on-duty staff list (db.ts getOnDutyStaffIds)
+
+## صفحة هبوط تسويقية لأصحاب الحضانات
+- [x] إنشاء صفحة هبوط تسويقية منفصلة (/nurseries) موجهة لأصحاب الحضانات ومراكز التأهيل والرعاية النهارية
+- [x] إضافة قسم فيديو تعريفي (مكان محجوز)
+- [x] إضافة قسم المزايا الرئيسية مع أيقونات
+- [x] إضافة رسوم بيانية توضح القيمة المضافة (توفير الوقت، رضا الأهالي)
+- [x] إضافة قسم الباقات والأسعار
+- [x] إضافة قسم مقارنة مع الأنظمة التقليدية
+- [x] إضافة دعوة للتجربة المجانية وحجز عرض تعريفي
+- [x] تصميم متجاوب للجوال

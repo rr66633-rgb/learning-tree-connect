@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Landing Page
 const Landing = lazy(() => import("./pages/Landing"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const NurseriesLanding = lazy(() => import("./pages/NurseriesLanding"));
 
 // Staff/Admin Pages
 const StaffDashboard = lazy(() => import("./pages/staff/Dashboard"));
@@ -394,6 +395,7 @@ function RoleRouter() {
           <Route path="/reset-password" component={ResetPassword} />
           <Route path="/recover-account" component={RecoverAccount} />
           <Route path="/pricing" component={Pricing} />
+          <Route path="/nurseries" component={NurseriesLanding} />
           <Route component={Landing} />
         </Switch>
       </Suspense>
@@ -417,12 +419,13 @@ function RoleRouter() {
     <DashboardLayout basePath={basePath}>
       {/* Full-screen alert for staff when parent arrives for pickup */}
       {isStaffRole(userRole) && <ParentArrivalAlert />}
-      <Switch>
+            <Switch>
+        {/* Public marketing pages - accessible even when logged in */}
+        <Route path="/nurseries" component={NurseriesLanding} />
         {/* Root redirect based on role */}
         <Route path="/">
           <Redirect to={basePath} />
         </Route>
-
         {/* Auth routes redirect logged-in users */}
         <Route path="/login">
           <Redirect to={basePath} />
