@@ -979,9 +979,14 @@ export const appRouter = router({
       }
       const previousStatus = existing.status;
       const updateData: any = { status: input.newStatus };
-      if ((input.newStatus === 'present' || input.newStatus === 'checked_in') && !existing.checkInTime) {
+      if ((input.newStatus === 'present' || input.newStatus === 'checked_in' || input.newStatus === 'late') && !existing.checkInTime) {
         updateData.checkInTime = new Date();
         updateData.checkedInBy = ctx.user!.id;
+      }
+      // When reverting to present/checked_in/late, clear checkOutTime so child appears in "currently in center"
+      if ((input.newStatus === 'present' || input.newStatus === 'checked_in' || input.newStatus === 'late') && existing.checkOutTime) {
+        updateData.checkOutTime = null;
+        updateData.checkedOutBy = null;
       }
       if (input.newStatus === 'checked_out' && !existing.checkOutTime) {
         updateData.checkOutTime = new Date();
