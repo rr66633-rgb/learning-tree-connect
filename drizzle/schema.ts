@@ -1690,3 +1690,20 @@ export const storeOrderItems = mysqlTable("store_order_items", {
 });
 export type StoreOrderItem = typeof storeOrderItems.$inferSelect;
 export type InsertStoreOrderItem = typeof storeOrderItems.$inferInsert;
+
+// ============ DEMO REQUESTS (Landing Page) ============
+export const demoRequests = mysqlTable("demo_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  nurseryName: varchar("nurseryName", { length: 300 }).notNull(),
+  contactName: varchar("contactName", { length: 300 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  email: varchar("email", { length: 300 }),
+  city: varchar("city", { length: 100 }),
+  childrenCount: varchar("childrenCount", { length: 50 }),
+  centerType: varchar("centerType", { length: 100 }),
+  notes: text("notes"),
+  status: varchar("status", { length: 20 }).default("new").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DemoRequest = typeof demoRequests.$inferSelect;
+export type InsertDemoRequest = typeof demoRequests.$inferInsert;

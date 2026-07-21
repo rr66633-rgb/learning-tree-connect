@@ -29,6 +29,7 @@ import { curriculumRouter } from "./curriculumRouter";
 import { customAssessmentRouter } from "./customAssessmentRouter";
 import { subscriptionPaymentRouter } from "./subscriptionPaymentRouter";
 import { storeRouter } from "./storeRouter";
+import { demoRouter } from "./demoRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   const allowedRoles = ['super_admin', 'admin', 'principal', 'owner'];
@@ -3407,5 +3408,7 @@ export const appRouter = router({
   subscriptionPayment: subscriptionPaymentRouter,
   // ============ MARKETPLACE / STORE ============
   store: storeRouter,
+  // ============ DEMO REQUESTS (Landing Page) ============
+  demo: demoRouter,
 });
 export type AppRouter = typeof appRouter;

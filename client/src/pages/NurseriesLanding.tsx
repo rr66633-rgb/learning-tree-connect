@@ -1,14 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
 import { 
   Shield, Users, BarChart3, MessageCircle, 
   Calendar, CreditCard, BookOpen, CheckCircle2,
   ArrowLeft, Clock, TrendingUp, Heart, 
   Smartphone, FileText, Menu, X, Play,
-  Star, Zap, Award, Target
+  Star, Zap, Award, Target, Send, Quote, MapPin, Phone
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 const LOGO_URL = "/assets/logo.webp";
 
@@ -18,6 +22,40 @@ export default function NurseriesLanding() {
   const [activeTab, setActiveTab] = useState(0);
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [showVideo, setShowVideo] = useState(false);
+
+  // Demo form state
+  const [demoForm, setDemoForm] = useState({
+    nurseryName: "",
+    contactName: "",
+    phone: "",
+    email: "",
+    city: "",
+    childrenCount: "",
+    centerType: "",
+    notes: "",
+  });
+  const [formSubmitted, setFormSubmitted] = useState(false);
+
+  const submitDemo = trpc.demo.submitDemoRequest.useMutation({
+    onSuccess: () => {
+      setFormSubmitted(true);
+      toast.success("تم إرسال طلبك بنجاح! سنتواصل معك قريباً.");
+    },
+    onError: (err) => {
+      toast.error(err.message || "حدث خطأ، يرجى المحاولة مرة أخرى");
+    },
+  });
+
+  const handleDemoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demoForm.nurseryName || !demoForm.contactName || !demoForm.phone) {
+      toast.error("يرجى تعبئة الحقول المطلوبة");
+      return;
+    }
+    submitDemo.mutate(demoForm);
+  };
 
   useEffect(() => {
     document.title = "نشأة - النظام المتكامل لإدارة الحضانات ومراكز التأهيل والرعاية النهارية";
@@ -270,17 +308,27 @@ export default function NurseriesLanding() {
             فيديو قصير يوضح كيف تسهّل نشأة إدارة حضانتك يومياً
           </p>
           
-          {/* Video Placeholder */}
+          {/* Video Embed - supports YouTube */}
           <div className="relative w-full aspect-video bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden shadow-2xl group cursor-pointer">
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#00C9B7] flex items-center justify-center shadow-[0_0_40px_rgba(0,201,183,0.4)] group-hover:scale-110 transition-transform duration-300">
-                <Play className="w-7 h-7 sm:w-9 sm:h-9 text-white fill-white mr-[-3px]" />
+            {showVideo ? (
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/VIDEO_ID?autoplay=1&rel=0`}
+                title="الفيديو التعريفي لنظام نشأة"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center" onClick={() => setShowVideo(true)}>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#00C9B7] flex items-center justify-center shadow-[0_0_40px_rgba(0,201,183,0.4)] group-hover:scale-110 transition-transform duration-300">
+                  <Play className="w-7 h-7 sm:w-9 sm:h-9 text-white fill-white mr-[-3px]" />
+                </div>
+                <p className="mt-4 sm:mt-6 text-white/80 text-sm sm:text-base font-medium">الفيديو التعريفي لنظام نشأة</p>
+                <p className="mt-1 text-white/50 text-xs sm:text-sm">اضغط للمشاهدة</p>
               </div>
-              <p className="mt-4 sm:mt-6 text-white/80 text-sm sm:text-base font-medium">الفيديو التعريفي لنظام نشأة</p>
-              <p className="mt-1 text-white/50 text-xs sm:text-sm">سيتم إضافة الفيديو قريباً</p>
-            </div>
+            )}
             {/* Decorative gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            {!showVideo && <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />}
           </div>
         </div>
       </section>
@@ -509,6 +557,196 @@ export default function NurseriesLanding() {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-3 sm:mb-4">
+              ماذا يقول عملاؤنا؟
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
+              آراء أصحاب الحضانات والمراكز الذين يستخدمون نشأة
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {[
+              {
+                name: "سيتم الإضافة قريباً",
+                role: "مديرة حضانة",
+                city: "الرياض",
+                text: "سيتم إضافة شهادات العملاء بعد اشتراك أول مجموعة من الحضانات",
+                stars: 5
+              },
+              {
+                name: "سيتم الإضافة قريباً",
+                role: "مالكة مركز تأهيل",
+                city: "جدة",
+                text: "سيتم إضافة شهادات العملاء بعد اشتراك أول مجموعة من الحضانات",
+                stars: 5
+              },
+              {
+                name: "سيتم الإضافة قريباً",
+                role: "مديرة رعاية نهارية",
+                city: "الدمام",
+                text: "سيتم إضافة شهادات العملاء بعد اشتراك أول مجموعة من الحضانات",
+                stars: 5
+              },
+            ].map((testimonial, i) => (
+              <div key={i} className="bg-[#F8FAFB] rounded-xl p-5 sm:p-6 relative">
+                <Quote className="w-8 h-8 text-[#00C9B7]/20 absolute top-4 left-4" />
+                <div className="flex gap-0.5 mb-3">
+                  {Array.from({ length: testimonial.stars }).map((_, j) => (
+                    <Star key={j} className="w-4 h-4 text-[#FFB020] fill-[#FFB020]" />
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed mb-4 min-h-[60px]">
+                  "{testimonial.text}"
+                </p>
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-sm font-bold text-slate-800">{testimonial.name}</p>
+                  <p className="text-xs text-gray-500">{testimonial.role} - {testimonial.city}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Demo Booking Form Section */}
+      <section id="demo" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-[#F8FAFB]">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-3 sm:mb-4">
+              احجز عرضاً تعريفياً مجانياً
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
+              املأ النموذج وسنتواصل معك خلال ٢٤ ساعة لترتيب عرض تعريفي مخصص لمركزك
+            </p>
+          </div>
+
+          {formSubmitted ? (
+            <div className="bg-white rounded-2xl p-8 sm:p-12 text-center shadow-sm">
+              <div className="w-16 h-16 rounded-full bg-[#00C9B7]/10 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-[#00C9B7]" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-800 mb-3">تم إرسال طلبك بنجاح!</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                شكراً لاهتمامك. سيتواصل معك فريقنا خلال ٢٤ ساعة لترتيب العرض التعريفي.
+              </p>
+              <Button
+                onClick={() => setFormSubmitted(false)}
+                variant="outline"
+                className="rounded-xl"
+              >
+                إرسال طلب آخر
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleDemoSubmit} className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">اسم المركز / الحضانة *</Label>
+                  <Input
+                    value={demoForm.nurseryName}
+                    onChange={(e) => setDemoForm(f => ({ ...f, nurseryName: e.target.value }))}
+                    placeholder="مثال: حضانة الأطفال السعداء"
+                    className="h-11 rounded-lg"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">اسم المسؤول *</Label>
+                  <Input
+                    value={demoForm.contactName}
+                    onChange={(e) => setDemoForm(f => ({ ...f, contactName: e.target.value }))}
+                    placeholder="الاسم الكامل"
+                    className="h-11 rounded-lg"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">رقم الجوال *</Label>
+                  <Input
+                    value={demoForm.phone}
+                    onChange={(e) => setDemoForm(f => ({ ...f, phone: e.target.value }))}
+                    placeholder="05XXXXXXXX"
+                    className="h-11 rounded-lg"
+                    dir="ltr"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">البريد الإلكتروني</Label>
+                  <Input
+                    type="email"
+                    value={demoForm.email}
+                    onChange={(e) => setDemoForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="example@email.com"
+                    className="h-11 rounded-lg"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">المدينة</Label>
+                  <Input
+                    value={demoForm.city}
+                    onChange={(e) => setDemoForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="مثال: الرياض"
+                    className="h-11 rounded-lg"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">عدد الأطفال (تقريبي)</Label>
+                  <Input
+                    value={demoForm.childrenCount}
+                    onChange={(e) => setDemoForm(f => ({ ...f, childrenCount: e.target.value }))}
+                    placeholder="مثال: ٣٠ طفل"
+                    className="h-11 rounded-lg"
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">نوع المركز</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {["حضانة", "روضة أطفال", "مركز تأهيل", "رعاية نهارية", "مدرسة تمهيدية"].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setDemoForm(f => ({ ...f, centerType: type }))}
+                        className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 ${
+                          demoForm.centerType === type
+                            ? 'bg-[#00C9B7] text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">ملاحظات إضافية</Label>
+                  <textarea
+                    value={demoForm.notes}
+                    onChange={(e) => setDemoForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="أي ملاحظات أو استفسارات..."
+                    className="w-full h-24 px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#00C9B7]/30 focus:border-[#00C9B7]"
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={submitDemo.isPending}
+                className="w-full sm:w-auto mt-6 h-12 px-8 rounded-xl bg-[#00C9B7] hover:bg-[#00B5A5] text-white text-sm sm:text-base font-medium shadow-[0_4px_14px_rgba(0,201,183,0.25)] active:scale-[0.97] transition-all duration-150"
+              >
+                {submitDemo.isPending ? "جاري الإرسال..." : "أرسل الطلب"}
+                <Send className="w-4 h-4 mr-2" />
+              </Button>
+            </form>
+          )}
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-[#00C9B7] to-[#00997A]">
         <div className="max-w-4xl mx-auto text-center">
@@ -530,7 +768,7 @@ export default function NurseriesLanding() {
             <Button 
               size="lg"
               variant="outline"
-              onClick={() => window.open("https://calendly.com/naashah-info/30min", "_blank")}
+              onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               className="w-full sm:w-auto border-2 border-white text-white hover:bg-white/10 text-sm sm:text-base px-8 h-12 sm:h-14 rounded-xl font-medium bg-transparent"
             >
               احجز عرضاً تعريفياً مجانياً

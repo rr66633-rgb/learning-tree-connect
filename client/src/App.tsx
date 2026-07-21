@@ -415,13 +415,16 @@ function RoleRouter() {
     return <PendingRolePage />;
   }
 
+  // Public marketing pages - render outside DashboardLayout
+  if (window.location.pathname === '/nurseries') {
+    return <Suspense fallback={<PageLoader />}><NurseriesLanding /></Suspense>;
+  }
+
   return (
     <DashboardLayout basePath={basePath}>
       {/* Full-screen alert for staff when parent arrives for pickup */}
       {isStaffRole(userRole) && <ParentArrivalAlert />}
             <Switch>
-        {/* Public marketing pages - accessible even when logged in */}
-        <Route path="/nurseries" component={NurseriesLanding} />
         {/* Root redirect based on role */}
         <Route path="/">
           <Redirect to={basePath} />
