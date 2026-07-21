@@ -2141,7 +2141,7 @@ export const appRouter = router({
     })).mutation(async ({ input, ctx }) => {
       const activity = await db.createDailyActivity({ ...input, recordedBy: ctx.user!.id, recordedAt: new Date() });
       // Push notification to parent for key activities
-      const notifiableTypes = ['arrival', 'departure', 'medication', 'mood', 'learning_activity', 'photo', 'observation'];
+      const notifiableTypes = ['arrival', 'departure', 'medication', 'mood', 'learning_activity', 'photo', 'observation', 'breakfast', 'morning_snack', 'lunch', 'afternoon_snack', 'meal', 'snack', 'nap_start', 'nap_end', 'diaper', 'toilet', 'water', 'temperature', 'outdoor_play', 'indoor_play'];
       if (notifiableTypes.includes(input.type)) {
         try {
           const child = await db.getChildById(input.childId);
@@ -2150,6 +2150,13 @@ export const appRouter = router({
               arrival: 'وصول', departure: 'مغادرة', medication: 'دواء',
               mood: 'حالة مزاجية', learning_activity: 'نشاط تعليمي',
               photo: 'صورة جديدة', observation: 'ملاحظة',
+              breakfast: 'إفطار', morning_snack: 'وجبة خفيفة صباحية',
+              lunch: 'غداء', afternoon_snack: 'وجبة خفيفة مسائية',
+              meal: 'وجبة', snack: 'وجبة خفيفة',
+              nap_start: 'بداية القيلولة', nap_end: 'نهاية القيلولة',
+              diaper: 'تغيير حفاض', toilet: 'دورة مياه',
+              water: 'شرب ماء', temperature: 'درجة الحرارة',
+              outdoor_play: 'لعب خارجي', indoor_play: 'لعب داخلي',
             };
             const label = activityLabels[input.type] || 'نشاط';
             await db.createNotification({

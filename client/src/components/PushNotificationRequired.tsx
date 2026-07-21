@@ -8,8 +8,8 @@ import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 
 /**
- * Full-screen overlay that requires staff to enable push notifications.
- * Shows on first login for teachers, assistants, and reception staff.
+ * Full-screen overlay that requires staff AND parents to enable push notifications.
+ * Shows on first login for all users.
  * Cannot be dismissed - must enable notifications or skip (with warning).
  */
 export function PushNotificationRequired() {
@@ -21,16 +21,18 @@ export function PushNotificationRequired() {
   const [showSuccess, setShowSuccess] = useState(false);
   const testPush = trpc.push.test.useMutation();
 
-  // Only show for staff roles
+  // Show for staff AND parents
   const isStaff = user && ['super_admin', 'admin', 'principal', 'teacher', 'assistant', 'receptionist'].includes(user.role);
+  const isParent = user && user.role === 'parent';
+  const shouldPrompt = isStaff || isParent;
   
   // Don't show if:
-  // - Not staff
+  // - Not staff or parent
   // - Already subscribed
   // - Already skipped
   // - Permission denied (can't do anything)
   // - Not supported
-  if (!isStaff || isSubscribed || skipped || permission === 'denied' || !isSupported) {
+  if (!shouldPrompt || isSubscribed || skipped || permission === 'denied' || !isSupported) {
     return null;
   }
 
@@ -55,9 +57,10 @@ export function PushNotificationRequired() {
   const handleSkip = () => {
     setSkipped(true);
     localStorage.setItem('push-required-skipped', 'true');
-    toast.warning('تم تخطي تفعيل الإشعارات. قد لا تسمع تنبيهات الاستلام!', {
-      duration: 5000,
-    });
+    const msg = isParent
+      ? 'تم تخطي تفعيل الإشعارات. قد لا تتلقى تنبيهات أنشطة طفلك!'
+      : 'تم تخطي تفعيل الإشعارات. قد لا تسمع تنبيهات الاستلام!';
+    toast.warning(msg, { duration: 5000 });
   };
 
   if (showSuccess) {
@@ -69,12 +72,37 @@ export function PushNotificationRequired() {
               <CheckCircle2 className="h-8 w-8 text-emerald-600" />
             </div>
             <h3 className="text-xl font-bold text-emerald-700">تم التفعيل بنجاح!</h3>
-            <p className="text-muted-foreground">ستتلقى إشعارات فورية لطلبات الاستلام</p>
+            <p className="text-muted-foreground">
+              {isParent ? 'ستتلقى إشعارات فورية عن أنشطة طفلك' : 'ستتلقى إشعارات فورية لطلبات الاستلام'}
+            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
+
+  // Different messaging for parents vs staff
+  const title = isParent ? 'تفعيل الإشعارات' : 'تفعيل الإشعارات مطلوب';
+  const description = isParent
+    ? 'لتلقي تنبيهات فورية عن أنشطة طفلك (وصول، وجبات، نوم، مغادرة)، يرجى تفعيل الإشعارات'
+    : 'لضمان سماع تنبيهات استلام الأطفال، يرجى تفعيل الإشعارات الفورية';
+  const warningText = isParent
+    ? 'بدون تفعيل الإشعارات، لن تتلقى تنبيهات فورية عند تسجيل أنشطة طفلك مثل الوصول والوجبات والمغادرة.'
+    : 'بدون تفعيل الإشعارات، لن تسمع تنبيهات طلبات الاستلام عندما يصل ولي الأمر. هذا قد يؤدي إلى تأخير في تسليم الأطفال.';
+  
+  const benefits = isParent
+    ? [
+        'تنبيه فوري عند وصول طفلك للحضانة',
+        'إشعار عند تناول طفلك للوجبات',
+        'تنبيه عند مغادرة طفلك',
+        'يعمل حتى عند استخدام تطبيق آخر',
+      ]
+    : [
+        'تنبيه فوري عند طلب استلام طفل',
+        'صوت واضح يسهل سماعه في الفصل',
+        'يعمل حتى عند استخدام تطبيق آخر',
+        'يمكنك التحكم بمستوى الصوت والنغمة لاحقاً',
+      ];
 
   return (
     <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-sm flex items-center justify-center p-6">
@@ -83,10 +111,8 @@ export function PushNotificationRequired() {
           <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
             <BellRing className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-xl">تفعيل الإشعارات مطلوب</CardTitle>
-          <CardDescription className="text-base">
-            لضمان سماع تنبيهات استلام الأطفال، يرجى تفعيل الإشعارات الفورية
-          </CardDescription>
+          <CardTitle className="text-xl">{title}</CardTitle>
+          <CardDescription className="text-base">{description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Warning */}
@@ -94,31 +120,18 @@ export function PushNotificationRequired() {
             <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-sm text-amber-800">
               <p className="font-medium">مهم جداً</p>
-              <p className="mt-1">
-                بدون تفعيل الإشعارات، لن تسمع تنبيهات طلبات الاستلام عندما يصل ولي الأمر.
-                هذا قد يؤدي إلى تأخير في تسليم الأطفال.
-              </p>
+              <p className="mt-1">{warningText}</p>
             </div>
           </div>
 
           {/* Benefits */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3 text-base">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
-              <span>تنبيه فوري عند طلب استلام طفل</span>
-            </div>
-            <div className="flex items-center gap-3 text-base">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
-              <span>صوت واضح يسهل سماعه في الفصل</span>
-            </div>
-            <div className="flex items-center gap-3 text-base">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
-              <span>يعمل حتى عند استخدام تطبيق آخر</span>
-            </div>
-            <div className="flex items-center gap-3 text-base">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
-              <span>يمكنك التحكم بمستوى الصوت والنغمة لاحقاً</span>
-            </div>
+            {benefits.map((benefit, i) => (
+              <div key={i} className="flex items-center gap-3 text-base">
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <span>{benefit}</span>
+              </div>
+            ))}
           </div>
 
           {/* Actions */}
