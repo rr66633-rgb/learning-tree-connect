@@ -154,7 +154,8 @@ export default function StaffDashboard() {
       {isAdmin && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Children Present */}
-          <div className="stat-card" style={{ '--stat-color': 'oklch(0.55 0.16 155)' } as any}>
+          <Link href="/staff/attendance">
+          <div className="stat-card cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5" style={{ '--stat-color': 'oklch(0.55 0.16 155)' } as any}>
             <div className="flex items-start justify-between">
               <div className="h-11 w-11 rounded-2xl bg-[#00C9B7]/10 flex items-center justify-center">
                 <Baby className="h-5 w-5 text-[#00C9B7]" />
@@ -174,9 +175,11 @@ export default function StaffDashboard() {
               <p className="text-[11px] text-muted-foreground mt-1">{attendanceRate}% نسبة الحضور</p>
             </div>
           </div>
+          </Link>
 
           {/* Total Children */}
-          <div className="stat-card">
+          <Link href="/staff/children">
+          <div className="stat-card cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
             <div className="flex items-start justify-between">
               <div className="h-11 w-11 rounded-2xl bg-[#7B61FF]/10 flex items-center justify-center">
                 <Users className="h-5 w-5 text-[#7B61FF]" />
@@ -189,9 +192,11 @@ export default function StaffDashboard() {
               <p className="text-sm text-muted-foreground mt-1">إجمالي الأطفال</p>
             </div>
           </div>
+          </Link>
 
           {/* Staff Present */}
-          <div className="stat-card">
+          <Link href="/staff/staff-management">
+          <div className="stat-card cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
             <div className="flex items-start justify-between">
               <div className="h-11 w-11 rounded-2xl bg-[#FF5CA8]/10 flex items-center justify-center">
                 <CalendarCheck className="h-5 w-5 text-[#FF5CA8]" />
@@ -204,9 +209,11 @@ export default function StaffDashboard() {
               <p className="text-sm text-muted-foreground mt-1">الموظفون</p>
             </div>
           </div>
+          </Link>
 
           {/* Revenue */}
-          <div className="stat-card">
+          <Link href="/staff/finance">
+          <div className="stat-card cursor-pointer hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
             <div className="flex items-start justify-between">
               <div className="h-11 w-11 rounded-2xl bg-[#FFB020]/10 flex items-center justify-center">
                 <CreditCard className="h-5 w-5 text-[#FFB020]" />
@@ -223,6 +230,7 @@ export default function StaffDashboard() {
               <p className="text-sm text-muted-foreground mt-1">الإيرادات (ر.س)</p>
             </div>
           </div>
+          </Link>
         </div>
       )}
 
