@@ -2359,3 +2359,6 @@ Fix:
 
 ## Bug Fixes - Permissions
 - [x] إعطاء مدير الفرع (admin/principal/owner) جميع الصلاحيات بما فيها تسجيل الحضور والسجل اليومي
+
+## Enrollment Expiry Notifications
+- [x] إشعار تلقائي لولي الأمر قبل انتهاء اشتراك طفله في الحضانة (قبل 7 أيام وقبل يوم واحد) (task_uid: SKMrcvQvZwhfs38ghMasR4, يومياً 8:00 AM UTC)

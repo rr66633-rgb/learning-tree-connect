@@ -1186,6 +1186,11 @@ async function startServer() {
     await accountCleanupHandler(req, res);
   });
 
+  app.post('/api/scheduled/enrollment-expiry', async (req, res) => {
+    const { enrollmentExpiryHandler } = await import('../enrollment-expiry-handler');
+    await enrollmentExpiryHandler(req, res);
+  });
+
   // Email Health Check API
   app.get('/api/email/health', async (req, res) => {
     try {
