@@ -2394,3 +2394,8 @@ Fix:
 - [x] Add 'owner' to customAssessmentRouter staffRoles
 - [x] Add 'owner' to db.ts staff queries (dashboard stats, user management, duty status)
 - [x] Add 'owner' to frontend isAdmin checks (Messages, Announcements, Dashboard, InvoiceDetail, StaffAttendance, staff Messages)
+
+## Super Admin Notification Exclusion
+- [x] Exclude super_admin from pickup push notifications (pushTriggers.ts)
+- [x] Exclude super_admin from pickup escalation notifications (pickup-escalation.ts)
+- [x] Exclude super_admin from on-duty staff list (db.ts getOnDutyStaffIds)

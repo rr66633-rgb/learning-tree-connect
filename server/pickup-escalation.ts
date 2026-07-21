@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { getDb } from "./db";
 import { pickupRequests, users, children } from "../drizzle/schema";
-import { eq, and, isNull, lte } from "drizzle-orm";
+import { eq, and, isNull, lte, inArray } from "drizzle-orm";
 
 /**
  * Pickup Escalation Handler
@@ -68,10 +68,10 @@ export async function pickupEscalationHandler(req: Request, res: Response) {
       escalatedDetails.push({ childName, waitMinutes, requestId: request.id });
     }
 
-    // Send notification to all admins and principals
+    // Send notification to admins/principals/owner (exclude super_admin - manages all nurseries)
     const adminUsers = await db.select({ id: users.id })
       .from(users)
-      .where(eq(users.role, "admin"));
+      .where(inArray(users.role, ['admin', 'owner', 'principal'] as any));
 
     // Import notification helper
     const { createNotification, getPushSubscriptionsForUser, removeExpiredSubscriptions } = await import("./db");

@@ -2546,7 +2546,7 @@ export async function getOnDutyStaffIds(): Promise<number[]> {
   // Staff who are ON DUTY (either explicitly set or have no record = default on duty)
   const allStaff = await db.select({ id: users.id }).from(users).where(
     and(
-      inArray(users.role, ['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'owner', 'super_admin'] as any),
+      inArray(users.role, ['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'owner'] as any),
       eq(users.isActive, true)
     )
   );

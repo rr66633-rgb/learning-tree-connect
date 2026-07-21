@@ -33,10 +33,10 @@ export async function notifyStaffPickupRequest(childName: string, pickupRequestI
   const teachers = await db.getTeachersForChild(childId);
   let targetIds = teachers.map((t: any) => t.id);
 
-  // Also notify admins/principals for visibility
+  // Also notify admins/principals for visibility (exclude super_admin - manages all nurseries)
   const staffUsers = await db.getStaffUsers();
   const adminIds = staffUsers
-    .filter((u: any) => ['super_admin', 'admin', 'principal', 'receptionist'].includes(u.role))
+    .filter((u: any) => ['admin', 'owner', 'principal', 'receptionist'].includes(u.role))
     .map((u: any) => u.id);
 
   // Combine teacher IDs + admin IDs (deduplicated)
