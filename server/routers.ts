@@ -31,12 +31,14 @@ import { subscriptionPaymentRouter } from "./subscriptionPaymentRouter";
 import { storeRouter } from "./storeRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+  const allowedRoles = ['super_admin', 'admin', 'principal', 'owner'];
+  if (!allowedRoles.includes(ctx.user?.role ?? '')) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   return next({ ctx });
 });
 
 const teacherProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'teacher') throw new TRPCError({ code: 'FORBIDDEN', message: 'Teacher access required' });
+  const allowedRoles = ['super_admin', 'admin', 'principal', 'owner', 'teacher', 'assistant'];
+  if (!allowedRoles.includes(ctx.user?.role ?? '')) throw new TRPCError({ code: 'FORBIDDEN', message: 'Teacher access required' });
   return next({ ctx });
 });
 
