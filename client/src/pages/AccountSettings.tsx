@@ -23,7 +23,13 @@ function ProfileSection() {
   const utils = trpc.useUtils();
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث البيانات بنجاح");
+      // Apply language change immediately
+      import('@/lib/i18n').then(({ default: i18n }) => {
+        i18n.changeLanguage(language);
+        document.documentElement.lang = language;
+        document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+      });
+      toast.success(language === 'ar' ? "تم تحديث البيانات بنجاح" : "Profile updated successfully");
       setIsEditing(false);
       utils.auth.me.invalidate();
     },

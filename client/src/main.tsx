@@ -11,6 +11,7 @@ import { LOGIN_PATH } from "./const";
 import { apiUrl } from "./lib/apiBase";
 import { initExternalResources } from './lib/externalResources';
 import "./index.css";
+import "./lib/i18n";
 
 // Load external resources (Meta Pixel, Fonts, Analytics) dynamically
 // On native: minimal loading (only fonts after delay)

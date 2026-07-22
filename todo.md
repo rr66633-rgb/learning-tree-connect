@@ -2422,3 +2422,8 @@ Fix:
 - [x] Fix children dropdown not showing all children for teachers (removed class-only filter)
 - [x] Fix photo upload with retry logic and better error messages
 - [x] Fix AI suggest children with retry and user-friendly fallback messages
+- [x] Add i18n infrastructure (react-i18next, locale files, language detector)
+- [x] Create Arabic/English translation files for sidebar navigation
+- [x] Integrate bilingual labels into DashboardLayout sidebar, top bar, and user dropdown
+- [x] Add quick language toggle in user dropdown menu
+- [x] Auto-apply user's saved language preference on login

@@ -10,7 +10,8 @@ import { useAuth } from "./_core/hooks/useAuth";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { useNativeInit } from "./hooks/useNativeInit";
 import { useWeeklyPlanPdf } from "./hooks/useWeeklyPlanPdf";
-import { lazy, Suspense, useState, useCallback } from "react";
+import { lazy, Suspense, useState, useCallback, useEffect } from "react";
+import i18n from "./lib/i18n";
 import { SplashScreen } from "./components/SplashScreen";
 import { useMetaPixelPageView } from "./hooks/useMetaPixel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -357,6 +358,18 @@ function RoleRouter() {
   useNativeInit();
   useWeeklyPlanPdf();
   useMetaPixelPageView();
+
+  // Auto-apply user's saved language preference
+  useEffect(() => {
+    if (user?.language) {
+      const lang = user.language;
+      if (i18n.language !== lang) {
+        i18n.changeLanguage(lang);
+      }
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    }
+  }, [user?.language]);
 
   // Public legal pages - always accessible without auth or dashboard
   if (location === "/privacy" || location === "/terms") {
