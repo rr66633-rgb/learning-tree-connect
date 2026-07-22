@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 
 function ChildMedicalCard({ child }: { child: any }) {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: medicalInfo, isLoading: medLoading } = trpc.medicalInfo.get.useQuery({ childId: child.id });
   const { data: emergencyContacts, isLoading: ecLoading } = trpc.emergencyContacts.list.useQuery({ childId: child.id });
   const utils = trpc.useUtils();
@@ -28,7 +29,7 @@ function ChildMedicalCard({ child }: { child: any }) {
       utils.emergencyContacts.list.invalidate({ childId: child.id });
       setEcOpen(false);
       setEcName(""); setEcPhone(""); setEcRelationship(""); setEcPickup(false);
-      toast.success("تمت إضافة جهة الاتصال");
+      toast.success(isAr ? "تمت إضافة جهة الاتصال" : "Contact added");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -36,7 +37,7 @@ function ChildMedicalCard({ child }: { child: any }) {
   const deleteContact = trpc.emergencyContacts.delete.useMutation({
     onSuccess: () => {
       utils.emergencyContacts.list.invalidate({ childId: child.id });
-      toast.success("تم حذف جهة الاتصال");
+      toast.success(isAr ? "تم حذف جهة الاتصال" : "Contact deleted");
     },
     onError: (e) => toast.error(e.message),
   });

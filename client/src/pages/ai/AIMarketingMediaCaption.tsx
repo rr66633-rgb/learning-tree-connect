@@ -9,8 +9,11 @@ import { toast } from "sonner";
 import { ArrowRight, Copy, Loader2, Sparkles, Upload, Video, X } from "lucide-react";
 import { Link } from "wouter";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 export default function AIMarketingMediaCaption() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [form, setForm] = useState({
     context: "",
     platform: "instagram" as "instagram" | "tiktok" | "snapchat" | "whatsapp",
@@ -25,7 +28,7 @@ export default function AIMarketingMediaCaption() {
   const generateMutation = trpc.aiMarketing.generateMediaCaption.useMutation({
     onSuccess: (data) => {
       setResult(data.content);
-      toast.success("تم إنشاء الكابشن بنجاح!");
+      toast.success(isAr ? "تم إنشاء الكابشن بنجاح!" : "Caption created successfully!");
     },
     onError: (err) => {
       toast.error(err.message || "حدث خطأ");
@@ -35,7 +38,7 @@ export default function AIMarketingMediaCaption() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length + files.length > 5) {
-      toast.error("الحد الأقصى 5 ملفات");
+      toast.error(isAr ? "الحد الأقصى 5 ملفات" : "Maximum 5 files");
       return;
     }
     setFiles([...files, ...selectedFiles]);
@@ -51,7 +54,7 @@ export default function AIMarketingMediaCaption() {
 
   const handleGenerate = async () => {
     if (files.length === 0 && !form.context) {
-      toast.error("يرجى رفع صورة/فيديو أو كتابة وصف");
+      toast.error(isAr ? "يرجى رفع صورة/فيديو أو كتابة وصف" : "Please upload image/video or write description");
       return;
     }
     setIsUploading(true);
@@ -76,7 +79,7 @@ export default function AIMarketingMediaCaption() {
         language: form.language,
       });
     } catch {
-      toast.error("فشل رفع الملفات");
+      toast.error(isAr ? "فشل رفع الملفات" : "Failed to upload files");
     } finally {
       setIsUploading(false);
     }
@@ -145,7 +148,7 @@ export default function AIMarketingMediaCaption() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>اللغة</Label>
+              <Label>{isAr ? "اللغة" : "Language"}</Label>
               <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -167,19 +170,19 @@ export default function AIMarketingMediaCaption() {
         <div className="space-y-4">
           {result.captionAr && (
             <Card>
-              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">الكابشن (عربي)</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionAr, "الكابشن")}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button></div></CardHeader>
+              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">الكابشن (عربي)</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionAr, "الكابشن")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button></div></CardHeader>
               <CardContent><p className="whitespace-pre-wrap">{result.captionAr}</p></CardContent>
             </Card>
           )}
           {result.captionEn && (
             <Card>
-              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">Caption (English)</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionEn, "Caption")}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button></div></CardHeader>
+              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">Caption (English)</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionEn, "Caption")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button></div></CardHeader>
               <CardContent><p className="whitespace-pre-wrap" dir="ltr">{result.captionEn}</p></CardContent>
             </Card>
           )}
           {result.hashtags && (
             <Card>
-              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">الهاشتاقات</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.hashtags.join(" "), "الهاشتاقات")}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button></div></CardHeader>
+              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">الهاشتاقات</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.hashtags.join(" "), "الهاشتاقات")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button></div></CardHeader>
               <CardContent><div className="flex flex-wrap gap-2">{result.hashtags.map((h: string, i: number) => <span key={i} className="text-sm bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{h}</span>)}</div></CardContent>
             </Card>
           )}

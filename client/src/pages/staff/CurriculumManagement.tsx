@@ -38,7 +38,7 @@ export default function CurriculumManagement() {
   const createMutation = trpc.curriculum.create.useMutation({
     onSuccess: () => {
       utils.curriculum.list.invalidate();
-      toast.success("تم إضافة المنهج بنجاح");
+      toast.success(isAr ? "تم إضافة المنهج بنجاح" : "Curriculum added successfully");
       resetForm();
     },
     onError: (err) => toast.error(err.message),
@@ -46,7 +46,7 @@ export default function CurriculumManagement() {
   const deleteMutation = trpc.curriculum.delete.useMutation({
     onSuccess: () => {
       utils.curriculum.list.invalidate();
-      toast.success("تم حذف المنهج بنجاح");
+      toast.success(isAr ? "تم حذف المنهج بنجاح" : "Curriculum deleted successfully");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -62,7 +62,7 @@ export default function CurriculumManagement() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file || !title || !level) {
-      toast.error("يرجى تعبئة جميع الحقول المطلوبة");
+      toast.error(isAr ? "يرجى تعبئة جميع الحقول المطلوبة" : "Please fill all required fields");
       return;
     }
 

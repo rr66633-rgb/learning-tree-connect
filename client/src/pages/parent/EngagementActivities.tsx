@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 
 export default function EngagementActivities() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
 
@@ -27,16 +28,16 @@ export default function EngagementActivities() {
 
   const generateMutation = trpc.engagement.activities.generate.useMutation({
     onSuccess: () => {
-      toast.success("تم إنشاء أنشطة جديدة مخصصة لطفلك!");
+      toast.success(isAr ? "تم إنشاء أنشطة جديدة مخصصة لطفلك!" : "New activities customized for your child created!");
     },
     onError: () => {
-      toast.error("حدث خطأ أثناء إنشاء الأنشطة");
+      toast.error(isAr ? "حدث خطأ أثناء إنشاء الأنشطة" : "Error creating activities");
     },
   });
 
   const completeMutation = trpc.engagement.activities.complete.useMutation({
     onSuccess: () => {
-      toast.success("أحسنت! تم تسجيل إكمال النشاط 🎉");
+      toast.success(isAr ? "أحسنت! تم تسجيل إكمال النشاط 🎉" : "Well done! Activity completion recorded 🎉");
     },
   });
 

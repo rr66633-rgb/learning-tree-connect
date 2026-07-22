@@ -12,23 +12,26 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Search, Pencil, Trash2, User, Phone, AlertTriangle, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 type ChildForm = { firstName: string; lastName: string; dateOfBirth: string; gender: "male" | "female"; className: string; emergencyContact: string; emergencyPhone: string; allergies: string; medicalNotes: string; };
 const emptyForm: ChildForm = { firstName: "", lastName: "", dateOfBirth: "", gender: "male", className: "", emergencyContact: "", emergencyPhone: "", allergies: "", medicalNotes: "" };
 
 export default function Children() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: children, isLoading } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
   const createChild = trpc.children.create.useMutation({
-    onSuccess: () => { utils.children.list.invalidate(); toast.success("تم إضافة الطفل بنجاح"); setCreateOpen(false); setForm(emptyForm); },
-    onError: () => toast.error("حدث خطأ أثناء الإضافة"),
+    onSuccess: () => { utils.children.list.invalidate(); toast.success(isAr ? "تم إضافة الطفل بنجاح" : "Child added successfully"); setCreateOpen(false); setForm(emptyForm); },
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء الإضافة" : "Error while adding"),
   });
   const updateChild = trpc.children.update.useMutation({
-    onSuccess: () => { utils.children.list.invalidate(); toast.success("تم تحديث البيانات"); setEditOpen(false); setSelectedChild(null); },
-    onError: () => toast.error("حدث خطأ أثناء التحديث"),
+    onSuccess: () => { utils.children.list.invalidate(); toast.success(isAr ? "تم تحديث البيانات" : "Data updated"); setEditOpen(false); setSelectedChild(null); },
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء التحديث" : "Error while updating"),
   });
   const deleteChild = trpc.children.delete.useMutation({
-    onSuccess: () => { utils.children.list.invalidate(); toast.success("تم الحذف بنجاح"); setDetailOpen(false); },
+    onSuccess: () => { utils.children.list.invalidate(); toast.success(isAr ? "تم الحذف بنجاح" : "Deleted successfully"); setDetailOpen(false); },
   });
 
   const [createOpen, setCreateOpen] = useState(false);

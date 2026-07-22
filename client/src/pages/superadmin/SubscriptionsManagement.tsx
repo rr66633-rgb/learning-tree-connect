@@ -43,6 +43,7 @@ function formatDate(date: string | Date | null): string {
 
 export default function SubscriptionsManagement() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
     active: { label: t("statuses.active"), color: "text-emerald-700", bgColor: "bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
@@ -64,7 +65,7 @@ export default function SubscriptionsManagement() {
 
   const renewMutation = trpc.superAdmin.renewSubscription.useMutation({
     onSuccess: () => {
-      toast.success("تم تجديد الاشتراك بنجاح");
+      toast.success(isAr ? "تم تجديد الاشتراك بنجاح" : "Subscription renewed successfully");
       refetch();
       setRenewDialogOpen(false);
     },
@@ -73,7 +74,7 @@ export default function SubscriptionsManagement() {
 
   const cancelMutation = trpc.superAdmin.cancelSubscription.useMutation({
     onSuccess: () => {
-      toast.success("تم إلغاء الاشتراك");
+      toast.success(isAr ? "تم إلغاء الاشتراك" : "Subscription cancelled");
       refetch();
     },
     onError: (err) => toast.error(err.message),

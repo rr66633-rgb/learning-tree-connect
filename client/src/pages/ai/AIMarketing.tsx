@@ -3,6 +3,7 @@ import { Calendar, Share2, Camera, Image, FileText, Sparkles, ArrowUpRight, Mega
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 const features = [
   {
@@ -49,6 +50,8 @@ const features = [
 ];
 
 export default function AIMarketing() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <div className="max-w-5xl mx-auto space-y-8" dir="rtl">
       {/* Header */}

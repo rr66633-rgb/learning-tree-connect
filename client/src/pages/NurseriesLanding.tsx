@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,9 @@ import { toast } from "sonner";
 const LOGO_URL = "/assets/logo.webp";
 
 export default function NurseriesLanding() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -39,7 +43,7 @@ export default function NurseriesLanding() {
   const submitDemo = trpc.demo.submitDemoRequest.useMutation({
     onSuccess: () => {
       setFormSubmitted(true);
-      toast.success("تم إرسال طلبك بنجاح! سنتواصل معك قريباً.");
+      toast.success(isAr ? "تم إرسال طلبك بنجاح! سنتواصل معك قريباً." : "Your request was sent successfully! We will contact you soon.");
     },
     onError: (err) => {
       toast.error(err.message || "حدث خطأ، يرجى المحاولة مرة أخرى");
@@ -49,7 +53,7 @@ export default function NurseriesLanding() {
   const handleDemoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!demoForm.nurseryName || !demoForm.contactName || !demoForm.phone) {
-      toast.error("يرجى تعبئة الحقول المطلوبة");
+      toast.error(isAr ? "يرجى تعبئة الحقول المطلوبة" : "Please fill required fields");
       return;
     }
     submitDemo.mutate(demoForm);

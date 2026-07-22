@@ -26,6 +26,7 @@ const contextOptions = [
 
 export default function EngagementObservations() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -49,18 +50,18 @@ export default function EngagementObservations() {
 
   const createMutation = trpc.engagement.observations.create.useMutation({
     onSuccess: (data) => {
-      toast.success("تم إرسال الملاحظة بنجاح");
+      toast.success(isAr ? "تم إرسال الملاحظة بنجاح" : "Observation sent successfully");
       setCreateDialogOpen(false);
       setObservationText("");
       setContext("home_play");
       refetch();
     },
-    onError: () => toast.error("حدث خطأ أثناء إرسال الملاحظة"),
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إرسال الملاحظة" : "Error sending observation"),
   });
 
   const handleSubmit = () => {
     if (!observationText.trim() || observationText.length < 10) {
-      toast.error("يرجى كتابة ملاحظة لا تقل عن 10 أحرف");
+      toast.error(isAr ? "يرجى كتابة ملاحظة لا تقل عن 10 أحرف" : "Please write an observation of at least 10 characters");
       return;
     }
     createMutation.mutate({

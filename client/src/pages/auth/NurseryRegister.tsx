@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { trackLead } from "@/lib/metaPixel";
+import { useTranslation } from "react-i18next";
 import { 
   ArrowRight, ArrowLeft, CheckCircle2, Eye, EyeOff, 
   Building2, User, Mail, Phone, Lock, MapPin, Users, Baby,
@@ -65,6 +66,8 @@ const plans = [
 type PlanId = "basic" | "professional" | "enterprise";
 
 export default function NurseryRegister() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
@@ -102,19 +105,19 @@ export default function NurseryRegister() {
   });
 
   const validateStep2 = () => {
-    if (!nurseryNameAr.trim()) { toast.error("اسم الحضانة بالعربية مطلوب"); return false; }
-    if (!city) { toast.error("المدينة مطلوبة"); return false; }
-    if (!childrenCount || parseInt(childrenCount) < 1) { toast.error("عدد الأطفال مطلوب"); return false; }
-    if (!staffCount || parseInt(staffCount) < 1) { toast.error("عدد الموظفين مطلوب"); return false; }
+    if (!nurseryNameAr.trim()) { toast.error(isAr ? "اسم الحضانة بالعربية مطلوب" : "Nursery name in Arabic is required"); return false; }
+    if (!city) { toast.error(isAr ? "المدينة مطلوبة" : "City is required"); return false; }
+    if (!childrenCount || parseInt(childrenCount) < 1) { toast.error(isAr ? "عدد الأطفال مطلوب" : "Number of children is required"); return false; }
+    if (!staffCount || parseInt(staffCount) < 1) { toast.error(isAr ? "عدد الموظفين مطلوب" : "Number of staff is required"); return false; }
     return true;
   };
 
   const validateStep3 = () => {
-    if (!ownerName.trim()) { toast.error("اسم المالك مطلوب"); return false; }
-    if (!ownerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) { toast.error("البريد الإلكتروني غير صحيح"); return false; }
-    if (!ownerPhone.trim() || ownerPhone.length < 9) { toast.error("رقم الجوال غير صحيح"); return false; }
-    if (!ownerPassword || ownerPassword.length < 8) { toast.error("كلمة المرور يجب أن تكون 8 أحرف على الأقل"); return false; }
-    if (ownerPassword !== confirmPassword) { toast.error("كلمتا المرور غير متطابقتين"); return false; }
+    if (!ownerName.trim()) { toast.error(isAr ? "اسم المالك مطلوب" : "Owner name is required"); return false; }
+    if (!ownerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) { toast.error(isAr ? "البريد الإلكتروني غير صحيح" : "Invalid email address"); return false; }
+    if (!ownerPhone.trim() || ownerPhone.length < 9) { toast.error(isAr ? "رقم الجوال غير صحيح" : "Invalid phone number"); return false; }
+    if (!ownerPassword || ownerPassword.length < 8) { toast.error(isAr ? "كلمة المرور يجب أن تكون 8 أحرف على الأقل" : "Password must be at least 8 characters"); return false; }
+    if (ownerPassword !== confirmPassword) { toast.error(isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match"); return false; }
     return true;
   };
 

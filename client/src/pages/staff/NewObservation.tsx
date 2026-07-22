@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,9 @@ import { toast } from "sonner";
 import { ChevronLeft, Save, Loader2, Brain } from "lucide-react";
 
 export default function NewObservation() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
@@ -44,7 +48,7 @@ export default function NewObservation() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!childId || !areaId || !level || !observation) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error(isAr ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill all required fields");
       return;
     }
     createMutation.mutate({

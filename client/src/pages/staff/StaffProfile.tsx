@@ -87,7 +87,7 @@ export default function StaffProfile() {
 
   const createNote = trpc.staffManagement.notes.create.useMutation({
     onSuccess: () => {
-      toast.success("تم إضافة الملاحظة");
+      toast.success(isAr ? "تم إضافة الملاحظة" : "Observation added");
       utils.staffManagement.notes.list.invalidate({ staffProfileId: staffId });
       setShowNoteDialog(false);
       setNoteForm({ title: "", content: "", type: "general", isPrivate: false });
@@ -97,14 +97,14 @@ export default function StaffProfile() {
 
   const deleteNote = trpc.staffManagement.notes.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف الملاحظة");
+      toast.success(isAr ? "تم حذف الملاحظة" : "Observation deleted");
       utils.staffManagement.notes.list.invalidate({ staffProfileId: staffId });
     },
   });
 
   const createDocument = trpc.staffManagement.documents.create.useMutation({
     onSuccess: () => {
-      toast.success("تم رفع المستند");
+      toast.success(isAr ? "تم رفع المستند" : "Document uploaded");
       utils.staffManagement.documents.list.invalidate({ staffProfileId: staffId });
       setShowDocDialog(false);
       setDocForm({ name: "", type: "other", expiryDate: "", notes: "" });
@@ -114,14 +114,14 @@ export default function StaffProfile() {
 
   const deleteDocument = trpc.staffManagement.documents.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف المستند");
+      toast.success(isAr ? "تم حذف المستند" : "Document deleted");
       utils.staffManagement.documents.list.invalidate({ staffProfileId: staffId });
     },
   });
 
   const approveLeave = trpc.staffManagement.leaves.approve.useMutation({
     onSuccess: () => {
-      toast.success("تم قبول الإجازة");
+      toast.success(isAr ? "تم قبول الإجازة" : "Leave accepted");
       utils.staffManagement.leaves.list.invalidate({ staffProfileId: staffId });
       utils.staffManagement.leaves.getBalance.invalidate({ staffProfileId: staffId });
     },
@@ -129,7 +129,7 @@ export default function StaffProfile() {
 
   const rejectLeave = trpc.staffManagement.leaves.reject.useMutation({
     onSuccess: () => {
-      toast.success("تم رفض الإجازة");
+      toast.success(isAr ? "تم رفض الإجازة" : "Leave rejected");
       utils.staffManagement.leaves.list.invalidate({ staffProfileId: staffId });
     },
   });
@@ -138,7 +138,7 @@ export default function StaffProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("حجم الملف يجب أن لا يتجاوز 10 ميجابايت");
+      toast.error(isAr ? "حجم الملف يجب أن لا يتجاوز 10 ميجابايت" : "File size must not exceed 10MB");
       return;
     }
     setDocUploading(true);
@@ -160,7 +160,7 @@ export default function StaffProfile() {
         notes: docForm.notes || undefined,
       });
     } catch {
-      toast.error("فشل رفع المستند");
+      toast.error(isAr ? "فشل رفع المستند" : "Failed to upload document");
     } finally {
       setDocUploading(false);
     }

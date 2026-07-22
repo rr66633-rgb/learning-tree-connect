@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 
 export default function ParentDocuments() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: documents, isLoading } = trpc.documents.list.useQuery();
   const utils = trpc.useUtils();
@@ -17,7 +18,7 @@ export default function ParentDocuments() {
   const signDoc = trpc.documents.sign.useMutation({
     onSuccess: () => {
       utils.documents.list.invalidate();
-      toast.success("تم التوقيع بنجاح");
+      toast.success(isAr ? "تم التوقيع بنجاح" : "Signed successfully");
     },
     onError: (e) => toast.error(e.message),
   });

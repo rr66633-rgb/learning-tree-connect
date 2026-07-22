@@ -47,7 +47,7 @@ export default function LeaveManagement() {
 
   const approveLeave = trpc.staffManagement.leaves.approve.useMutation({
     onSuccess: () => {
-      toast.success("تم قبول الإجازة");
+      toast.success(isAr ? "تم قبول الإجازة" : "Leave accepted");
       utils.staffManagement.leaves.list.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -55,7 +55,7 @@ export default function LeaveManagement() {
 
   const rejectLeave = trpc.staffManagement.leaves.reject.useMutation({
     onSuccess: () => {
-      toast.success("تم رفض الإجازة");
+      toast.success(isAr ? "تم رفض الإجازة" : "Leave rejected");
       utils.staffManagement.leaves.list.invalidate();
     },
     onError: (err) => toast.error(err.message),

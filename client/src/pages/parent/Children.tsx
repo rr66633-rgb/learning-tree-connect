@@ -37,10 +37,11 @@ function ChildEmergencyContacts({ childId }: { childId: number }) {
 
 function ChildDocumentsSection({ childId }: { childId: number }) {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: documents, isLoading } = trpc.childDocuments.listByChild.useQuery({ childId });
   const utils = trpc.useUtils();
   const createDoc = trpc.childDocuments.create.useMutation({
-    onSuccess: () => { utils.childDocuments.listByChild.invalidate({ childId }); toast.success("تم رفع المستند بنجاح"); },
+    onSuccess: () => { utils.childDocuments.listByChild.invalidate({ childId }); toast.success(isAr ? "تم رفع المستند بنجاح" : "Document uploaded successfully"); },
     onError: (e) => toast.error(e.message),
   });
   const [uploading, setUploading] = useState(false);
@@ -50,8 +51,8 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
 
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
-    if (!file) { toast.error("يرجى اختيار ملف"); return; }
-    if (!docName.trim()) { toast.error("يرجى إدخال اسم المستند"); return; }
+    if (!file) { toast.error(isAr ? "يرجى اختيار ملف" : "Please select a file"); return; }
+    if (!docName.trim()) { toast.error(isAr ? "يرجى إدخال اسم المستند" : "Please enter document name"); return; }
     setUploading(true);
     try {
       const formData = new FormData();
@@ -144,15 +145,16 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
 
 export default function ParentChildren() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children, isLoading } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
   const updateChild = trpc.children.parentUpdate.useMutation({
-    onSuccess: () => { utils.children.list.invalidate(); toast.success("تم تحديث البيانات بنجاح"); setEditChild(null); },
+    onSuccess: () => { utils.children.list.invalidate(); toast.success(isAr ? "تم تحديث البيانات بنجاح" : "Data updated successfully"); setEditChild(null); },
     onError: (e) => toast.error(e.message),
   });
   const registerChild = trpc.children.parentRegisterChild.useMutation({
-    onSuccess: () => { utils.children.list.invalidate(); toast.success("تم تسجيل الطفل بنجاح"); setShowRegister(false); resetRegisterForm(); },
+    onSuccess: () => { utils.children.list.invalidate(); toast.success(isAr ? "تم تسجيل الطفل بنجاح" : "Child enrolled successfully"); setShowRegister(false); resetRegisterForm(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -182,10 +184,10 @@ export default function ParentChildren() {
   };
 
   const handleRegisterChild = () => {
-    if (!regForm.firstName.trim()) { toast.error("يرجى إدخال اسم الطفل"); return; }
-    if (!regForm.lastName.trim()) { toast.error("يرجى إدخال اسم العائلة"); return; }
-    if (!regForm.dateOfBirth) { toast.error("يرجى إدخال تاريخ الميلاد"); return; }
-    if (!regForm.gender) { toast.error("يرجى اختيار الجنس"); return; }
+    if (!regForm.firstName.trim()) { toast.error(isAr ? "يرجى إدخال اسم الطفل" : "Please enter child's first name"); return; }
+    if (!regForm.lastName.trim()) { toast.error(isAr ? "يرجى إدخال اسم العائلة" : "Please enter last name"); return; }
+    if (!regForm.dateOfBirth) { toast.error(isAr ? "يرجى إدخال تاريخ الميلاد" : "Please enter date of birth"); return; }
+    if (!regForm.gender) { toast.error(isAr ? "يرجى اختيار الجنس" : "Please select gender"); return; }
 
     const data: any = {};
     Object.entries(regForm).forEach(([key, value]) => {
@@ -222,7 +224,7 @@ export default function ParentChildren() {
     Object.entries(editForm).forEach(([key, value]) => {
       if (value !== (editChild[key] || "")) changes[key] = value;
     });
-    if (Object.keys(changes).length === 0) { toast.info("لا توجد تغييرات"); return; }
+    if (Object.keys(changes).length === 0) { toast.info(isAr ? "لا توجد تغييرات" : "No changes"); return; }
     updateChild.mutate({ id: editChild.id, ...changes });
   };
 
@@ -237,7 +239,7 @@ export default function ParentChildren() {
       if (!res.ok) throw new Error("فشل رفع الصورة");
       const { url } = await res.json();
       await updateChild.mutateAsync({ id: childId, photo: url });
-      toast.success("تم تحديث الصورة");
+      toast.success(isAr ? "تم تحديث الصورة" : "Photo updated");
     } catch (e: any) {
       toast.error(e.message || "فشل رفع الصورة");
     } finally {

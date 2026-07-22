@@ -19,7 +19,7 @@ export default function PendingApprovals() {
     onSuccess: () => {
       utils.users.pending.invalidate();
       utils.users.list.invalidate();
-      toast.success("تم قبول ولي الأمر بنجاح");
+      toast.success(isAr ? "تم قبول ولي الأمر بنجاح" : "Parent accepted successfully");
       setSelectedUser(null);
     },
     onError: (e) => toast.error(e.message),
@@ -29,7 +29,7 @@ export default function PendingApprovals() {
     onSuccess: () => {
       utils.users.pending.invalidate();
       utils.users.list.invalidate();
-      toast.success("تم رفض الطلب");
+      toast.success(isAr ? "تم رفض الطلب" : "Request rejected");
       setSelectedUser(null);
     },
     onError: (e) => toast.error(e.message),

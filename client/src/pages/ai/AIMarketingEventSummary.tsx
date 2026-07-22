@@ -9,8 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowRight, Copy, Loader2, Sparkles, FileText, Heart, Trophy, Share2 } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function AIMarketingEventSummary() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [form, setForm] = useState({
     eventName: "",
     eventType: "",
@@ -24,7 +27,7 @@ export default function AIMarketingEventSummary() {
   const generateMutation = trpc.aiMarketing.generateEventSummary.useMutation({
     onSuccess: (data) => {
       setResult(data.content);
-      toast.success("تم إنشاء الملخص بنجاح!");
+      toast.success(isAr ? "تم إنشاء الملخص بنجاح!" : "Summary created successfully!");
     },
     onError: (err) => {
       toast.error(err.message || "حدث خطأ");
@@ -33,7 +36,7 @@ export default function AIMarketingEventSummary() {
 
   const handleGenerate = () => {
     if (!form.eventName || !form.eventType || !form.date || !form.highlights) {
-      toast.error("يرجى ملء الحقول المطلوبة");
+      toast.error(isAr ? "يرجى ملء الحقول المطلوبة" : "Please fill required fields");
       return;
     }
     generateMutation.mutate({
@@ -84,7 +87,7 @@ export default function AIMarketingEventSummary() {
             <Textarea placeholder="اكتب أبرز ما حدث في الفعالية..." value={form.highlights} onChange={(e) => setForm({ ...form, highlights: e.target.value })} rows={4} />
           </div>
           <div className="space-y-2">
-            <Label>اللغة</Label>
+            <Label>{isAr ? "اللغة" : "Language"}</Label>
             <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -125,12 +128,14 @@ export default function AIMarketingEventSummary() {
 }
 
 function ContentCard({ title, icon, children, onCopy }: { title: string; icon: React.ReactNode; children: React.ReactNode; onCopy: () => void }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">{icon}{title}</CardTitle>
-          <Button variant="outline" size="sm" onClick={onCopy}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button>
+          <Button variant="outline" size="sm" onClick={onCopy}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
         </div>
       </CardHeader>
       <CardContent>{children}</CardContent>

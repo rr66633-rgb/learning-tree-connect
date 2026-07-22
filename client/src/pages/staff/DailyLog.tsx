@@ -77,7 +77,7 @@ export default function StaffDailyLog() {
 
   const logActivity = trpc.dailyActivities.create.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل النشاط");
+      toast.success(isAr ? "تم تسجيل النشاط" : "Activity recorded");
       setDetails("");
       setNotes("");
       utils.dailyActivities.byChild.invalidate();
@@ -87,7 +87,7 @@ export default function StaffDailyLog() {
 
   const createDeparture = trpc.departures.create.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل المغادرة");
+      toast.success(isAr ? "تم تسجيل المغادرة" : "Departure recorded");
       setPickedUpBy("");
       setRelationship("");
       setDepartureNotes("");
@@ -120,7 +120,7 @@ export default function StaffDailyLog() {
   }, [children, departureSearch]);
 
   const handleLog = () => {
-    if (!selectedChild || !selectedType) { toast.error("اختر الطفل ونوع النشاط"); return; }
+    if (!selectedChild || !selectedType) { toast.error(isAr ? "اختر الطفل ونوع النشاط" : "Select child and activity type"); return; }
     logActivity.mutate({
       childId: parseInt(selectedChild),
       type: selectedType as any,
@@ -130,7 +130,7 @@ export default function StaffDailyLog() {
   };
 
   const handleBulkLog = () => {
-    if (!selectedType) { toast.error("اختر نوع النشاط"); return; }
+    if (!selectedType) { toast.error(isAr ? "اختر نوع النشاط" : "Select activity type"); return; }
     if (!children || children.length === 0) return;
     // Log for all children
     children.forEach((c: any) => {
@@ -166,7 +166,7 @@ export default function StaffDailyLog() {
   const handleDeparture = () => {
     const finalPickedUpBy = selectedPickupPerson === "other" ? customPickupName : pickedUpBy;
     if (!departureChild || !finalPickedUpBy || !relationship) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error(isAr ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill all required fields");
       return;
     }
     createDeparture.mutate({

@@ -56,7 +56,7 @@ export default function DevelopmentReport({ childId, childName }: Props) {
     // Use browser print to PDF
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      toast.error("يرجى السماح بالنوافذ المنبثقة");
+      toast.error(isAr ? "يرجى السماح بالنوافذ المنبثقة" : "Please allow pop-ups");
       return;
     }
 

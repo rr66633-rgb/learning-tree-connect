@@ -73,7 +73,7 @@ export default function EditStaff() {
 
   const updateStaff = trpc.staffManagement.update.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث بيانات الموظف بنجاح");
+      toast.success(isAr ? "تم تحديث بيانات الموظف بنجاح" : "Staff data updated successfully");
       navigate(`/staff/staff-management/${staffId}`);
     },
     onError: (err) => toast.error(err.message || "حدث خطأ أثناء التحديث"),
@@ -82,7 +82,7 @@ export default function EditStaff() {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("حجم الصورة يجب أن لا يتجاوز 5 ميجابايت"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(isAr ? "حجم الصورة يجب أن لا يتجاوز 5 ميجابايت" : "Image size must not exceed 5MB"); return; }
     setUploading(true);
     try {
       const formData = new FormData();
@@ -92,16 +92,16 @@ export default function EditStaff() {
       const data = await res.json();
       setForm(f => ({ ...f, photo: data.url }));
       setPhotoPreview(data.url);
-      toast.success("تم رفع الصورة");
-    } catch { toast.error("فشل رفع الصورة"); }
+      toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");
+    } catch { toast.error(isAr ? "فشل رفع الصورة" : "Failed to upload image"); }
     finally { setUploading(false); }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullNameAr) { toast.error("الاسم بالعربي مطلوب"); return; }
-    if (!form.mobile) { toast.error("رقم الجوال مطلوب"); return; }
-    if (!form.email) { toast.error("البريد الإلكتروني مطلوب"); return; }
+    if (!form.fullNameAr) { toast.error(isAr ? "الاسم بالعربي مطلوب" : "Arabic name is required"); return; }
+    if (!form.mobile) { toast.error(isAr ? "رقم الجوال مطلوب" : "Phone number is required"); return; }
+    if (!form.email) { toast.error(isAr ? "البريد الإلكتروني مطلوب" : "Email is required"); return; }
 
     updateStaff.mutate({
       id: staffId,

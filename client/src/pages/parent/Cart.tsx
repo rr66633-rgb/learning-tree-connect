@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 
 export default function Cart() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const { data: cart, isLoading } = trpc.store.getCart.useQuery();
@@ -20,12 +21,12 @@ export default function Cart() {
   });
 
   const removeFromCart = trpc.store.removeFromCart.useMutation({
-    onSuccess: () => { utils.store.getCart.invalidate(); toast.success("تم الحذف من السلة"); },
+    onSuccess: () => { utils.store.getCart.invalidate(); toast.success(isAr ? "تم الحذف من السلة" : "Removed from cart"); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 
   const clearCart = trpc.store.clearCart.useMutation({
-    onSuccess: () => { utils.store.getCart.invalidate(); toast.success("تم تفريغ السلة"); },
+    onSuccess: () => { utils.store.getCart.invalidate(); toast.success(isAr ? "تم تفريغ السلة" : "Cart cleared"); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 

@@ -33,10 +33,10 @@ export default function ChildProfile() {
   const { data: classes } = trpc.classes.list.useQuery();
   const { data: childDocs = [], refetch: refetchDocs } = trpc.childDocuments.listByChild.useQuery({ childId });
 
-  const createDoc = trpc.childDocuments.create.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم رفع المستند"); } });
-  const approveDoc = trpc.childDocuments.approve.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم اعتماد المستند"); } });
-  const rejectDoc = trpc.childDocuments.reject.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم رفض المستند"); } });
-  const deleteDoc = trpc.childDocuments.delete.useMutation({ onSuccess: () => { refetchDocs(); toast.success("تم حذف المستند"); } });
+  const createDoc = trpc.childDocuments.create.useMutation({ onSuccess: () => { refetchDocs(); toast.success(isAr ? "تم رفع المستند" : "Document uploaded"); } });
+  const approveDoc = trpc.childDocuments.approve.useMutation({ onSuccess: () => { refetchDocs(); toast.success(isAr ? "تم اعتماد المستند" : "Document approved"); } });
+  const rejectDoc = trpc.childDocuments.reject.useMutation({ onSuccess: () => { refetchDocs(); toast.success(isAr ? "تم رفض المستند" : "Document rejected"); } });
+  const deleteDoc = trpc.childDocuments.delete.useMutation({ onSuccess: () => { refetchDocs(); toast.success(isAr ? "تم حذف المستند" : "Document deleted"); } });
 
   const [docUploading, setDocUploading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -47,11 +47,11 @@ export default function ChildProfile() {
   // Authorized Pickup Persons
   const { data: authorizedPersons = [], refetch: refetchAuthorized } = trpc.pickup.authorizedPersons.useQuery({ childId });
   const addAuthorizedPerson = trpc.pickup.addAuthorizedPerson.useMutation({
-    onSuccess: () => { refetchAuthorized(); toast.success("تم إضافة الشخص المخول"); setAddPersonDialog(false); resetPersonForm(); },
+    onSuccess: () => { refetchAuthorized(); toast.success(isAr ? "تم إضافة الشخص المخول" : "Authorized person added"); setAddPersonDialog(false); resetPersonForm(); },
     onError: (err) => toast.error(err.message),
   });
   const removeAuthorizedPerson = trpc.pickup.removeAuthorizedPerson.useMutation({
-    onSuccess: () => { refetchAuthorized(); toast.success("تم إزالة الشخص المخول"); },
+    onSuccess: () => { refetchAuthorized(); toast.success(isAr ? "تم إزالة الشخص المخول" : "Authorized person removed"); },
     onError: (err) => toast.error(err.message),
   });
   const [addPersonDialog, setAddPersonDialog] = useState(false);
@@ -60,7 +60,7 @@ export default function ChildProfile() {
 
   const updateChild = trpc.children.update.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث بيانات الطفل بنجاح");
+      toast.success(isAr ? "تم تحديث بيانات الطفل بنجاح" : "Child data updated successfully");
       setEditing(false);
       refetch();
     },
@@ -69,7 +69,7 @@ export default function ChildProfile() {
 
   const linkParent = trpc.users.linkChild.useMutation({
     onSuccess: () => {
-      toast.success("تم ربط ولي الأمر بنجاح");
+      toast.success(isAr ? "تم ربط ولي الأمر بنجاح" : "Parent linked successfully");
       setLinkDialogOpen(false);
       setSelectedParentId("");
       refetchParents();
@@ -79,7 +79,7 @@ export default function ChildProfile() {
 
   const unlinkParent = trpc.users.unlinkChild.useMutation({
     onSuccess: () => {
-      toast.success("تم إلغاء ربط ولي الأمر");
+      toast.success(isAr ? "تم إلغاء ربط ولي الأمر" : "Parent unlinked");
       refetchParents();
     },
     onError: (err) => toast.error(err.message),
@@ -119,12 +119,12 @@ export default function ChildProfile() {
   const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 16 * 1024 * 1024) { toast.error("حجم الملف كبير جداً (الحد الأقصى 16 ميجابايت)"); return; }
+    if (file.size > 16 * 1024 * 1024) { toast.error(isAr ? "حجم الملف كبير جداً (الحد الأقصى 16 ميجابايت)" : "File too large (maximum 16MB)"); return; }
     setDocUploading(true);
     try {
       const { url, key, mimeType } = await uploadFile(file, '/api/upload-document');
       await createDoc.mutateAsync({ childId, type: docType as any, name: file.name, fileUrl: url, fileKey: key, mimeType });
-    } catch { toast.error("فشل رفع المستند"); }
+    } catch { toast.error(isAr ? "فشل رفع المستند" : "Failed to upload document"); }
     setDocUploading(false);
     if (docInputRef.current) docInputRef.current.value = '';
   };
@@ -132,13 +132,13 @@ export default function ChildProfile() {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { toast.error("حجم الصورة كبير جداً"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error(isAr ? "حجم الصورة كبير جداً" : "Image size too large"); return; }
     setPhotoUploading(true);
     try {
       const { url } = await uploadFile(file, '/api/upload');
       await updateChild.mutateAsync({ id: childId, photo: url });
-      toast.success("تم تحديث الصورة");
-    } catch { toast.error("فشل رفع الصورة"); }
+      toast.success(isAr ? "تم تحديث الصورة" : "Photo updated");
+    } catch { toast.error(isAr ? "فشل رفع الصورة" : "Failed to upload image"); }
     setPhotoUploading(false);
     if (photoInputRef.current) photoInputRef.current.value = '';
   };
@@ -662,7 +662,7 @@ export default function ChildProfile() {
             <Button variant="outline" onClick={() => { setAddPersonDialog(false); resetPersonForm(); }}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={() => {
-                if (!personForm.name.trim()) { toast.error("يرجى إدخال اسم الشخص"); return; }
+                if (!personForm.name.trim()) { toast.error(isAr ? "يرجى إدخال اسم الشخص" : "Please enter person name"); return; }
                 addAuthorizedPerson.mutate({
                   childId,
                   name: personForm.name.trim(),

@@ -17,8 +17,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 export default function Messages() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "owner" || user?.role === "principal";
 
@@ -106,7 +109,7 @@ export default function Messages() {
         }
       );
     } catch {
-      toast.error("فشل رفع الملف");
+      toast.error(isAr ? "فشل رفع الملف" : "Failed to upload file");
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -116,7 +119,7 @@ export default function Messages() {
       { conversationId: convId },
       {
         onSuccess: () => {
-          toast.success("تم أرشفة المحادثة");
+          toast.success(isAr ? "تم أرشفة المحادثة" : "Conversation archived");
           utils.messages.allConversations.invalidate();
           if (selectedConv === convId) setSelectedConv(null);
         },
@@ -129,7 +132,7 @@ export default function Messages() {
       { conversationId: convId },
       {
         onSuccess: () => {
-          toast.success("تم إلغاء الأرشفة");
+          toast.success(isAr ? "تم إلغاء الأرشفة" : "Unarchived");
           utils.messages.allConversations.invalidate();
         },
       }
@@ -141,7 +144,7 @@ export default function Messages() {
       { messageId: msgId },
       {
         onSuccess: () => {
-          toast.success("تم حذف الرسالة");
+          toast.success(isAr ? "تم حذف الرسالة" : "Message deleted");
           utils.messages.list.invalidate();
         },
       }

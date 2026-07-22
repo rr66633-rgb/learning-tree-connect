@@ -12,11 +12,14 @@ import { Plus, FileText, Loader2, Camera, X, Image as ImageIcon } from "lucide-r
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 const moodLabels: Record<string, string> = { happy: "سعيد", calm: "هادئ", tired: "متعب", upset: "منزعج", excited: "متحمس" };
 const moodColors: Record<string, string> = { happy: "bg-green-100 text-green-700", calm: "bg-blue-100 text-blue-700", tired: "bg-amber-100 text-amber-700", upset: "bg-red-100 text-red-700", excited: "bg-purple-100 text-purple-700" };
 
 export default function DailyReports() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: reports, isLoading: reportsLoading } = trpc.dailyReports.list.useQuery();
   const { data: children } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
@@ -26,8 +29,8 @@ export default function DailyReports() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createReport = trpc.dailyReports.create.useMutation({
-    onSuccess: () => { utils.dailyReports.list.invalidate(); toast.success("تم إنشاء التقرير بنجاح"); setOpen(false); setPhotos([]); },
-    onError: () => toast.error("حدث خطأ"),
+    onSuccess: () => { utils.dailyReports.list.invalidate(); toast.success(isAr ? "تم إنشاء التقرير بنجاح" : "Report created successfully"); setOpen(false); setPhotos([]); },
+    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
   });
 
   const [form, setForm] = useState({
@@ -43,7 +46,7 @@ export default function DailyReports() {
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (photos.length + files.length > 5) {
-      toast.error("الحد الأقصى 5 صور لكل تقرير");
+      toast.error(isAr ? "الحد الأقصى 5 صور لكل تقرير" : "Maximum 5 photos per report");
       return;
     }
     const newPhotos = files.map(file => ({
@@ -90,7 +93,7 @@ export default function DailyReports() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.childId) { toast.error("يرجى اختيار الطفل"); return; }
+    if (!form.childId) { toast.error(isAr ? "يرجى اختيار الطفل" : "Please select a child"); return; }
 
     setUploading(true);
     try {
@@ -111,7 +114,7 @@ export default function DailyReports() {
         isPublished: true,
       });
     } catch {
-      toast.error("فشل رفع الصور");
+      toast.error(isAr ? "فشل رفع الصور" : "Failed to upload photos");
     } finally {
       setUploading(false);
     }

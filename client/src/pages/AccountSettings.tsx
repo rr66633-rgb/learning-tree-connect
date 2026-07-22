@@ -11,9 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { User, Mail, Phone, Lock, Eye, EyeOff, CheckCircle2, Shield, Clock, Globe, Trash2, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useTranslation } from "react-i18next";
 
 function ProfileSection() {
   const { user } = useAuth();
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState(user?.phone || "");
@@ -53,7 +56,7 @@ function ProfileSection() {
     if (language !== user?.language) updates.language = language;
 
     if (Object.keys(updates).length === 0) {
-      toast.info("لا توجد تغييرات");
+      toast.info(isAr ? "لا توجد تغييرات" : "No changes");
       setIsEditing(false);
       return;
     }
@@ -193,6 +196,8 @@ function ProfileSection() {
 }
 
 function ChangePasswordSection() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -202,7 +207,7 @@ function ChangePasswordSection() {
 
   const changePasswordMutation = trpc.auth.changePassword.useMutation({
     onSuccess: () => {
-      toast.success("تم تغيير كلمة المرور بنجاح");
+      toast.success(isAr ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -215,15 +220,15 @@ function ChangePasswordSection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
-      toast.error("يرجى إدخال كلمة المرور الحالية");
+      toast.error(isAr ? "يرجى إدخال كلمة المرور الحالية" : "Please enter current password");
       return;
     }
     if (newPassword.length < 6) {
-      toast.error("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل");
+      toast.error(isAr ? "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" : "New password must be at least 6 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين");
+      toast.error(isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match");
       return;
     }
     changePasswordMutation.mutate({ currentPassword, newPassword });
@@ -406,6 +411,8 @@ function LoginSessionsSection() {
 
 function DeleteAccountSection() {
   const [password, setPassword] = useState("");
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [showPassword, setShowPassword] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -425,7 +432,7 @@ function DeleteAccountSection() {
 
   const handleDelete = () => {
     if (!password) {
-      toast.error("يرجى إدخال كلمة المرور");
+      toast.error(isAr ? "يرجى إدخال كلمة المرور" : "Please enter password");
       return;
     }
     deleteAccountMutation.mutate({ password });
@@ -530,6 +537,8 @@ function DeleteAccountSection() {
 }
 
 export default function AccountSettings() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6" dir="rtl">
       <div className="space-y-1">

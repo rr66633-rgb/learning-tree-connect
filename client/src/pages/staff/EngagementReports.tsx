@@ -25,14 +25,14 @@ export default function EngagementReports() {
     onSuccess: (data) => {
       setReport(data.report);
       setChildInfo(data.child);
-      toast.success("تم إنشاء التقرير بنجاح");
+      toast.success(isAr ? "تم إنشاء التقرير بنجاح" : "Report created successfully");
     },
-    onError: () => toast.error("حدث خطأ أثناء إنشاء التقرير"),
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إنشاء التقرير" : "Error creating report"),
   });
 
   const handleGenerate = () => {
     if (!selectedChildId) {
-      toast.error("يرجى اختيار طفل");
+      toast.error(isAr ? "يرجى اختيار طفل" : "Please select a child");
       return;
     }
     generateMutation.mutate({

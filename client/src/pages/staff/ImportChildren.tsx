@@ -60,11 +60,11 @@ export default function ImportChildren() {
       "text/csv",
     ];
     if (!validTypes.includes(f.type) && !f.name.endsWith(".xlsx") && !f.name.endsWith(".xls") && !f.name.endsWith(".csv")) {
-      toast.error("نوع الملف غير مدعوم. يرجى رفع ملف Excel (.xlsx) أو CSV");
+      toast.error(isAr ? "نوع الملف غير مدعوم. يرجى رفع ملف Excel (.xlsx) أو CSV" : "File type not supported. Please upload Excel (.xlsx) or CSV file");
       return;
     }
     if (f.size > 20 * 1024 * 1024) {
-      toast.error("حجم الملف كبير جداً (الحد الأقصى 20 ميجابايت)");
+      toast.error(isAr ? "حجم الملف كبير جداً (الحد الأقصى 20 ميجابايت)" : "File too large (maximum 20MB)");
       return;
     }
     setFile(f);
@@ -97,7 +97,7 @@ export default function ImportChildren() {
       setTotalRows(data.total);
       setStep("preview");
     } catch (e) {
-      toast.error("فشل الاتصال بالخادم");
+      toast.error(isAr ? "فشل الاتصال بالخادم" : "Server connection failed");
     }
   };
 
@@ -135,7 +135,7 @@ export default function ImportChildren() {
         toast.success(msg);
       }
     } catch (e) {
-      toast.error("فشل الاتصال بالخادم");
+      toast.error(isAr ? "فشل الاتصال بالخادم" : "Server connection failed");
       setStep("preview");
     }
   };

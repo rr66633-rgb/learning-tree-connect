@@ -43,7 +43,7 @@ export default function StaffStaffAttendance() {
 
   const checkIn = trpc.staffAttendance.checkIn.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الحضور بنجاح");
+      toast.success(isAr ? "تم تسجيل الحضور بنجاح" : "Attendance recorded successfully");
       utils.staffAttendance.today.invalidate();
       utils.staffAttendance.myHistory.invalidate();
       if (isAdmin) utils.staffAttendance.byDate.invalidate();
@@ -53,7 +53,7 @@ export default function StaffStaffAttendance() {
 
   const checkOut = trpc.staffAttendance.checkOut.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الانصراف بنجاح");
+      toast.success(isAr ? "تم تسجيل الانصراف بنجاح" : "Departure recorded successfully");
       utils.staffAttendance.today.invalidate();
       utils.staffAttendance.myHistory.invalidate();
       if (isAdmin) utils.staffAttendance.byDate.invalidate();
@@ -64,7 +64,7 @@ export default function StaffStaffAttendance() {
   // Quick check-in (no GPS)
   const quickCheckIn = trpc.staffAttendance.quickCheckIn.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الوصول بنجاح ✓");
+      toast.success(isAr ? "تم تسجيل الوصول بنجاح ✓" : "Arrival recorded successfully ✓");
       utils.staffAttendance.today.invalidate();
       utils.staffAttendance.myHistory.invalidate();
       if (isAdmin) utils.staffAttendance.byDate.invalidate();
@@ -75,7 +75,7 @@ export default function StaffStaffAttendance() {
   // Quick check-out (no GPS)
   const quickCheckOut = trpc.staffAttendance.quickCheckOut.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الانصراف بنجاح ✓");
+      toast.success(isAr ? "تم تسجيل الانصراف بنجاح ✓" : "Departure recorded successfully ✓");
       utils.staffAttendance.today.invalidate();
       utils.staffAttendance.myHistory.invalidate();
       if (isAdmin) utils.staffAttendance.byDate.invalidate();
@@ -86,7 +86,7 @@ export default function StaffStaffAttendance() {
   // Late check-in
   const lateCheckIn = trpc.staffAttendance.lateCheckIn.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الوصول المتأخر بنجاح");
+      toast.success(isAr ? "تم تسجيل الوصول المتأخر بنجاح" : "Late arrival recorded successfully");
       utils.staffAttendance.today.invalidate();
       utils.staffAttendance.myHistory.invalidate();
       if (isAdmin) utils.staffAttendance.byDate.invalidate();
@@ -100,7 +100,7 @@ export default function StaffStaffAttendance() {
   // Late check-out
   const lateCheckOut = trpc.staffAttendance.lateCheckOut.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الانصراف المتأخر بنجاح");
+      toast.success(isAr ? "تم تسجيل الانصراف المتأخر بنجاح" : "Late departure recorded successfully");
       utils.staffAttendance.today.invalidate();
       utils.staffAttendance.myHistory.invalidate();
       if (isAdmin) utils.staffAttendance.byDate.invalidate();
@@ -113,7 +113,7 @@ export default function StaffStaffAttendance() {
 
   const adminCheckOut = trpc.staffAttendance.adminCheckOut.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل انصراف الموظف بنجاح");
+      toast.success(isAr ? "تم تسجيل انصراف الموظف بنجاح" : "Staff departure recorded successfully");
       utils.staffAttendance.byDate.invalidate();
       setAdminCheckOutDialog(false);
       setSelectedRecord(null);
@@ -126,7 +126,7 @@ export default function StaffStaffAttendance() {
   const handleCheckIn = () => {
     setGpsLoading(true);
     if (!navigator.geolocation) {
-      toast.error("المتصفح لا يدعم خدمات الموقع");
+      toast.error(isAr ? "المتصفح لا يدعم خدمات الموقع" : "Browser does not support location services");
       setGpsLoading(false);
       return;
     }
@@ -140,7 +140,7 @@ export default function StaffStaffAttendance() {
         setGpsLoading(false);
       },
       () => {
-        toast.error("لا يمكن تحديد موقعك. يرجى تفعيل خدمات الموقع.");
+        toast.error(isAr ? "لا يمكن تحديد موقعك. يرجى تفعيل خدمات الموقع." : "Cannot determine your location. Please enable location services.");
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -160,7 +160,7 @@ export default function StaffStaffAttendance() {
         setGpsLoading(false);
       },
       () => {
-        toast.error("لا يمكن تحديد موقعك. يرجى تفعيل خدمات الموقع.");
+        toast.error(isAr ? "لا يمكن تحديد موقعك. يرجى تفعيل خدمات الموقع." : "Cannot determine your location. Please enable location services.");
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -190,7 +190,7 @@ export default function StaffStaffAttendance() {
   // Submit late record
   const submitLateRecord = () => {
     if (!lateTime || !lateReason.trim()) {
-      toast.error("يرجى تحديد الوقت وكتابة السبب");
+      toast.error(isAr ? "يرجى تحديد الوقت وكتابة السبب" : "Please specify time and write reason");
       return;
     }
     // Build full datetime from today + time

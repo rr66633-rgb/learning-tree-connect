@@ -10,11 +10,14 @@ import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone } from "lucide-r
 import { apiUrl } from "@/lib/apiBase";
 
 import { useNativeSessionGate } from "@/contexts/NativeSessionGate";
+import { useTranslation } from "react-i18next";
 
 type LoginMode = "password" | "otp";
 type OtpStep = "phone" | "verify";
 
 export default function Login() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
   const { enableNetwork } = useNativeSessionGate();
   const [loginMode, setLoginMode] = useState<LoginMode>("password");
@@ -51,7 +54,7 @@ export default function Login() {
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الدخول بنجاح");
+      toast.success(isAr ? "تم تسجيل الدخول بنجاح" : "Login successful");
       loginRetryRef.current = 0;
       // Open the network gate so auth.me and branding queries can fire
       enableNetwork();
@@ -89,7 +92,7 @@ export default function Login() {
 
   const sendPhoneOtpMutation = trpc.auth.sendPhoneOtp.useMutation({
     onSuccess: (data) => {
-      toast.success("تم إرسال رمز التحقق");
+      toast.success(isAr ? "تم إرسال رمز التحقق" : "Verification code sent");
       setOtpStep("verify");
       setOtpExpiresAt(data.expiresAt);
       setCountdown(60);
@@ -102,7 +105,7 @@ export default function Login() {
   });
   const verifyPhoneOtpMutation = trpc.auth.verifyPhoneOtp.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل الدخول بنجاح");
+      toast.success(isAr ? "تم تسجيل الدخول بنجاح" : "Login successful");
       // Open the network gate so auth.me and branding queries can fire
       enableNetwork();
       window.location.reload();
@@ -114,7 +117,7 @@ export default function Login() {
   });
   const resendOtpMutation = trpc.auth.resendOtp.useMutation({
     onSuccess: (data) => {
-      toast.success("تم إرسال رمز تحقق جديد");
+      toast.success(isAr ? "تم إرسال رمز تحقق جديد" : "New verification code sent");
       setOtpExpiresAt(data.expiresAt);
       setCountdown(60);
     },
@@ -126,7 +129,7 @@ export default function Login() {
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier || !password) {
-      toast.error("يرجى إدخال البيانات المطلوبة");
+      toast.error(isAr ? "يرجى إدخال البيانات المطلوبة" : "Please enter required data");
       return;
     }
     setIsLoading(true);
@@ -138,7 +141,7 @@ export default function Login() {
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || phone.length < 9) {
-      toast.error("يرجى إدخال رقم جوال صحيح");
+      toast.error(isAr ? "يرجى إدخال رقم جوال صحيح" : "Please enter a valid phone number");
       return;
     }
     setIsLoading(true);
@@ -148,7 +151,7 @@ export default function Login() {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otpCode || otpCode.length !== 6) {
-      toast.error("يرجى إدخال رمز التحقق المكون من 6 أرقام");
+      toast.error(isAr ? "يرجى إدخال رمز التحقق المكون من 6 أرقام" : "Please enter the 6-digit verification code");
       return;
     }
     setIsLoading(true);

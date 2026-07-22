@@ -8,8 +8,11 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { trackCompleteRegistration } from "@/lib/metaPixel";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, User, Mail, Phone, Lock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function Register() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<"form" | "otp" | "success">("form");
   const [name, setName] = useState("");
@@ -88,15 +91,15 @@ export default function Register() {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || !email || !password) {
-      toast.error("يرجى إدخال جميع البيانات المطلوبة");
+      toast.error(isAr ? "يرجى إدخال جميع البيانات المطلوبة" : "Please enter all required data");
       return;
     }
     if (password.length < 6) {
-      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      toast.error(isAr ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
       return;
     }
     if (password !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين");
+      toast.error(isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match");
       return;
     }
     registerMutation.mutate({ name, phone, email, password });
@@ -105,7 +108,7 @@ export default function Register() {
   const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.length !== 6) {
-      toast.error("يرجى إدخال رمز التحقق المكون من 6 أرقام");
+      toast.error(isAr ? "يرجى إدخال رمز التحقق المكون من 6 أرقام" : "Please enter the 6-digit verification code");
       return;
     }
     verifyMutation.mutate({ identifier: phone, code: otpCode });

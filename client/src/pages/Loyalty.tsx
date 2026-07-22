@@ -11,8 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Gift, Star, TrendingUp, Plus, History, Coins } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function Loyalty() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: rewards, isLoading } = trpc.loyalty.rewards.useQuery();
   const { data: balance } = trpc.loyalty.balance.useQuery();
   const { data: transactions } = trpc.loyalty.transactions.useQuery();
@@ -20,15 +23,15 @@ export default function Loyalty() {
   const [open, setOpen] = useState(false);
 
   const createReward = trpc.loyalty.createReward.useMutation({
-    onSuccess: () => { utils.loyalty.rewards.invalidate(); toast.success("تم إضافة المكافأة"); setOpen(false); },
-    onError: () => toast.error("حدث خطأ"),
+    onSuccess: () => { utils.loyalty.rewards.invalidate(); toast.success(isAr ? "تم إضافة المكافأة" : "Reward added"); setOpen(false); },
+    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
   });
 
   const redeemReward = trpc.loyalty.redeem.useMutation({
     onSuccess: () => {
       utils.loyalty.balance.invalidate();
       utils.loyalty.transactions.invalidate();
-      toast.success("تم استبدال المكافأة بنجاح");
+      toast.success(isAr ? "تم استبدال المكافأة بنجاح" : "Reward redeemed successfully");
     },
     onError: (err) => toast.error(err.message || "رصيد النقاط غير كافٍ"),
   });

@@ -225,16 +225,16 @@ export default function StaffSettings() {
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast.error("المتصفح لا يدعم خدمات الموقع");
+      toast.error(isAr ? "المتصفح لا يدعم خدمات الموقع" : "Browser does not support location services");
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLat(pos.coords.latitude.toFixed(6));
         setLng(pos.coords.longitude.toFixed(6));
-        toast.success("تم تحديد الموقع الحالي");
+        toast.success(isAr ? "تم تحديد الموقع الحالي" : "Current location detected");
       },
-      () => toast.error("لا يمكن تحديد الموقع. يرجى تفعيل خدمات الموقع."),
+      () => toast.error(isAr ? "لا يمكن تحديد الموقع. يرجى تفعيل خدمات الموقع." : "Cannot determine location. Please enable location services."),
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };

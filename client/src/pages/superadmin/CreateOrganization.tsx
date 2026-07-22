@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 
 export default function CreateOrganization() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [form, setForm] = useState({
@@ -42,7 +43,7 @@ export default function CreateOrganization() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.nameAr || !form.slug) {
-      toast.error("يرجى ملء الحقول المطلوبة");
+      toast.error(isAr ? "يرجى ملء الحقول المطلوبة" : "Please fill required fields");
       return;
     }
     createOrg.mutate({ ...form, orgType: "nursery" });

@@ -7,8 +7,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ResetPassword() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -39,11 +42,11 @@ export default function ResetPassword() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      toast.error(isAr ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين");
+      toast.error(isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match");
       return;
     }
     resetPasswordMutation.mutate({ token, newPassword });

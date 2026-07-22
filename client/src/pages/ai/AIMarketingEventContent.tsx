@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ArrowRight, Copy, Loader2, Sparkles, MessageSquare, Bell, Phone, Instagram, Music, Ghost, Globe } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 const eventTypes = [
   { value: "trip", label: "رحلة" },
@@ -37,6 +38,8 @@ const ageGroups = [
 ];
 
 export default function AIMarketingEventContent() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [form, setForm] = useState({
     eventName: "",
     eventType: "",
@@ -52,7 +55,7 @@ export default function AIMarketingEventContent() {
   const generateMutation = trpc.aiMarketing.generateEventContent.useMutation({
     onSuccess: (data) => {
       setResult(data.content);
-      toast.success("تم إنشاء المحتوى بنجاح!");
+      toast.success(isAr ? "تم إنشاء المحتوى بنجاح!" : "Content created successfully!");
     },
     onError: (err) => {
       toast.error(err.message || "حدث خطأ أثناء إنشاء المحتوى");
@@ -61,7 +64,7 @@ export default function AIMarketingEventContent() {
 
   const handleGenerate = () => {
     if (!form.eventName || !form.eventType || !form.date || !form.description) {
-      toast.error("يرجى ملء الحقول المطلوبة");
+      toast.error(isAr ? "يرجى ملء الحقول المطلوبة" : "Please fill required fields");
       return;
     }
     generateMutation.mutate(form);
@@ -109,7 +112,7 @@ export default function AIMarketingEventContent() {
               <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>الفئة العمرية</Label>
+              <Label>{isAr ? "الفئة العمرية" : "Age Group"}</Label>
               <Select value={form.ageGroup} onValueChange={(v) => setForm({ ...form, ageGroup: v })}>
                 <SelectTrigger><SelectValue placeholder="اختر الفئة" /></SelectTrigger>
                 <SelectContent>
@@ -127,7 +130,7 @@ export default function AIMarketingEventContent() {
             <Textarea placeholder="اكتب وصفاً مختصراً عن الفعالية..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
           </div>
           <div className="space-y-2">
-            <Label>اللغة</Label>
+            <Label>{isAr ? "اللغة" : "Language"}</Label>
             <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -216,12 +219,14 @@ export default function AIMarketingEventContent() {
 }
 
 function ContentCard({ title, icon, children, onCopy }: { title: string; icon: React.ReactNode; children: React.ReactNode; onCopy: () => void }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">{icon}{title}</CardTitle>
-          <Button variant="outline" size="sm" onClick={onCopy}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button>
+          <Button variant="outline" size="sm" onClick={onCopy}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
         </div>
       </CardHeader>
       <CardContent>{children}</CardContent>

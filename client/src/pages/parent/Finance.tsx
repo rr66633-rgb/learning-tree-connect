@@ -30,6 +30,7 @@ const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber
 
 export default function ParentFinance() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const statusLabels: Record<string, string> = { pending: t("parent.pending"), paid: t("parent.paid"), overdue: t("parent.overdue"), cancelled: t("statuses.cancelled"), partially_paid: t("finance.statusPartiallyPaid") };
   const invoiceTypeLabels: Record<string, string> = { tuition: t("invoiceTypes.tuition"), activity: t("invoiceTypes.activity"), trip: t("invoiceTypes.trip"), uniform: t("invoiceTypes.uniform"), registration: t("invoiceTypes.registration"), other: t("invoiceTypes.other") };
@@ -48,7 +49,7 @@ export default function ParentFinance() {
   const initiatePayment = trpc.payments.initiate.useMutation({
     onSuccess: (data) => {
       if (!data.isConfigured) {
-        toast.info("بوابة الدفع غير مفعلة حالياً. سيتم تفعيلها قريباً.");
+        toast.info(isAr ? "بوابة الدفع غير مفعلة حالياً. سيتم تفعيلها قريباً." : "Payment gateway not currently active. It will be activated soon.");
         setOpenPayDialog(false);
         return;
       }
@@ -59,7 +60,7 @@ export default function ParentFinance() {
       if (data.transactionUrl) {
         window.location.href = data.transactionUrl;
       } else {
-        toast.success("تم بدء عملية الدفع");
+        toast.success(isAr ? "تم بدء عملية الدفع" : "Payment process started");
         setOpenPayDialog(false);
       }
     },
@@ -201,7 +202,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
     a.download = `invoice_${invoice.invoiceNumber}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("تم تحميل الفاتورة");
+    toast.success(isAr ? "تم تحميل الفاتورة" : "Invoice downloaded");
   };
 
   return (

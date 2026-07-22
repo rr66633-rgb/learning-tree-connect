@@ -42,6 +42,7 @@ function getInterpretationConfig(interpretation: string) {
 
 export default function ParentDevelopmentalAssessment() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState<string>("");
@@ -97,10 +98,10 @@ export default function ParentDevelopmentalAssessment() {
         responses,
       });
 
-      toast.success("تم تحميل التقرير بنجاح");
+      toast.success(isAr ? "تم تحميل التقرير بنجاح" : "Report downloaded successfully");
     } catch (error) {
       console.error("PDF generation error:", error);
-      toast.error("حدث خطأ أثناء إنشاء التقرير");
+      toast.error(isAr ? "حدث خطأ أثناء إنشاء التقرير" : "Error creating report");
     } finally {
       setDownloadingId(null);
     }

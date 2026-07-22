@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 
 export default function EngagementJournal() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [entryType, setEntryType] = useState("milestone");
@@ -33,13 +34,13 @@ export default function EngagementJournal() {
 
   const createMutation = trpc.engagement.journal.create.useMutation({
     onSuccess: () => {
-      toast.success("تم حفظ اللحظة بنجاح! 📸");
+      toast.success(isAr ? "تم حفظ اللحظة بنجاح! 📸" : "Moment saved successfully! 📸");
       setShowNewEntry(false);
       setTitle("");
       setContent("");
     },
     onError: () => {
-      toast.error("حدث خطأ أثناء الحفظ");
+      toast.error(isAr ? "حدث خطأ أثناء الحفظ" : "Error while saving");
     },
   });
 

@@ -51,11 +51,11 @@ export default function DevelopmentalAssessment() {
   const { data: children } = trpc.children.list.useQuery();
   const createAssessment = trpc.assessment.create.useMutation({
     onSuccess: (data) => {
-      toast.success("تم حفظ التقييم بنجاح");
+      toast.success(isAr ? "تم حفظ التقييم بنجاح" : "Assessment saved successfully");
       setShowResults(true);
     },
     onError: (err) => {
-      toast.error("حدث خطأ: " + err.message);
+      toast.error(isAr ? "حدث خطأ: " : "Error: " + err.message);
     },
   });
 

@@ -42,6 +42,7 @@ function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
 
 export default function ParentPickup() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children, isLoading: loadingChildren } = trpc.children.list.useQuery();
   const { data: myRequests, refetch: refetchRequests } = trpc.pickup.myRequests.useQuery(undefined, {
@@ -51,7 +52,7 @@ export default function ParentPickup() {
 
   const requestPickup = trpc.pickup.request.useMutation({
     onSuccess: () => {
-      toast.success("تم إرسال طلب الاستلام - ستصلك إشعارات بكل تحديث");
+      toast.success(isAr ? "تم إرسال طلب الاستلام - ستصلك إشعارات بكل تحديث" : "Pickup request sent - you will receive notifications for updates");
       refetchRequests();
     },
     onError: (err) => {
@@ -61,7 +62,7 @@ export default function ParentPickup() {
 
   const cancelPickup = trpc.pickup.cancel.useMutation({
     onSuccess: () => {
-      toast.success("تم إلغاء طلب الاستلام");
+      toast.success(isAr ? "تم إلغاء طلب الاستلام" : "Pickup request cancelled");
       refetchRequests();
     },
   });

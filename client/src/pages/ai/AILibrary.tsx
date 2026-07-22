@@ -24,6 +24,7 @@ const typeColors: Record<string, string> = {
 
 export default function AILibrary() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const typeLabels: Record<string, string> = { activity: t("aiLibrary.activity"), story: t("aiLibrary.story"), song: t("aiLibrary.song"), game: t("aiLibrary.game"), experiment: t("aiLibrary.experiment"), craft: t("aiLibrary.craft"), observation: i18n.language === "ar" ? "ملاحظة" : "Observation", weekly_plan: i18n.language === "ar" ? "خطة أسبوعية" : "Weekly Plan", progress_report: i18n.language === "ar" ? "تقرير تقدم" : "Progress Report", parent_message: i18n.language === "ar" ? "رسالة لولي الأمر" : "Parent Message", newsletter: i18n.language === "ar" ? "نشرة" : "Newsletter" };
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -31,10 +32,10 @@ export default function AILibrary() {
 
   const libraryQuery = trpc.ai.getLibrary.useQuery({ category: typeFilter === "all" ? undefined : typeFilter as any, limit: 50 });
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
-    onSuccess: () => { toast.success("تم الحفظ في المكتبة"); libraryQuery.refetch(); },
+    onSuccess: () => { toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"); libraryQuery.refetch(); },
   });
   const deleteMutation = trpc.ai.removeFromLibrary.useMutation({
-    onSuccess: () => { toast.success("تم الحذف"); libraryQuery.refetch(); },
+    onSuccess: () => { toast.success(isAr ? "تم الحذف" : "Deleted"); libraryQuery.refetch(); },
   });
 
   const items = libraryQuery.data || [];
@@ -134,7 +135,7 @@ export default function AILibrary() {
               {JSON.stringify(selectedItem?.content, null, 2)}
             </pre>
             <div className="flex gap-2 mt-4">
-              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(selectedItem?.content, null, 2)); toast.success("تم النسخ"); }}>
+              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(selectedItem?.content, null, 2)); toast.success(isAr ? "تم النسخ" : "Copied"); }}>
                 <Copy className="h-4 w-4 ml-1" />نسخ المحتوى
               </Button>
             </div>

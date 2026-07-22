@@ -12,8 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { CalendarCheck, UserCheck, UserX, Clock, Loader2, LogIn, LogOut } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function Attendance() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [checkInDialog, setCheckInDialog] = useState<{ childId: number; childName: string } | null>(null);
   const [checkOutDialog, setCheckOutDialog] = useState<{ id: number; childId: number; childName: string } | null>(null);
@@ -32,15 +35,15 @@ export default function Attendance() {
   const isLoading = childrenLoading || attendanceLoading;
 
   const checkIn = trpc.attendance.checkIn.useMutation({
-    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل الوصول بنجاح"); setCheckInDialog(null); resetCheckInForm(); },
-    onError: () => toast.error("حدث خطأ في تسجيل الوصول"),
+    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success(isAr ? "تم تسجيل الوصول بنجاح" : "Check-in recorded successfully"); setCheckInDialog(null); resetCheckInForm(); },
+    onError: () => toast.error(isAr ? "حدث خطأ في تسجيل الوصول" : "Error recording check-in"),
   });
   const markAbsent = trpc.attendance.markAbsent.useMutation({
-    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل الغياب"); },
+    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success(isAr ? "تم تسجيل الغياب" : "Absence recorded"); },
   });
   const checkOut = trpc.attendance.checkOut.useMutation({
-    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل المغادرة بنجاح"); setCheckOutDialog(null); resetCheckOutForm(); },
-    onError: () => toast.error("حدث خطأ في تسجيل المغادرة"),
+    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success(isAr ? "تم تسجيل المغادرة بنجاح" : "Check-out recorded successfully"); setCheckOutDialog(null); resetCheckOutForm(); },
+    onError: () => toast.error(isAr ? "حدث خطأ في تسجيل المغادرة" : "Error recording departure"),
   });
 
   function resetCheckInForm() {
@@ -91,7 +94,7 @@ export default function Attendance() {
 
   function handleCheckOutSubmit() {
     if (!checkOutDialog || !pickedUpBy || !pickupRelationship) {
-      toast.error("يرجى تعبئة جميع الحقول المطلوبة");
+      toast.error(isAr ? "يرجى تعبئة جميع الحقول المطلوبة" : "Please fill all required fields");
       return;
     }
     checkOut.mutate({

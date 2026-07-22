@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowRight, Download, Loader2, Sparkles, Image } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 const templates = [
   { value: "trip", label: "رحلة", emoji: "🚌" },
@@ -27,6 +28,8 @@ const templates = [
 ];
 
 export default function AIMarketingPoster() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [form, setForm] = useState({
     title: "",
     date: "",
@@ -41,7 +44,7 @@ export default function AIMarketingPoster() {
   const generateMutation = trpc.aiMarketing.generatePoster.useMutation({
     onSuccess: (data) => {
       setPosterUrl(data.posterUrl || null);
-      toast.success("تم إنشاء البوستر بنجاح!");
+      toast.success(isAr ? "تم إنشاء البوستر بنجاح!" : "Poster created successfully!");
     },
     onError: (err) => {
       toast.error(err.message || "حدث خطأ أثناء إنشاء البوستر");
@@ -50,7 +53,7 @@ export default function AIMarketingPoster() {
 
   const handleGenerate = () => {
     if (!form.title) {
-      toast.error("يرجى كتابة عنوان الفعالية");
+      toast.error(isAr ? "يرجى كتابة عنوان الفعالية" : "Please enter event title");
       return;
     }
     generateMutation.mutate(form);
@@ -68,7 +71,7 @@ export default function AIMarketingPoster() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error("فشل تحميل البوستر");
+      toast.error(isAr ? "فشل تحميل البوستر" : "Failed to download poster");
     }
   };
 
@@ -118,11 +121,11 @@ export default function AIMarketingPoster() {
               <Input placeholder="مثال: ملعب المركز" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>الفئة العمرية</Label>
+              <Label>{isAr ? "الفئة العمرية" : "Age Group"}</Label>
               <Input placeholder="مثال: 3-6 سنوات" value={form.ageGroup} onChange={(e) => setForm({ ...form, ageGroup: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>اللغة</Label>
+              <Label>{isAr ? "اللغة" : "Language"}</Label>
               <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

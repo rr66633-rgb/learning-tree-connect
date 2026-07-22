@@ -46,32 +46,32 @@ export default function InvoiceDetail() {
   const printRef = useRef<HTMLDivElement>(null);
 
   const markPaid = trpc.finance.markPaid.useMutation({
-    onSuccess: () => { utils.finance.getById.invalidate({ id: invoiceId }); utils.finance.invoices.invalidate(); setPayDialog(false); toast.success("تم تسجيل الدفع بنجاح"); },
+    onSuccess: () => { utils.finance.getById.invalidate({ id: invoiceId }); utils.finance.invoices.invalidate(); setPayDialog(false); toast.success(isAr ? "تم تسجيل الدفع بنجاح" : "Payment recorded successfully"); },
     onError: (e) => toast.error(e.message),
   });
 
   const markPending = trpc.finance.markPending.useMutation({
-    onSuccess: () => { utils.finance.getById.invalidate({ id: invoiceId }); utils.finance.invoices.invalidate(); toast.success("تم تغيير الحالة إلى معلقة"); },
+    onSuccess: () => { utils.finance.getById.invalidate({ id: invoiceId }); utils.finance.invoices.invalidate(); toast.success(isAr ? "تم تغيير الحالة إلى معلقة" : "Status changed to pending"); },
     onError: (e) => toast.error(e.message),
   });
 
   const updateInvoice = trpc.finance.updateInvoice.useMutation({
-    onSuccess: () => { utils.finance.getById.invalidate({ id: invoiceId }); utils.finance.invoices.invalidate(); setEditDialog(false); toast.success("تم تحديث الفاتورة"); },
+    onSuccess: () => { utils.finance.getById.invalidate({ id: invoiceId }); utils.finance.invoices.invalidate(); setEditDialog(false); toast.success(isAr ? "تم تحديث الفاتورة" : "Invoice updated"); },
     onError: (e) => toast.error(e.message),
   });
 
   const deleteInvoice = trpc.finance.deleteInvoice.useMutation({
-    onSuccess: () => { toast.success("تم حذف الفاتورة"); navigate(user?.role === 'parent' ? '/parent/finance' : '/staff/finance'); },
+    onSuccess: () => { toast.success(isAr ? "تم حذف الفاتورة" : "Invoice deleted"); navigate(user?.role === 'parent' ? '/parent/finance' : '/staff/finance'); },
     onError: (e) => toast.error(e.message),
   });
 
   const sendToParent = trpc.finance.sendReminder.useMutation({
-    onSuccess: () => toast.success("تم إرسال التذكير لولي الأمر"),
+    onSuccess: () => toast.success(isAr ? "تم إرسال التذكير لولي الأمر" : "Reminder sent to parent"),
     onError: (e: any) => toast.error(e.message),
   });
 
   const sendInvoiceEmail = trpc.finance.sendInvoiceEmail.useMutation({
-    onSuccess: () => toast.success("تم إرسال الفاتورة بالبريد الإلكتروني بنجاح"),
+    onSuccess: () => toast.success(isAr ? "تم إرسال الفاتورة بالبريد الإلكتروني بنجاح" : "Invoice sent by email successfully"),
     onError: (e: any) => toast.error(e.message || 'فشل إرسال البريد الإلكتروني'),
   });
 

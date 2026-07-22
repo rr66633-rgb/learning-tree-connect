@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowRight, Copy, Loader2, Sparkles, Instagram, Music, Ghost, Camera } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 const platforms = [
   { value: "instagram_post", label: "بوست انستقرام", icon: Instagram },
@@ -27,6 +28,8 @@ const tones = [
 ];
 
 export default function AIMarketingSocial() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [form, setForm] = useState({
     platform: "instagram_post" as "instagram_post" | "instagram_story" | "instagram_reel" | "tiktok" | "snapchat",
     topic: "",
@@ -39,7 +42,7 @@ export default function AIMarketingSocial() {
   const generateMutation = trpc.aiMarketing.generateSocialContent.useMutation({
     onSuccess: (data) => {
       setResult(data.content);
-      toast.success("تم إنشاء المحتوى بنجاح!");
+      toast.success(isAr ? "تم إنشاء المحتوى بنجاح!" : "Content created successfully!");
     },
     onError: (err) => {
       toast.error(err.message || "حدث خطأ");
@@ -48,7 +51,7 @@ export default function AIMarketingSocial() {
 
   const handleGenerate = () => {
     if (!form.topic) {
-      toast.error("يرجى كتابة الموضوع");
+      toast.error(isAr ? "يرجى كتابة الموضوع" : "Please enter topic");
       return;
     }
     generateMutation.mutate(form);
@@ -100,7 +103,7 @@ export default function AIMarketingSocial() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>اللغة</Label>
+              <Label>{isAr ? "اللغة" : "Language"}</Label>
               <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -128,7 +131,7 @@ export default function AIMarketingSocial() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">الكابشن (عربي)</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionAr, "الكابشن العربي")}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionAr, "الكابشن العربي")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                 </div>
               </CardHeader>
               <CardContent><p className="whitespace-pre-wrap">{result.captionAr}</p></CardContent>
@@ -139,7 +142,7 @@ export default function AIMarketingSocial() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">Caption (English)</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionEn, "English Caption")}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionEn, "English Caption")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                 </div>
               </CardHeader>
               <CardContent><p className="whitespace-pre-wrap" dir="ltr">{result.captionEn}</p></CardContent>
@@ -150,7 +153,7 @@ export default function AIMarketingSocial() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">الهاشتاقات</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.hashtags.join(" "), "الهاشتاقات")}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.hashtags.join(" "), "الهاشتاقات")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -167,7 +170,7 @@ export default function AIMarketingSocial() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">دعوة للتفاعل (CTA)</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.callToAction, "CTA")}><Copy className="h-3.5 w-3.5 ml-1" />نسخ</Button>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.callToAction, "CTA")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                 </div>
               </CardHeader>
               <CardContent><p className="whitespace-pre-wrap">{result.callToAction}</p></CardContent>

@@ -7,8 +7,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { ArrowRight, Mail, Phone, CheckCircle2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ForgotPassword() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<"input" | "otp" | "newPassword" | "success">("input");
   const [method, setMethod] = useState<"email" | "sms">("sms");
@@ -97,7 +100,7 @@ export default function ForgotPassword() {
   const handleRequestReset = (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier) {
-      toast.error("يرجى إدخال البريد الإلكتروني أو رقم الجوال");
+      toast.error(isAr ? "يرجى إدخال البريد الإلكتروني أو رقم الجوال" : "Please enter email or phone number");
       return;
     }
     forgotMutation.mutate({ identifier, method });
@@ -106,7 +109,7 @@ export default function ForgotPassword() {
   const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
     if (otpCode.length !== 6) {
-      toast.error("يرجى إدخال رمز التحقق المكون من 6 أرقام");
+      toast.error(isAr ? "يرجى إدخال رمز التحقق المكون من 6 أرقام" : "Please enter the 6-digit verification code");
       return;
     }
     verifyOtpMutation.mutate({ identifier, code: otpCode });
@@ -115,11 +118,11 @@ export default function ForgotPassword() {
   const handleResetPassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      toast.error(isAr ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين");
+      toast.error(isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match");
       return;
     }
     resetPasswordMutation.mutate({ token: resetToken, newPassword });

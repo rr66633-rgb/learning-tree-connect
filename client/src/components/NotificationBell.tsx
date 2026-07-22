@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -39,6 +40,9 @@ const typeColors: Record<string, string> = {
 };
 
 export function NotificationBell() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { data: notifications, isLoading } = trpc.notifications.list.useQuery(undefined, {
@@ -60,7 +64,7 @@ export function NotificationBell() {
     onSuccess: () => {
       utils.notifications.list.invalidate();
       utils.notifications.unreadCount.invalidate();
-      toast.success("تم تحديد الكل كمقروء");
+      toast.success(isAr ? "تم تحديد الكل كمقروء" : "All marked as read");
     },
   });
 

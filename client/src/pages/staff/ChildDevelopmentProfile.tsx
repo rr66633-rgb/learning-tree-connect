@@ -87,12 +87,12 @@ export default function ChildDevelopmentProfile() {
   const { data: recommendations } = trpc.development.getRecommendations.useQuery({ childId, status: "pending" });
 
   const analyzeMutation = trpc.development.analyzeChild.useMutation({
-    onSuccess: () => toast.success("تم تحليل بيانات الطفل بنجاح"),
+    onSuccess: () => toast.success(isAr ? "تم تحليل بيانات الطفل بنجاح" : "Child data analyzed successfully"),
     onError: (err) => toast.error(err.message),
   });
 
   const generateReadinessMutation = trpc.development.generateReadinessScore.useMutation({
-    onSuccess: () => toast.success("تم توليد درجة الجاهزية المدرسية"),
+    onSuccess: () => toast.success(isAr ? "تم توليد درجة الجاهزية المدرسية" : "School readiness score generated"),
     onError: (err) => toast.error(err.message),
   });
 

@@ -13,21 +13,22 @@ import { useTranslation } from "react-i18next";
 
 export default function EngagementChallenges() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: challenges, isLoading } = trpc.engagement.challenges.listActive.useQuery({});
 
   const joinMutation = trpc.engagement.challenges.enroll.useMutation({
     onSuccess: () => {
-      toast.success("تم الانضمام للتحدي بنجاح! 🎯");
+      toast.success(isAr ? "تم الانضمام للتحدي بنجاح! 🎯" : "Joined challenge successfully! 🎯");
     },
     onError: () => {
-      toast.error("حدث خطأ أثناء الانضمام");
+      toast.error(isAr ? "حدث خطأ أثناء الانضمام" : "Error while joining");
     },
   });
 
   const submitMutation = trpc.engagement.challenges.updateProgress.useMutation({
     onSuccess: () => {
-      toast.success("تم تسجيل تقدمك! 🌟");
+      toast.success(isAr ? "تم تسجيل تقدمك! 🌟" : "Your progress recorded! 🌟");
     },
   });
 

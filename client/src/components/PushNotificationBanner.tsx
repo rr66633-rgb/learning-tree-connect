@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { useTranslation } from "react-i18next";
 
 export function PushNotificationBanner() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { permission, isSubscribed, isLoading, isSupported, subscribe, unsubscribe } = usePushNotifications();
   const [dismissed, setDismissed] = useState(() => {
     return localStorage.getItem('push-banner-dismissed') === 'true';

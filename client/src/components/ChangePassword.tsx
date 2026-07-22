@@ -6,8 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, CheckCircle2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ChangePassword() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,7 +20,7 @@ export default function ChangePassword() {
 
   const changePasswordMutation = trpc.auth.changePassword.useMutation({
     onSuccess: () => {
-      toast.success("تم تغيير كلمة المرور بنجاح");
+      toast.success(isAr ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -30,15 +33,15 @@ export default function ChangePassword() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
-      toast.error("يرجى إدخال كلمة المرور الحالية");
+      toast.error(isAr ? "يرجى إدخال كلمة المرور الحالية" : "Please enter current password");
       return;
     }
     if (newPassword.length < 6) {
-      toast.error("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل");
+      toast.error(isAr ? "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" : "New password must be at least 6 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين");
+      toast.error(isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match");
       return;
     }
     changePasswordMutation.mutate({ currentPassword, newPassword });
@@ -58,7 +61,7 @@ export default function ChangePassword() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
+            <Label htmlFor="currentPassword">{isAr ? "كلمة المرور الحالية" : "Current Password"}</Label>
             <div className="relative">
               <Input
                 id="currentPassword"
@@ -80,7 +83,7 @@ export default function ChangePassword() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+            <Label htmlFor="newPassword">{isAr ? "كلمة المرور الجديدة" : "New Password"}</Label>
             <div className="relative">
               <Input
                 id="newPassword"

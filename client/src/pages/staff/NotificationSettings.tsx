@@ -17,22 +17,22 @@ export default function NotificationSettings() {
   const testSms = trpc.notifications.testSms.useMutation({
     onSuccess: (data) => {
       if (data.success) {
-        toast.success("تم إرسال رسالة SMS تجريبية بنجاح");
+        toast.success(isAr ? "تم إرسال رسالة SMS تجريبية بنجاح" : "Test SMS sent successfully");
       } else {
         toast.error(data.message || "فشل إرسال الرسالة التجريبية");
       }
     },
-    onError: () => toast.error("حدث خطأ أثناء إرسال الرسالة التجريبية"),
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إرسال الرسالة التجريبية" : "Error sending test message"),
   });
   const testEmail = trpc.notifications.testEmail.useMutation({
     onSuccess: (data) => {
       if (data.success) {
-        toast.success("تم إرسال بريد إلكتروني تجريبي بنجاح");
+        toast.success(isAr ? "تم إرسال بريد إلكتروني تجريبي بنجاح" : "Test email sent successfully");
       } else {
         toast.error(data.message || "فشل إرسال البريد التجريبي");
       }
     },
-    onError: () => toast.error("حدث خطأ أثناء إرسال البريد التجريبي"),
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إرسال البريد التجريبي" : "Error sending test email"),
   });
 
   if (isLoading) {

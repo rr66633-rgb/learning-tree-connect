@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,9 @@ const typeColors: Record<string, string> = {
 };
 
 export default function Notifications() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+
   const [, setLocation] = useLocation();
   const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
   const { data: unreadCount } = trpc.notifications.unreadCount.useQuery();
@@ -45,13 +49,13 @@ export default function Notifications() {
     onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); },
   });
   const markAllRead = trpc.notifications.markAllRead.useMutation({
-    onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); toast.success("تم تحديد الكل كمقروء"); },
+    onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); toast.success(isAr ? "تم تحديد الكل كمقروء" : "All marked as read"); },
   });
   const deleteNotif = trpc.notifications.delete.useMutation({
     onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); },
   });
   const deleteAll = trpc.notifications.deleteAll.useMutation({
-    onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); toast.success("تم حذف جميع الإشعارات"); },
+    onSuccess: () => { utils.notifications.list.invalidate(); utils.notifications.unreadCount.invalidate(); toast.success(isAr ? "تم حذف جميع الإشعارات" : "All notifications deleted"); },
   });
 
   const handleNotificationClick = (notif: any) => {

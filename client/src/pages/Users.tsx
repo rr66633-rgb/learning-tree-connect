@@ -13,12 +13,15 @@ import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck
 import * as XLSX from "xlsx";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 type UserRole = "admin" | "principal" | "teacher" | "parent" | "assistant" | "accountant" | "receptionist";
 type UserForm = { name: string; email: string; phone: string; role: UserRole; password: string };
 const emptyForm: UserForm = { name: "", email: "", phone: "", role: "teacher", password: "" };
 
 export default function UsersPage() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [roleFilter, setRoleFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -39,24 +42,24 @@ export default function UsersPage() {
   const utils = trpc.useUtils();
 
   const createUser = trpc.users.create.useMutation({
-    onSuccess: () => { utils.users.list.invalidate(); toast.success("تم إنشاء الحساب بنجاح"); setCreateOpen(false); setForm(emptyForm); },
+    onSuccess: () => { utils.users.list.invalidate(); toast.success(isAr ? "تم إنشاء الحساب بنجاح" : "Account created successfully"); setCreateOpen(false); setForm(emptyForm); },
     onError: (err) => toast.error(err.message || "حدث خطأ أثناء الإنشاء"),
   });
   const updateUser = trpc.users.update.useMutation({
-    onSuccess: () => { utils.users.list.invalidate(); toast.success("تم تحديث البيانات بنجاح"); setEditOpen(false); setSelectedUser(null); },
+    onSuccess: () => { utils.users.list.invalidate(); toast.success(isAr ? "تم تحديث البيانات بنجاح" : "Data updated successfully"); setEditOpen(false); setSelectedUser(null); },
     onError: (err) => toast.error(err.message || "حدث خطأ أثناء التحديث"),
   });
   const deleteUser = trpc.users.delete.useMutation({
-    onSuccess: () => { utils.users.list.invalidate(); toast.success("تم حذف الحساب بنجاح"); setDeleteOpen(false); setSelectedUser(null); },
+    onSuccess: () => { utils.users.list.invalidate(); toast.success(isAr ? "تم حذف الحساب بنجاح" : "Account deleted successfully"); setDeleteOpen(false); setSelectedUser(null); },
     onError: (err) => toast.error(err.message || "حدث خطأ أثناء الحذف"),
   });
   const linkChild = trpc.users.linkChild.useMutation({
-    onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success("تم ربط الطفل بنجاح"); },
-    onError: () => toast.error("حدث خطأ أثناء الربط"),
+    onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success(isAr ? "تم ربط الطفل بنجاح" : "Child linked successfully"); },
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء الربط" : "Error while linking"),
   });
   const unlinkChild = trpc.users.unlinkChild.useMutation({
-    onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success("تم إلغاء الربط"); },
-    onError: () => toast.error("حدث خطأ أثناء إلغاء الربط"),
+    onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success(isAr ? "تم إلغاء الربط" : "Unlinked"); },
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إلغاء الربط" : "Error while unlinking"),
   });
 
   const toggleActive = trpc.users.update.useMutation({

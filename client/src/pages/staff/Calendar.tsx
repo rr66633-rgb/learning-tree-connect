@@ -103,7 +103,7 @@ export default function StaffCalendar() {
       utils.calendar.list.invalidate();
       setDialogOpen(false);
       resetForm();
-      toast.success("تم إضافة الحدث بنجاح");
+      toast.success(isAr ? "تم إضافة الحدث بنجاح" : "Event added successfully");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -114,7 +114,7 @@ export default function StaffCalendar() {
       setDialogOpen(false);
       setEditingEvent(null);
       resetForm();
-      toast.success("تم تحديث الحدث بنجاح");
+      toast.success(isAr ? "تم تحديث الحدث بنجاح" : "Event updated successfully");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -123,7 +123,7 @@ export default function StaffCalendar() {
     onSuccess: () => {
       utils.calendar.list.invalidate();
       setDeleteConfirm(null);
-      toast.success("تم حذف الحدث");
+      toast.success(isAr ? "تم حذف الحدث" : "Event deleted");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -148,7 +148,7 @@ export default function StaffCalendar() {
   const cancelRemindersMutation = trpc.calendar.cancelReminders.useMutation({
     onSuccess: () => {
       utils.calendar.reminderHistory.invalidate();
-      toast.success("تم إلغاء التذكيرات المعلقة");
+      toast.success(isAr ? "تم إلغاء التذكيرات المعلقة" : "Pending reminders cancelled");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -186,7 +186,7 @@ export default function StaffCalendar() {
 
   function handleSubmit() {
     if (!form.titleAr || !form.eventDate) {
-      toast.error("العنوان بالعربية والتاريخ مطلوبان");
+      toast.error(isAr ? "العنوان بالعربية والتاريخ مطلوبان" : "Arabic title and date are required");
       return;
     }
     const payload: any = {

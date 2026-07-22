@@ -5,12 +5,15 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Volume2, VolumeX, Vibrate, Play, Music } from "lucide-react";
 import { useNotificationSound, TONE_LABELS, type NotificationTone } from "@/hooks/useNotificationSound";
+import { useTranslation } from "react-i18next";
 
 /**
  * Notification sound settings component.
  * Allows users to customize notification tones, volume, vibration, and mute.
  */
 export function NotificationSoundSettings() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { settings, updateSettings, previewTone } = useNotificationSound();
 
   const toneOptions: NotificationTone[] = ["soft_chime", "gentle_bell", "friendly_ping", "calm_melody", "none"];
@@ -34,7 +37,7 @@ export function NotificationSoundSettings() {
               <VolumeX className="h-5 w-5 text-muted-foreground" />
             )}
             <div>
-              <Label className="text-base font-medium">تفعيل الصوت</Label>
+              <Label className="text-base font-medium">{isAr ? "تفعيل الصوت" : "Enable Sound"}</Label>
               <p className="text-sm text-muted-foreground">تشغيل صوت عند وصول إشعار جديد</p>
             </div>
           </div>
@@ -48,7 +51,7 @@ export function NotificationSoundSettings() {
         {settings.soundEnabled && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">مستوى الصوت</Label>
+              <Label className="text-sm font-medium">{isAr ? "مستوى الصوت" : "Volume"}</Label>
               <span className="text-sm text-muted-foreground">{settings.volume}%</span>
             </div>
             <Slider

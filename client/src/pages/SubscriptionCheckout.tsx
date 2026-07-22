@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,9 @@ declare global {
 }
 
 export default function SubscriptionCheckout() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const params = useMemo(() => new URLSearchParams(searchString), [searchString]);
@@ -90,7 +94,7 @@ export default function SubscriptionCheckout() {
         });
       } catch (err) {
         console.error("Moyasar init error:", err);
-        toast.error("حدث خطأ في تهيئة بوابة الدفع");
+        toast.error(isAr ? "حدث خطأ في تهيئة بوابة الدفع" : "Error initializing payment gateway");
       }
     });
   }, [selectedPlan, gatewayStatus, amountInHalalas, planId, billingCycle, orgId, paymentInitiated]);

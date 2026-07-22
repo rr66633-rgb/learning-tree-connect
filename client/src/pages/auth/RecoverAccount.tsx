@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -9,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Eye, EyeOff, RefreshCw, CheckCircle2 } from "lucide-react";
 
 export default function RecoverAccount() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +32,7 @@ export default function RecoverAccount() {
   const handleRecover = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+      toast.error(isAr ? "يرجى إدخال البريد الإلكتروني وكلمة المرور" : "Please enter email and password");
       return;
     }
     recoverMutation.mutate({ email, password });

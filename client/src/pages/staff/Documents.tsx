@@ -31,13 +31,13 @@ export default function StaffDocuments() {
       utils.documents.list.invalidate();
       setOpen(false);
       setName(""); setType("policy"); setUrl(""); setAudience("all"); setRequiresSignature(false);
-      toast.success("تم إضافة المستند");
+      toast.success(isAr ? "تم إضافة المستند" : "Document added");
     },
     onError: (e) => toast.error(e.message),
   });
 
   const deleteDoc = trpc.documents.delete.useMutation({
-    onSuccess: () => { utils.documents.list.invalidate(); toast.success("تم حذف المستند"); },
+    onSuccess: () => { utils.documents.list.invalidate(); toast.success(isAr ? "تم حذف المستند" : "Document deleted"); },
     onError: (e) => toast.error(e.message),
   });
 

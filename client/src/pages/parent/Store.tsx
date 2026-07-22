@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 
 export default function ParentStore() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
@@ -35,7 +36,7 @@ export default function ParentStore() {
   const { data: cart } = trpc.store.getCart.useQuery();
 
   const addToCart = trpc.store.addToCart.useMutation({
-    onSuccess: () => { trpc.useUtils().store.getCart.invalidate(); toast.success("تمت الإضافة للسلة"); },
+    onSuccess: () => { trpc.useUtils().store.getCart.invalidate(); toast.success(isAr ? "تمت الإضافة للسلة" : "Added to cart"); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 

@@ -18,6 +18,7 @@ declare global {
 
 export default function StoreCheckout() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const { data: cart, isLoading: cartLoading } = trpc.store.getCart.useQuery();
@@ -57,7 +58,7 @@ export default function StoreCheckout() {
 
   function initMoyasarPayment(oId: number, totalAmount: number) {
     if (!paymentConfig?.publishableKey) {
-      toast.error("بوابة الدفع غير مفعلة");
+      toast.error(isAr ? "بوابة الدفع غير مفعلة" : "Payment gateway not activated");
       return;
     }
     setStep("payment");
@@ -109,7 +110,7 @@ export default function StoreCheckout() {
           });
         } catch (err) {
           console.error("Moyasar init error:", err);
-          toast.error("حدث خطأ في تهيئة بوابة الدفع");
+          toast.error(isAr ? "حدث خطأ في تهيئة بوابة الدفع" : "Error initializing payment gateway");
         }
       });
     }, 100);

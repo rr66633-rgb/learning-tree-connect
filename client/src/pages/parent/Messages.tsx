@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 
 export default function ParentMessages() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { user } = useAuth();
   const { data: conversations, isLoading: loadingConvs } = trpc.messages.conversations.useQuery(undefined, { refetchInterval: 10000 });
@@ -98,14 +99,14 @@ export default function ParentMessages() {
         }
       );
     } catch {
-      toast.error("فشل رفع الملف");
+      toast.error(isAr ? "فشل رفع الملف" : "Failed to upload file");
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleCreateConversation = () => {
     if (!selectedTeacher || !selectedChild) {
-      toast.error("يرجى اختيار الطفل والمعلم");
+      toast.error(isAr ? "يرجى اختيار الطفل والمعلم" : "Please select child and teacher");
       return;
     }
     createConv.mutate(

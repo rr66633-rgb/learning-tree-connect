@@ -9,8 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function AIObservation() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [childName, setChildName] = useState("");
   const [shortNote, setShortNote] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
@@ -20,7 +23,7 @@ export default function AIObservation() {
     onSuccess: (data: any) => {
       setResult(data);
       setContentId(data.id ? Number(data.id) : null);
-      toast.success("تم إنشاء الملاحظة بنجاح");
+      toast.success(isAr ? "تم إنشاء الملاحظة بنجاح" : "Observation created successfully");
     },
     onError: (err) => {
       const msg = err.message || "حدث خطأ";
@@ -31,13 +34,13 @@ export default function AIObservation() {
   const [contentId, setContentId] = useState<number | null>(null);
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
-    onSuccess: () => toast.success("تم الحفظ في المكتبة"),
+    onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
     onError: (err) => toast.error(err.message || "فشل الحفظ"),
   });
 
   const handleGenerate = () => {
     if (!childName.trim() || !shortNote.trim()) {
-      toast.error("يرجى إدخال اسم الطفل والملاحظة");
+      toast.error(isAr ? "يرجى إدخال اسم الطفل والملاحظة" : "Please enter child name and observation");
       return;
     }
     generateMutation.mutate({ childName, shortNote, language });
@@ -45,12 +48,12 @@ export default function AIObservation() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("تم النسخ");
+    toast.success(isAr ? "تم النسخ" : "Copied");
   };
 
   const handleSaveToLibrary = () => {
     if (!contentId) {
-      toast.error("لا يوجد محتوى لحفظه");
+      toast.error(isAr ? "لا يوجد محتوى لحفظه" : "No content to save");
       return;
     }
     saveMutation.mutate({ contentId });

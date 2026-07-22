@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 export default function EngagementGoals() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
@@ -41,19 +42,19 @@ export default function EngagementGoals() {
 
   const generateMutation = trpc.engagement.goals.generate.useMutation({
     onSuccess: () => {
-      toast.success("تم إنشاء أهداف جديدة بنجاح");
+      toast.success(isAr ? "تم إنشاء أهداف جديدة بنجاح" : "New goals created successfully");
       refetch();
     },
-    onError: () => toast.error("حدث خطأ أثناء إنشاء الأهداف"),
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إنشاء الأهداف" : "Error creating goals"),
   });
 
   const updateMutation = trpc.engagement.goals.updateProgress.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث التقدم بنجاح");
+      toast.success(isAr ? "تم تحديث التقدم بنجاح" : "Progress updated successfully");
       setUpdateDialogOpen(false);
       refetch();
     },
-    onError: () => toast.error("حدث خطأ أثناء تحديث التقدم"),
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء تحديث التقدم" : "Error updating progress"),
   });
 
   const handleUpdateProgress = () => {

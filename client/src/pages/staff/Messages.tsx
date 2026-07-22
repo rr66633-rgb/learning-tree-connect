@@ -117,14 +117,14 @@ export default function StaffMessages() {
         }
       );
     } catch {
-      toast.error("فشل رفع الملف");
+      toast.error(isAr ? "فشل رفع الملف" : "Failed to upload file");
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleCreateConversation = () => {
     if (!selectedParent) {
-      toast.error("يرجى اختيار ولي الأمر");
+      toast.error(isAr ? "يرجى اختيار ولي الأمر" : "Please select a parent");
       return;
     }
     const childId = selectedChildForConv ? parseInt(selectedChildForConv) : undefined;

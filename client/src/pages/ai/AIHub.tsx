@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 const aiFeatures = [
   {
@@ -84,6 +85,8 @@ const aiFeatures = [
 ];
 
 export default function AIHub() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <div className="max-w-6xl mx-auto space-y-8" dir="rtl">
       {/* Header */}

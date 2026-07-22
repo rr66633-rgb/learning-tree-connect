@@ -58,7 +58,7 @@ export default function AddStaff() {
 
   const createStaff = trpc.staffManagement.create.useMutation({
     onSuccess: (result) => {
-      toast.success("تم إضافة الموظف بنجاح");
+      toast.success(isAr ? "تم إضافة الموظف بنجاح" : "Staff added successfully");
       navigate(`/staff/staff-management/${result.id}`);
     },
     onError: (err) => toast.error(err.message || "حدث خطأ أثناء الإضافة"),
@@ -68,7 +68,7 @@ export default function AddStaff() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب أن لا يتجاوز 5 ميجابايت");
+      toast.error(isAr ? "حجم الصورة يجب أن لا يتجاوز 5 ميجابايت" : "Image size must not exceed 5MB");
       return;
     }
 
@@ -85,9 +85,9 @@ export default function AddStaff() {
       const data = await res.json();
       setForm(f => ({ ...f, photo: data.url }));
       setPhotoPreview(data.url);
-      toast.success("تم رفع الصورة بنجاح");
+      toast.success(isAr ? "تم رفع الصورة بنجاح" : "Photo uploaded successfully");
     } catch {
-      toast.error("فشل رفع الصورة");
+      toast.error(isAr ? "فشل رفع الصورة" : "Failed to upload image");
     } finally {
       setUploading(false);
     }
@@ -95,10 +95,10 @@ export default function AddStaff() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullNameAr) { toast.error("الاسم بالعربي مطلوب"); return; }
-    if (!form.mobile) { toast.error("رقم الجوال مطلوب"); return; }
-    if (!form.email) { toast.error("البريد الإلكتروني مطلوب"); return; }
-    if (!form.jobTitle) { toast.error("المسمى الوظيفي مطلوب"); return; }
+    if (!form.fullNameAr) { toast.error(isAr ? "الاسم بالعربي مطلوب" : "Arabic name is required"); return; }
+    if (!form.mobile) { toast.error(isAr ? "رقم الجوال مطلوب" : "Phone number is required"); return; }
+    if (!form.email) { toast.error(isAr ? "البريد الإلكتروني مطلوب" : "Email is required"); return; }
+    if (!form.jobTitle) { toast.error(isAr ? "المسمى الوظيفي مطلوب" : "Job title is required"); return; }
 
     createStaff.mutate({
       ...form,

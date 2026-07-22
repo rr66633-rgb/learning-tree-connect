@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, CreditCard, TrendingUp, Clock, AlertTriangle, Send, RefreshCw, Download, FileText, Receipt, Undo2, CalendarClock, DollarSign } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة", partially_paid: "مدفوعة جزئياً" };
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = { pending: "secondary", paid: "default", overdue: "destructive", cancelled: "outline", partially_paid: "secondary" };
@@ -22,6 +23,8 @@ const frequencyLabels: Record<string, string> = { monthly: "شهري", quarterly
 const paymentMethodLabels: Record<string, string> = { cash: "نقدي", bank_transfer: "تحويل بنكي", card: "بطاقة", apple_pay: "Apple Pay", mada: "مدى", stc_pay: "STC Pay", visa: "فيزا", mastercard: "ماستركارد" };
 
 export default function Finance() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: invoices, isLoading } = trpc.finance.invoices.useQuery();
   const { data: summary } = trpc.finance.summary.useQuery();
   const { data: children } = trpc.children.list.useQuery();
@@ -40,30 +43,30 @@ export default function Finance() {
 
   // Mutations
   const createInvoice = trpc.finance.createInvoice.useMutation({
-    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); toast.success("تم إنشاء الفاتورة"); setOpenCreate(false); },
-    onError: () => toast.error("حدث خطأ أثناء إنشاء الفاتورة"),
+    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); toast.success(isAr ? "تم إنشاء الفاتورة" : "Invoice created"); setOpenCreate(false); },
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إنشاء الفاتورة" : "Error while creating invoice"),
   });
   const markPaid = trpc.finance.markPaid.useMutation({
-    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); utils.transactions.list.invalidate(); toast.success("تم تأكيد الدفع"); setOpenMarkPaid(false); },
+    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); utils.transactions.list.invalidate(); toast.success(isAr ? "تم تأكيد الدفع" : "Payment confirmed"); setOpenMarkPaid(false); },
   });
   const sendReminder = trpc.finance.sendReminder.useMutation({
-    onSuccess: () => toast.success("تم إرسال التذكير"),
-    onError: () => toast.error("حدث خطأ"),
+    onSuccess: () => toast.success(isAr ? "تم إرسال التذكير" : "Reminder sent"),
+    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
   });
   const deleteInvoice = trpc.finance.deleteInvoice.useMutation({
-    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); toast.success("تم حذف الفاتورة"); },
+    onSuccess: () => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); toast.success(isAr ? "تم حذف الفاتورة" : "Invoice deleted"); },
   });
   const createRefund = trpc.refunds.create.useMutation({
-    onSuccess: () => { utils.refunds.list.invalidate(); utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); utils.transactions.list.invalidate(); toast.success("تم الاسترداد بنجاح"); setOpenRefund(false); },
-    onError: () => toast.error("حدث خطأ أثناء الاسترداد"),
+    onSuccess: () => { utils.refunds.list.invalidate(); utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); utils.transactions.list.invalidate(); toast.success(isAr ? "تم الاسترداد بنجاح" : "Refund successful"); setOpenRefund(false); },
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء الاسترداد" : "Error while refunding"),
   });
   const createPlan = trpc.tuitionPlans.create.useMutation({
-    onSuccess: () => { utils.tuitionPlans.list.invalidate(); toast.success("تم إنشاء خطة الرسوم"); setOpenPlan(false); },
-    onError: () => toast.error("حدث خطأ"),
+    onSuccess: () => { utils.tuitionPlans.list.invalidate(); toast.success(isAr ? "تم إنشاء خطة الرسوم" : "Tuition plan created"); setOpenPlan(false); },
+    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
   });
   const generateInvoices = trpc.tuitionPlans.generateInvoices.useMutation({
     onSuccess: (data) => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); utils.tuitionPlans.list.invalidate(); toast.success(`تم إنشاء ${data.generated} فاتورة`); },
-    onError: () => toast.error("حدث خطأ أثناء إنشاء الفواتير"),
+    onError: () => toast.error(isAr ? "حدث خطأ أثناء إنشاء الفواتير" : "Error while creating invoices"),
   });
 
   // Forms
@@ -83,8 +86,8 @@ export default function Finance() {
 
   const handleCreateInvoice = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.childId) { toast.error("يرجى اختيار الطفل"); return; }
-    if (!form.parentId) { toast.error("يرجى اختيار ولي الأمر"); return; }
+    if (!form.childId) { toast.error(isAr ? "يرجى اختيار الطفل" : "Please select a child"); return; }
+    if (!form.parentId) { toast.error(isAr ? "يرجى اختيار ولي الأمر" : "Please select a parent"); return; }
     createInvoice.mutate({
       childId: form.childId,
       parentId: form.parentId,
@@ -114,7 +117,7 @@ export default function Finance() {
 
   const handleCreatePlan = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!planForm.childId || !planForm.parentId) { toast.error("يرجى اختيار الطفل وولي الأمر"); return; }
+    if (!planForm.childId || !planForm.parentId) { toast.error(isAr ? "يرجى اختيار الطفل وولي الأمر" : "Please select child and parent"); return; }
     createPlan.mutate({
       childId: planForm.childId,
       parentId: planForm.parentId,
@@ -150,7 +153,7 @@ export default function Finance() {
     a.download = `invoices_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("تم تصدير التقرير");
+    toast.success(isAr ? "تم تصدير التقرير" : "Report exported");
   };
 
   // Get parent for selected child

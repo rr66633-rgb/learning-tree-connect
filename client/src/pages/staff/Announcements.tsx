@@ -64,7 +64,7 @@ export default function StaffAnnouncements() {
       setCreateAudience("all");
       setCreateImageUrl(null);
       setCreateExpiresAt("");
-      toast.success("تم نشر الإعلان وإرسال إشعار لأولياء الأمور");
+      toast.success(isAr ? "تم نشر الإعلان وإرسال إشعار لأولياء الأمور" : "Announcement published and notification sent to parents");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -74,7 +74,7 @@ export default function StaffAnnouncements() {
       utils.announcements.list.invalidate();
       setEditOpen(false);
       setEditId(null);
-      toast.success("تم تحديث الإعلان");
+      toast.success(isAr ? "تم تحديث الإعلان" : "Announcement updated");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -83,7 +83,7 @@ export default function StaffAnnouncements() {
     onSuccess: () => {
       utils.announcements.list.invalidate();
       setDeleteId(null);
-      toast.success("تم حذف الإعلان");
+      toast.success(isAr ? "تم حذف الإعلان" : "Announcement deleted");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -91,7 +91,7 @@ export default function StaffAnnouncements() {
   const togglePin = trpc.announcements.update.useMutation({
     onSuccess: () => {
       utils.announcements.list.invalidate();
-      toast.success("تم تحديث حالة التثبيت");
+      toast.success(isAr ? "تم تحديث حالة التثبيت" : "Pin status updated");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -107,7 +107,7 @@ export default function StaffAnnouncements() {
       const data = await res.json();
       if (isEdit) setEditImageUrl(data.url);
       else setCreateImageUrl(data.url);
-      toast.success("تم رفع الصورة");
+      toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");
     } catch (err: any) {
       toast.error(err.message || "فشل رفع الصورة");
     } finally {

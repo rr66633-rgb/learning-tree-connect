@@ -7,6 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ArrowLeft, Send, Sparkles, BookOpen, Star, Brain, Rocket, HelpCircle, RotateCcw } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 interface Message {
   id: string;
@@ -32,6 +33,8 @@ const quickActionPrompts: Record<string, string> = {
 };
 
 export default function AIAssistant() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");

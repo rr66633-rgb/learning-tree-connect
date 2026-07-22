@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 
 export default function ParentAnnouncements() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: announcements, isLoading } = trpc.announcements.list.useQuery();
   const { data: readIds } = trpc.announcements.myReadStatus.useQuery();
@@ -21,7 +22,7 @@ export default function ParentAnnouncements() {
   const markRead = trpc.announcements.markRead.useMutation({
     onSuccess: () => {
       utils.announcements.myReadStatus.invalidate();
-      toast.success("تم تأكيد القراءة");
+      toast.success(isAr ? "تم تأكيد القراءة" : "Read confirmed");
     },
     onError: (e) => toast.error(e.message),
   });

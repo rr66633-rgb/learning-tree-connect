@@ -8,8 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function AIStory() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [theme, setTheme] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
@@ -18,17 +21,17 @@ export default function AIStory() {
   const [contentId, setContentId] = useState<number | null>(null);
 
   const generateMutation = trpc.ai.generateStory.useMutation({
-    onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success("تم إنشاء القصة بنجاح"); },
+    onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success(isAr ? "تم إنشاء القصة بنجاح" : "Story created successfully"); },
     onError: (err) => { const msg = err.message || "حدث خطأ"; toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
-    onSuccess: () => toast.success("تم الحفظ في المكتبة"),
+    onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
     onError: (err) => toast.error(err.message || "فشل الحفظ"),
   });
 
   const handleSaveToLibrary = () => {
-    if (!contentId) { toast.error("لا يوجد محتوى لحفظه"); return; }
+    if (!contentId) { toast.error(isAr ? "لا يوجد محتوى لحفظه" : "No content to save"); return; }
     saveMutation.mutate({ contentId });
   };
 
@@ -43,7 +46,7 @@ export default function AIStory() {
   };
 
   const handleGenerate = () => {
-    if (!theme.trim() || !ageGroup) { toast.error("يرجى إدخال الموضوع واختيار الفئة العمرية"); return; }
+    if (!theme.trim() || !ageGroup) { toast.error(isAr ? "يرجى إدخال الموضوع واختيار الفئة العمرية" : "Please enter topic and select age group"); return; }
     generateMutation.mutate({ theme, ageGroup, language });
   };
 
@@ -100,7 +103,7 @@ export default function AIStory() {
               <span>القصة</span>
               {result && (
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(result, null, 2)); toast.success("تم النسخ"); }}><Copy className="h-4 w-4 ml-1" />نسخ</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(result, null, 2)); toast.success(isAr ? "تم النسخ" : "Copied"); }}><Copy className="h-4 w-4 ml-1" />نسخ</Button>
                   <Button variant="ghost" size="sm" onClick={handleExportPDF}><Download className="h-4 w-4 ml-1" />PDF</Button>
                   <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />حفظ</Button>
                 </div>

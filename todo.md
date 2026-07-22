@@ -2441,3 +2441,6 @@ Fix:
 - [x] Translate hardcoded labelMap/statusConfig objects to use t() dynamically
 - [x] Verify and add language switcher to parent portal UI (already exists in DashboardLayout)
 - [x] Translate remaining staff pages (all 33 remaining pages batch-translated)
+- [x] Translate AI pages (AILibrary, AILessonPlanner, AIReportGenerator + all 17 AI pages)
+- [x] Translate shared components (ChangePassword, NotificationSoundSettings, PushNotificationBanner + NotificationBell)
+- [x] Translate remaining toast notifications in sub-components (all 182+ toast messages translated)

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const DAY_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
   "الأحد": { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800", badge: "bg-blue-100 text-blue-700" },
@@ -182,6 +183,8 @@ function DayCard({ day, index }: { day: any; index: number }) {
 }
 
 export default function AIPlanner() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [ageGroup, setAgeGroup] = useState("");
   const [theme, setTheme] = useState("");
   const [learningGoals, setLearningGoals] = useState("");
@@ -222,7 +225,7 @@ export default function AIPlanner() {
       const msg = err.message || "حدث خطأ";
       // Show user-friendly error - never show raw JSON/technical errors
       if (msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") || msg.includes("Unexpected")) {
-        toast.error("حدث خطأ أثناء إنشاء الخطة. يرجى المحاولة مرة أخرى.");
+        toast.error(isAr ? "حدث خطأ أثناء إنشاء الخطة. يرجى المحاولة مرة أخرى." : "Error creating plan. Please try again.");
       } else {
         toast.error(msg);
       }
@@ -230,12 +233,12 @@ export default function AIPlanner() {
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
-    onSuccess: () => toast.success("تم الحفظ في المكتبة"),
+    onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
     onError: (err) => toast.error(err.message || "فشل الحفظ"),
   });
 
   const handleSaveToLibrary = () => {
-    if (!contentId) { toast.error("لا يوجد محتوى لحفظه"); return; }
+    if (!contentId) { toast.error(isAr ? "لا يوجد محتوى لحفظه" : "No content to save"); return; }
     saveMutation.mutate({ contentId });
   };
 
@@ -700,7 +703,7 @@ export default function AIPlanner() {
 
   const handleGenerate = () => {
     if (!ageGroup || !theme.trim()) {
-      toast.error("يرجى اختيار الفئة العمرية وإدخال الموضوع");
+      toast.error(isAr ? "يرجى اختيار الفئة العمرية وإدخال الموضوع" : "Please select age group and enter topic");
       return;
     }
     generateMutation.mutate({
@@ -713,7 +716,7 @@ export default function AIPlanner() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("تم النسخ");
+    toast.success(isAr ? "تم النسخ" : "Copied");
   };
 
   return (

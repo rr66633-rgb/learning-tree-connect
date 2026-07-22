@@ -7,36 +7,39 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function AIMessage() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [idea, setIdea] = useState("");
   const [result, setResult] = useState<any>(null);
 
   const [contentId, setContentId] = useState<number | null>(null);
 
   const generateMutation = trpc.ai.generateParentMessage.useMutation({
-    onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success("تم إنشاء الرسالة بنجاح"); },
+    onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success(isAr ? "تم إنشاء الرسالة بنجاح" : "Message created successfully"); },
     onError: (err) => { const msg = err.message || "حدث خطأ"; toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
-    onSuccess: () => toast.success("تم الحفظ في المكتبة"),
+    onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
     onError: (err) => toast.error(err.message || "فشل الحفظ"),
   });
 
   const handleSaveToLibrary = () => {
-    if (!contentId) { toast.error("لا يوجد محتوى لحفظه"); return; }
+    if (!contentId) { toast.error(isAr ? "لا يوجد محتوى لحفظه" : "No content to save"); return; }
     saveMutation.mutate({ contentId });
   };
 
   const handleGenerate = () => {
-    if (!idea.trim()) { toast.error("يرجى إدخال فكرة الرسالة"); return; }
+    if (!idea.trim()) { toast.error(isAr ? "يرجى إدخال فكرة الرسالة" : "Please enter message idea"); return; }
     generateMutation.mutate({ idea });
   };
 
   const copyText = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("تم النسخ");
+    toast.success(isAr ? "تم النسخ" : "Copied");
   };
 
   return (
@@ -80,8 +83,8 @@ export default function AIMessage() {
                 <span>الرسالة بالعربية</span>
                 {result?.messageAr && (
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => copyText(result.messageAr)}><Copy className="h-4 w-4 ml-1" />نسخ</Button>
-                    <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />حفظ</Button>
+                    <Button variant="ghost" size="sm" onClick={() => copyText(result.messageAr)}><Copy className="h-4 w-4 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
+                    <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />{isAr ? "حفظ" : "Save"}</Button>
                   </div>
                 )}
               </CardTitle>

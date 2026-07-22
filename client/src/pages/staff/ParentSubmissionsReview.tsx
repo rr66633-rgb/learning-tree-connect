@@ -27,20 +27,20 @@ export default function ParentSubmissionsReview() {
 
   const journalReviewMutation = trpc.engagement.journal.review.useMutation({
     onSuccess: () => {
-      toast.success("تمت المراجعة بنجاح");
+      toast.success(isAr ? "تمت المراجعة بنجاح" : "Review completed successfully");
       setReviewDialogOpen(false);
       refetchJournals();
     },
-    onError: () => toast.error("حدث خطأ"),
+    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
   });
 
   const observationReviewMutation = trpc.engagement.observations.review.useMutation({
     onSuccess: () => {
-      toast.success("تمت المراجعة بنجاح");
+      toast.success(isAr ? "تمت المراجعة بنجاح" : "Review completed successfully");
       setReviewDialogOpen(false);
       refetchObs();
     },
-    onError: () => toast.error("حدث خطأ"),
+    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
   });
 
   const openReviewDialog = (item: any, type: "journal" | "observation") => {

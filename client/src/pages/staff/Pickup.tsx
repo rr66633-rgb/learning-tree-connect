@@ -81,7 +81,7 @@ export default function StaffPickup() {
   // Teacher sends child to reception (Step 2)
   const sendToReception = trpc.pickup.teacherSendToReception.useMutation({
     onSuccess: () => {
-      toast.success("تم إرسال الطفل للاستقبال");
+      toast.success(isAr ? "تم إرسال الطفل للاستقبال" : "Child sent to reception");
       refetch();
     },
     onError: (err: any) => {
@@ -92,7 +92,7 @@ export default function StaffPickup() {
   // Reception marks child as arrived (Step 3)
   const markWaiting = trpc.pickup.markWaitingAtReception.useMutation({
     onSuccess: () => {
-      toast.success("تم تأكيد وصول الطفل للاستقبال");
+      toast.success(isAr ? "تم تأكيد وصول الطفل للاستقبال" : "Child arrival at reception confirmed");
       refetch();
     },
     onError: (err: any) => {
@@ -103,7 +103,7 @@ export default function StaffPickup() {
   // Complete pickup (Step 4 & 5)
   const completePickup = trpc.pickup.completePickup.useMutation({
     onSuccess: () => {
-      toast.success("تم تسليم الطفل بنجاح");
+      toast.success(isAr ? "تم تسليم الطفل بنجاح" : "Child handed over successfully");
       refetch();
       setPickupDialog(null);
       setSelectedPerson(null);
@@ -125,7 +125,7 @@ export default function StaffPickup() {
 
   const handleConfirmPickup = () => {
     if (!pickupDialog || !selectedPerson) {
-      toast.error("يجب تحديد شخص الاستلام المخول");
+      toast.error(isAr ? "يجب تحديد شخص الاستلام المخول" : "Must select authorized pickup person");
       return;
     }
     completePickup.mutate({

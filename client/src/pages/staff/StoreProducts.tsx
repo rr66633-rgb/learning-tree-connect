@@ -47,22 +47,22 @@ export default function StoreProducts() {
   const [catNameAr, setCatNameAr] = useState("");
 
   const createProduct = trpc.store.adminCreateProduct.useMutation({
-    onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success("تم إضافة المنتج"); resetForm(); setOpenCreate(false); },
+    onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم إضافة المنتج" : "Product added"); resetForm(); setOpenCreate(false); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 
   const updateProduct = trpc.store.adminUpdateProduct.useMutation({
-    onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success("تم تحديث المنتج"); setOpenEdit(false); },
+    onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم تحديث المنتج" : "Product updated"); setOpenEdit(false); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 
   const deleteProduct = trpc.store.adminDeleteProduct.useMutation({
-    onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success("تم حذف المنتج"); },
+    onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم حذف المنتج" : "Product deleted"); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 
   const createCategory = trpc.store.adminCreateCategory.useMutation({
-    onSuccess: () => { utils.store.adminGetCategories.invalidate(); toast.success("تم إضافة التصنيف"); setCatName(""); setCatNameAr(""); setOpenCategory(false); },
+    onSuccess: () => { utils.store.adminGetCategories.invalidate(); toast.success(isAr ? "تم إضافة التصنيف" : "Category added"); setCatName(""); setCatNameAr(""); setOpenCategory(false); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 
@@ -79,16 +79,16 @@ export default function StoreProducts() {
       if (!res.ok) throw new Error("فشل رفع الصورة");
       const { url } = await res.json();
       setImageUrl(url);
-      toast.success("تم رفع الصورة");
+      toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");
     } catch {
-      toast.error("فشل رفع الصورة");
+      toast.error(isAr ? "فشل رفع الصورة" : "Failed to upload image");
     } finally {
       setUploading(false);
     }
   }
 
   function handleCreate() {
-    if (!name || !nameAr || !price) { toast.error("يرجى تعبئة الاسم والسعر"); return; }
+    if (!name || !nameAr || !price) { toast.error(isAr ? "يرجى تعبئة الاسم والسعر" : "Please fill name and price"); return; }
     createProduct.mutate({
       name, nameAr, description, descriptionAr, price,
       compareAtPrice: compareAtPrice || undefined,
@@ -268,7 +268,7 @@ export default function StoreProducts() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenCategory(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
-            <Button onClick={() => { if (!catName || !catNameAr) { toast.error("أدخل اسم التصنيف"); return; } createCategory.mutate({ name: catName, nameAr: catNameAr }); }} disabled={createCategory.isPending}>
+            <Button onClick={() => { if (!catName || !catNameAr) { toast.error(isAr ? "أدخل اسم التصنيف" : "Enter category name"); return; } createCategory.mutate({ name: catName, nameAr: catNameAr }); }} disabled={createCategory.isPending}>
               إضافة
             </Button>
           </DialogFooter>
@@ -329,7 +329,7 @@ function StoreOrdersTab() {
   const { data: orders, isLoading } = trpc.store.adminGetOrders.useQuery();
   const utils = trpc.useUtils();
   const updateStatus = trpc.store.adminUpdateOrderStatus.useMutation({
-    onSuccess: () => { utils.store.adminGetOrders.invalidate(); toast.success("تم تحديث حالة الطلب"); },
+    onSuccess: () => { utils.store.adminGetOrders.invalidate(); toast.success(isAr ? "تم تحديث حالة الطلب" : "Order status updated"); },
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 

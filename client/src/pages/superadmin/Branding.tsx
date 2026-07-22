@@ -20,17 +20,19 @@ interface LogoUploadProps {
 
 function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("نوع الملف غير مدعوم. يرجى رفع صور PNG أو JPG أو SVG");
+      toast.error(isAr ? "نوع الملف غير مدعوم. يرجى رفع صور PNG أو JPG أو SVG" : "File type not supported. Please upload PNG, JPG, or SVG images");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت");
+      toast.error(isAr ? "حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت" : "File too large. Maximum 5MB");
       return;
     }
 
@@ -48,7 +50,7 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
       }
       const { url } = await res.json();
       onUpload(url);
-      toast.success("تم رفع الشعار بنجاح");
+      toast.success(isAr ? "تم رفع الشعار بنجاح" : "Logo uploaded successfully");
     } catch (err: any) {
       toast.error(err.message || "فشل رفع الشعار");
     } finally {
@@ -163,6 +165,7 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
 
 export default function Branding() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: orgs, isLoading: orgsLoading } = trpc.superAdmin.listOrganizations.useQuery({});
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
@@ -174,7 +177,7 @@ export default function Branding() {
 
   const updateBranding = trpc.superAdmin.updateBranding.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث الهوية البصرية بنجاح");
+      toast.success(isAr ? "تم تحديث الهوية البصرية بنجاح" : "Visual identity updated successfully");
       refetch();
     },
     onError: (err) => toast.error(err.message),
@@ -221,10 +224,10 @@ export default function Branding() {
 
   const handleSave = () => {
     if (!selectedOrgId) {
-      toast.error("يرجى اختيار منظمة أولاً");
+      toast.error(isAr ? "يرجى اختيار منظمة أولاً" : "Please select an organization first");
       return;
     }
-    toast.info("جاري حفظ التغييرات...");
+    toast.info(isAr ? "جاري حفظ التغييرات..." : "Saving changes...");
     updateBranding.mutate({
       organizationId: selectedOrgId,
       primaryColor: form.primaryColor,
@@ -544,7 +547,7 @@ export default function Branding() {
               <Save className="w-4 h-4 ml-2" />
               {updateBranding.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
             </Button>
-            <Button variant="outline" size="lg" onClick={() => { refetch(); toast.info("تم إعادة تحميل البيانات"); }} className="flex-1 md:flex-none min-h-[48px]">
+            <Button variant="outline" size="lg" onClick={() => { refetch(); toast.info(isAr ? "تم إعادة تحميل البيانات" : "Data reloaded"); }} className="flex-1 md:flex-none min-h-[48px]">
               <RotateCcw className="w-4 h-4 ml-2" />
               إعادة تحميل
             </Button>

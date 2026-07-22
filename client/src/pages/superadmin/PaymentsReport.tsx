@@ -23,6 +23,7 @@ const statusColors: Record<string, string> = {
 
 export default function PaymentsReport() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const statusLabels: Record<string, string> = { initiated: t("statuses.initiated"), paid: t("statuses.paid"), failed: t("statuses.failed"), expired: t("statuses.expired"), refunded: t("statuses.refunded") };
   const methodLabels: Record<string, string> = { mada: t("paymentMethods.mada"), visa: t("paymentMethods.visa"), mastercard: t("paymentMethods.mastercard"), apple_pay: t("paymentMethods.apple_pay"), stc_pay: t("paymentMethods.stc_pay"), cash: t("paymentMethods.cash"), bank_transfer: t("paymentMethods.bank_transfer") };
@@ -43,7 +44,7 @@ export default function PaymentsReport() {
 
   const handleExportCSV = () => {
     if (!data?.payments?.length) {
-      toast.error("لا توجد بيانات للتصدير");
+      toast.error(isAr ? "لا توجد بيانات للتصدير" : "No data to export");
       return;
     }
 
@@ -67,7 +68,7 @@ export default function PaymentsReport() {
     link.download = `payments-report-${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("تم تصدير التقرير بنجاح");
+    toast.success(isAr ? "تم تصدير التقرير بنجاح" : "Report exported successfully");
   };
 
   const totalPages = data ? Math.ceil(data.total / data.limit) : 1;
