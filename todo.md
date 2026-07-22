@@ -2444,3 +2444,4 @@ Fix:
 - [x] Translate AI pages (AILibrary, AILessonPlanner, AIReportGenerator + all 17 AI pages)
 - [x] Translate shared components (ChangePassword, NotificationSoundSettings, PushNotificationBanner + NotificationBell)
 - [x] Translate remaining toast notifications in sub-components (all 182+ toast messages translated)
+- [x] Translate landing page (NurseriesLanding.tsx) with full i18n and add language switcher button
