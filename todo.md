@@ -2419,3 +2419,6 @@ Fix:
 - [x] Add 'شركاء نفخر بهم' section with Learning Tree Center logo to /nurseries landing page
 - [x] Add floating WhatsApp button (966533784686) to /nurseries landing page
 - [x] Make landing page (NurseriesLanding) the homepage at / with login button in navbar
+- [x] Fix children dropdown not showing all children for teachers (removed class-only filter)
+- [x] Fix photo upload with retry logic and better error messages
+- [x] Fix AI suggest children with retry and user-friendly fallback messages

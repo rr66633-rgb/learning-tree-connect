@@ -76,11 +76,13 @@ export default function ApplyAssessment() {
   const assessment = assessmentQuery.data;
   const questions = assessment?.questions || [];
 
-  // Filter children by assessment's class
+  // Filter children by assessment's class (fallback to all if filter yields empty)
   const filteredChildren = useMemo(() => {
     if (!childrenQuery.data) return [];
     if (assessment?.classId) {
-      return childrenQuery.data.filter((c: any) => c.classId === assessment.classId);
+      const filtered = childrenQuery.data.filter((c: any) => c.classId === assessment.classId);
+      // If classId filter yields no results, show all available children
+      if (filtered.length > 0) return filtered;
     }
     return childrenQuery.data;
   }, [childrenQuery.data, assessment?.classId]);
@@ -140,11 +142,15 @@ export default function ApplyAssessment() {
               <SelectValue placeholder="اختر طفلاً لتطبيق الاختبار عليه" />
             </SelectTrigger>
             <SelectContent>
-              {filteredChildren.map((c: any) => (
-                <SelectItem key={c.id} value={String(c.id)}>
-                  {c.firstName} {c.lastName || ""}
-                </SelectItem>
-              ))}
+              {filteredChildren.length === 0 ? (
+                <div className="p-3 text-center text-sm text-muted-foreground">لا يوجد أطفال مسجلين</div>
+              ) : (
+                filteredChildren.map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.arabicName || `${c.firstName} ${c.lastName || ""}`}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </CardContent>

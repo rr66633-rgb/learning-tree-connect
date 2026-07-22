@@ -130,7 +130,32 @@ export default function StaffMediaUpload() {
     );
   };
 
-  // AI: Generate caption for a specific photo
+  // Helper: upload file with retry
+  const uploadFileWithRetry = async (file: File, retries = 2): Promise<string> => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadRes = await fetch(apiUrl('/api/upload-media'), {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.error || `خطأ في الرفع (${uploadRes.status})`);
+        }
+        const { url } = await uploadRes.json();
+        return url;
+      } catch (err: any) {
+        if (attempt === retries) throw err;
+        // Wait before retry
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+    throw new Error('فشل رفع الملف بعد عدة محاولات');
+  };
+
   const handleAiCaption = async (index: number) => {
     const file = files[index];
     if (file.type !== 'photo') {
@@ -140,23 +165,17 @@ export default function StaffMediaUpload() {
 
     setAiCaptionLoading(index);
     try {
-      // First upload the file temporarily to get a URL for the AI
-      const formData = new FormData();
-      formData.append('file', file.file);
-      const uploadRes = await fetch(apiUrl('/api/upload-media'), {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      if (!uploadRes.ok) throw new Error('فشل رفع الملف للمعالجة');
-      const { url } = await uploadRes.json();
-
-      // Update the file with the uploaded URL
-      setFiles(prev => {
-        const newFiles = [...prev];
-        newFiles[index] = { ...newFiles[index], url };
-        return newFiles;
-      });
+      // First upload the file with retry
+      let url = file.url;
+      if (!url) {
+        url = await uploadFileWithRetry(file.file);
+        // Update the file with the uploaded URL
+        setFiles(prev => {
+          const newFiles = [...prev];
+          newFiles[index] = { ...newFiles[index], url };
+          return newFiles;
+        });
+      }
 
       // Call AI caption
       const result = await aiCaption.mutateAsync({ imageUrl: url });
@@ -167,7 +186,12 @@ export default function StaffMediaUpload() {
         toast.error("لم يتمكن الذكاء الاصطناعي من اقتراح وصف");
       }
     } catch (error: any) {
-      toast.error(error.message || "فشل اقتراح الوصف");
+      const msg = error.message || "";
+      if (msg.includes('504') || msg.includes('500') || msg.includes('timeout')) {
+        toast.error("الخدمة مشغولة حالياً، يرجى المحاولة مرة أخرى بعد قليل");
+      } else {
+        toast.error(msg || "فشل اقتراح الوصف");
+      }
     } finally {
       setAiCaptionLoading(null);
     }
@@ -186,19 +210,9 @@ export default function StaffMediaUpload() {
     try {
       let imageUrl = firstPhoto.url;
       
-      // If not uploaded yet, upload it first
+      // If not uploaded yet, upload it first with retry
       if (!imageUrl) {
-        const formData = new FormData();
-        formData.append('file', firstPhoto.file);
-        const uploadRes = await fetch(apiUrl('/api/upload-media'), {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-        });
-        if (!uploadRes.ok) throw new Error('فشل رفع الملف للمعالجة');
-        const result = await uploadRes.json();
-        imageUrl = result.url;
-
+        imageUrl = await uploadFileWithRetry(firstPhoto.file);
         // Update the file with the URL
         const idx = files.indexOf(firstPhoto);
         setFiles(prev => {
@@ -217,10 +231,15 @@ export default function StaffMediaUpload() {
         setSelectedChildren(result.suggestedChildIds);
         toast.success(result.message || `تم التعرف على ${result.suggestedChildIds.length} طفل/أطفال`);
       } else {
-        toast(result.message || "لم يتم التعرف على أي طفل في الصورة");
+        toast(result.message || "لم يتم التعرف على أي طفل في الصورة. يمكنك تحديد الأطفال يدوياً.");
       }
     } catch (error: any) {
-      toast.error(error.message || "فشل التعرف على الأطفال");
+      const msg = error.message || "";
+      if (msg.includes('504') || msg.includes('500') || msg.includes('timeout')) {
+        toast.error("الخدمة مشغولة حالياً، يرجى المحاولة مرة أخرى بعد قليل. يمكنك تحديد الأطفال يدوياً.");
+      } else {
+        toast.error(msg || "فشل التعرف على الأطفال. يمكنك تحديد الأطفال يدوياً.");
+      }
     } finally {
       setAiChildrenLoading(false);
     }
