@@ -370,7 +370,7 @@ function RoleRouter() {
     );
   }
 
-  // Pricing page - always accessible, full-screen layout
+    // Pricing page - always accessible, full-screen layout
   if (location === "/pricing") {
     return (
       <Suspense fallback={<PageLoader />}>
@@ -378,7 +378,14 @@ function RoleRouter() {
       </Suspense>
     );
   }
-
+  // Marketing landing page - always accessible without auth
+  if (location === "/nurseries") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <NurseriesLanding />
+      </Suspense>
+    );
+  }
   if (loading) return <PageLoader />;
 
   // Not logged in - show auth pages or landing page
@@ -415,12 +422,7 @@ function RoleRouter() {
     return <PendingRolePage />;
   }
 
-  // Public marketing pages - render outside DashboardLayout
-  if (window.location.pathname === '/nurseries') {
-    return <Suspense fallback={<PageLoader />}><NurseriesLanding /></Suspense>;
-  }
-
-  return (
+    return (
     <DashboardLayout basePath={basePath}>
       {/* Full-screen alert for staff when parent arrives for pickup */}
       {isStaffRole(userRole) && <ParentArrivalAlert />}
