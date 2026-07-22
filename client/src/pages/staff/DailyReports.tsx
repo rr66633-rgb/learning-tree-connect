@@ -5,11 +5,22 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Utensils, Moon, Droplets, Baby, Sun, ThermometerSun, StickyNote } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const iconMap: Record<string, any> = { meal: Utensils, snack: Utensils, nap_start: Moon, nap_end: Moon, diaper: Baby, toilet: Droplets, water: Droplets, medication: ThermometerSun, outdoor_play: Sun, indoor_play: Sun, mood: StickyNote, temperature: ThermometerSun, note: StickyNote };
-const labelMap: Record<string, string> = { meal: "وجبة", snack: "وجبة خفيفة", nap_start: "بداية قيلولة", nap_end: "نهاية قيلولة", diaper: "حفاض", toilet: "دورة مياه", water: "ماء", medication: "دواء", outdoor_play: "لعب خارجي", indoor_play: "لعب داخلي", mood: "المزاج", temperature: "حرارة", note: "ملاحظة" };
+
+const labelKeyMap: Record<string, string> = {
+  meal: "meal", snack: "snack", nap_start: "napStart", nap_end: "napEnd",
+  diaper: "diaper", toilet: "toilet", water: "water", medication: "medication",
+  outdoor_play: "outdoorPlay", indoor_play: "indoorPlay", mood: "mood",
+  temperature: "temperature", note: "note"
+};
 
 export default function StaffDailyReports() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+  const locale = isEn ? 'en-US' : 'ar-SA';
+
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const { data: activities, isLoading } = trpc.dailyActivities.byChild.useQuery(
@@ -18,12 +29,12 @@ export default function StaffDailyReports() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isEn ? 'ltr' : 'rtl'}>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">التقارير اليومية</h1>
+        <h1 className="text-2xl font-bold">{t('dailyReports.title')}</h1>
       </div>
       <Select value={selectedChild} onValueChange={setSelectedChild}>
-        <SelectTrigger className="max-w-xs"><SelectValue placeholder="اختر الطفل لعرض تقريره" /></SelectTrigger>
+        <SelectTrigger className="max-w-xs"><SelectValue placeholder={t('dailyReports.selectChild')} /></SelectTrigger>
         <SelectContent>
           {children?.map((c: any) => (
             <SelectItem key={c.id} value={c.id.toString()}>
@@ -54,16 +65,17 @@ export default function StaffDailyReports() {
                   </div>
                 );
               })()}
-              <CardTitle>الجدول الزمني - {new Date().toLocaleDateString('ar-SA')}</CardTitle>
+              <CardTitle>{t('dailyReports.timeline')} - {new Date().toLocaleDateString(locale)}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-32 w-full" /> : activities?.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">لا توجد أنشطة مسجلة اليوم</p>
+              <p className="text-center text-muted-foreground py-8">{t('dailyReports.noActivities')}</p>
             ) : (
               <div className="space-y-3">
                 {activities?.map((act: any) => {
                   const Icon = iconMap[act.type] || StickyNote;
+                  const labelKey = labelKeyMap[act.type];
                   return (
                     <div key={act.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -71,8 +83,8 @@ export default function StaffDailyReports() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{labelMap[act.type] || act.type}</span>
-                          <span className="text-xs text-muted-foreground">{new Date(act.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="font-medium text-sm">{labelKey ? t(`dailyReports.${labelKey}`) : act.type}</span>
+                          <span className="text-xs text-muted-foreground">{new Date(act.timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                         {act.details && <p className="text-sm text-muted-foreground mt-1">{act.details}</p>}
                       </div>

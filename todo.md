@@ -2427,3 +2427,6 @@ Fix:
 - [x] Integrate bilingual labels into DashboardLayout sidebar, top bar, and user dropdown
 - [x] Add quick language toggle in user dropdown menu
 - [x] Auto-apply user's saved language preference on login
+- [x] Add i18n translations to Dashboard page (staff)
+- [x] Add i18n translations to Attendance page (staff)
+- [x] Add i18n translations to DailyReports page (staff)

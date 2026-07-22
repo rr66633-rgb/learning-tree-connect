@@ -13,18 +13,22 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function StaffDashboard() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+  const locale = isEn ? 'en-US' : 'ar-SA';
   const { user } = useAuth();
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
   const { data: todayAttendance } = trpc.staffAttendance.today.useQuery();
   const { data: announcements } = trpc.announcements.list.useQuery();
   const checkIn = trpc.staffAttendance.checkIn.useMutation({
-    onSuccess: () => toast.success("تم تسجيل الحضور بنجاح"),
+    onSuccess: () => toast.success(t('staffDashboard.checkInSuccess')),
     onError: (err) => toast.error(err.message),
   });
   const checkOut = trpc.staffAttendance.checkOut.useMutation({
-    onSuccess: () => toast.success("تم تسجيل الانصراف بنجاح"),
+    onSuccess: () => toast.success(t('staffDashboard.checkOutSuccess')),
     onError: (err) => toast.error(err.message),
   });
   const [gpsLoading, setGpsLoading] = useState(false);
@@ -41,7 +45,7 @@ export default function StaffDashboard() {
         setGpsLoading(false);
       },
       (err) => {
-        toast.error("لا يمكن تحديد موقعك. يرجى تفعيل خدمات الموقع.");
+        toast.error(t('staffDashboard.locationError'));
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -61,7 +65,7 @@ export default function StaffDashboard() {
         setGpsLoading(false);
       },
       (err) => {
-        toast.error("لا يمكن تحديد موقعك. يرجى تفعيل خدمات الموقع.");
+        toast.error(t('staffDashboard.locationError'));
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -73,13 +77,12 @@ export default function StaffDashboard() {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "صباح الخير";
-    if (hour < 17) return "مساء الخير";
-    return "مساء الخير";
+    if (hour < 12) return t('staffDashboard.goodMorning');
+    return t('staffDashboard.goodEvening');
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto" dir="rtl">
+    <div className="space-y-6 max-w-7xl mx-auto" dir={isEn ? 'ltr' : 'rtl'}>
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -87,14 +90,14 @@ export default function StaffDashboard() {
             {greeting()}، {user?.name?.split(' ')[0]}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div className="flex gap-2">
           <Link href={`/${user?.role === 'parent' ? 'parent' : 'staff'}/notifications`}>
             <Button variant="outline" size="sm" className="rounded-xl gap-2">
               <Bell className="h-4 w-4" />
-              <span className="hidden md:inline">الإشعارات</span>
+              <span className="hidden md:inline">{t('staffDashboard.notifications')}</span>
             </Button>
           </Link>
         </div>
@@ -109,11 +112,11 @@ export default function StaffDashboard() {
                 <MapPin className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-foreground">تسجيل الحضور</p>
+                <p className="font-semibold text-foreground">{t('staffDashboard.attendanceRegistration')}</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {todayAttendance?.checkInTime
-                    ? `تم الحضور: ${new Date(todayAttendance.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`
-                    : "لم يتم تسجيل الحضور بعد"}
+                    ? `${t('staffDashboard.checkedInAt')} ${new Date(todayAttendance.checkInTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`
+                    : t('staffDashboard.notCheckedIn')}
                 </p>
               </div>
             </div>
@@ -126,7 +129,7 @@ export default function StaffDashboard() {
                   className="rounded-xl bg-green-600 hover:bg-green-700 shadow-sm btn-press"
                 >
                   <Clock className="h-4 w-4 ml-1.5" />
-                  {gpsLoading ? "جاري..." : "تسجيل حضور"}
+                  {gpsLoading ? t('staffDashboard.locating') : t('staffDashboard.checkIn')}
                 </Button>
               ) : !todayAttendance?.checkOutTime ? (
                 <Button
@@ -137,12 +140,12 @@ export default function StaffDashboard() {
                   className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 btn-press"
                 >
                   <Clock className="h-4 w-4 ml-1.5" />
-                  {gpsLoading ? "جاري..." : "تسجيل انصراف"}
+                  {gpsLoading ? t('staffDashboard.locating') : t('staffDashboard.checkOut')}
                 </Button>
               ) : (
                 <Badge className="bg-green-100 text-green-700 border-green-200 rounded-lg px-3 py-1.5">
                   <UserCheck className="h-3.5 w-3.5 ml-1" />
-                  تم تسجيل اليوم
+                  {t('staffDashboard.checkedInToday')}
                 </Badge>
               )}
             </div>
@@ -161,18 +164,18 @@ export default function StaffDashboard() {
                 <Baby className="h-5 w-5 text-[#00C9B7]" />
               </div>
               <Badge variant="outline" className="text-[10px] border-[#00C9B7]/30 text-[#00C9B7] rounded-lg">
-                اليوم
+                {t('staffDashboard.today')}
               </Badge>
             </div>
             <div className="mt-4">
               {isLoading ? <Skeleton className="h-8 w-16" /> : (
                 <p className="text-3xl font-bold text-foreground">{stats?.presentToday ?? 0}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-1">أطفال حاضرون</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('staffDashboard.childrenPresent')}</p>
             </div>
             <div className="mt-3">
               <Progress value={attendanceRate} className="h-1.5" />
-              <p className="text-[11px] text-muted-foreground mt-1">{attendanceRate}% نسبة الحضور</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{attendanceRate}% {t('staffDashboard.attendanceRate')}</p>
             </div>
           </div>
           </Link>
@@ -189,7 +192,7 @@ export default function StaffDashboard() {
               {isLoading ? <Skeleton className="h-8 w-16" /> : (
                 <p className="text-3xl font-bold text-foreground">{stats?.totalChildren ?? 0}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-1">إجمالي الأطفال</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('staffDashboard.totalChildren')}</p>
             </div>
           </div>
           </Link>
@@ -206,7 +209,7 @@ export default function StaffDashboard() {
               {isLoading ? <Skeleton className="h-8 w-16" /> : (
                 <p className="text-3xl font-bold text-foreground">{stats?.totalStaff ?? 0}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-1">الموظفون</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('staffDashboard.staff')}</p>
             </div>
           </div>
           </Link>
@@ -227,7 +230,7 @@ export default function StaffDashboard() {
               {isLoading ? <Skeleton className="h-8 w-24" /> : (
                 <p className="text-2xl font-bold text-foreground">{(stats?.totalRevenue ?? 0).toLocaleString()}</p>
               )}
-              <p className="text-sm text-muted-foreground mt-1">الإيرادات (ر.س)</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('staffDashboard.revenue')}</p>
             </div>
           </div>
           </Link>
@@ -242,7 +245,7 @@ export default function StaffDashboard() {
               <div className="h-10 w-10 rounded-xl bg-[#00C9B7]/10 flex items-center justify-center mx-auto mb-2">
                 <CalendarCheck className="h-5 w-5 text-[#00C9B7]" />
               </div>
-              <p className="text-xs font-medium text-foreground">الحضور</p>
+              <p className="text-xs font-medium text-foreground">{t('staffDashboard.attendance')}</p>
             </CardContent>
           </Card>
         </Link>
@@ -252,7 +255,7 @@ export default function StaffDashboard() {
               <div className="h-10 w-10 rounded-xl bg-[#FFB020]/10 flex items-center justify-center mx-auto mb-2">
                 <FileText className="h-5 w-5 text-[#FFB020]" />
               </div>
-              <p className="text-xs font-medium text-foreground">التقارير</p>
+              <p className="text-xs font-medium text-foreground">{t('staffDashboard.reports')}</p>
             </CardContent>
           </Card>
         </Link>
@@ -262,7 +265,7 @@ export default function StaffDashboard() {
               <div className="h-10 w-10 rounded-xl bg-[#FF5CA8]/10 flex items-center justify-center mx-auto mb-2">
                 <MessageCircle className="h-5 w-5 text-[#FF5CA8]" />
               </div>
-              <p className="text-xs font-medium text-foreground">الرسائل</p>
+              <p className="text-xs font-medium text-foreground">{t('staffDashboard.messages')}</p>
             </CardContent>
           </Card>
         </Link>
@@ -272,7 +275,7 @@ export default function StaffDashboard() {
               <div className="h-10 w-10 rounded-xl bg-[#7B61FF]/10 flex items-center justify-center mx-auto mb-2">
                 <Sparkles className="h-5 w-5 text-[#7B61FF]" />
               </div>
-              <p className="text-xs font-medium text-foreground">المساعد الذكي</p>
+              <p className="text-xs font-medium text-foreground">{t('staffDashboard.aiAssistant')}</p>
             </CardContent>
           </Card>
         </Link>
@@ -288,11 +291,11 @@ export default function StaffDashboard() {
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <BookOpen className="h-4 w-4 text-primary" />
                 </div>
-                نشاط اليوم
+                {isEn ? 'Today\'s Activity' : 'نشاط اليوم'}
               </CardTitle>
               <Link href={`/${user?.role === 'parent' ? 'parent' : 'staff'}/attendance`}>
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1 rounded-lg">
-                  عرض الكل
+                  {isEn ? 'View All' : 'عرض الكل'}
                   <ArrowUpRight className="h-3 w-3" />
                 </Button>
               </Link>
@@ -304,7 +307,7 @@ export default function StaffDashboard() {
                 <div className="h-9 w-9 rounded-xl bg-[#00C9B7]/10 flex items-center justify-center">
                   <CalendarCheck className="h-4 w-4 text-[#00C9B7]" />
                 </div>
-                <span className="text-sm font-medium">نسبة الحضور</span>
+                <span className="text-sm font-medium">{t('staffDashboard.attendanceRate')}</span>
               </div>
               {isLoading ? <Skeleton className="h-6 w-14" /> : (
                 <span className="text-lg font-bold text-[#00C9B7]">{attendanceRate}%</span>
@@ -315,7 +318,7 @@ export default function StaffDashboard() {
                 <div className="h-9 w-9 rounded-xl bg-[#7B61FF]/10 flex items-center justify-center">
                   <Users className="h-4 w-4 text-[#7B61FF]" />
                 </div>
-                <span className="text-sm font-medium">الأطفال المسجلون</span>
+                <span className="text-sm font-medium">{t('staffDashboard.registeredChildren')}</span>
               </div>
               {isLoading ? <Skeleton className="h-6 w-14" /> : (
                 <span className="text-lg font-bold text-[#7B61FF]">{stats?.totalChildren ?? 0}</span>
@@ -327,10 +330,10 @@ export default function StaffDashboard() {
                   <div className="h-9 w-9 rounded-xl bg-[#FFB020]/10 flex items-center justify-center">
                     <CreditCard className="h-4 w-4 text-[#FFB020]" />
                   </div>
-                  <span className="text-sm font-medium">الإيرادات المحصلة</span>
+                  <span className="text-sm font-medium">{t('staffDashboard.collectedRevenue')}</span>
                 </div>
                 {isLoading ? <Skeleton className="h-6 w-20" /> : (
-                  <span className="text-lg font-bold text-[#FFB020]">{(stats?.totalRevenue ?? 0).toLocaleString()} ر.س</span>
+                  <span className="text-lg font-bold text-[#FFB020]">{(stats?.totalRevenue ?? 0).toLocaleString()} {t('staffDashboard.sar')}</span>
                 )}
               </div>
             )}
@@ -344,23 +347,23 @@ export default function StaffDashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-[#7B61FF]" />
-                توصيات ذكية
+                {t('staffDashboard.smartRecommendations')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="p-3 bg-white/80 rounded-xl border border-[#7B61FF]/10">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  بناءً على بيانات الحضور، يُنصح بالتواصل مع أولياء الأمور للغائبين لأكثر من يومين متتاليين.
+                  {t('staffDashboard.recommendation1')}
                 </p>
               </div>
               <div className="p-3 bg-white/80 rounded-xl border border-[#7B61FF]/10">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  يمكنك إنشاء خطة أسبوعية جديدة باستخدام المساعد الذكي لتوفير الوقت.
+                  {t('staffDashboard.recommendation2')}
                 </p>
               </div>
               <Link href="/ai/assistant">
                 <Button variant="ghost" size="sm" className="w-full text-xs text-[#7B61FF] hover:text-[#7B61FF] hover:bg-[#7B61FF]/5 rounded-lg mt-1">
-                  استكشف المزيد
+                  {t('staffDashboard.exploreMore')}
                   <ArrowUpRight className="h-3 w-3 mr-1" />
                 </Button>
               </Link>
@@ -373,7 +376,7 @@ export default function StaffDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <Megaphone className="h-4 w-4 text-[#FFB020]" />
-                  آخر الإعلانات
+                  {t('staffDashboard.latestAnnouncements')}
                 </CardTitle>
               </div>
             </CardHeader>
@@ -382,12 +385,12 @@ export default function StaffDashboard() {
                 <div key={ann.id} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-medium text-foreground line-clamp-1">{ann.title}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    {new Date(ann.createdAt).toLocaleDateString('ar-SA')}
+                    {new Date(ann.createdAt).toLocaleDateString(locale)}
                   </p>
                 </div>
               ))}
               {(!announcements || announcements.length === 0) && (
-                <p className="text-xs text-muted-foreground text-center py-4">لا توجد إعلانات حديثة</p>
+                <p className="text-xs text-muted-foreground text-center py-4">{t('staffDashboard.noAnnouncements')}</p>
               )}
             </CardContent>
           </Card>
@@ -402,11 +405,11 @@ export default function StaffDashboard() {
               <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-emerald-600" />
               </div>
-              الأحداث القادمة
+              {t('staffDashboard.upcomingEvents')}
             </CardTitle>
             <Link href={`/${user?.role === 'parent' ? 'parent' : 'staff'}/calendar`}>
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1 rounded-lg">
-                التقويم
+                {t('staffDashboard.calendar')}
                 <ArrowUpRight className="h-3 w-3" />
               </Button>
             </Link>
@@ -416,7 +419,7 @@ export default function StaffDashboard() {
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             <div className="text-center">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">لا توجد أحداث قادمة هذا الأسبوع</p>
+              <p className="text-sm">{t('staffDashboard.noEvents')}</p>
             </div>
           </div>
         </CardContent>

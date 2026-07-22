@@ -13,26 +13,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, X, LogIn, LogOut, Loader2, History, Edit } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { toast } from "sonner";
-
-const STATUS_LABELS: Record<string, string> = {
-  present: "حاضر",
-  absent: "غائب",
-  late: "متأخر",
-  excused: "غياب بعذر",
-  checked_in: "تم التسجيل",
-  checked_out: "تم المغادرة",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  present: "bg-green-100 text-green-700",
-  absent: "bg-red-100 text-red-700",
-  late: "bg-amber-100 text-amber-700",
-  excused: "bg-blue-100 text-blue-700",
-  checked_in: "bg-emerald-100 text-emerald-700",
-  checked_out: "bg-gray-100 text-gray-700",
-};
+import { useTranslation } from "react-i18next";
 
 export default function StaffAttendance() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+  const locale = isEn ? 'en-US' : 'ar-SA';
+
+  const STATUS_LABELS: Record<string, string> = {
+    present: t('staffAttendance.present'),
+    absent: t('staffAttendance.absent'),
+    late: t('staffAttendance.late'),
+    excused: t('staffAttendance.excused'),
+    checked_in: t('staffAttendance.checkedIn'),
+    checked_out: t('staffAttendance.checkedOut'),
+  };
+
+  const STATUS_COLORS: Record<string, string> = {
+    present: "bg-green-100 text-green-700",
+    absent: "bg-red-100 text-red-700",
+    late: "bg-amber-100 text-amber-700",
+    excused: "bg-blue-100 text-blue-700",
+    checked_in: "bg-emerald-100 text-emerald-700",
+    checked_out: "bg-gray-100 text-gray-700",
+  };
+
   const [selectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [checkInDialog, setCheckInDialog] = useState<{ childId: number; childName: string } | null>(null);
   const [checkOutDialog, setCheckOutDialog] = useState<{ id: number; childId: number; childName: string } | null>(null);
@@ -57,25 +62,25 @@ export default function StaffAttendance() {
   const utils = trpc.useUtils();
 
   const checkIn = trpc.attendance.checkIn.useMutation({
-    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل الوصول"); setCheckInDialog(null); resetCheckInForm(); },
-    onError: () => toast.error("حدث خطأ"),
+    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success(t('staffAttendance.arrivalRecorded')); setCheckInDialog(null); resetCheckInForm(); },
+    onError: () => toast.error(t('staffAttendance.error')),
   });
   const markAbsent = trpc.attendance.markAbsent.useMutation({
-    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل الغياب"); },
-    onError: () => toast.error("حدث خطأ"),
+    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success(t('staffAttendance.absenceRecorded')); },
+    onError: () => toast.error(t('staffAttendance.error')),
   });
   const checkOut = trpc.attendance.checkOut.useMutation({
-    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success("تم تسجيل المغادرة"); setCheckOutDialog(null); resetCheckOutForm(); },
-    onError: () => toast.error("حدث خطأ"),
+    onSuccess: () => { utils.attendance.byDate.invalidate(); toast.success(t('staffAttendance.departureRecorded')); setCheckOutDialog(null); resetCheckOutForm(); },
+    onError: () => toast.error(t('staffAttendance.error')),
   });
   const updateStatus = trpc.attendance.updateStatus.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       utils.attendance.byDate.invalidate();
-      toast.success(`تم تغيير الحالة من "${STATUS_LABELS[data.previousStatus] || data.previousStatus}" إلى "${STATUS_LABELS[data.newStatus] || data.newStatus}"`);
+      toast.success(t('staffAttendance.statusChanged'));
       setStatusChangeDialog(null);
       setStatusChangeNotes("");
     },
-    onError: () => toast.error("حدث خطأ في تغيير الحالة"),
+    onError: () => toast.error(t('staffAttendance.statusChangeError')),
   });
 
   function resetCheckInForm() { setDroppedOffBy(""); setDroppedOffRelationship(""); setCheckInNotes(""); }
@@ -108,7 +113,7 @@ export default function StaffAttendance() {
 
   function handleCheckOutSubmit() {
     if (!checkOutDialog || !pickedUpBy || !pickupRelationship) {
-      toast.error("يرجى تعبئة الحقول المطلوبة");
+      toast.error(t('staffAttendance.fillRequired'));
       return;
     }
     checkOut.mutate({
@@ -142,14 +147,14 @@ export default function StaffAttendance() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto" dir={isEn ? 'ltr' : 'rtl'}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">حضور الأطفال</h1>
-          <p className="text-sm text-muted-foreground mt-1">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('staffAttendance.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <Badge variant="outline" className="w-fit rounded-xl px-4 py-2 text-sm border-primary/20 text-primary bg-primary/5">
-          {children?.length ?? 0} طفل مسجل
+          {children?.length ?? 0} {t('staffAttendance.registeredChild')}
         </Badge>
       </div>
 
@@ -161,7 +166,7 @@ export default function StaffAttendance() {
               <div className="h-6 w-6 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <Check className="h-3.5 w-3.5 text-emerald-600" />
               </div>
-              في المركز الآن ({currentlyInCenter.length})
+              {t('staffAttendance.inCenter')} ({currentlyInCenter.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -181,12 +186,12 @@ export default function StaffAttendance() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">الطفل</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
-                <TableHead className="text-right">الوصول</TableHead>
-                <TableHead className="text-right">المغادرة</TableHead>
-                <TableHead className="text-right">تغيير الحالة</TableHead>
-                <TableHead className="text-right">الإجراء</TableHead>
+                <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.child')}</TableHead>
+                <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.status')}</TableHead>
+                <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.arrival')}</TableHead>
+                <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.departure')}</TableHead>
+                <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.changeStatus')}</TableHead>
+                <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.action')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -215,46 +220,46 @@ export default function StaffAttendance() {
                           {STATUS_LABELS[record.status] || record.status}
                         </Badge>
                       ) : (
-                        <Badge variant="secondary">لم يُسجل</Badge>
+                        <Badge variant="secondary">{t('staffAttendance.notRecorded')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {record?.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}
+                      {record?.checkInTime ? new Date(record.checkInTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : "-"}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {record?.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}
+                      {record?.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : "-"}
                     </TableCell>
                     <TableCell>
                       {record ? (
                         <div className="flex flex-wrap gap-1">
                           {record.status !== 'present' && (
                             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-green-600 hover:bg-green-50" onClick={() => openStatusChange(record, childName, 'present')}>
-                              حاضر
+                              {t('staffAttendance.present')}
                             </Button>
                           )}
                           {record.status !== 'absent' && (
                             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-red-600 hover:bg-red-50" onClick={() => openStatusChange(record, childName, 'absent')}>
-                              غائب
+                              {t('staffAttendance.absent')}
                             </Button>
                           )}
                           {record.status !== 'late' && (
                             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-amber-600 hover:bg-amber-50" onClick={() => openStatusChange(record, childName, 'late')}>
-                              متأخر
+                              {t('staffAttendance.late')}
                             </Button>
                           )}
                           {record.status !== 'excused' && (
                             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-blue-600 hover:bg-blue-50" onClick={() => openStatusChange(record, childName, 'excused')}>
-                              بعذر
+                              {t('staffAttendance.excused')}
                             </Button>
                           )}
                           {record.status !== 'checked_in' && (
                             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50" onClick={() => openStatusChange(record, childName, 'checked_in')}>
-                              تسجيل
+                              {t('staffAttendance.register')}
                             </Button>
                           )}
                           {record.status !== 'checked_out' && (
                             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-gray-600 hover:bg-gray-50" onClick={() => openStatusChange(record, childName, 'checked_out')}>
-                              مغادرة
+                              {t('staffAttendance.departureBtn')}
                             </Button>
                           )}
                           <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-purple-600 hover:bg-purple-50" onClick={() => setAuditLogDialog({ childId: child.id, childName, attendanceId: record.id })}>
@@ -270,7 +275,7 @@ export default function StaffAttendance() {
                         {!record && (
                           <>
                             <Button size="sm" variant="outline" className="text-green-600 gap-1" onClick={() => setCheckInDialog({ childId: child.id, childName })}>
-                              <LogIn className="h-3 w-3" /> وصول
+                              <LogIn className="h-3 w-3" /> {t('staffAttendance.arrivalBtn')}
                             </Button>
                             <Button size="sm" variant="outline" className="text-red-600" onClick={() => setMarkAbsentConfirm({ childId: child.id, childName })} disabled={markAbsent.isPending}>
                               <X className="h-4 w-4" />
@@ -279,11 +284,11 @@ export default function StaffAttendance() {
                         )}
                         {record && (record.status === 'present' || record.status === 'late' || record.status === 'checked_in') && !record.checkOutTime && (
                           <Button size="sm" variant="outline" className="text-orange-600 gap-1" onClick={() => setCheckOutDialog({ id: record.id, childId: child.id, childName })}>
-                            <LogOut className="h-3 w-3" /> مغادرة
+                            <LogOut className="h-3 w-3" /> {t('staffAttendance.departureBtn')}
                           </Button>
                         )}
                         {record?.checkOutTime && (
-                          <Badge variant="outline" className="text-muted-foreground">مكتمل</Badge>
+                          <Badge variant="outline" className="text-muted-foreground">{t('staffAttendance.completed')}</Badge>
                         )}
                       </div>
                     </TableCell>
@@ -299,13 +304,13 @@ export default function StaffAttendance() {
       <AlertDialog open={!!markAbsentConfirm} onOpenChange={(open) => { if (!open) setMarkAbsentConfirm(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد تسجيل الغياب</AlertDialogTitle>
+            <AlertDialogTitle>{t('staffAttendance.confirmAbsence')}</AlertDialogTitle>
             <AlertDialogDescription>
-              هل تريد تسجيل <strong>{markAbsentConfirm?.childName}</strong> كغائب اليوم؟
+              {t('staffAttendance.confirmAbsenceMsg', { name: markAbsentConfirm?.childName })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={() => {
@@ -315,7 +320,7 @@ export default function StaffAttendance() {
                 }
               }}
             >
-              تأكيد الغياب
+              {t('staffAttendance.confirmAbsenceBtn')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -325,31 +330,31 @@ export default function StaffAttendance() {
       <AlertDialog open={!!statusChangeDialog} onOpenChange={(open) => { if (!open) { setStatusChangeDialog(null); setStatusChangeNotes(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد تغيير الحالة</AlertDialogTitle>
+            <AlertDialogTitle>{t('staffAttendance.confirmStatusChange')}</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
-                هل تريد تغيير حالة <strong>{statusChangeDialog?.childName}</strong> من{" "}
+                {t('staffAttendance.statusChangeMsg', { name: statusChangeDialog?.childName })}{" "}
                 <Badge className={STATUS_COLORS[statusChangeDialog?.currentStatus || ""] || ""}>{STATUS_LABELS[statusChangeDialog?.currentStatus || ""] || statusChangeDialog?.currentStatus}</Badge>
-                {" "}إلى{" "}
+                {" "}{t('staffAttendance.to')}{" "}
                 <Badge className={STATUS_COLORS[statusChangeDialog?.newStatus || ""] || ""}>{STATUS_LABELS[statusChangeDialog?.newStatus || ""] || statusChangeDialog?.newStatus}</Badge>
-                ؟
+                ?
               </p>
               <div className="pt-2">
-                <Label className="text-sm">ملاحظات (اختياري)</Label>
+                <Label className="text-sm">{t('staffAttendance.notesOptional')}</Label>
                 <Textarea
                   value={statusChangeNotes}
                   onChange={e => setStatusChangeNotes(e.target.value)}
-                  placeholder="سبب التغيير..."
+                  placeholder={t('staffAttendance.changeReason')}
                   className="mt-1"
                 />
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleStatusChangeConfirm} disabled={updateStatus.isPending}>
               {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تأكيد التغيير
+              {t('staffAttendance.confirmChange')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -359,25 +364,25 @@ export default function StaffAttendance() {
       <Dialog open={!!auditLogDialog} onOpenChange={(open) => { if (!open) setAuditLogDialog(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>سجل التغييرات - {auditLogDialog?.childName}</DialogTitle>
+            <DialogTitle>{t('staffAttendance.auditLog')} - {auditLogDialog?.childName}</DialogTitle>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto">
             {auditLogs && auditLogs.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">الوقت</TableHead>
-                    <TableHead className="text-right">من</TableHead>
-                    <TableHead className="text-right">إلى</TableHead>
-                    <TableHead className="text-right">بواسطة</TableHead>
-                    <TableHead className="text-right">ملاحظات</TableHead>
+                    <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.auditTime')}</TableHead>
+                    <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.auditFrom')}</TableHead>
+                    <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.auditTo')}</TableHead>
+                    <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.auditBy')}</TableHead>
+                    <TableHead className={isEn ? "text-left" : "text-right"}>{t('staffAttendance.auditNotes')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {auditLogs.map((log: any) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-xs">
-                        {new Date(log.createdAt).toLocaleString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(log.createdAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{STATUS_LABELS[log.previousStatus] || log.previousStatus}</Badge>
@@ -392,11 +397,11 @@ export default function StaffAttendance() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-center text-muted-foreground py-8">لا توجد تغييرات مسجلة</p>
+              <p className="text-center text-muted-foreground py-8">{t('staffAttendance.noChanges')}</p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAuditLogDialog(null)}>إغلاق</Button>
+            <Button variant="outline" onClick={() => setAuditLogDialog(null)}>{t('common.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -405,36 +410,36 @@ export default function StaffAttendance() {
       <Dialog open={!!checkInDialog} onOpenChange={(open) => { if (!open) { setCheckInDialog(null); resetCheckInForm(); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تسجيل وصول - {checkInDialog?.childName}</DialogTitle>
+            <DialogTitle>{t('staffAttendance.checkInTitle')} - {checkInDialog?.childName}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>من أحضر الطفل</Label>
-              <Input value={droppedOffBy} onChange={e => setDroppedOffBy(e.target.value)} placeholder="اسم الشخص" />
+              <Label>{t('staffAttendance.whoDroppedOff')}</Label>
+              <Input value={droppedOffBy} onChange={e => setDroppedOffBy(e.target.value)} placeholder={t('staffAttendance.personName')} />
             </div>
             <div>
-              <Label>صلة القرابة</Label>
+              <Label>{t('staffAttendance.relationship')}</Label>
               <Select value={droppedOffRelationship} onValueChange={setDroppedOffRelationship}>
-                <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('staffAttendance.choose')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="mother">الأم</SelectItem>
-                  <SelectItem value="father">الأب</SelectItem>
-                  <SelectItem value="driver">السائق</SelectItem>
-                  <SelectItem value="grandparent">الجد/الجدة</SelectItem>
-                  <SelectItem value="other">أخرى</SelectItem>
+                  <SelectItem value="mother">{t('staffAttendance.mother')}</SelectItem>
+                  <SelectItem value="father">{t('staffAttendance.father')}</SelectItem>
+                  <SelectItem value="driver">{t('staffAttendance.driver')}</SelectItem>
+                  <SelectItem value="grandparent">{t('staffAttendance.grandparent')}</SelectItem>
+                  <SelectItem value="other">{t('staffAttendance.other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>ملاحظات</Label>
-              <Textarea value={checkInNotes} onChange={e => setCheckInNotes(e.target.value)} placeholder="ملاحظات اختيارية..." />
+              <Label>{t('staffAttendance.notes')}</Label>
+              <Textarea value={checkInNotes} onChange={e => setCheckInNotes(e.target.value)} placeholder={t('staffAttendance.optionalNotes')} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCheckInDialog(null); resetCheckInForm(); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setCheckInDialog(null); resetCheckInForm(); }}>{t('common.cancel')}</Button>
             <Button onClick={handleCheckInSubmit} disabled={checkIn.isPending}>
               {checkIn.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تسجيل الوصول
+              {t('staffAttendance.registerArrival')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -444,41 +449,41 @@ export default function StaffAttendance() {
       <Dialog open={!!checkOutDialog} onOpenChange={(open) => { if (!open) { setCheckOutDialog(null); resetCheckOutForm(); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تسجيل مغادرة - {checkOutDialog?.childName}</DialogTitle>
+            <DialogTitle>{t('staffAttendance.checkOutTitle')} - {checkOutDialog?.childName}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>من استلم الطفل <span className="text-red-500">*</span></Label>
-              <Input value={pickedUpBy} onChange={e => setPickedUpBy(e.target.value)} placeholder="اسم المستلم" />
+              <Label>{t('staffAttendance.whoPickedUp')} <span className="text-red-500">*</span></Label>
+              <Input value={pickedUpBy} onChange={e => setPickedUpBy(e.target.value)} placeholder={t('staffAttendance.recipientName')} />
             </div>
             <div>
-              <Label>صلة القرابة <span className="text-red-500">*</span></Label>
+              <Label>{t('staffAttendance.relationship')} <span className="text-red-500">*</span></Label>
               <Select value={pickupRelationship} onValueChange={setPickupRelationship}>
-                <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('staffAttendance.choose')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="mother">الأم</SelectItem>
-                  <SelectItem value="father">الأب</SelectItem>
-                  <SelectItem value="driver">السائق</SelectItem>
-                  <SelectItem value="grandparent">الجد/الجدة</SelectItem>
-                  <SelectItem value="guardian">ولي الأمر</SelectItem>
-                  <SelectItem value="other">أخرى</SelectItem>
+                  <SelectItem value="mother">{t('staffAttendance.mother')}</SelectItem>
+                  <SelectItem value="father">{t('staffAttendance.father')}</SelectItem>
+                  <SelectItem value="driver">{t('staffAttendance.driver')}</SelectItem>
+                  <SelectItem value="grandparent">{t('staffAttendance.grandparent')}</SelectItem>
+                  <SelectItem value="guardian">{t('staffAttendance.guardian')}</SelectItem>
+                  <SelectItem value="other">{t('staffAttendance.other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>ملاحظات</Label>
-              <Textarea value={checkOutNotes} onChange={e => setCheckOutNotes(e.target.value)} placeholder="ملاحظات اختيارية..." />
+              <Label>{t('staffAttendance.notes')}</Label>
+              <Textarea value={checkOutNotes} onChange={e => setCheckOutNotes(e.target.value)} placeholder={t('staffAttendance.optionalNotes')} />
             </div>
             <div>
-              <Label>التوقيع الرقمي</Label>
-              <SignaturePad value={signatureData} onChange={setSignatureData} />
+              <Label>{t('staffAttendance.digitalSignature')}</Label>
+              <SignaturePad value={signatureData} onChange={setSignatureData} clearLabel={t('staffAttendance.clear')} signedLabel={t('staffAttendance.signed')} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCheckOutDialog(null); resetCheckOutForm(); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setCheckOutDialog(null); resetCheckOutForm(); }}>{t('common.cancel')}</Button>
             <Button onClick={handleCheckOutSubmit} disabled={checkOut.isPending || !pickedUpBy || !pickupRelationship}>
               {checkOut.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تسجيل المغادرة
+              {t('staffAttendance.registerDeparture')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -487,7 +492,7 @@ export default function StaffAttendance() {
   );
 }
 
-function SignaturePad({ value, onChange }: { value: string; onChange: (data: string) => void }) {
+function SignaturePad({ value, onChange, clearLabel, signedLabel }: { value: string; onChange: (data: string) => void; clearLabel: string; signedLabel: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -559,8 +564,8 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (data: str
         onTouchEnd={endDraw}
       />
       <div className="flex justify-between">
-        <Button type="button" variant="ghost" size="sm" onClick={clear}>مسح</Button>
-        {value && <span className="text-xs text-green-600">✓ تم التوقيع</span>}
+        <Button type="button" variant="ghost" size="sm" onClick={clear}>{clearLabel}</Button>
+        {value && <span className="text-xs text-green-600">✓ {signedLabel}</span>}
       </div>
     </div>
   );
