@@ -2415,3 +2415,4 @@ Fix:
 - [x] إضافة إجراء backend لحفظ طلبات العروض التعريفية
 - [x] إضافة قسم شهادات العملاء (جاهز للتعبئة)
 - [x] تحسين قسم الفيديو لدعم تضمين رابط يوتيوب
+- [x] Add testimonial section with Amjad Al-Shammari (مديرة مركز شجرة التعلم - حي أجيال أرامكو) to /nurseries landing page

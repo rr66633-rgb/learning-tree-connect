@@ -516,6 +516,56 @@ export default function NurseriesLanding() {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-14 sm:py-20 px-4 sm:px-6 bg-gradient-to-b from-white to-gray-50/50">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1F36] mb-4">
+              ماذا يقول <span className="text-[#00C9B7]">عملاؤنا</span>
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
+              تجارب حقيقية من مراكز تستخدم نشأة يومياً
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <div className="relative bg-white rounded-3xl p-8 sm:p-10 shadow-[0_10px_40px_rgba(0,0,0,0.06)] border border-gray-100">
+              {/* Quote icon */}
+              <div className="absolute top-6 left-6 sm:top-8 sm:left-8">
+                <Quote className="w-10 h-10 sm:w-12 sm:h-12 text-[#00C9B7]/15" />
+              </div>
+              
+              {/* Stars */}
+              <div className="flex items-center gap-1 mb-6">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star key={s} className="w-5 h-5 fill-[#FFB020] text-[#FFB020]" />
+                ))}
+              </div>
+
+              {/* Testimonial text */}
+              <blockquote className="text-base sm:text-lg text-[#1A1F36] leading-[2] mb-8 font-medium">
+                "قبل نشأة كنت كل يوم أتابع المعلمات - وين الخطة الأسبوعية؟ خلّصتي تقييم الأطفال؟ كان شغل مرهق ومتكرر. الحين الخطة صارت بضغطة زر والتقييمات الفردية كلها على النظام، كل معلمة تعرف المطلوب منها وتسلّمه بوقته. حتى متطلبات الـ NDNA صرنا نغطيها بشكل منظم بدون ما أركض ورا أحد. نشأة ريّحني كمديرة وخلّى فريقي يشتغل باستقلالية."
+              </blockquote>
+
+              {/* Author */}
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00C9B7] to-[#7B61FF] flex items-center justify-center shadow-[0_4px_12px_rgba(0,201,183,0.25)]">
+                  <span className="text-white font-bold text-lg">أ</span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[#1A1F36] text-base">أمجاد الشمري</h4>
+                  <p className="text-sm text-gray-500">مديرة مركز شجرة التعلم</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <MapPin className="w-3.5 h-3.5 text-[#00C9B7]" />
+                    <span className="text-xs text-gray-400">حي أجيال أرامكو</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Demo Booking Form Section */}
       <section id="demo" className="py-14 sm:py-20 px-4 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
