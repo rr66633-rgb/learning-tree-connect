@@ -542,7 +542,7 @@ export default function NurseriesLanding() {
           <div className="flex items-center justify-center">
             <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] transition-all duration-300">
               <img 
-                src="/manus-storage/learning-tree-logo_689ba726.png" 
+                src="/manus-storage/learning-tree-logo_e85a5d0c.png" 
                 alt="مركز شجرة التعلم" 
                 className="w-28 h-28 sm:w-36 sm:h-36 object-contain mx-auto"
               />
