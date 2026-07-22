@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 
 export default function StaffClasses() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: classes, isLoading } = trpc.classes.list.useQuery();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
@@ -22,28 +22,28 @@ export default function StaffClasses() {
   const [capacity, setCapacity] = useState("12");
 
   const create = trpc.classes.create.useMutation({
-    onSuccess: () => { utils.classes.list.invalidate(); setOpen(false); setName(""); setAgeGroup(""); toast.success("تم إنشاء الفصل"); },
+    onSuccess: () => { utils.classes.list.invalidate(); setOpen(false); setName(""); setAgeGroup(""); toast.success(i18n.language === "ar" ? "تم إنشاء الفصل" : "Class created"); },
     onError: (e) => toast.error(e.message),
   });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">إدارة الفصول</h1>
+        <h1 className="text-2xl font-bold">{i18n.language === "ar" ? "إدارة الفصول" : "Classes Management"}</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 ml-2" />إضافة فصل</Button>
+            <Button><Plus className="h-4 w-4 ml-2" />{i18n.language === "ar" ? "إضافة فصل" : "Add Class"}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>إضافة فصل جديد</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{i18n.language === "ar" ? "إضافة فصل جديد" : "Add New Class"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>اسم الفصل</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="مثال: فصل النجوم" /></div>
-              <div><Label>الفئة العمرية</Label><Input value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder="مثال: 2-3 سنوات" /></div>
-              <div><Label>السعة</Label><Input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} /></div>
+              <div><Label>{i18n.language === "ar" ? "اسم الفصل" : "Class Name"}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={i18n.language === "ar" ? "مثال: فصل النجوم" : "e.g. Stars Class"} /></div>
+              <div><Label>{i18n.language === "ar" ? "الفئة العمرية" : "Age Group"}</Label><Input value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder={i18n.language === "ar" ? "مثال: 2-3 سنوات" : "e.g. 2-3 years"} /></div>
+              <div><Label>{i18n.language === "ar" ? "السعة" : "Capacity"}</Label><Input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} /></div>
             </div>
             <DialogFooter>
               <Button onClick={() => create.mutate({ name, ageGroup, capacity: parseInt(capacity) })} disabled={!name || create.isPending}>
-                {create.isPending ? "جاري الإنشاء..." : "إنشاء"}
+                {create.isPending ? (i18n.language === "ar" ? "جاري الإنشاء..." : "Creating...") : (i18n.language === "ar" ? "إنشاء" : "Create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -60,9 +60,9 @@ export default function StaffClasses() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">الفئة العمرية</span><span>{cls.ageGroup || "-"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">السعة</span><span>{cls.capacity || "-"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">المعلمة</span><span>{cls.teacherName || "غير محدد"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? "الفئة العمرية" : "Age Group"}</span><span>{cls.ageGroup || "-"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? "السعة" : "Capacity"}</span><span>{cls.capacity || "-"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? "المعلمة" : "Teacher"}</span><span>{cls.teacherName || (i18n.language === "ar" ? "غير محدد" : "Unassigned")}</span></div>
               </div>
             </CardContent>
           </Card>

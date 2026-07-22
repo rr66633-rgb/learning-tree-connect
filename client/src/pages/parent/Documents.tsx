@@ -22,7 +22,7 @@ export default function ParentDocuments() {
     onError: (e) => toast.error(e.message),
   });
 
-  const typeLabels: Record<string, string> = { policy: "سياسة", form: "نموذج", report: "تقرير", certificate: "شهادة", consent: "موافقة", other: "أخرى" };
+  const typeLabels: Record<string, string> = { policy: t("documentTypes.policy"), form: t("documentTypes.form"), report: t("documentTypes.report"), certificate: t("documentTypes.certificate"), consent: t("documentTypes.consent"), other: t("documentTypes.other") };
 
   if (isLoading) return <PageSkeleton variant="list" count={4} />;
 

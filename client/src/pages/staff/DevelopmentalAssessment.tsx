@@ -21,6 +21,7 @@ import {
   type Domain,
   type ResponseValue,
 } from "../../../../shared/assessmentData";
+import { useTranslation } from "react-i18next";
 
 const DOMAINS: Domain[] = ["communication", "gross_motor", "fine_motor", "problem_solving", "personal_social"];
 
@@ -36,6 +37,8 @@ function getAgeGroupFromBirthDate(birthDate: string): AgeGroup | null {
 }
 
 export default function DevelopmentalAssessment() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeGroup | null>(null);
   const [currentDomainIndex, setCurrentDomainIndex] = useState(0);

@@ -10,16 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-
-const typeLabels: Record<string, string> = {
-  observation: "ملاحظة",
-  weekly_plan: "خطة أسبوعية",
-  activity: "نشاط",
-  progress_report: "تقرير تقدم",
-  parent_message: "رسالة",
-  newsletter: "نشرة",
-  story: "قصة",
-};
+import { useTranslation } from "react-i18next";
 
 const typeColors: Record<string, string> = {
   observation: "bg-violet-100 text-violet-700",
@@ -32,6 +23,8 @@ const typeColors: Record<string, string> = {
 };
 
 export default function AILibrary() {
+  const { t, i18n } = useTranslation();
+  const typeLabels: Record<string, string> = { activity: t("aiLibrary.activity"), story: t("aiLibrary.story"), song: t("aiLibrary.song"), game: t("aiLibrary.game"), experiment: t("aiLibrary.experiment"), craft: t("aiLibrary.craft"), observation: i18n.language === "ar" ? "ملاحظة" : "Observation", weekly_plan: i18n.language === "ar" ? "خطة أسبوعية" : "Weekly Plan", progress_report: i18n.language === "ar" ? "تقرير تقدم" : "Progress Report", parent_message: i18n.language === "ar" ? "رسالة لولي الأمر" : "Parent Message", newsletter: i18n.language === "ar" ? "نشرة" : "Newsletter" };
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);

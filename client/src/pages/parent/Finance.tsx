@@ -25,13 +25,15 @@ declare global {
 
 // statusLabels moved inside component
 const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-green-100 text-green-700", overdue: "bg-red-100 text-red-700", cancelled: "bg-gray-100 text-gray-700", partially_paid: "bg-blue-100 text-blue-700" };
-const invoiceTypeLabels: Record<string, string> = { tuition: "رسوم دراسية", activity: "نشاط", trip: "رحلة", uniform: "زي مدرسي", registration: "تسجيل", other: "أخرى" };
-const paymentMethodLabels: Record<string, string> = { cash: "نقدي", bank_transfer: "تحويل بنكي", card: "بطاقة", apple_pay: "Apple Pay", mada: "مدى", stc_pay: "STC Pay", visa: "فيزا", mastercard: "ماستركارد" };
+// invoiceTypeLabels moved inside component
+// paymentMethodLabels moved inside component
 
 export default function ParentFinance() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
-  const statusLabels: Record<string, string> = { pending: t("parent.pending"), paid: t("parent.paid"), overdue: t("parent.overdue"), cancelled: i18n.language === "ar" ? "ملغاة" : "Cancelled", partially_paid: i18n.language === "ar" ? "مدفوعة جزئياً" : "Partially Paid" };
+  const statusLabels: Record<string, string> = { pending: t("parent.pending"), paid: t("parent.paid"), overdue: t("parent.overdue"), cancelled: t("statuses.cancelled"), partially_paid: t("finance.statusPartiallyPaid") };
+  const invoiceTypeLabels: Record<string, string> = { tuition: t("invoiceTypes.tuition"), activity: t("invoiceTypes.activity"), trip: t("invoiceTypes.trip"), uniform: t("invoiceTypes.uniform"), registration: t("invoiceTypes.registration"), other: t("invoiceTypes.other") };
+  const paymentMethodLabels: Record<string, string> = { cash: t("paymentMethods.cash"), bank_transfer: t("paymentMethods.bank_transfer"), card: t("paymentMethods.card"), apple_pay: t("paymentMethods.apple_pay"), mada: t("paymentMethods.mada"), stc_pay: t("paymentMethods.stc_pay"), visa: t("paymentMethods.visa"), mastercard: t("paymentMethods.mastercard") };
   const { data: invoices, isLoading } = trpc.finance.invoices.useQuery();
   const { data: paymentHistory, isLoading: historyLoading } = trpc.payments.history.useQuery();
   const { data: gatewayStatus } = trpc.payments.gatewayStatus.useQuery();

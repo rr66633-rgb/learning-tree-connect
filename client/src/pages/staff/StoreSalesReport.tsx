@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "قيد الانتظار",
@@ -59,6 +60,8 @@ const chartConfig: ChartConfig = {
 };
 
 export default function StoreSalesReport() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const [period, setPeriod] = useState<"week" | "month" | "year">("month");
 

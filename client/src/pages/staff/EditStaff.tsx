@@ -13,8 +13,11 @@ import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Upload, User, Briefcase, GraduationCap, CreditCard, Phone as PhoneIcon, Save } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 export default function EditStaff() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const params = useParams<{ id: string }>();
   const staffId = parseInt(params.id || "0");
   const [, navigate] = useLocation();
@@ -121,7 +124,7 @@ export default function EditStaff() {
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">تعديل بيانات الموظف</h1>
+          <h1 className="text-2xl font-bold">{isAr ? "تعديل بيانات الموظف" : "Edit Staff"}</h1>
           <p className="text-sm text-muted-foreground">{staff?.fullNameAr}</p>
         </div>
       </div>
@@ -227,11 +230,11 @@ export default function EditStaff() {
                   </div>
                   <div className="space-y-2"><Label>انتهاء العقد</Label><Input type="date" value={form.contractEndDate || ""} onChange={e => updateField("contractEndDate", e.target.value)} /></div>
                   <div className="space-y-2">
-                    <Label>الحالة</Label>
+                    <Label>{isAr ? "الحالة" : "Status"}</Label>
                     <Select value={form.status || "active"} onValueChange={v => updateField("status", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="active">نشط</SelectItem><SelectItem value="inactive">غير نشط</SelectItem>
+                        <SelectItem value="active">{isAr ? "نشط" : "Active"}</SelectItem><SelectItem value="inactive">{isAr ? "غير نشط" : "Inactive"}</SelectItem>
                         <SelectItem value="on_leave">في إجازة</SelectItem><SelectItem value="terminated">منتهي</SelectItem>
                         <SelectItem value="resigned">مستقيل</SelectItem>
                       </SelectContent>
@@ -251,7 +254,7 @@ export default function EditStaff() {
                   <div className="space-y-2"><Label>التخصص</Label><Input value={form.specialization || ""} onChange={e => updateField("specialization", e.target.value)} /></div>
                   <div className="space-y-2"><Label>سنوات الخبرة</Label><Input type="number" value={form.yearsOfExperience || ""} onChange={e => updateField("yearsOfExperience", e.target.value)} /></div>
                 </div>
-                <div className="mt-4 space-y-2"><Label>ملاحظات</Label><Textarea value={form.notes || ""} onChange={e => updateField("notes", e.target.value)} rows={3} /></div>
+                <div className="mt-4 space-y-2"><Label>{isAr ? "ملاحظات" : "Notes"}</Label><Textarea value={form.notes || ""} onChange={e => updateField("notes", e.target.value)} rows={3} /></div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -284,7 +287,7 @@ export default function EditStaff() {
         </Tabs>
 
         <div className="flex justify-end gap-3 mt-6 sticky bottom-4">
-          <Button type="button" variant="outline" onClick={() => navigate(`/staff/staff-management/${staffId}`)}>إلغاء</Button>
+          <Button type="button" variant="outline" onClick={() => navigate(`/staff/staff-management/${staffId}`)}>{isAr ? "إلغاء" : "Cancel"}</Button>
           <Button type="submit" disabled={updateStaff.isPending} className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9]">
             <Save className="h-4 w-4" />
             {updateStaff.isPending ? "جاري الحفظ..." : "حفظ التعديلات"}

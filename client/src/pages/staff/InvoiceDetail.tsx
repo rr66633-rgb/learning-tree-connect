@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
@@ -16,11 +17,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowRight, CheckCircle2, Clock, Trash2, Pencil, Download, Printer, Send, Mail, CreditCard, Banknote, Building2 } from "lucide-react";
 import { generateInvoicePDF, printInvoice } from "@/lib/invoicePdf";
 
-const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة" };
 const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-green-100 text-green-700", overdue: "bg-red-100 text-red-700", cancelled: "bg-gray-100 text-gray-700" };
-const paymentMethodLabels: Record<string, string> = { cash: "نقدي", bank_transfer: "تحويل بنكي", card: "بطاقة" };
 
 export default function InvoiceDetail() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const statusLabels: Record<string, string> = { pending: t("finance.statusPending"), paid: t("finance.statusPaid"), overdue: t("finance.statusOverdue"), cancelled: t("statuses.cancelled") };
+  const paymentMethodLabels: Record<string, string> = { cash: t("paymentMethods.cash"), bank_transfer: t("paymentMethods.bank_transfer"), card: t("paymentMethods.card") };
   const [, navigate] = useLocation();
   const { user } = useAuth();
   // Get id from URL path directly
@@ -179,7 +182,7 @@ export default function InvoiceDetail() {
                 <p className="font-medium">{invoice.childName}</p>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">ولي الأمر</h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">{isAr ? "ولي الأمر" : "Parent"}</h3>
                 <p className="font-medium">{invoice.parentName || "—"}</p>
                 {invoice.parentEmail && <p className="text-sm text-muted-foreground">{invoice.parentEmail}</p>}
                 {invoice.parentPhone && <p className="text-sm text-muted-foreground">{invoice.parentPhone}</p>}
@@ -190,10 +193,10 @@ export default function InvoiceDetail() {
 
             {/* Invoice Details */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">تفاصيل الفاتورة</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground">{isAr ? "تفاصيل الفاتورة" : "Invoice Details"}</h3>
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span>الوصف</span>
+                  <span>{isAr ? "الوصف" : "Description"}</span>
                   <span className="font-medium">{invoice.description || "بدون وصف"}</span>
                 </div>
                 <Separator />
@@ -300,7 +303,7 @@ export default function InvoiceDetail() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPayDialog(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setPayDialog(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button className="bg-green-600 hover:bg-green-700" disabled={!paymentMethod || markPaid.isPending} onClick={() => markPaid.mutate({ id: invoiceId, paymentMethod: paymentMethod as any })}>
               {markPaid.isPending ? "جاري..." : "تأكيد الدفع"}
             </Button>
@@ -313,12 +316,12 @@ export default function InvoiceDetail() {
         <DialogContent>
           <DialogHeader><DialogTitle>تعديل الفاتورة</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>الوصف</Label><Input value={editDesc} onChange={e => setEditDesc(e.target.value)} /></div>
+            <div><Label>{isAr ? "الوصف" : "Description"}</Label><Input value={editDesc} onChange={e => setEditDesc(e.target.value)} /></div>
             <div><Label>المبلغ قبل الضريبة (ر.س)</Label><Input type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} /></div>
             <div><Label>تاريخ الاستحقاق</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialog(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setEditDialog(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button disabled={updateInvoice.isPending} onClick={() => updateInvoice.mutate({ id: invoiceId, description: editDesc || undefined, subtotal: editAmount || undefined, dueDate: editDueDate || undefined })}>
               {updateInvoice.isPending ? "جاري..." : "حفظ التعديلات"}
             </Button>
@@ -334,8 +337,8 @@ export default function InvoiceDetail() {
             <AlertDialogDescription>هل أنت متأكد من حذف هذه الفاتورة؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteInvoice.mutate({ id: invoiceId })}>حذف</AlertDialogAction>
+            <AlertDialogCancel>{isAr ? "إلغاء" : "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteInvoice.mutate({ id: invoiceId })}>{isAr ? "حذف" : "Delete"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

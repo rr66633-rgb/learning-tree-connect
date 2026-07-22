@@ -15,29 +15,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const JOB_TITLES: Record<string, string> = {
-  teacher: "معلم/ة",
-  supervisor: "مشرف/ة",
-  principal: "مدير/ة",
-  assistant: "مساعد/ة",
-  admin_staff: "إداري/ة",
-  specialist: "أخصائي/ة",
-  accountant: "محاسب/ة",
-  receptionist: "موظف/ة استقبال",
-  driver: "سائق",
-  other: "أخرى",
-};
-
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  active: { label: "نشط", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-  inactive: { label: "غير نشط", color: "bg-gray-100 text-gray-800 border-gray-200" },
-  on_leave: { label: "في إجازة", color: "bg-amber-100 text-amber-800 border-amber-200" },
-  terminated: { label: "منتهي", color: "bg-red-100 text-red-800 border-red-200" },
-  resigned: { label: "مستقيل", color: "bg-orange-100 text-orange-800 border-orange-200" },
-};
-
 export default function StaffDirectory() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [jobFilter, setJobFilter] = useState("all");
@@ -46,6 +26,27 @@ export default function StaffDirectory() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
   const limit = 12;
+
+  const JOB_TITLES: Record<string, string> = {
+    teacher: isAr ? "معلم/ة" : "Teacher",
+    supervisor: isAr ? "مشرف/ة" : "Supervisor",
+    principal: isAr ? "مدير/ة" : "Principal",
+    assistant: isAr ? "مساعد/ة" : "Assistant",
+    admin_staff: isAr ? "إداري/ة" : "Admin Staff",
+    specialist: isAr ? "أخصائي/ة" : "Specialist",
+    accountant: isAr ? "محاسب/ة" : "Accountant",
+    receptionist: isAr ? "موظف/ة استقبال" : "Receptionist",
+    driver: isAr ? "سائق" : "Driver",
+    other: isAr ? "أخرى" : "Other",
+  };
+
+  const STATUS_MAP: Record<string, { label: string; color: string }> = {
+    active: { label: isAr ? "نشط" : "Active", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+    inactive: { label: isAr ? "غير نشط" : "Inactive", color: "bg-gray-100 text-gray-800 border-gray-200" },
+    on_leave: { label: isAr ? "في إجازة" : "On Leave", color: "bg-amber-100 text-amber-800 border-amber-200" },
+    terminated: { label: isAr ? "منتهي" : "Terminated", color: "bg-red-100 text-red-800 border-red-200" },
+    resigned: { label: isAr ? "مستقيل" : "Resigned", color: "bg-orange-100 text-orange-800 border-orange-200" },
+  };
 
   const { data, isLoading } = trpc.staffManagement.list.useQuery({
     search: search || undefined,
@@ -66,8 +67,8 @@ export default function StaffDirectory() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">دليل الموظفين</h1>
-          <p className="text-sm text-muted-foreground mt-1">إدارة شاملة لبيانات الموظفين والكادر التعليمي</p>
+          <h1 className="text-2xl font-bold text-foreground">{isAr ? "دليل الموظفين" : "Staff Directory"}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{isAr ? "إدارة شاملة لبيانات الموظفين والكادر التعليمي" : "Comprehensive staff and teaching team management"}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -79,10 +80,10 @@ export default function StaffDirectory() {
               if (statusFilter !== 'all') params.set('status', statusFilter);
               if (departmentFilter !== 'all') params.set('department', departmentFilter);
               const url = `/api/export-staff${params.toString() ? '?' + params.toString() : ''}`;
-              toast.info('جاري تحميل ملف التصدير...');
+              toast.info(isAr ? 'جاري تحميل ملف التصدير...' : 'Downloading export file...');
               fetch(url, { credentials: 'include' })
                 .then(r => {
-                  if (!r.ok) throw new Error('فشل التصدير');
+                  if (!r.ok) throw new Error(isAr ? 'فشل التصدير' : 'Export failed');
                   return r.blob();
                 })
                 .then(blob => {
@@ -91,17 +92,17 @@ export default function StaffDirectory() {
                   a.download = `staff_export_${new Date().toISOString().split('T')[0]}.xlsx`;
                   a.click();
                   URL.revokeObjectURL(a.href);
-                  toast.success('تم تصدير البيانات بنجاح');
+                  toast.success(isAr ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully');
                 })
-                .catch(() => toast.error('حدث خطأ أثناء التصدير'));
+                .catch(() => toast.error(isAr ? 'حدث خطأ أثناء التصدير' : 'Export error'));
             }}
           >
             <Download className="h-4 w-4" />
-            تصدير Excel
+            {isAr ? "تصدير Excel" : "Export Excel"}
           </Button>
           <Button onClick={() => navigate("/staff/staff-management/add")} className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9]">
             <Plus className="h-4 w-4" />
-            إضافة موظف
+            {isAr ? "إضافة موظف" : "Add Staff"}
           </Button>
         </div>
       </div>
@@ -116,7 +117,7 @@ export default function StaffDirectory() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.total ?? 0}</p>
-                <p className="text-xs text-muted-foreground">إجمالي الموظفين</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "إجمالي الموظفين" : "Total Staff"}</p>
               </div>
             </div>
           </CardContent>
@@ -129,7 +130,7 @@ export default function StaffDirectory() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.active ?? 0}</p>
-                <p className="text-xs text-muted-foreground">نشط</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "نشط" : "Active"}</p>
               </div>
             </div>
           </CardContent>
@@ -142,7 +143,7 @@ export default function StaffDirectory() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.onLeave ?? 0}</p>
-                <p className="text-xs text-muted-foreground">في إجازة</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "في إجازة" : "On Leave"}</p>
               </div>
             </div>
           </CardContent>
@@ -155,7 +156,7 @@ export default function StaffDirectory() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats?.inactive ?? 0}</p>
-                <p className="text-xs text-muted-foreground">غير نشط</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "غير نشط" : "Inactive"}</p>
               </div>
             </div>
           </CardContent>
@@ -169,7 +170,7 @@ export default function StaffDirectory() {
             <div className="relative flex-1 w-full">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="بحث بالاسم، رقم الهوية، الجوال..."
+                placeholder={isAr ? "بحث بالاسم، رقم الهوية، الجوال..." : "Search by name, ID, phone..."}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="pr-10"
@@ -178,10 +179,10 @@ export default function StaffDirectory() {
             <div className="flex flex-wrap gap-2 w-full md:w-auto">
               <Select value={jobFilter} onValueChange={(v) => { setJobFilter(v); setPage(1); }}>
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="المسمى الوظيفي" />
+                  <SelectValue placeholder={isAr ? "المسمى الوظيفي" : "Job Title"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
                   {Object.entries(JOB_TITLES).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -189,10 +190,10 @@ export default function StaffDirectory() {
               </Select>
               <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
                 <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="الحالة" />
+                  <SelectValue placeholder={isAr ? "الحالة" : "Status"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
                   {Object.entries(STATUS_MAP).map(([key, { label }]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -201,10 +202,10 @@ export default function StaffDirectory() {
               {departments && departments.length > 0 && (
                 <Select value={departmentFilter} onValueChange={(v) => { setDepartmentFilter(v); setPage(1); }}>
                   <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="القسم" />
+                    <SelectValue placeholder={isAr ? "القسم" : "Department"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">الكل</SelectItem>
+                    <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
                     {departments.map((dept) => (
                       <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
@@ -245,11 +246,11 @@ export default function StaffDirectory() {
         <Card>
           <CardContent className="p-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">لا يوجد موظفين</h3>
-            <p className="text-muted-foreground mb-4">ابدأ بإضافة موظفين جدد للمنظمة</p>
+            <h3 className="text-lg font-semibold mb-2">{isAr ? "لا يوجد موظفين" : "No staff found"}</h3>
+            <p className="text-muted-foreground mb-4">{isAr ? "ابدأ بإضافة موظفين جدد للمنظمة" : "Start by adding new staff members"}</p>
             <Button onClick={() => navigate("/staff/staff-management/add")} className="gap-2">
               <Plus className="h-4 w-4" />
-              إضافة موظف
+              {isAr ? "إضافة موظف" : "Add Staff"}
             </Button>
           </CardContent>
         </Card>
@@ -268,7 +269,7 @@ export default function StaffDirectory() {
                       <img src={staff.photo} alt={staff.fullNameAr} className="h-full w-full object-cover rounded-full" />
                     ) : (
                       <AvatarFallback className="bg-[#7C3AED]/10 text-[#7C3AED] text-lg font-bold">
-                        {staff.fullNameAr?.charAt(0) || "م"}
+                        {staff.fullNameAr?.charAt(0) || (isAr ? "م" : "S")}
                       </AvatarFallback>
                     )}
                   </Avatar>
@@ -313,12 +314,12 @@ export default function StaffDirectory() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="text-right p-3 font-medium text-sm">الموظف</th>
-                    <th className="text-right p-3 font-medium text-sm hidden md:table-cell">المسمى الوظيفي</th>
-                    <th className="text-right p-3 font-medium text-sm hidden lg:table-cell">القسم</th>
-                    <th className="text-right p-3 font-medium text-sm hidden lg:table-cell">الفرع</th>
-                    <th className="text-right p-3 font-medium text-sm">الجوال</th>
-                    <th className="text-right p-3 font-medium text-sm">الحالة</th>
+                    <th className="text-right p-3 font-medium text-sm">{isAr ? "الموظف" : "Staff"}</th>
+                    <th className="text-right p-3 font-medium text-sm hidden md:table-cell">{isAr ? "المسمى الوظيفي" : "Job Title"}</th>
+                    <th className="text-right p-3 font-medium text-sm hidden lg:table-cell">{isAr ? "القسم" : "Department"}</th>
+                    <th className="text-right p-3 font-medium text-sm hidden lg:table-cell">{isAr ? "الفرع" : "Branch"}</th>
+                    <th className="text-right p-3 font-medium text-sm">{isAr ? "الجوال" : "Phone"}</th>
+                    <th className="text-right p-3 font-medium text-sm">{isAr ? "الحالة" : "Status"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -335,7 +336,7 @@ export default function StaffDirectory() {
                               <img src={staff.photo} alt="" className="h-full w-full object-cover rounded-full" />
                             ) : (
                               <AvatarFallback className="bg-[#7C3AED]/10 text-[#7C3AED] text-sm">
-                                {staff.fullNameAr?.charAt(0) || "م"}
+                                {staff.fullNameAr?.charAt(0) || (isAr ? "م" : "S")}
                               </AvatarFallback>
                             )}
                           </Avatar>
@@ -375,7 +376,7 @@ export default function StaffDirectory() {
             <ChevronRight className="h-4 w-4" />
           </Button>
           <span className="text-sm text-muted-foreground">
-            صفحة {page} من {totalPages}
+            {isAr ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
           </span>
           <Button
             variant="outline"

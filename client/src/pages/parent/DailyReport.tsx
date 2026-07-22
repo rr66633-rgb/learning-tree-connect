@@ -9,11 +9,12 @@ import { EmptyState } from "@/components/EmptyState";
 import { useTranslation } from "react-i18next";
 
 const iconMap: Record<string, any> = { meal: Utensils, snack: Utensils, nap_start: Moon, nap_end: Moon, diaper: Baby, toilet: Droplets, water: Droplets, medication: ThermometerSun, outdoor_play: Sun, indoor_play: Sun, mood: StickyNote, temperature: ThermometerSun, note: StickyNote };
-const labelMap: Record<string, string> = { meal: "وجبة", snack: "وجبة خفيفة", nap_start: "بداية قيلولة", nap_end: "نهاية قيلولة", diaper: "حفاض", toilet: "دورة مياه", water: "ماء", medication: "دواء", outdoor_play: "لعب خارجي", indoor_play: "لعب داخلي", mood: "المزاج", temperature: "حرارة", note: "ملاحظة" };
+// labelMap moved inside component
 
 export default function ParentDailyReport() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const labelMap: Record<string, string> = { meal: t("dailyReports.meal"), snack: t("dailyReports.snack"), nap_start: t("dailyReports.napStart"), nap_end: t("dailyReports.napEnd"), diaper: t("dailyReports.diaper"), toilet: t("dailyReports.toilet"), water: t("dailyReports.water"), medication: t("dailyReports.medication"), outdoor_play: t("dailyReports.outdoorPlay"), indoor_play: t("dailyReports.indoorPlay"), mood: t("dailyReports.mood"), temperature: t("dailyReports.temperature"), note: t("dailyReports.note") };
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const { data: activities, isLoading } = trpc.dailyActivities.byChild.useQuery(

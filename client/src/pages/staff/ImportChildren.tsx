@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Download, ArrowRight, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2, Baby } from "lucide-react";
 import { getCsrfToken } from "@/lib/csrf";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 type ParsedRow = {
   row: number;
@@ -26,6 +27,8 @@ type ImportResult = {
 };
 
 export default function ImportChildren() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const [step, setStep] = useState<"upload" | "preview" | "importing" | "done">("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -326,7 +329,7 @@ export default function ImportChildren() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">الصف</TableHead>
-                        <TableHead>الاسم</TableHead>
+                        <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
                         <TableHead>الأخطاء</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -366,10 +369,10 @@ export default function ImportChildren() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">الصف</TableHead>
-                        <TableHead>الاسم</TableHead>
+                        <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
                         <TableHead>تاريخ الميلاد</TableHead>
                         <TableHead>الجنس</TableHead>
-                        <TableHead>الفصل</TableHead>
+                        <TableHead>{isAr ? "الفصل" : "Class"}</TableHead>
                         <TableHead>جوال ولي الأمر</TableHead>
                       </TableRow>
                     </TableHeader>

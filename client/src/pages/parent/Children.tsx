@@ -78,11 +78,7 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
     }
   };
 
-  const typeLabels: Record<string, string> = {
-    birth_certificate: "شهادة ميلاد", family_id: "بطاقة عائلة", immunization: "سجل تطعيمات",
-    passport: "جواز سفر", national_id: "هوية وطنية", medical_report: "تقرير طبي",
-    allergy_report: "تقرير حساسية", photo: "صورة شخصية", other: "أخرى"
-  };
+  const typeLabels: Record<string, string> = { birth_certificate: t("documentTypes.birth_certificate"), family_id: t("documentTypes.family_id"), immunization: t("documentTypes.immunization"), passport: t("documentTypes.passport"), national_id: t("documentTypes.national_id"), medical_report: t("documentTypes.medical_report"), allergy_report: t("documentTypes.allergy_report"), photo: t("documentTypes.photo"), other: t("documentTypes.other") };
 
   if (isLoading) return <Skeleton className="h-24 w-full" />;
 

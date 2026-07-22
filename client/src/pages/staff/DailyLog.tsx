@@ -16,6 +16,7 @@ import {
   LogIn, LogOut, Coffee, Apple, Sandwich, Cookie, Smile, BookOpen, TreePine,
   Search, Clock, User
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const activityTypes = [
   { value: "arrival", label: "الوصول", icon: LogIn, options: [] },
@@ -37,6 +38,8 @@ const activityTypes = [
 type ActivityType = typeof activityTypes[number]["value"];
 
 export default function StaffDailyLog() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: children, isLoading: childrenLoading } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
   const [selectedChild, setSelectedChild] = useState<string>("");
@@ -369,7 +372,7 @@ export default function StaffDailyLog() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>الطفل</Label>
+                <Label>{isAr ? "الطفل" : "Child"}</Label>
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -455,7 +458,7 @@ export default function StaffDailyLog() {
                           <SelectItem value="father">الأب</SelectItem>
                           <SelectItem value="driver">السائق</SelectItem>
                           <SelectItem value="grandparent">الجد/الجدة</SelectItem>
-                          <SelectItem value="guardian">ولي الأمر</SelectItem>
+                          <SelectItem value="guardian">{isAr ? "ولي الأمر" : "Parent"}</SelectItem>
                           <SelectItem value="other">أخرى</SelectItem>
                         </SelectContent>
                       </Select>
@@ -508,11 +511,11 @@ export default function StaffDailyLog() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">الطفل</TableHead>
+                      <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
                       <TableHead className="text-right">الوقت</TableHead>
                       <TableHead className="text-right">المستلم</TableHead>
                       <TableHead className="text-right">صلة القرابة</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -565,7 +568,7 @@ export default function StaffDailyLog() {
                       <TableHead className="text-right">الوقت</TableHead>
                       <TableHead className="text-right">النشاط</TableHead>
                       <TableHead className="text-right">التفاصيل</TableHead>
-                      <TableHead className="text-right">ملاحظات</TableHead>
+                      <TableHead className="text-right">{isAr ? "ملاحظات" : "Notes"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

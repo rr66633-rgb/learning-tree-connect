@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, User, FileText, CreditCard, Users, Calendar, Settings } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const ACTION_ICONS: Record<string, any> = {
   login: User,
@@ -21,6 +22,8 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function AuditLog() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: logs, isLoading } = trpc.auditLog.list.useQuery({ limit: 100 });
 
   const getActionIcon = (action: string) => {

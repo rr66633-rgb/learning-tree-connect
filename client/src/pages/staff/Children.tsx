@@ -47,8 +47,9 @@ const initialFormState = {
 };
 
 export default function StaffChildren() {
-  const { t } = useTranslation();
-  const [, navigate] = useLocation();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");

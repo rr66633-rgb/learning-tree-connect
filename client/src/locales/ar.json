@@ -1014,5 +1014,103 @@
     "organization": "المنظمة",
     "noPayments": "لا توجد مدفوعات",
     "sar": "ر.س"
+  },
+  "documentTypes": {
+    "policy": "سياسة",
+    "form": "نموذج",
+    "report": "تقرير",
+    "certificate": "شهادة",
+    "consent": "موافقة",
+    "other": "أخرى",
+    "birth_certificate": "شهادة ميلاد",
+    "family_id": "بطاقة عائلة",
+    "immunization": "سجل تطعيمات",
+    "passport": "جواز سفر",
+    "national_id": "هوية وطنية",
+    "medical_report": "تقرير طبي",
+    "allergy_report": "تقرير حساسية",
+    "photo": "صورة شخصية"
+  },
+  "invoiceTypes": {
+    "tuition": "رسوم دراسية",
+    "activity": "نشاط",
+    "trip": "رحلة",
+    "uniform": "زي مدرسي",
+    "registration": "تسجيل",
+    "other": "أخرى"
+  },
+  "paymentMethods": {
+    "cash": "نقدي",
+    "bank_transfer": "تحويل بنكي",
+    "card": "بطاقة",
+    "apple_pay": "Apple Pay",
+    "mada": "مدى",
+    "stc_pay": "STC Pay",
+    "visa": "فيزا",
+    "mastercard": "ماستركارد"
+  },
+  "relationships": {
+    "mother": "الأم",
+    "father": "الأب",
+    "driver": "السائق",
+    "grandparent": "الجد/الجدة",
+    "guardian": "ولي الأمر",
+    "other": "أخرى",
+    "sibling": "أخ/أخت",
+    "relative": "قريب",
+    "nanny": "المربية"
+  },
+  "statuses": {
+    "active": "نشط",
+    "suspended": "معلّق",
+    "expired": "منتهي",
+    "pending": "معلّق",
+    "trial": "تجريبي",
+    "trialing": "فترة تجريبية",
+    "cancelled": "ملغي",
+    "past_due": "متأخر الدفع",
+    "initiated": "قيد المعالجة",
+    "paid": "مدفوع",
+    "failed": "فاشل",
+    "refunded": "مسترد",
+    "new": "جديد",
+    "processing": "قيد التجهيز",
+    "ready": "جاهز للاستلام",
+    "completed": "مكتمل"
+  },
+  "jobTitles": {
+    "teacher": "معلمة",
+    "assistant": "مساعدة معلمة",
+    "supervisor": "مشرفة",
+    "nurse": "ممرضة",
+    "admin": "إدارية",
+    "receptionist": "موظفة استقبال",
+    "driver": "سائق",
+    "cleaner": "عاملة نظافة",
+    "cook": "طباخة",
+    "security": "حارس أمن",
+    "principal": "مديرة",
+    "accountant": "محاسبة"
+  },
+  "enrollment": {
+    "title": "التسجيل",
+    "active": "نشط",
+    "graduated": "تخرج",
+    "withdrawn": "منسحب",
+    "waitlisted": "قائمة انتظار",
+    "pending": "قيد المراجعة",
+    "approved": "مقبول",
+    "rejected": "مرفوض",
+    "contacted": "تم التواصل",
+    "enrolled": "مسجل",
+    "cancelled": "ملغي"
+  },
+  "aiLibrary": {
+    "activity": "نشاط",
+    "story": "قصة",
+    "song": "أنشودة",
+    "game": "لعبة",
+    "experiment": "تجربة",
+    "craft": "عمل يدوي"
   }
 }

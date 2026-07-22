@@ -8,8 +8,11 @@ import {
   MessageSquare, Mail, CheckCircle2, XCircle, AlertTriangle,
   Phone, Send, Shield, Clock, Settings2, RefreshCw, Info
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function NotificationSettings() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: status, isLoading, refetch } = trpc.notifications.integrationStatus.useQuery();
   const testSms = trpc.notifications.testSms.useMutation({
     onSuccess: (data) => {
@@ -51,7 +54,7 @@ export default function NotificationSettings() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">إعدادات الإشعارات</h1>
+          <h1 className="text-2xl font-bold text-foreground">{isAr ? "إعدادات الإشعارات" : "Notification Settings"}</h1>
           <p className="text-muted-foreground mt-1">
             إدارة خدمات الرسائل القصيرة والبريد الإلكتروني للمنصة
           </p>
@@ -101,7 +104,7 @@ export default function NotificationSettings() {
               <Mail className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">البريد الإلكتروني</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "البريد الإلكتروني" : "Email"}</p>
               <p className="font-semibold">
                 {status?.email.configured ? "مُفعّل" : "غير مُفعّل"}
               </p>

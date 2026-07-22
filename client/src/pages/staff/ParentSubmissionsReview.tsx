@@ -9,8 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle, XCircle, Eye, Camera, AlertTriangle, Clock, Sparkles, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function ParentSubmissionsReview() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [activeTab, setActiveTab] = useState("journals");
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);

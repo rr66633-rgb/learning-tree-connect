@@ -15,8 +15,9 @@ import { toast } from "sonner";
 import { MapPin, Clock, LogIn, LogOut, CheckCircle2, AlertCircle, UserX, UserCheck, Timer, AlertTriangle } from "lucide-react";
 
 export default function StaffStaffAttendance() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal" || user?.role === "owner";
   const today = new Date().toISOString().split("T")[0];
 
@@ -383,11 +384,11 @@ export default function StaffStaffAttendance() {
               <TableHeader>
                 <TableRow>
                   {isAdmin && <TableHead>الموظف</TableHead>}
-                  <TableHead>التاريخ</TableHead>
+                  <TableHead>{isAr ? "التاريخ" : "Date"}</TableHead>
                   <TableHead>وقت الحضور</TableHead>
                   <TableHead>وقت الانصراف</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>ملاحظات</TableHead>
+                  <TableHead>{isAr ? "الحالة" : "Status"}</TableHead>
+                  <TableHead>{isAr ? "ملاحظات" : "Notes"}</TableHead>
                   {isAdmin && <TableHead>إجراءات</TableHead>}
                 </TableRow>
               </TableHeader>

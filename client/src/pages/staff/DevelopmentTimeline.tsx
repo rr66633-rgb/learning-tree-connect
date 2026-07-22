@@ -19,6 +19,7 @@ import {
   Palette,
   Eye,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const areaIcons: Record<string, any> = {
   "CL": MessageCircle,
@@ -70,6 +71,8 @@ interface Props {
 }
 
 export default function DevelopmentTimeline({ childId, childName }: Props) {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [selectedArea, setSelectedArea] = useState<string>("all");
 
   const { data: observations, isLoading } = trpc.development.listObservations.useQuery({
@@ -107,7 +110,7 @@ export default function DevelopmentTimeline({ childId, childName }: Props) {
             <Calendar className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold">الخط الزمني للتطور</h2>
+            <h2 className="text-lg font-bold">{isAr ? "الخط الزمني للتطور" : "Development Timeline"}</h2>
             {childName && <p className="text-sm text-muted-foreground">{childName}</p>}
           </div>
         </div>

@@ -59,8 +59,9 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
 };
 
 export default function StaffPickup() {
-  const { t } = useTranslation();
-  const { data: activeRequests, isLoading, refetch } = trpc.pickup.active.useQuery(undefined, {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const { data: activeRequests, isLoading, refetch } = trpc.pickup.active.useQuery(undefined, {
     refetchInterval: 5000,
   });
   const { data: history } = trpc.pickup.history.useQuery({ limit: 50 });
@@ -500,7 +501,7 @@ export default function StaffPickup() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setPickupDialog(null); setSelectedPerson(null); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setPickupDialog(null); setSelectedPerson(null); }}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={handleConfirmPickup}
               disabled={completePickup.isPending || !selectedPerson}

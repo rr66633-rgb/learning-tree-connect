@@ -12,8 +12,11 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Upload, User, Briefcase, GraduationCap, CreditCard, Phone as PhoneIcon, Save } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 export default function AddStaff() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

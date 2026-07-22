@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Download, ArrowRight, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { getCsrfToken } from "@/lib/csrf";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 type ParsedRow = {
   row: number;
@@ -24,6 +25,8 @@ type ImportResult = {
 };
 
 export default function ImportStaff() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const [step, setStep] = useState<"upload" | "preview" | "importing" | "done">("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -316,7 +319,7 @@ export default function ImportStaff() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">الصف</TableHead>
-                        <TableHead>الاسم</TableHead>
+                        <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
                         <TableHead>الأخطاء</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -356,11 +359,11 @@ export default function ImportStaff() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">الصف</TableHead>
-                        <TableHead>الاسم</TableHead>
+                        <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
                         <TableHead>الجوال</TableHead>
                         <TableHead>الوظيفة</TableHead>
                         <TableHead>القسم</TableHead>
-                        <TableHead>الحالة</TableHead>
+                        <TableHead>{isAr ? "الحالة" : "Status"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

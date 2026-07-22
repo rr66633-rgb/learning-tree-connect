@@ -16,8 +16,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { apiUrl } from "@/lib/apiBase";
 
 export default function StaffAnnouncements() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const { user } = useAuth();
   const { data: announcements, isLoading } = trpc.announcements.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -139,7 +140,7 @@ export default function StaffAnnouncements() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">الإعلانات</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "الإعلانات" : "Announcements"}</h1>
         {isAdmin && (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
@@ -313,7 +314,7 @@ export default function StaffAnnouncements() {
                         size="icon"
                         className="h-8 w-8 text-gray-500 hover:text-blue-600"
                         onClick={() => openEditDialog(a)}
-                        title="تعديل"
+                        title={isAr ? "تعديل" : "Edit"}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -322,7 +323,7 @@ export default function StaffAnnouncements() {
                         size="icon"
                         className="h-8 w-8 text-gray-500 hover:text-red-600"
                         onClick={() => setDeleteId(a.id)}
-                        title="حذف"
+                        title={isAr ? "حذف" : "Delete"}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -420,7 +421,7 @@ export default function StaffAnnouncements() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={() => {
                 if (editId) {
@@ -456,7 +457,7 @@ export default function StaffAnnouncements() {
           <DialogHeader><DialogTitle>تأكيد الحذف</DialogTitle></DialogHeader>
           <p className="text-muted-foreground">هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء.</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               variant="destructive"
               onClick={() => { if (deleteId) deleteMutation.mutate({ id: deleteId }); }}

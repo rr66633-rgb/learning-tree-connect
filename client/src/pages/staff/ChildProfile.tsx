@@ -13,8 +13,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, Edit, UserPlus, Unlink, Calendar, Phone, Heart, AlertTriangle, Bus, Shield, User, FileText, Upload, CheckCircle, XCircle, Download, Trash2, Camera, Plus, IdCard } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function ChildProfile() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const params = useParams<{ id: string }>();
   const childId = parseInt(params.id || "0");
   const [, navigate] = useLocation();
@@ -279,10 +282,10 @@ export default function ChildProfile() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="personal">البيانات الشخصية</TabsTrigger>
-          <TabsTrigger value="parent">ولي الأمر</TabsTrigger>
+          <TabsTrigger value="parent">{isAr ? "ولي الأمر" : "Parent"}</TabsTrigger>
           <TabsTrigger value="medical">الطبية</TabsTrigger>
           <TabsTrigger value="nursery">الحضانة</TabsTrigger>
-          <TabsTrigger value="documents">المستندات</TabsTrigger>
+          <TabsTrigger value="documents">{isAr ? "المستندات" : "Documents"}</TabsTrigger>
         </TabsList>
 
         {/* Personal Info Tab */}
@@ -313,7 +316,7 @@ export default function ChildProfile() {
                   <div><Label>الجنسية</Label><Input value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value })} /></div>
                   <div><Label>رقم الهوية / الإقامة</Label><Input value={form.childNationalId} onChange={(e) => setForm({ ...form, childNationalId: e.target.value })} /></div>
                   <div>
-                    <Label>الفصل</Label>
+                    <Label>{isAr ? "الفصل" : "Class"}</Label>
                     <Select value={form.classId || "none"} onValueChange={(v) => setForm({ ...form, classId: v === "none" ? "" : v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -326,7 +329,7 @@ export default function ChildProfile() {
                   </div>
                   <div className="col-span-full flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
               ) : (
@@ -356,13 +359,13 @@ export default function ChildProfile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div><Label>اسم الأب</Label><Input value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} /></div>
                   <div><Label>اسم الأم</Label><Input value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} /></div>
-                  <div><Label>البريد الإلكتروني</Label><Input type="email" value={form.parentEmail} onChange={(e) => setForm({ ...form, parentEmail: e.target.value })} dir="ltr" /></div>
-                  <div><Label>رقم الجوال</Label><Input value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} dir="ltr" /></div>
+                  <div><Label>{isAr ? "البريد الإلكتروني" : "Email"}</Label><Input type="email" value={form.parentEmail} onChange={(e) => setForm({ ...form, parentEmail: e.target.value })} dir="ltr" /></div>
+                  <div><Label>{isAr ? "رقم الجوال" : "Phone"}</Label><Input value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} dir="ltr" /></div>
                   <div><Label>رقم بديل</Label><Input value={form.altPhone} onChange={(e) => setForm({ ...form, altPhone: e.target.value })} dir="ltr" /></div>
                   <div className="col-span-full"><Label>العنوان</Label><Textarea value={form.homeAddress} onChange={(e) => setForm({ ...form, homeAddress: e.target.value })} /></div>
                   <div className="col-span-full flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
               ) : (
@@ -435,7 +438,7 @@ export default function ChildProfile() {
                   <div className="col-span-full"><Label>ملاحظات طبية</Label><Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} /></div>
                   <div className="col-span-full flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
               ) : (
@@ -469,7 +472,7 @@ export default function ChildProfile() {
                   <div><Label>ملاحظات عامة</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
                   <div className="flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
-                    <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+                    <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
               ) : (
@@ -597,15 +600,15 @@ export default function ChildProfile() {
                             <Button size="sm" variant="ghost" className="text-green-600 h-8 w-8 p-0" onClick={() => approveDoc.mutate({ id: doc.id })} title="اعتماد">
                               <CheckCircle className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => rejectDoc.mutate({ id: doc.id })} title="رفض">
+                            <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => rejectDoc.mutate({ id: doc.id })} title={isAr ? "رفض" : "Reject"}>
                               <XCircle className="h-4 w-4" />
                             </Button>
                           </>
                         )}
                         <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="تحميل"><Download className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title={isAr ? "تحميل" : "Download"}><Download className="h-4 w-4" /></Button>
                         </a>
-                        <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => deleteDoc.mutate({ id: doc.id })} title="حذف">
+                        <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => deleteDoc.mutate({ id: doc.id })} title={isAr ? "حذف" : "Delete"}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -647,7 +650,7 @@ export default function ChildProfile() {
               </Select>
             </div>
             <div>
-              <Label>رقم الجوال</Label>
+              <Label>{isAr ? "رقم الجوال" : "Phone"}</Label>
               <Input value={personForm.phone} onChange={(e) => setPersonForm({ ...personForm, phone: e.target.value })} placeholder="05xxxxxxxx" dir="ltr" />
             </div>
             <div>
@@ -656,7 +659,7 @@ export default function ChildProfile() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setAddPersonDialog(false); resetPersonForm(); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setAddPersonDialog(false); resetPersonForm(); }}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={() => {
                 if (!personForm.name.trim()) { toast.error("يرجى إدخال اسم الشخص"); return; }
@@ -684,7 +687,7 @@ export default function ChildProfile() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>ولي الأمر</Label>
+              <Label>{isAr ? "ولي الأمر" : "Parent"}</Label>
               <Select value={selectedParentId} onValueChange={setSelectedParentId}>
                 <SelectTrigger><SelectValue placeholder="اختر ولي الأمر" /></SelectTrigger>
                 <SelectContent>
@@ -708,7 +711,7 @@ export default function ChildProfile() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={() => { if (selectedParentId) linkParent.mutate({ parentId: parseInt(selectedParentId), childId, relationship }); }}
               disabled={!selectedParentId || linkParent.isPending}

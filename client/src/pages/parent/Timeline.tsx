@@ -56,6 +56,7 @@ const relationshipLabels: Record<string, string> = {
 export default function ParentTimeline() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const labelMap: Record<string, string> = { meal: t("dailyReports.meal"), snack: t("dailyReports.snack"), nap_start: t("dailyReports.napStart"), nap_end: t("dailyReports.napEnd"), diaper: t("dailyReports.diaper"), toilet: t("dailyReports.toilet"), water: t("dailyReports.water"), medication: t("dailyReports.medication"), outdoor_play: t("dailyReports.outdoorPlay"), indoor_play: t("dailyReports.indoorPlay"), mood: t("dailyReports.mood"), temperature: t("dailyReports.temperature"), note: t("dailyReports.note"), arrival: i18n.language === "ar" ? "وصول" : "Arrival", departure: i18n.language === "ar" ? "مغادرة" : "Departure", learning: i18n.language === "ar" ? "تعلم" : "Learning" };
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);

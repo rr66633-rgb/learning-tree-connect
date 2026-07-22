@@ -16,13 +16,7 @@ import {
 
 type SubStatus = "all" | "active" | "expired" | "cancelled" | "past_due" | "trialing";
 
-const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
-  active: { label: "نشط", color: "text-emerald-700", bgColor: "bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
-  expired: { label: "منتهي", color: "text-red-700", bgColor: "bg-red-50 border-red-200", icon: XCircle },
-  cancelled: { label: "ملغي", color: "text-gray-700", bgColor: "bg-gray-50 border-gray-200", icon: XCircle },
-  past_due: { label: "متأخر الدفع", color: "text-amber-700", bgColor: "bg-amber-50 border-amber-200", icon: AlertTriangle },
-  trialing: { label: "فترة تجريبية", color: "text-blue-700", bgColor: "bg-blue-50 border-blue-200", icon: Clock },
-};
+// statusConfig moved inside component
 
 function getDaysRemaining(endDate: string | Date | null): { days: number; text: string; urgent: boolean } {
   if (!endDate) return { days: 0, text: "غير محدد", urgent: false };
@@ -50,6 +44,13 @@ function formatDate(date: string | Date | null): string {
 export default function SubscriptionsManagement() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
+    active: { label: t("statuses.active"), color: "text-emerald-700", bgColor: "bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
+    expired: { label: t("statuses.expired"), color: "text-red-700", bgColor: "bg-red-50 border-red-200", icon: XCircle },
+    cancelled: { label: t("statuses.cancelled"), color: "text-gray-700", bgColor: "bg-gray-50 border-gray-200", icon: XCircle },
+    past_due: { label: t("statuses.past_due"), color: "text-amber-700", bgColor: "bg-amber-50 border-amber-200", icon: AlertTriangle },
+    trialing: { label: t("statuses.trialing"), color: "text-blue-700", bgColor: "bg-blue-50 border-blue-200", icon: Clock },
+  };
   const [statusFilter, setStatusFilter] = useState<SubStatus>("all");
   const [search, setSearch] = useState("");
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);

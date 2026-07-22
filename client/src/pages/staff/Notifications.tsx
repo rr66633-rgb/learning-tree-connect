@@ -8,8 +8,9 @@ import { Bell, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export default function StaffNotifications() {
-  const { t } = useTranslation();
-  const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
   const { data: unreadCount } = trpc.notifications.unreadCount.useQuery();
   const utils = trpc.useUtils();
   const markRead = trpc.notifications.markRead.useMutation({ onSuccess: () => utils.notifications.list.invalidate() });
@@ -19,7 +20,7 @@ export default function StaffNotifications() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">الإشعارات</h1>
+          <h1 className="text-2xl font-bold">{isAr ? "الإشعارات" : "Notifications"}</h1>
           {(unreadCount ?? 0) > 0 && <Badge>{unreadCount}</Badge>}
         </div>
         <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()}>تحديد الكل كمقروء</Button>

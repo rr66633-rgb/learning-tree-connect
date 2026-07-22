@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,8 @@ import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 
 export default function StoreProducts() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: products, isLoading } = trpc.store.adminGetProducts.useQuery();
   const { data: categories } = trpc.store.adminGetCategories.useQuery();
   const utils = trpc.useUtils();
@@ -224,7 +227,7 @@ export default function StoreProducts() {
             uploading={uploading} onImageUpload={handleImageUpload}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenCreate(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpenCreate(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={handleCreate} disabled={createProduct.isPending}>
               {createProduct.isPending ? "جاري الإضافة..." : "إضافة"}
             </Button>
@@ -247,7 +250,7 @@ export default function StoreProducts() {
             uploading={uploading} onImageUpload={handleImageUpload}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenEdit(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpenEdit(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={handleUpdate} disabled={updateProduct.isPending}>
               {updateProduct.isPending ? "جاري التحديث..." : "تحديث"}
             </Button>
@@ -264,7 +267,7 @@ export default function StoreProducts() {
             <div><Label>اسم التصنيف (عربي)</Label><Input value={catNameAr} onChange={e => setCatNameAr(e.target.value)} placeholder="مثال: ملابس" /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenCategory(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpenCategory(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={() => { if (!catName || !catNameAr) { toast.error("أدخل اسم التصنيف"); return; } createCategory.mutate({ name: catName, nameAr: catNameAr }); }} disabled={createCategory.isPending}>
               إضافة
             </Button>
@@ -321,6 +324,8 @@ function ProductForm({ name, setName, nameAr, setNameAr, description, setDescrip
 }
 
 function StoreOrdersTab() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: orders, isLoading } = trpc.store.adminGetOrders.useQuery();
   const utils = trpc.useUtils();
   const updateStatus = trpc.store.adminUpdateOrderStatus.useMutation({
@@ -328,7 +333,8 @@ function StoreOrdersTab() {
     onError: (e: any) => toast.error(e.message || "حدث خطأ"),
   });
 
-  const statusLabels: Record<string, string> = { pending: "جديد", paid: "مدفوع", processing: "قيد التجهيز", ready: "جاهز للاستلام", completed: "مكتمل", cancelled: "ملغي", refunded: "مسترجع" };
+  const { t } = useTranslation();
+  const statusLabels: Record<string, string> = { pending: t("statuses.new"), paid: t("statuses.paid"), processing: t("statuses.processing"), ready: t("statuses.ready"), completed: t("statuses.completed"), cancelled: t("statuses.cancelled"), refunded: t("statuses.refunded") };
   const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-blue-100 text-blue-700", processing: "bg-indigo-100 text-indigo-700", ready: "bg-green-100 text-green-700", completed: "bg-gray-100 text-gray-700", cancelled: "bg-red-100 text-red-700", refunded: "bg-orange-100 text-orange-700" };
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -347,8 +353,8 @@ function StoreOrdersTab() {
           <TableRow>
             <TableHead>رقم الطلب</TableHead>
             <TableHead>المبلغ</TableHead>
-            <TableHead>الحالة</TableHead>
-            <TableHead>التاريخ</TableHead>
+            <TableHead>{isAr ? "الحالة" : "Status"}</TableHead>
+            <TableHead>{isAr ? "التاريخ" : "Date"}</TableHead>
             <TableHead>الإجراء</TableHead>
           </TableRow>
         </TableHeader>

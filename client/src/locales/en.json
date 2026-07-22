@@ -1014,5 +1014,103 @@
     "organization": "Organization",
     "noPayments": "No payments",
     "sar": "SAR"
+  },
+  "documentTypes": {
+    "policy": "Policy",
+    "form": "Form",
+    "report": "Report",
+    "certificate": "Certificate",
+    "consent": "Consent",
+    "other": "Other",
+    "birth_certificate": "Birth Certificate",
+    "family_id": "Family ID",
+    "immunization": "Immunization Record",
+    "passport": "Passport",
+    "national_id": "National ID",
+    "medical_report": "Medical Report",
+    "allergy_report": "Allergy Report",
+    "photo": "Personal Photo"
+  },
+  "invoiceTypes": {
+    "tuition": "Tuition",
+    "activity": "Activity",
+    "trip": "Trip",
+    "uniform": "Uniform",
+    "registration": "Registration",
+    "other": "Other"
+  },
+  "paymentMethods": {
+    "cash": "Cash",
+    "bank_transfer": "Bank Transfer",
+    "card": "Card",
+    "apple_pay": "Apple Pay",
+    "mada": "Mada",
+    "stc_pay": "STC Pay",
+    "visa": "Visa",
+    "mastercard": "Mastercard"
+  },
+  "relationships": {
+    "mother": "Mother",
+    "father": "Father",
+    "driver": "Driver",
+    "grandparent": "Grandparent",
+    "guardian": "Guardian",
+    "other": "Other",
+    "sibling": "Sibling",
+    "relative": "Relative",
+    "nanny": "Nanny"
+  },
+  "statuses": {
+    "active": "Active",
+    "suspended": "Suspended",
+    "expired": "Expired",
+    "pending": "Pending",
+    "trial": "Trial",
+    "trialing": "Trial Period",
+    "cancelled": "Cancelled",
+    "past_due": "Past Due",
+    "initiated": "Processing",
+    "paid": "Paid",
+    "failed": "Failed",
+    "refunded": "Refunded",
+    "new": "New",
+    "processing": "Processing",
+    "ready": "Ready for Pickup",
+    "completed": "Completed"
+  },
+  "jobTitles": {
+    "teacher": "Teacher",
+    "assistant": "Assistant Teacher",
+    "supervisor": "Supervisor",
+    "nurse": "Nurse",
+    "admin": "Administrator",
+    "receptionist": "Receptionist",
+    "driver": "Driver",
+    "cleaner": "Cleaner",
+    "cook": "Cook",
+    "security": "Security",
+    "principal": "Principal",
+    "accountant": "Accountant"
+  },
+  "enrollment": {
+    "title": "Enrollment",
+    "active": "Active",
+    "graduated": "Graduated",
+    "withdrawn": "Withdrawn",
+    "waitlisted": "Waitlisted",
+    "pending": "Pending Review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "contacted": "Contacted",
+    "enrolled": "Enrolled",
+    "cancelled": "Cancelled"
+  },
+  "aiLibrary": {
+    "activity": "Activity",
+    "story": "Story",
+    "song": "Song",
+    "game": "Game",
+    "experiment": "Experiment",
+    "craft": "Craft"
   }
 }

@@ -13,8 +13,9 @@ import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 
 export default function StaffMessages() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal" || user?.role === "owner";
   const { data: adminConvs, isLoading: loadingAdminConvs } = trpc.messages.allConversations.useQuery(
     { search: undefined },

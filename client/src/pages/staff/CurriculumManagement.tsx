@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { getCsrfToken, invalidateCsrfToken } from "@/lib/csrf";
 import { FileText, Trash2, Upload, BookOpen, Loader2 } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 const LEVEL_LABELS: Record<string, string> = {
   nursery: "حضانة",
@@ -20,6 +21,8 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 export default function CurriculumManagement() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [level, setLevel] = useState<string>("");

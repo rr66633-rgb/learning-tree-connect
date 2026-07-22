@@ -58,8 +58,9 @@ function getCategoryLabel(cat: string) {
 }
 
 export default function StaffCalendar() {
-  const { t } = useTranslation();
-  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const [currentDate, setCurrentDate] = useState(() => new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [viewEvent, setViewEvent] = useState<any>(null);
@@ -469,7 +470,7 @@ export default function StaffCalendar() {
               <Input value={form.dressCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, dressCode: e.target.value }))} placeholder="مثال: ملابس بيضاء" />
             </div>
             <div>
-              <Label>الوصف</Label>
+              <Label>{isAr ? "الوصف" : "Description"}</Label>
               <Textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="تفاصيل إضافية عن الحدث..." />
             </div>
             <div className="flex items-center justify-between border-t pt-3">
@@ -485,7 +486,7 @@ export default function StaffCalendar() {
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">إلغاء</Button>
+              <Button variant="outline">{isAr ? "إلغاء" : "Cancel"}</Button>
             </DialogClose>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
               {(createMutation.isPending || updateMutation.isPending) ? "جاري الحفظ..." : editingEvent ? "تحديث" : "إضافة"}
@@ -692,7 +693,7 @@ export default function StaffCalendar() {
           </DialogHeader>
           <p className="text-muted-foreground">هل أنت متأكد من حذف هذا الحدث؟ سيتم إلغاء جميع التذكيرات المرتبطة به. لا يمكن التراجع عن هذا الإجراء.</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button variant="destructive" onClick={() => deleteConfirm && deleteMutation.mutate({ id: deleteConfirm })} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? "جاري الحذف..." : "حذف"}
             </Button>

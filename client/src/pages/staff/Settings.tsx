@@ -172,12 +172,13 @@ function TestNotificationSection() {
 }
 
 export default function StaffSettings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: settings, isLoading } = trpc.centerSettings.get.useQuery();
   const utils = trpc.useUtils();
   const update = trpc.centerSettings.update.useMutation({
     onSuccess: () => {
-      toast.success("تم حفظ الإعدادات بنجاح");
+      toast.success(isAr ? "تم حفظ الإعدادات بنجاح" : "Settings saved successfully");
       utils.centerSettings.get.invalidate();
     },
     onError: (e) => toast.error(e.message),
@@ -240,16 +241,16 @@ export default function StaffSettings() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-bold">إعدادات المركز</h1>
+      <h1 className="text-2xl font-bold">{isAr ? "إعدادات المركز" : "Center Settings"}</h1>
 
       {/* Center Info */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
-            <CardTitle>معلومات المركز</CardTitle>
+            <CardTitle>{isAr ? "معلومات المركز" : "Center Information"}</CardTitle>
           </div>
-          <CardDescription>الاسم والمعلومات الأساسية للمركز</CardDescription>
+          <CardDescription>{isAr ? "الاسم والمعلومات الأساسية للمركز" : "Basic center name and information"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -334,9 +335,9 @@ export default function StaffSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
-            <CardTitle>إعدادات الموقع الجغرافي</CardTitle>
+            <CardTitle>{isAr ? "إعدادات الموقع الجغرافي" : "Location Settings"}</CardTitle>
           </div>
-          <CardDescription>تحديد موقع المركز ونطاق تسجيل الحضور المسموح</CardDescription>
+          <CardDescription>{isAr ? "تحديد موقع المركز ونطاق تسجيل الحضور المسموح" : "Set center location and allowed attendance radius"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -376,9 +377,9 @@ export default function StaffSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            <CardTitle>ساعات العمل</CardTitle>
+            <CardTitle>{isAr ? "ساعات العمل" : "Working Hours"}</CardTitle>
           </div>
-          <CardDescription>تحديد أوقات بداية ونهاية الدوام</CardDescription>
+          <CardDescription>{isAr ? "تحديد أوقات بداية ونهاية الدوام" : "Set shift start and end times"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -398,7 +399,7 @@ export default function StaffSettings() {
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={update.isPending} className="gap-2">
           <Save className="h-4 w-4" />
-          {update.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
+          {update.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ الإعدادات" : "Save Settings")}
         </Button>
       </div>
 
@@ -407,9 +408,9 @@ export default function StaffSettings() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-primary" />
-            <CardTitle>إشعارات الدفع الفورية</CardTitle>
+            <CardTitle>{isAr ? "إشعارات الدفع الفورية" : "Push Notifications"}</CardTitle>
           </div>
-          <CardDescription>تفعيل أو إيقاف إشعارات الدفع لتلقي التنبيهات الفورية</CardDescription>
+          <CardDescription>{isAr ? "تفعيل أو إيقاف إشعارات الدفع لتلقي التنبيهات الفورية" : "Enable or disable push notifications for real-time alerts"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <PushNotificationToggle />

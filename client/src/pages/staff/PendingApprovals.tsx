@@ -7,8 +7,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { UserCheck, UserX, Eye, Clock, Users, Mail, Phone, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function PendingApprovals() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: pendingUsers, isLoading } = trpc.users.pending.useQuery();
   const utils = trpc.useUtils();
 
@@ -151,11 +154,11 @@ export default function PendingApprovals() {
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">البريد الإلكتروني</span>
+                  <span className="text-muted-foreground">{isAr ? "البريد الإلكتروني" : "Email"}</span>
                   <span>{selectedUser.email || "-"}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">رقم الجوال</span>
+                  <span className="text-muted-foreground">{isAr ? "رقم الجوال" : "Phone"}</span>
                   <span dir="ltr">{selectedUser.phone || "-"}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b">

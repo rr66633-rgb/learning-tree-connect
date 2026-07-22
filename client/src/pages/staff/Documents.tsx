@@ -11,9 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Plus, Trash2, Download, FileCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function StaffDocuments() {
-  const { data: documents, isLoading } = trpc.documents.list.useQuery();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+    const { data: documents, isLoading } = trpc.documents.list.useQuery();
   const utils = trpc.useUtils();
 
   const [open, setOpen] = useState(false);
@@ -38,8 +41,8 @@ export default function StaffDocuments() {
     onError: (e) => toast.error(e.message),
   });
 
-  const typeLabels: Record<string, string> = { policy: "سياسة", form: "نموذج", report: "تقرير", certificate: "شهادة", consent: "موافقة", other: "أخرى" };
-  const audienceLabels: Record<string, string> = { all: "الجميع", parents: "أولياء الأمور", staff: "الموظفون" };
+  const typeLabels: Record<string, string> = { policy: t("documentTypes.policy"), form: t("documentTypes.form"), report: t("documentTypes.report"), certificate: t("documentTypes.certificate"), consent: t("documentTypes.consent"), other: t("documentTypes.other") };
+  const audienceLabels: Record<string, string> = { all: t("common.all"), parents: t("common.parents") || "Parents", staff: t("common.staff") || "Staff" };
 
   return (
     <div className="space-y-6">

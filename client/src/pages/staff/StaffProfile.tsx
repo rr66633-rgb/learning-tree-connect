@@ -19,6 +19,7 @@ import {
   FolderOpen, Plus, Phone, Mail, MapPin, Clock, CheckCircle, XCircle, AlertCircle,
   Download, Upload
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const JOB_TITLES: Record<string, string> = {
   teacher: "معلم/ة", supervisor: "مشرف/ة", principal: "مدير/ة",
@@ -61,6 +62,8 @@ const DOC_TYPES: Record<string, string> = {
 };
 
 export default function StaffProfile() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const params = useParams<{ id: string }>();
   const staffId = parseInt(params.id || "0");
   const [, navigate] = useLocation();
@@ -234,7 +237,7 @@ export default function StaffProfile() {
           <TabsTrigger value="leaves" className="gap-1.5 text-xs md:text-sm"><Calendar className="h-3.5 w-3.5" />الإجازات</TabsTrigger>
           <TabsTrigger value="attendance" className="gap-1.5 text-xs md:text-sm"><Clock className="h-3.5 w-3.5" />الحضور</TabsTrigger>
           <TabsTrigger value="notes" className="gap-1.5 text-xs md:text-sm"><MessageSquare className="h-3.5 w-3.5" />الملاحظات</TabsTrigger>
-          <TabsTrigger value="documents" className="gap-1.5 text-xs md:text-sm"><FolderOpen className="h-3.5 w-3.5" />المستندات</TabsTrigger>
+          <TabsTrigger value="documents" className="gap-1.5 text-xs md:text-sm"><FolderOpen className="h-3.5 w-3.5" />{isAr ? "المستندات" : "Documents"}</TabsTrigger>
         </TabsList>
 
         {/* Info Tab */}
@@ -347,7 +350,7 @@ export default function StaffProfile() {
                             {leave.status === "pending" && (
                               <div className="flex gap-1">
                                 <Button size="sm" variant="ghost" className="h-7 text-emerald-600" onClick={() => approveLeave.mutate({ id: leave.id })}>قبول</Button>
-                                <Button size="sm" variant="ghost" className="h-7 text-red-600" onClick={() => rejectLeave.mutate({ id: leave.id })}>رفض</Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-red-600" onClick={() => rejectLeave.mutate({ id: leave.id })}>{isAr ? "رفض" : "Reject"}</Button>
                               </div>
                             )}
                           </div>
@@ -443,7 +446,7 @@ export default function StaffProfile() {
         <TabsContent value="documents">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">المستندات</CardTitle>
+              <CardTitle className="text-base">{isAr ? "المستندات" : "Documents"}</CardTitle>
               <Dialog open={showDocDialog} onOpenChange={setShowDocDialog}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="gap-1.5"><Upload className="h-3.5 w-3.5" />رفع مستند</Button>
@@ -469,7 +472,7 @@ export default function StaffProfile() {
                       <Input type="date" value={docForm.expiryDate} onChange={e => setDocForm(f => ({ ...f, expiryDate: e.target.value }))} />
                     </div>
                     <div className="space-y-2">
-                      <Label>ملاحظات</Label>
+                      <Label>{isAr ? "ملاحظات" : "Notes"}</Label>
                       <Input value={docForm.notes} onChange={e => setDocForm(f => ({ ...f, notes: e.target.value }))} />
                     </div>
                     <Button onClick={() => docInputRef.current?.click()} disabled={docUploading} className="w-full gap-2">

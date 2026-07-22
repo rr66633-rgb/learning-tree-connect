@@ -11,8 +11,11 @@ import {
   AlertTriangle, CheckCircle, Eye, Calendar
 } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function EngagementAnalytics() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [period, setPeriod] = useState("month");
 
   const { data: stats, isLoading } = trpc.engagement.analytics.overview.useQuery();

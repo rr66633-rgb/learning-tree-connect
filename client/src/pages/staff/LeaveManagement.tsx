@@ -11,6 +11,7 @@ import {
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight,
   CalendarDays, Palmtree, Stethoscope, AlertTriangle
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const LEAVE_TYPES: Record<string, { label: string; icon: any; color: string }> = {
   annual: { label: "سنوية", icon: Palmtree, color: "text-blue-600 bg-blue-50" },
@@ -29,6 +30,8 @@ const LEAVE_STATUS: Record<string, { label: string; icon: any; color: string; ba
 };
 
 export default function LeaveManagement() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -67,7 +70,7 @@ export default function LeaveManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">إدارة الإجازات</h1>
+        <h1 className="text-2xl font-bold text-foreground">{isAr ? "إدارة الإجازات" : "Leave Management"}</h1>
         <p className="text-sm text-muted-foreground mt-1">مراجعة وإدارة طلبات الإجازات لجميع الموظفين</p>
       </div>
 
@@ -105,7 +108,7 @@ export default function LeaveManagement() {
           <div className="flex flex-wrap gap-3">
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="الحالة" />
+                <SelectValue placeholder={isAr ? "الحالة" : "Status"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الحالات</SelectItem>

@@ -30,6 +30,7 @@ import {
   Globe,
   Activity,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const areaIcons: Record<string, any> = {
   "CL": MessageCircle,
@@ -73,6 +74,8 @@ const levelToPercent: Record<string, number> = {
 };
 
 export default function ChildDevelopmentProfile() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const childId = parseInt(params.id || "0");
@@ -119,7 +122,7 @@ export default function ChildDevelopmentProfile() {
             <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">ملف التطور</h1>
+            <h1 className="text-2xl font-bold text-foreground">{isAr ? "ملف التطور" : "Development Profile"}</h1>
             <p className="text-sm text-muted-foreground">تتبع النمو عبر مجالات EYFS السبعة</p>
           </div>
         </div>
@@ -418,7 +421,7 @@ export default function ChildDevelopmentProfile() {
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-xs">
                           <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/20 text-center">
-                            <p className="text-muted-foreground">الطفل</p>
+                            <p className="text-muted-foreground">{isAr ? "الطفل" : "Child"}</p>
                             <p className="font-bold text-blue-600">{(b.childAvg * 25).toFixed(0)}%</p>
                           </div>
                           <div className="p-2 rounded bg-gray-50 dark:bg-gray-950/20 text-center">

@@ -16,6 +16,7 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   childId: number;
@@ -23,6 +24,8 @@ interface Props {
 }
 
 export default function DevelopmentReport({ childId, childName }: Props) {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [language, setLanguage] = useState<"ar" | "en">("ar");
   const [reportType, setReportType] = useState<"professional" | "parent">("parent");
   const [report, setReport] = useState<any>(null);

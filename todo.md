@@ -2438,3 +2438,6 @@ Fix:
 - [x] Add i18n translations to Parent portal pages
 - [x] Add bilingual support to customAssessmentPdf.ts (PDF export)
 - [x] Add i18n translations to SuperAdmin pages
+- [x] Translate hardcoded labelMap/statusConfig objects to use t() dynamically
+- [x] Verify and add language switcher to parent portal UI (already exists in DashboardLayout)
+- [x] Translate remaining staff pages (all 33 remaining pages batch-translated)

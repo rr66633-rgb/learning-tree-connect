@@ -8,8 +8,11 @@ import { Separator } from "@/components/ui/separator";
 import { FileText, Sparkles, Printer, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+import { useTranslation } from "react-i18next";
 
 export default function EngagementReports() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [period, setPeriod] = useState<string>("monthly");
   const [language, setLanguage] = useState<string>("ar");
@@ -61,7 +64,7 @@ export default function EngagementReports() {
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div className="space-y-2">
-              <label className="text-sm font-medium">الطفل</label>
+              <label className="text-sm font-medium">{isAr ? "الطفل" : "Child"}</label>
               <Select value={selectedChildId} onValueChange={setSelectedChildId}>
                 <SelectTrigger>
                   <SelectValue placeholder="اختر طفلاً" />

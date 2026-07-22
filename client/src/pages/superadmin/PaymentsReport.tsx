@@ -11,14 +11,6 @@ import { Download, CreditCard, TrendingUp, AlertCircle, Clock, Filter, ChevronRi
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-const statusLabels: Record<string, string> = {
-  initiated: "قيد المعالجة",
-  paid: "Paid",
-  failed: "فاشلة",
-  expired: "منتهية",
-  refunded: "مستردة",
-};
-
 const statusColors: Record<string, string> = {
   initiated: "bg-yellow-100 text-yellow-800",
   paid: "bg-green-100 text-green-800",
@@ -27,19 +19,13 @@ const statusColors: Record<string, string> = {
   refunded: "bg-blue-100 text-blue-800",
 };
 
-const methodLabels: Record<string, string> = {
-  mada: "مدى",
-  visa: "فيزا",
-  mastercard: "ماستركارد",
-  apple_pay: "Apple Pay",
-  stc_pay: "STC Pay",
-  cash: "نقدي",
-  bank_transfer: "تحويل بنكي",
-};
+// methodLabels moved inside component
 
 export default function PaymentsReport() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const statusLabels: Record<string, string> = { initiated: t("statuses.initiated"), paid: t("statuses.paid"), failed: t("statuses.failed"), expired: t("statuses.expired"), refunded: t("statuses.refunded") };
+  const methodLabels: Record<string, string> = { mada: t("paymentMethods.mada"), visa: t("paymentMethods.visa"), mastercard: t("paymentMethods.mastercard"), apple_pay: t("paymentMethods.apple_pay"), stc_pay: t("paymentMethods.stc_pay"), cash: t("paymentMethods.cash"), bank_transfer: t("paymentMethods.bank_transfer") };
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [status, setStatus] = useState<string>("all");

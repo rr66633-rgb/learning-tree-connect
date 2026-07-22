@@ -20,8 +20,11 @@ import {
   ChevronLeft,
   Eye,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function DevelopmentDashboard() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const { data: dashboard, isLoading } = trpc.development.teacherDashboard.useQuery();
 
