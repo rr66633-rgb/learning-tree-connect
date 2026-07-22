@@ -2418,3 +2418,4 @@ Fix:
 - [x] Add testimonial section with Amjad Al-Shammari (مديرة مركز شجرة التعلم - حي أجيال أرامكو) to /nurseries landing page
 - [x] Add 'شركاء نفخر بهم' section with Learning Tree Center logo to /nurseries landing page
 - [x] Add floating WhatsApp button (966533784686) to /nurseries landing page
+- [x] Make landing page (NurseriesLanding) the homepage at / with login button in navbar

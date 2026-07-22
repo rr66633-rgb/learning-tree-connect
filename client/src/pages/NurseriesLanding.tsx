@@ -134,6 +134,13 @@ export default function NurseriesLanding() {
 
             <div className="hidden sm:flex items-center gap-2.5">
               <Button 
+                variant="outline"
+                onClick={() => setLocation("/login")}
+                className="h-10 px-5 text-sm rounded-full font-medium border-gray-200 text-gray-700 hover:bg-gray-50"
+              >
+                تسجيل الدخول
+              </Button>
+              <Button 
                 onClick={() => setLocation("/register-nursery")}
                 className="bg-gradient-to-l from-[#00C9B7] to-[#00B5A5] hover:from-[#00B5A5] hover:to-[#009990] text-white h-10 px-5 text-sm rounded-full font-medium shadow-[0_4px_14px_rgba(0,201,183,0.3)] active:scale-[0.97] transition-all duration-150"
               >
@@ -158,7 +165,14 @@ export default function NurseriesLanding() {
               <a href="#stats" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>لماذا نشأة؟</a>
               <a href="#pricing" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>الباقات</a>
               <a href="#demo" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>احجز عرض</a>
-              <div className="pt-4 mt-2 border-t border-gray-100">
+              <div className="pt-4 mt-2 border-t border-gray-100 space-y-2.5">
+                <Button 
+                  variant="outline"
+                  onClick={() => { setLocation("/login"); setMobileMenuOpen(false); }}
+                  className="w-full h-11 rounded-full text-sm font-medium border-gray-200 text-gray-700 hover:bg-gray-50"
+                >
+                  تسجيل الدخول
+                </Button>
                 <Button 
                   onClick={() => { setLocation("/register-nursery"); setMobileMenuOpen(false); }}
                   className="w-full bg-gradient-to-l from-[#00C9B7] to-[#00B5A5] text-white h-11 rounded-full text-sm font-medium shadow-[0_4px_14px_rgba(0,201,183,0.3)]"

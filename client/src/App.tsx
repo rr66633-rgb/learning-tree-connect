@@ -379,7 +379,7 @@ function RoleRouter() {
     );
   }
   // Marketing landing page - always accessible without auth
-  if (location === "/nurseries") {
+  if (location === "/nurseries" || location === "/") {
     return (
       <Suspense fallback={<PageLoader />}>
         <NurseriesLanding />
@@ -403,7 +403,7 @@ function RoleRouter() {
           <Route path="/recover-account" component={RecoverAccount} />
           <Route path="/pricing" component={Pricing} />
           <Route path="/nurseries" component={NurseriesLanding} />
-          <Route component={Landing} />
+          <Route component={NurseriesLanding} />
         </Switch>
       </Suspense>
     );
