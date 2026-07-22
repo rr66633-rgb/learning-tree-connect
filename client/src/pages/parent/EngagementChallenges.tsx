@@ -9,8 +9,11 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 import { ChevronRight, Target, Trophy, Users, Calendar, CheckCircle2, Clock } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { useTranslation } from "react-i18next";
 
 export default function EngagementChallenges() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: challenges, isLoading } = trpc.engagement.challenges.listActive.useQuery({});
 
   const joinMutation = trpc.engagement.challenges.enroll.useMutation({

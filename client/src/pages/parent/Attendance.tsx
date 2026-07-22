@@ -1,4 +1,3 @@
-import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,26 +6,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useState, useMemo } from "react";
 import { CalendarDays, Clock, LogIn, LogOut, User, History } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
-
-const STATUS_LABELS: Record<string, string> = {
-  present: "حاضر",
-  absent: "غائب",
-  late: "متأخر",
-  excused: "غياب بعذر",
-  checked_in: "تم التسجيل",
-  checked_out: "تم المغادرة",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  present: "bg-green-100 text-green-700",
-  absent: "bg-red-100 text-red-700",
-  late: "bg-amber-100 text-amber-700",
-  excused: "bg-blue-100 text-blue-700",
-  checked_in: "bg-emerald-100 text-emerald-700",
-  checked_out: "bg-gray-100 text-gray-700",
-};
+import { useTranslation } from "react-i18next";
+import { trpc } from "@/lib/trpc";
 
 export default function ParentAttendance() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+
+  const STATUS_LABELS: Record<string, string> = {
+    present: t("parent.present"),
+    absent: t("parent.absent"),
+    late: t("parent.late"),
+    excused: t("parent.excused"),
+    checked_in: t("parent.checkedIn"),
+    checked_out: t("parent.checkedOut"),
+  };
+
+  const STATUS_COLORS: Record<string, string> = {
+    present: "bg-green-100 text-green-700",
+    absent: "bg-red-100 text-red-700",
+    late: "bg-amber-100 text-amber-700",
+    excused: "bg-blue-100 text-blue-700",
+    checked_in: "bg-emerald-100 text-emerald-700",
+    checked_out: "bg-gray-100 text-gray-700",
+  };
+
+  const RELATIONSHIP_LABELS: Record<string, string> = {
+    mother: t("parent.mother"),
+    father: t("parent.father"),
+    driver: t("parent.driver"),
+    grandparent: t("parent.grandparent"),
+    guardian: t("parent.guardian"),
+    other: t("parent.other"),
+  };
+
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const [showHistory, setShowHistory] = useState(false);
@@ -51,10 +64,10 @@ export default function ParentAttendance() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">سجل الحضور</h1>
+      <h1 className="text-2xl font-bold">{t("parent.attendanceRecord")}</h1>
       
       <Select value={selectedChild} onValueChange={(v) => { setSelectedChild(v); setShowHistory(false); }}>
-        <SelectTrigger className="max-w-xs"><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+        <SelectTrigger className="max-w-xs"><SelectValue placeholder={t("parent.selectChild")} /></SelectTrigger>
         <SelectContent>{children?.map((c: any) => (
           <SelectItem key={c.id} value={c.id.toString()}>
             <span className="flex items-center gap-2">
@@ -85,7 +98,7 @@ export default function ParentAttendance() {
                     </div>
                   );
                 })()}
-                حالة اليوم
+                {t("parent.todayStatus")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -93,7 +106,7 @@ export default function ParentAttendance() {
                 <div className="space-y-4">
                   {/* Current Status Badge */}
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">الحالة الحالية:</span>
+                    <span className="text-sm text-muted-foreground">{t("parent.currentStatus")}:</span>
                     <Badge className={STATUS_COLORS[todayRecord.status] || "bg-gray-100 text-gray-700"}>
                       {STATUS_LABELS[todayRecord.status] || todayRecord.status}
                     </Badge>
@@ -104,22 +117,22 @@ export default function ParentAttendance() {
                     <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
                       <LogIn className="h-5 w-5 text-green-600 mt-0.5" />
                       <div>
-                        <p className="font-medium text-green-800 dark:text-green-200">الوصول</p>
+                        <p className="font-medium text-green-800 dark:text-green-200">{t("parent.arrival")}</p>
                         {todayRecord.checkInTime ? (
                           <>
                             <p className="text-lg font-bold text-green-700 dark:text-green-300">
-                              {new Date(todayRecord.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(todayRecord.checkInTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                             </p>
                             {todayRecord.droppedOffBy && (
                               <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-1">
                                 <User className="h-3 w-3" />
-                                أوصله: {todayRecord.droppedOffBy}
-                                {todayRecord.droppedOffRelationship && ` (${getRelationshipLabel(todayRecord.droppedOffRelationship)})`}
+                                {t("parent.droppedOffBy")} {todayRecord.droppedOffBy}
+                                {todayRecord.droppedOffRelationship && ` (${RELATIONSHIP_LABELS[todayRecord.droppedOffRelationship] || todayRecord.droppedOffRelationship})`}
                               </p>
                             )}
                           </>
                         ) : (
-                          <p className="text-sm text-muted-foreground">لم يُسجل بعد</p>
+                          <p className="text-sm text-muted-foreground">{t("parent.notRecordedYet")}</p>
                         )}
                       </div>
                     </div>
@@ -128,13 +141,13 @@ export default function ParentAttendance() {
                     <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800">
                       <LogOut className="h-5 w-5 text-orange-600 mt-0.5" />
                       <div>
-                        <p className="font-medium text-orange-800 dark:text-orange-200">المغادرة</p>
+                        <p className="font-medium text-orange-800 dark:text-orange-200">{t("parent.departure")}</p>
                         {todayRecord.checkOutTime ? (
                           <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
-                            {new Date(todayRecord.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(todayRecord.checkOutTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         ) : (
-                          <p className="text-sm text-muted-foreground">لا يزال في المركز</p>
+                          <p className="text-sm text-muted-foreground">{t("parent.stillInCenter")}</p>
                         )}
                       </div>
                     </div>
@@ -148,7 +161,7 @@ export default function ParentAttendance() {
 
           {/* Attendance History */}
           <Card>
-            <CardHeader><CardTitle>سجل الحضور السابق</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("parent.previousAttendance")}</CardTitle></CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-32 w-full" /> : records?.length === 0 ? (
                 <EmptyState variant="attendance" compact />
@@ -159,18 +172,18 @@ export default function ParentAttendance() {
                       <div className="flex items-center gap-3">
                         <CalendarDays className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <span className="text-sm block">{new Date(r.date).toLocaleDateString('ar-SA', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                          <span className="text-sm block">{new Date(r.date).toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
                           <div className="flex gap-3 mt-1">
                             {r.checkInTime && (
                               <span className="text-xs text-green-600 flex items-center gap-1">
                                 <LogIn className="h-3 w-3" />
-                                {new Date(r.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(r.checkInTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                             {r.checkOutTime && (
                               <span className="text-xs text-orange-600 flex items-center gap-1">
                                 <LogOut className="h-3 w-3" />
-                                {new Date(r.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(r.checkOutTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                           </div>
@@ -192,11 +205,11 @@ export default function ParentAttendance() {
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <History className="h-5 w-5" />
-                  سجل تغييرات الحالة
+                  {t("parent.statusChangeLog")}
                 </span>
                 {!showHistory && (
                   <button onClick={() => setShowHistory(true)} className="text-sm text-primary hover:underline font-normal">
-                    عرض السجل
+                    {t("parent.showLog")}
                   </button>
                 )}
               </CardTitle>
@@ -209,9 +222,9 @@ export default function ParentAttendance() {
                       <div key={log.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg text-sm">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">
-                            {new Date(log.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}
+                            {new Date(log.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                             {" "}
-                            {new Date(log.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(log.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <Badge variant="outline" className="text-xs">{STATUS_LABELS[log.previousStatus] || log.previousStatus}</Badge>
                           <span className="text-muted-foreground">←</span>
@@ -222,7 +235,7 @@ export default function ParentAttendance() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center text-muted-foreground py-4">لا توجد تغييرات مسجلة</p>
+                  <p className="text-center text-muted-foreground py-4">{t("parent.noChangesRecorded")}</p>
                 )}
               </CardContent>
             )}
@@ -231,16 +244,4 @@ export default function ParentAttendance() {
       )}
     </div>
   );
-}
-
-function getRelationshipLabel(rel: string): string {
-  const labels: Record<string, string> = {
-    mother: "الأم",
-    father: "الأب",
-    driver: "السائق",
-    grandparent: "الجد/الجدة",
-    guardian: "ولي الأمر",
-    other: "آخر",
-  };
-  return labels[rel] || rel;
 }

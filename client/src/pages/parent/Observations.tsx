@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Eye, Star, TrendingUp, Sparkles, GraduationCap, Palette } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { useTranslation } from "react-i18next";
 
 const EYFS_AREAS = [
   { name: "التواصل واللغة", icon: "💬", color: "from-blue-500 to-blue-600" },
@@ -25,6 +26,8 @@ const LEVELS = [
 ];
 
 export default function ParentObservations() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChild, setSelectedChild] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("progress");
 

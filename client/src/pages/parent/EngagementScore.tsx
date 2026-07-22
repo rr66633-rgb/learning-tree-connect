@@ -8,8 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, Trophy, Flame, TrendingUp, Star, Target, BookOpen, Camera, Eye } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function EngagementScore() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
 
   const { data: childrenData } = trpc.children.list.useQuery();

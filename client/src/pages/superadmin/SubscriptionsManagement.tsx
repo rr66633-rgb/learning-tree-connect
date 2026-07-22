@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Crown, Search, RefreshCw, XCircle, Clock, CheckCircle2,
   AlertTriangle, TrendingUp, Building2, CalendarDays, Banknote
@@ -47,6 +48,8 @@ function formatDate(date: string | Date | null): string {
 }
 
 export default function SubscriptionsManagement() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [statusFilter, setStatusFilter] = useState<SubStatus>("all");
   const [search, setSearch] = useState("");
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);

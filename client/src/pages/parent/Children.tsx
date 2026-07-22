@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Baby, Heart, Phone, AlertTriangle, Camera, Edit, FileText, Upload, CheckCircle2, Clock, XCircle, Download, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 function ChildEmergencyContacts({ childId }: { childId: number }) {
   const { data: contacts, isLoading } = trpc.emergencyContacts.list.useQuery({ childId });
@@ -35,6 +36,7 @@ function ChildEmergencyContacts({ childId }: { childId: number }) {
 }
 
 function ChildDocumentsSection({ childId }: { childId: number }) {
+  const { t, i18n } = useTranslation();
   const { data: documents, isLoading } = trpc.childDocuments.listByChild.useQuery({ childId });
   const utils = trpc.useUtils();
   const createDoc = trpc.childDocuments.create.useMutation({
@@ -108,7 +110,7 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
           <Input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="flex-1" />
           <Button onClick={handleUpload} disabled={uploading} size="sm" className="gap-1">
             <Upload className="h-4 w-4" />
-            {uploading ? "جاري الرفع..." : "رفع"}
+            {uploading ? "جاري الرفع..." : t("common.upload")}
           </Button>
         </div>
       </div>
@@ -145,6 +147,8 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
 }
 
 export default function ParentChildren() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children, isLoading } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
   const updateChild = trpc.children.parentUpdate.useMutation({

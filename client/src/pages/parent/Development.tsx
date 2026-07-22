@@ -26,6 +26,7 @@ import {
   Clock,
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { useTranslation } from "react-i18next";
 
 const areaIcons: Record<string, any> = {
   "CL": MessageCircle,
@@ -62,6 +63,8 @@ const levelToPercent: Record<string, number> = {
 };
 
 export default function ParentDevelopment() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: childrenData } = trpc.children.list.useQuery({});
   const children = useMemo(() => {
     if (!childrenData) return [];
@@ -141,7 +144,7 @@ export default function ParentDevelopment() {
                   <GraduationCap className="w-5 h-5 text-emerald-600" />
                   الجاهزية المدرسية
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">آخر تقييم: {new Date(latestReadiness.assessedAt).toLocaleDateString("ar-SA")}</p>
+                <p className="text-sm text-muted-foreground mt-1">آخر تقييم: {new Date(latestReadiness.assessedAt).toLocaleDateString(locale)}</p>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-center">

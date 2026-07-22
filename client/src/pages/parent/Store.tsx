@@ -10,8 +10,11 @@ import { ShoppingBag, ShoppingCart, Store as StoreIcon, Package, Search, Sliders
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function ParentStore() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);

@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Building2, CheckCircle2, Phone, Mail, MapPin, Users, GraduationCap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function CreateOrganization() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [form, setForm] = useState({
     name: "",

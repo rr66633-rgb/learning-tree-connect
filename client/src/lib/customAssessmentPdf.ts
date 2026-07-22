@@ -1,5 +1,5 @@
 /**
- * تصدير نتائج الاختبارات المخصصة إلى PDF
+ * Export custom assessment results to PDF (bilingual support)
  */
 
 interface QuestionResponse {
@@ -19,17 +19,73 @@ interface ExportData {
   className?: string;
   date: string;
   responses: QuestionResponse[];
+  language?: "ar" | "en";
 }
 
-const QUESTION_TYPE_LABELS: Record<string, string> = {
-  multiple_choice: "اختيار من متعدد",
-  true_false: "صح / خطأ",
-  rating: "تقييم",
-  text: "نص حر",
-};
+function getLabels(lang: "ar" | "en") {
+  if (lang === "ar") {
+    return {
+      reportTitle: "تقرير التقييم المخصص",
+      assessmentDetails: "تفاصيل التقييم",
+      child: "الطفل:",
+      assessment: "التقييم:",
+      class: "الفصل:",
+      date: "التاريخ:",
+      totalQuestions: "عدد الأسئلة:",
+      questionsAndResponses: "الأسئلة والإجابات",
+      rating: "التقييم:",
+      answer: "الإجابة:",
+      noAnswer: "لم يتم الإجابة",
+      notes: "ملاحظات:",
+      summary: "الملخص",
+      questionsAnswered: "الأسئلة المجاب عنها:",
+      averageRating: "متوسط التقييم:",
+      footer: "ناشئة - تقرير التقييم المخصص",
+      generated: "تاريخ التوليد:",
+      page: "صفحة",
+      of: "من",
+      questionTypes: {
+        multiple_choice: "اختيار من متعدد",
+        true_false: "صح / خطأ",
+        rating: "تقييم",
+        text: "نص حر",
+      },
+    };
+  }
+  return {
+    reportTitle: "Custom Assessment Report",
+    assessmentDetails: "Assessment Details",
+    child: "Child:",
+    assessment: "Assessment:",
+    class: "Class:",
+    date: "Date:",
+    totalQuestions: "Total Questions:",
+    questionsAndResponses: "Questions & Responses",
+    rating: "Rating:",
+    answer: "Answer:",
+    noAnswer: "No answer provided",
+    notes: "Notes:",
+    summary: "Summary",
+    questionsAnswered: "Questions answered:",
+    averageRating: "Average rating:",
+    footer: "Naashah - Custom Assessment Report",
+    generated: "Generated:",
+    page: "Page",
+    of: "of",
+    questionTypes: {
+      multiple_choice: "Multiple Choice",
+      true_false: "True / False",
+      rating: "Rating",
+      text: "Free Text",
+    },
+  };
+}
 
 export async function generateCustomAssessmentPDF(data: ExportData): Promise<void> {
   const { default: jsPDF } = await import("jspdf");
+  const lang = data.language || "en";
+  const labels = getLabels(lang);
+  const dateLocale = lang === "ar" ? "ar-SA" : "en-US";
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = 210;
@@ -53,7 +109,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("Custom Assessment Report", pageWidth / 2, 24, { align: "center" });
+  doc.text(labels.reportTitle, pageWidth / 2, 24, { align: "center" });
 
   doc.setFontSize(9);
   doc.text(data.assessmentTitle, pageWidth / 2, 32, { align: "center" });
@@ -64,7 +120,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
   doc.setTextColor(26, 86, 50);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Assessment Details", margin, y);
+  doc.text(labels.assessmentDetails, margin, y);
   y += 2;
 
   doc.setDrawColor(0, 201, 183);
@@ -77,11 +133,11 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
 
   // Info rows
   const infoItems = [
-    { label: "Child:", value: data.childName },
-    { label: "Assessment:", value: data.assessmentTitle },
-    ...(data.className ? [{ label: "Class:", value: data.className }] : []),
-    { label: "Date:", value: new Date(data.date).toLocaleDateString("en-SA", { year: "numeric", month: "long", day: "numeric" }) },
-    { label: "Total Questions:", value: String(data.responses.length) },
+    { label: labels.child, value: data.childName },
+    { label: labels.assessment, value: data.assessmentTitle },
+    ...(data.className ? [{ label: labels.class, value: data.className }] : []),
+    { label: labels.date, value: new Date(data.date).toLocaleDateString(dateLocale, { year: "numeric", month: "long", day: "numeric" }) },
+    { label: labels.totalQuestions, value: String(data.responses.length) },
   ];
 
   for (const item of infoItems) {
@@ -98,7 +154,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
   doc.setTextColor(26, 86, 50);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Questions & Responses", margin, y);
+  doc.text(labels.questionsAndResponses, margin, y);
   y += 2;
 
   doc.setDrawColor(0, 201, 183);
@@ -127,7 +183,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 100);
-    const typeLabel = QUESTION_TYPE_LABELS[resp.questionType] || resp.questionType;
+    const typeLabel = labels.questionTypes[resp.questionType as keyof typeof labels.questionTypes] || resp.questionType;
     doc.text(`[${typeLabel}]`, margin + 12, y + 1);
 
     y += 8;
@@ -143,17 +199,16 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
     // Answer
     if (resp.questionType === "rating" && resp.rating != null) {
       const maxR = resp.maxRating || 5;
-      const stars = "\u2605".repeat(resp.rating) + "\u2606".repeat(maxR - resp.rating);
       doc.setTextColor(180, 130, 0);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(`Rating: ${resp.rating}/${maxR}`, margin + 5, y);
+      doc.text(`${labels.rating} ${resp.rating}/${maxR}`, margin + 5, y);
       y += 5;
     } else if (resp.answer) {
       doc.setTextColor(0, 100, 60);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Answer:", margin + 5, y);
+      doc.text(labels.answer, margin + 5, y);
       doc.setFont("helvetica", "normal");
       const answerLines = doc.splitTextToSize(resp.answer, pageWidth - 2 * margin - 25);
       doc.text(answerLines, margin + 22, y);
@@ -162,7 +217,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
       doc.setTextColor(150, 150, 150);
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
-      doc.text("No answer provided", margin + 5, y);
+      doc.text(labels.noAnswer, margin + 5, y);
       y += 5;
     }
 
@@ -171,7 +226,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
       doc.setTextColor(100, 100, 100);
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
-      const noteLines = doc.splitTextToSize(`Notes: ${resp.notes}`, pageWidth - 2 * margin - 10);
+      const noteLines = doc.splitTextToSize(`${labels.notes} ${resp.notes}`, pageWidth - 2 * margin - 10);
       doc.text(noteLines, margin + 5, y);
       y += noteLines.length * 3.5 + 2;
     }
@@ -193,7 +248,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
   doc.setTextColor(26, 86, 50);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("Summary", margin, y);
+  doc.text(labels.summary, margin, y);
   y += 7;
 
   doc.setTextColor(60, 60, 60);
@@ -202,14 +257,14 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
 
   const answered = data.responses.filter(r => r.answer || r.rating).length;
   const total = data.responses.length;
-  doc.text(`Questions answered: ${answered} / ${total}`, margin + 5, y);
+  doc.text(`${labels.questionsAnswered} ${answered} / ${total}`, margin + 5, y);
   y += 5;
 
   // Rating summary
   const ratingQuestions = data.responses.filter(r => r.questionType === "rating" && r.rating != null);
   if (ratingQuestions.length > 0) {
     const avgRating = ratingQuestions.reduce((sum, r) => sum + (r.rating || 0), 0) / ratingQuestions.length;
-    doc.text(`Average rating: ${avgRating.toFixed(1)} / ${ratingQuestions[0].maxRating || 5}`, margin + 5, y);
+    doc.text(`${labels.averageRating} ${avgRating.toFixed(1)} / ${ratingQuestions[0].maxRating || 5}`, margin + 5, y);
     y += 5;
   }
 
@@ -225,12 +280,12 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
     doc.setTextColor(120, 120, 120);
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
-    doc.text("Naashah - Custom Assessment Report", margin, pageHeight - 10);
-    doc.text(`Generated: ${new Date().toLocaleDateString("en-SA")}`, margin, pageHeight - 6);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: "right" });
+    doc.text(labels.footer, margin, pageHeight - 10);
+    doc.text(`${labels.generated} ${new Date().toLocaleDateString(dateLocale)}`, margin, pageHeight - 6);
+    doc.text(`${labels.page} ${i} ${labels.of} ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: "right" });
   }
 
   // Save
-  const dateStr = new Date().toLocaleDateString("en-SA").replace(/\//g, "-");
+  const dateStr = new Date().toLocaleDateString("en-US").replace(/\//g, "-");
   doc.save(`Assessment-${data.childName.replace(/\s+/g, "-")}-${data.assessmentTitle.replace(/\s+/g, "-")}-${dateStr}.pdf`);
 }

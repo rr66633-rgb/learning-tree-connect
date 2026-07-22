@@ -6,8 +6,11 @@ import { FileText, Download, PenLine, CheckCircle2 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function ParentDocuments() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: documents, isLoading } = trpc.documents.list.useQuery();
   const utils = trpc.useUtils();
 

@@ -3,22 +3,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, ClipboardList, ChevronDown } from "lucide-react";
 import { useState } from "react";
-
-const QUESTION_TYPES: Record<string, string> = {
-  multiple_choice: "اختيار من متعدد",
-  true_false: "صح / خطأ",
-  rating: "تقييم",
-  text: "نص حر",
-};
+import { useTranslation } from "react-i18next";
 
 export default function ParentAssessments() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const assessmentsQuery = trpc.customAssessment.parentList.useQuery({ limit: 20 });
+
+  const QUESTION_TYPES: Record<string, string> = {
+    multiple_choice: t("customAssessments.typeMultiChoice"),
+    true_false: t("applyAssessment.yes") + " / " + t("applyAssessment.no"),
+    rating: t("applyAssessment.rating"),
+    text: t("customAssessments.typeText"),
+  };
 
   if (assessmentsQuery.isLoading) {
     return (
       <div className="p-4 md:p-6 space-y-4">
-        <h1 className="text-2xl font-bold text-center">الاختبارات والتقييمات</h1>
+        <h1 className="text-2xl font-bold text-center">{t("parent.assessments")}</h1>
         {[1, 2, 3].map(i => (
           <Card key={i} className="animate-pulse">
             <CardContent className="p-4 h-24" />
@@ -33,12 +36,11 @@ export default function ParentAssessments() {
   if (assessments.length === 0) {
     return (
       <div className="p-4 md:p-6 space-y-4">
-        <h1 className="text-2xl font-bold text-center">الاختبارات والتقييمات</h1>
+        <h1 className="text-2xl font-bold text-center">{t("parent.assessments")}</h1>
         <Card className="border-dashed">
           <CardContent className="p-12 text-center text-muted-foreground">
             <ClipboardList className="h-16 w-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg">لا توجد اختبارات متاحة حالياً</p>
-            <p className="text-sm mt-1">ستظهر هنا نتائج الاختبارات عند مشاركتها من قبل المعلمة</p>
+            <p className="text-lg">{t("parent.noAssessments")}</p>
           </CardContent>
         </Card>
       </div>
@@ -48,8 +50,7 @@ export default function ParentAssessments() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold">الاختبارات والتقييمات</h1>
-        <p className="text-sm text-muted-foreground mt-1">نتائج اختبارات أطفالك</p>
+        <h1 className="text-2xl font-bold">{t("parent.assessments")}</h1>
       </div>
 
       <div className="space-y-4">
@@ -67,7 +68,7 @@ export default function ParentAssessments() {
                     <p className="text-sm text-muted-foreground mt-1">{assessment.description}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(assessment.createdAt).toLocaleDateString("ar-SA")}
+                    {new Date(assessment.createdAt).toLocaleDateString(locale)}
                   </p>
                 </div>
                 <ChevronDown className={`h-5 w-5 transition-transform ${expandedId === assessment.id ? "rotate-180" : ""}`} />
@@ -87,12 +88,12 @@ export default function ParentAssessments() {
                             </div>
                             {r.answer && (
                               <p className="text-sm">
-                                <span className="font-medium">الإجابة:</span> {r.answer}
+                                <span className="font-medium">{t("applyAssessment.result")}:</span> {r.answer}
                               </p>
                             )}
                             {r.rating && (
                               <div className="flex items-center gap-1 mt-1">
-                                <span className="text-sm font-medium">التقييم:</span>
+                                <span className="text-sm font-medium">{t("applyAssessment.rating")}:</span>
                                 {Array.from({ length: r.rating }, (_, i) => (
                                   <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
                                 ))}
@@ -100,7 +101,7 @@ export default function ParentAssessments() {
                             )}
                             {r.notes && (
                               <p className="text-xs text-muted-foreground mt-1">
-                                ملاحظات: {r.notes}
+                                {t("common.notes")}: {r.notes}
                               </p>
                             )}
                           </div>

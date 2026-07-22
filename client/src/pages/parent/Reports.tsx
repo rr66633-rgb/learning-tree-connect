@@ -6,8 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo } from "react";
 import { BarChart3, CalendarDays, CheckCircle2, XCircle, Baby } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { useTranslation } from "react-i18next";
 
 export default function ParentReports() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const { data: records, isLoading } = trpc.attendance.byChild.useQuery(

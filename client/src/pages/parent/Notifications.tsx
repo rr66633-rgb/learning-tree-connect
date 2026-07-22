@@ -6,6 +6,7 @@ import { Bell, Check, CreditCard, AlertTriangle, CheckCircle2, XCircle, FileText
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const notificationIcons: Record<string, any> = {
   payment: CreditCard,
@@ -22,6 +23,8 @@ const notificationColors: Record<string, string> = {
 };
 
 export default function ParentNotifications() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
   const { data: unreadCount } = trpc.notifications.unreadCount.useQuery();
   const utils = trpc.useUtils();

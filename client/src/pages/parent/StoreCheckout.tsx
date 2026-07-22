@@ -8,6 +8,7 @@ import { ArrowRight, Shield, CreditCard, CheckCircle2, Loader2, XCircle, Package
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { loadMoyasar } from "@/lib/externalResources";
+import { useTranslation } from "react-i18next";
 
 declare global {
   interface Window {
@@ -16,6 +17,8 @@ declare global {
 }
 
 export default function StoreCheckout() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const { data: cart, isLoading: cartLoading } = trpc.store.getCart.useQuery();
   const { data: paymentConfig } = trpc.store.getPaymentConfig.useQuery();

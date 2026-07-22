@@ -13,8 +13,11 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { trackContact } from "@/lib/metaPixel";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 export default function ParentMessages() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { user } = useAuth();
   const { data: conversations, isLoading: loadingConvs } = trpc.messages.conversations.useQuery(undefined, { refetchInterval: 10000 });
   const { data: children } = trpc.children.list.useQuery();
@@ -306,7 +309,7 @@ export default function ParentMessages() {
                         <p className="whitespace-pre-wrap">{msg.content}</p>
                         <div className="flex items-center justify-end gap-1 mt-1">
                           <span className="text-[10px] opacity-60">
-                            {new Date(msg.createdAt).toLocaleTimeString("ar-SA", {
+                            {new Date(msg.createdAt).toLocaleTimeString(locale, {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}

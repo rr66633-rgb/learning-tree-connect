@@ -3,8 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Settings as SettingsIcon, Server, Database, Shield, Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function SuperAdminSettings() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: stats, isLoading } = trpc.superAdmin.platformStats.useQuery();
 
   if (isLoading) {

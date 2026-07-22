@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Palette, Save, RotateCcw, Upload, X, Image as ImageIcon } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { useTranslation } from "react-i18next";
 
 interface LogoUploadProps {
   label: string;
@@ -161,6 +162,8 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
 }
 
 export default function Branding() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: orgs, isLoading: orgsLoading } = trpc.superAdmin.listOrganizations.useQuery({});
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
 

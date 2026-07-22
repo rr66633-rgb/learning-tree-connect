@@ -1,4 +1,3 @@
-import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,8 +11,11 @@ import { useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePrefetchParentData } from "@/hooks/useParentData";
+import { useTranslation } from "react-i18next";
+import { trpc } from "@/lib/trpc";
 
 export default function ParentDashboard() {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const prefetch = usePrefetchParentData();
   useEffect(() => { prefetch(); }, []);
@@ -28,6 +30,7 @@ export default function ParentDashboard() {
     staleTime: 1000 * 60 * 10,
   });
 
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
   const { data: todayAttendance } = trpc.attendance.byDate.useQuery({ date: today });
 
@@ -41,24 +44,24 @@ export default function ParentDashboard() {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "صباح الخير";
-    return "مساء الخير";
+    if (hour < 12) return t("parent.goodMorning");
+    return t("parent.goodEvening");
   };
 
   const getStatusInfo = (status: string) => {
     switch (status) {
-      case 'present': return { label: 'حاضر', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' };
-      case 'absent': return { label: 'غائب', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' };
-      case 'late': return { label: 'متأخر', icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
-      case 'excused': return { label: 'غياب بعذر', icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
-      case 'checked_in': return { label: 'في المركز', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
-      case 'checked_out': return { label: 'غادر', icon: LogOut, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' };
+      case 'present': return { label: t("parent.present"), icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' };
+      case 'absent': return { label: t("parent.absent"), icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' };
+      case 'late': return { label: t("parent.late"), icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
+      case 'excused': return { label: t("parent.excused"), icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
+      case 'checked_in': return { label: t("parent.checkedIn"), icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
+      case 'checked_out': return { label: t("parent.checkedOut"), icon: LogOut, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' };
       default: return { label: status, icon: Clock, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' };
     }
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto" dir="rtl">
+    <div className="space-y-6 max-w-4xl mx-auto" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -66,7 +69,7 @@ export default function ParentDashboard() {
             {greeting()}، {user?.name?.split(' ')[0]}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            {new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <Link href="/parent/notifications">
@@ -106,7 +109,7 @@ export default function ParentDashboard() {
                       <p className="text-lg font-bold text-foreground">{child.firstName} {child.lastName}</p>
                       <div className="flex items-center gap-3 mt-1">
                         {child.dateOfBirth && (
-                          <span className="text-sm text-muted-foreground">{getAge(child.dateOfBirth)} سنوات</span>
+                          <span className="text-sm text-muted-foreground">{getAge(child.dateOfBirth)} {t("parent.years")}</span>
                         )}
                         {child.className && (
                           <Badge variant="secondary" className="rounded-lg text-xs">{child.className}</Badge>
@@ -129,13 +132,13 @@ export default function ParentDashboard() {
                           {att.checkInTime && (
                             <span className="flex items-center gap-1">
                               <LogIn className="h-3 w-3" />
-                              {new Date(att.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(att.checkInTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                           {att.checkOutTime && (
                             <span className="flex items-center gap-1">
                               <LogOut className="h-3 w-3" />
-                              {new Date(att.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(att.checkOutTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                         </div>
@@ -143,7 +146,7 @@ export default function ParentDashboard() {
                     </div>
                   ) : (
                     <div className="p-3.5 rounded-xl bg-muted/30 border border-border/50">
-                      <span className="text-sm text-muted-foreground">لم يُسجل حضور اليوم</span>
+                      <span className="text-sm text-muted-foreground">{t("parent.noAttendanceToday")}</span>
                     </div>
                   )}
                 </div>
@@ -162,7 +165,7 @@ export default function ParentDashboard() {
               <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-blue-200">
                 <BookOpen className="h-6 w-6 text-blue-600" />
               </div>
-              <p className="text-sm font-medium text-foreground">التقرير اليومي</p>
+              <p className="text-sm font-medium text-foreground">{t("parent.dailyReport")}</p>
             </CardContent>
           </Card>
         </Link>
@@ -172,7 +175,7 @@ export default function ParentDashboard() {
               <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-emerald-200">
                 <Heart className="h-6 w-6 text-emerald-600" />
               </div>
-              <p className="text-sm font-medium text-foreground">مشاركة الأسرة</p>
+              <p className="text-sm font-medium text-foreground">{t("parent.familyEngagement")}</p>
             </CardContent>
           </Card>
         </Link>
@@ -182,7 +185,7 @@ export default function ParentDashboard() {
               <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-purple-200">
                 <MessageCircle className="h-6 w-6 text-purple-600" />
               </div>
-              <p className="text-sm font-medium text-foreground">الرسائل</p>
+              <p className="text-sm font-medium text-foreground">{t("parent.messages")}</p>
             </CardContent>
           </Card>
         </Link>
@@ -192,7 +195,7 @@ export default function ParentDashboard() {
               <div className="h-12 w-12 rounded-xl bg-violet-100 flex items-center justify-center mx-auto mb-3 shadow-sm shadow-violet-200">
                 <Sparkles className="h-6 w-6 text-violet-600" />
               </div>
-              <p className="text-sm font-medium text-foreground">المساعد الذكي</p>
+              <p className="text-sm font-medium text-foreground">{t("parent.aiAssistant")}</p>
             </CardContent>
           </Card>
         </Link>
@@ -207,7 +210,7 @@ export default function ParentDashboard() {
             </div>
             <div>
               <p className="text-xl font-bold text-foreground">{notifications ?? 0}</p>
-              <p className="text-xs text-muted-foreground">إشعارات جديدة</p>
+              <p className="text-xs text-muted-foreground">{t("parent.newNotifications")}</p>
             </div>
           </CardContent>
         </Card>
@@ -218,7 +221,7 @@ export default function ParentDashboard() {
             </div>
             <div>
               <p className="text-xl font-bold text-foreground">{children?.length ?? 0}</p>
-              <p className="text-xs text-muted-foreground">أطفالي</p>
+              <p className="text-xs text-muted-foreground">{t("parent.myChildren")}</p>
             </div>
           </CardContent>
         </Card>
@@ -233,11 +236,11 @@ export default function ParentDashboard() {
                 <div className="h-7 w-7 rounded-lg bg-amber-100 flex items-center justify-center">
                   <Bell className="h-3.5 w-3.5 text-amber-600" />
                 </div>
-                آخر الإعلانات
+                {t("parent.latestAnnouncements")}
               </CardTitle>
               <Link href="/parent/announcements">
                 <Button variant="ghost" size="sm" className="text-sm text-muted-foreground hover:text-primary gap-1.5 rounded-lg">
-                  عرض الكل
+                  {t("parent.viewAll")}
                   <ArrowUpRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -246,9 +249,9 @@ export default function ParentDashboard() {
           <CardContent className="space-y-2.5">
             {announcements.slice(0, 3).map((a: any) => (
               <div key={a.id} className="p-3.5 rounded-xl bg-muted/30 border border-border/50">
-                <p className="font-medium text-sm text-foreground">{a.titleAr || a.title}</p>
-                <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{a.contentAr || a.content}</p>
-                <p className="text-[10px] text-muted-foreground/70 mt-2">{new Date(a.createdAt).toLocaleDateString('ar-SA')}</p>
+                <p className="font-medium text-sm text-foreground">{i18n.language === "ar" ? (a.titleAr || a.title) : (a.title || a.titleAr)}</p>
+                <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{i18n.language === "ar" ? (a.contentAr || a.content) : (a.content || a.contentAr)}</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-2">{new Date(a.createdAt).toLocaleDateString(locale)}</p>
               </div>
             ))}
           </CardContent>

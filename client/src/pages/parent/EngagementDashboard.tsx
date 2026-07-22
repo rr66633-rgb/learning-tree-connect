@@ -8,12 +8,15 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   Trophy, Star, Target, BookOpen, Camera, MessageCircle,
   Flame, Award, TrendingUp, ChevronLeft
 } from "lucide-react";
 
 export default function EngagementDashboard() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { user } = useAuth();
   const [selectedChildId] = useState<number>(0); // Will be set from parent's children
 

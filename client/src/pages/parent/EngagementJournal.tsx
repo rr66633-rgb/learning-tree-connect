@@ -10,8 +10,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { ChevronRight, Plus, Camera, Heart, Star, Smile, BookOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function EngagementJournal() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [entryType, setEntryType] = useState("milestone");
   const [title, setTitle] = useState("");
@@ -217,7 +220,7 @@ export default function EngagementJournal() {
                     <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                       <span>{getTypeLabel(entry.type)}</span>
                       <span>•</span>
-                      <span>{new Date(entry.createdAt).toLocaleDateString("ar-SA")}</span>
+                      <span>{new Date(entry.createdAt).toLocaleDateString(locale)}</span>
                     </div>
                     {entry.teacherComment && (
                       <div className="mt-2 p-2 rounded bg-blue-50 dark:bg-blue-900/20 text-xs">

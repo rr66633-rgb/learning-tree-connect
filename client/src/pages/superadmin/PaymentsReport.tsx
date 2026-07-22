@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Download, CreditCard, TrendingUp, AlertCircle, Clock, Filter, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const statusLabels: Record<string, string> = {
   initiated: "قيد المعالجة",
-  paid: "مدفوعة",
+  paid: "Paid",
   failed: "فاشلة",
   expired: "منتهية",
   refunded: "مستردة",
@@ -37,6 +38,8 @@ const methodLabels: Record<string, string> = {
 };
 
 export default function PaymentsReport() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [status, setStatus] = useState<string>("all");
@@ -58,7 +61,7 @@ export default function PaymentsReport() {
       return;
     }
 
-    const headers = ["رقم العملية", "رقم الفاتورة", "اسم ولي الأمر", "المبلغ", "طريقة الدفع", "الحالة", "تاريخ الإنشاء", "تاريخ الدفع"];
+    const headers = ["رقم العملية", "رقم الفاتورة", "اسم ولي الأمر", t("superadmin.amount"), t("superadmin.paymentMethod"), t("common.status"), "تاريخ الإنشاء", "تاريخ الدفع"];
     const rows = data.payments.map((p: any) => [
       p.moyasarPaymentId || p.id,
       p.invoiceNumber || "-",
@@ -66,8 +69,8 @@ export default function PaymentsReport() {
       `${Number(p.amount).toFixed(2)} ر.س`,
       methodLabels[p.method] || p.method,
       statusLabels[p.status] || p.status,
-      p.createdAt ? new Date(p.createdAt).toLocaleDateString("ar-SA") : "-",
-      p.paidAt ? new Date(p.paidAt).toLocaleDateString("ar-SA") : "-",
+      p.createdAt ? new Date(p.createdAt).toLocaleDateString(locale) : "-",
+      p.paidAt ? new Date(p.paidAt).toLocaleDateString(locale) : "-",
     ]);
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");

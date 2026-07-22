@@ -7,8 +7,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Award, Lock, CheckCircle, Trophy, Flame, Star } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function EngagementBadges() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: badgesData, isLoading } = trpc.engagement.engagement.myBadges.useQuery();
 
   if (isLoading) {
@@ -85,7 +88,7 @@ export default function EngagementBadges() {
                   <h3 className="font-bold text-sm">{item.badge?.nameAr || item.badge?.nameEn}</h3>
                   <p className="text-[10px] text-muted-foreground">{item.badge?.descriptionAr || item.badge?.descriptionEn}</p>
                   <p className="text-[10px] text-amber-600">
-                    حصلت عليها {new Date(item.earnedAt).toLocaleDateString("ar-SA")}
+                    حصلت عليها {new Date(item.earnedAt).toLocaleDateString(locale)}
                   </p>
                 </CardContent>
               </Card>

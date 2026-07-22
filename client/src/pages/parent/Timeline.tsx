@@ -11,6 +11,7 @@ import {
   Sandwich, Cookie, Smile, BookOpen, TreePine, User
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { useTranslation } from "react-i18next";
 
 const iconMap: Record<string, any> = {
   arrival: LogIn, breakfast: Coffee, morning_snack: Apple, lunch: Sandwich,
@@ -53,6 +54,8 @@ const relationshipLabels: Record<string, string> = {
 };
 
 export default function ParentTimeline() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);

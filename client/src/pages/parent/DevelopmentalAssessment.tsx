@@ -8,6 +8,7 @@ import { useState, useMemo, useCallback } from "react";
 import { TreePine, TrendingUp, CheckCircle2, AlertTriangle, XCircle, Calendar, User, Download, Loader2 } from "lucide-react";
 import { generateAssessmentPDF } from "@/lib/assessmentPdf";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const AGE_GROUP_LABELS: Record<string, string> = {
   "24-36": "٢٤ - ٣٦ شهر",
@@ -40,6 +41,8 @@ function getInterpretationConfig(interpretation: string) {
 }
 
 export default function ParentDevelopmentalAssessment() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
@@ -186,7 +189,7 @@ export default function ParentDevelopmentalAssessment() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Calendar className="w-4 h-4" />
-                  {new Date(latestAssessment.assessmentDate).toLocaleDateString("ar-SA")}
+                  {new Date(latestAssessment.assessmentDate).toLocaleDateString(locale)}
                 </div>
                 <Badge variant="outline">
                   {AGE_GROUP_LABELS[latestAssessment.ageGroup] || latestAssessment.ageGroup}
@@ -260,7 +263,7 @@ export default function ParentDevelopmentalAssessment() {
                             {AGE_GROUP_LABELS[assessment.ageGroup] || assessment.ageGroup}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {new Date(assessment.assessmentDate).toLocaleDateString("ar-SA")}
+                            {new Date(assessment.assessmentDate).toLocaleDateString(locale)}
                           </div>
                         </div>
                       </div>

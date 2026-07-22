@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { trackPurchase } from "@/lib/metaPixel";
 import { apiUrl } from "@/lib/apiBase";
 import { loadMoyasar } from "@/lib/externalResources";
+import { useTranslation } from "react-i18next";
 
 declare global {
   interface Window {
@@ -22,12 +23,15 @@ declare global {
   }
 }
 
-const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة", partially_paid: "مدفوعة جزئياً" };
+// statusLabels moved inside component
 const statusColors: Record<string, string> = { pending: "bg-amber-100 text-amber-700", paid: "bg-green-100 text-green-700", overdue: "bg-red-100 text-red-700", cancelled: "bg-gray-100 text-gray-700", partially_paid: "bg-blue-100 text-blue-700" };
 const invoiceTypeLabels: Record<string, string> = { tuition: "رسوم دراسية", activity: "نشاط", trip: "رحلة", uniform: "زي مدرسي", registration: "تسجيل", other: "أخرى" };
 const paymentMethodLabels: Record<string, string> = { cash: "نقدي", bank_transfer: "تحويل بنكي", card: "بطاقة", apple_pay: "Apple Pay", mada: "مدى", stc_pay: "STC Pay", visa: "فيزا", mastercard: "ماستركارد" };
 
 export default function ParentFinance() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const statusLabels: Record<string, string> = { pending: t("parent.pending"), paid: t("parent.paid"), overdue: t("parent.overdue"), cancelled: i18n.language === "ar" ? "ملغاة" : "Cancelled", partially_paid: i18n.language === "ar" ? "مدفوعة جزئياً" : "Partially Paid" };
   const { data: invoices, isLoading } = trpc.finance.invoices.useQuery();
   const { data: paymentHistory, isLoading: historyLoading } = trpc.payments.history.useQuery();
   const { data: gatewayStatus } = trpc.payments.gatewayStatus.useQuery();
@@ -252,7 +256,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
         <TabsContent value="invoices">
           <div className="flex justify-end mb-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="الحالة" /></SelectTrigger>
+              <SelectTrigger className="w-[160px]"><SelectValue placeholder={t("common.status")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الفواتير</SelectItem>
                 <SelectItem value="unpaid">غير مدفوعة</SelectItem>

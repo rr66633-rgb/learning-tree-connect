@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, ShoppingBag, TrendingUp, Package } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const statusLabels: Record<string, string> = {
   pending: "بانتظار الدفع",
@@ -26,6 +27,8 @@ const statusColors: Record<string, string> = {
 };
 
 export default function SuperAdminStore() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: report, isLoading: reportLoading } = trpc.store.superAdminGetCommissionReport.useQuery();
   const { data: orders, isLoading: ordersLoading } = trpc.store.superAdminGetAllOrders.useQuery();
 
@@ -141,7 +144,7 @@ export default function SuperAdminStore() {
                           {statusLabels[order.status] || order.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{new Date(order.createdAt).toLocaleDateString("ar-SA")}</TableCell>
+                      <TableCell>{new Date(order.createdAt).toLocaleDateString(locale)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

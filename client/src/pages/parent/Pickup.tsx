@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Clock, CheckCircle2, UserCheck, Bell, History, Car, Timer, Send, Building2 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { useTranslation } from "react-i18next";
 
 const STATUS_STEPS = [
   { key: "waiting_teacher", label: "تم إرسال الطلب", description: "بانتظار استجابة المعلمة", icon: Clock, color: "text-amber-600" },
@@ -40,6 +41,8 @@ function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
 }
 
 export default function ParentPickup() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children, isLoading: loadingChildren } = trpc.children.list.useQuery();
   const { data: myRequests, refetch: refetchRequests } = trpc.pickup.myRequests.useQuery(undefined, {
     refetchInterval: 5000,

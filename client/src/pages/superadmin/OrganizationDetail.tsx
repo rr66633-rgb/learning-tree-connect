@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,8 @@ import {
 } from "lucide-react";
 
 export default function OrganizationDetail() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const orgId = parseInt(params.id || "0");
@@ -90,10 +93,10 @@ export default function OrganizationDetail() {
   };
 
   const statusLabels: Record<string, string> = {
-    active: "نشطة",
-    trial: "تجريبية",
+    active: t("superadmin.active"),
+    trial: t("superadmin.trial"),
     pending: "قيد المراجعة",
-    suspended: "معلّقة",
+    suspended: t("superadmin.suspended"),
   };
 
   return (
@@ -232,8 +235,8 @@ export default function OrganizationDetail() {
             <InfoRow label="الاسم بالعربية" value={org.nameAr} />
             <InfoRow label="الاسم بالإنجليزية" value={org.name} />
             <InfoRow label="المعرف" value={org.slug} />
-            <InfoRow label="النسخة" value={org.edition === "learning_tree" ? "شجرة التعلم" : "نشأة"} />
-            <InfoRow label="الهاتف" value={org.phone || "غير محدد"} icon={<Phone className="w-3.5 h-3.5" />} />
+            <InfoRow label={t("superadmin.edition")} value={org.edition === "learning_tree" ? "شجرة التعلم" : "نشأة"} />
+            <InfoRow label={t("common.phone")} value={org.phone || "غير محدد"} icon={<Phone className="w-3.5 h-3.5" />} />
             <InfoRow label="البريد" value={org.email || "غير محدد"} icon={<Mail className="w-3.5 h-3.5" />} />
             <InfoRow label="المدينة" value={org.city || "غير محدد"} icon={<MapPin className="w-3.5 h-3.5" />} />
             <InfoRow label="رقم الترخيص" value={org.licenseNumber || "غير محدد"} icon={<FileText className="w-3.5 h-3.5" />} />
@@ -265,9 +268,9 @@ export default function OrganizationDetail() {
             {org.subscription ? (
               <>
                 <InfoRow label="الخطة" value={plans?.find(p => p.id === org.subscription?.planId)?.nameAr || "غير محدد"} />
-                <InfoRow label="الحالة" value={org.subscription.status === "active" ? "نشط" : org.subscription.status === "trialing" ? "تجريبي" : org.subscription.status} />
+                <InfoRow label={t("common.status")} value={org.subscription.status === "active" ? "نشط" : org.subscription.status === "trialing" ? "تجريبي" : org.subscription.status} />
                 <InfoRow label="دورة الفوترة" value={org.subscription.billingCycle === "monthly" ? "شهرية" : "سنوية"} />
-                <InfoRow label="المبلغ" value={`${org.subscription.amount} ${org.subscription.currency}`} />
+                <InfoRow label={t("superadmin.amount")} value={`${org.subscription.amount} ${org.subscription.currency}`} />
               </>
             ) : (
               <div className="text-center py-6">

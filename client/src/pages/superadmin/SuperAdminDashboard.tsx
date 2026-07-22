@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   Building2,
   Users,
@@ -24,6 +25,8 @@ import {
 } from "lucide-react";
 
 export default function SuperAdminDashboard() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -35,10 +38,10 @@ export default function SuperAdminDashboard() {
   });
 
   const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-    active: { label: "نشطة", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
-    trial: { label: "تجريبية", color: "bg-blue-100 text-blue-700 border-blue-200", icon: Clock },
+    active: { label: t("superadmin.active"), color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
+    trial: { label: t("superadmin.trial"), color: "bg-blue-100 text-blue-700 border-blue-200", icon: Clock },
     pending: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700 border-amber-200", icon: AlertCircle },
-    suspended: { label: "معلّقة", color: "bg-red-100 text-red-700 border-red-200", icon: Ban },
+    suspended: { label: t("superadmin.suspended"), color: "bg-red-100 text-red-700 border-red-200", icon: Ban },
   };
 
   const editionLabels: Record<string, string> = {
@@ -176,7 +179,7 @@ export default function SuperAdminDashboard() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-36 rounded-xl">
-                  <SelectValue placeholder="الحالة" />
+                  <SelectValue placeholder={t("common.status")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">الكل</SelectItem>

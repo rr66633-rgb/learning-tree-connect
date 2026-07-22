@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useMemo } from "react";
 import { Users as UsersIcon, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const roleLabels: Record<string, string> = {
   super_admin: "مدير عام",
@@ -34,6 +35,8 @@ const roleColors: Record<string, string> = {
 };
 
 export default function SuperAdminUsers() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: orgs, isLoading: orgsLoading } = trpc.superAdmin.listOrganizations.useQuery({});
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -178,7 +181,7 @@ export default function SuperAdminUsers() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {member.joinedAt
-                            ? new Date(member.joinedAt).toLocaleDateString("ar-SA")
+                            ? new Date(member.joinedAt).toLocaleDateString(locale)
                             : "—"}
                         </TableCell>
                       </TableRow>

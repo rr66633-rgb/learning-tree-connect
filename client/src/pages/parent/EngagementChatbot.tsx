@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Send, Sparkles, Baby, BookOpen, Brain, Heart, Moon, Utensils } from "lucide-react";
 import { Link } from "wouter";
 import { Streamdown } from "streamdown";
+import { useTranslation } from "react-i18next";
 
 interface Message {
   id: string;
@@ -27,6 +28,8 @@ const suggestedQuestions = [
 ];
 
 export default function EngagementChatbot() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -193,7 +196,7 @@ export default function EngagementChatbot() {
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   )}
                   <p className={`text-[10px] mt-1 ${message.role === "user" ? "text-emerald-200" : "text-muted-foreground"}`}>
-                    {message.timestamp.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+                    {message.timestamp.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               </div>

@@ -11,6 +11,7 @@ import { ArrowRight, Eye, Plus, Sparkles, CheckCircle, Clock, AlertTriangle } fr
 import { EmptyState } from "@/components/EmptyState";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const contextOptions = [
   { value: "home_play", label: "اللعب في المنزل" },
@@ -24,6 +25,8 @@ const contextOptions = [
 ];
 
 export default function EngagementObservations() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [observationText, setObservationText] = useState("");
@@ -166,7 +169,7 @@ export default function EngagementObservations() {
                     {getSignificanceBadge(obs.significance)}
                   </div>
                   <span className="text-[10px] text-muted-foreground shrink-0">
-                    {new Date(obs.createdAt).toLocaleDateString("ar-SA")}
+                    {new Date(obs.createdAt).toLocaleDateString(locale)}
                   </span>
                 </div>
                 <p className="text-sm">{obs.observationText}</p>

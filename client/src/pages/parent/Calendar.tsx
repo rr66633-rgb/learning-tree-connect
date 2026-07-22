@@ -7,6 +7,7 @@ import { ChevronRight, ChevronLeft, Calendar as CalIcon, Clock, MapPin, Package,
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 const CATEGORIES = [
   { value: "holiday", label: "إجازة", color: "bg-red-100 text-red-700" },
@@ -29,6 +30,8 @@ function getCategoryLabel(cat: string) {
 }
 
 export default function ParentCalendar() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [viewEvent, setViewEvent] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");

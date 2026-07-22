@@ -2435,3 +2435,6 @@ Fix:
 - [x] Add i18n translations to CustomAssessments page (staff)
 - [x] Add i18n translations to ApplyAssessment page (staff)
 - [x] Add i18n translations to MediaUpload page (staff)
+- [x] Add i18n translations to Parent portal pages
+- [x] Add bilingual support to customAssessmentPdf.ts (PDF export)
+- [x] Add i18n translations to SuperAdmin pages

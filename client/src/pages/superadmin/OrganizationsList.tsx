@@ -11,36 +11,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
-  Building2,
-  Plus,
-  Search,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Ban,
-  ArrowUpRight,
-  Edit,
-  Power,
-  PowerOff,
-  Eye,
-  MoreHorizontal,
-  MapPin,
-  Phone,
-  Mail,
-  Users,
-  GraduationCap,
-  CreditCard,
+  Building2, Plus, Search, CheckCircle2, Clock, AlertCircle, Ban,
+  ArrowUpRight, Edit, Power, PowerOff, Eye, MoreHorizontal,
+  MapPin, Phone, Mail, Users, GraduationCap, CreditCard,
 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 export default function OrganizationsList() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -59,7 +43,7 @@ export default function OrganizationsList() {
 
   const updateMutation = trpc.superAdmin.updateOrganization.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث المنظمة بنجاح");
+      toast.success(t("common.success"));
       utils.superAdmin.listOrganizations.invalidate();
       setEditDialog(false);
     },
@@ -76,18 +60,16 @@ export default function OrganizationsList() {
   });
 
   const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-    active: { label: "نشطة", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
-    trial: { label: "تجريبية", color: "bg-blue-100 text-blue-700 border-blue-200", icon: Clock },
-    pending: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700 border-amber-200", icon: AlertCircle },
-    suspended: { label: "معلّقة", color: "bg-red-100 text-red-700 border-red-200", icon: Ban },
+    active: { label: t("superadmin.active"), color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
+    trial: { label: t("superadmin.trial"), color: "bg-blue-100 text-blue-700 border-blue-200", icon: Clock },
+    pending: { label: t("common.loading"), color: "bg-amber-100 text-amber-700 border-amber-200", icon: AlertCircle },
+    suspended: { label: t("superadmin.suspended"), color: "bg-red-100 text-red-700 border-red-200", icon: Ban },
   };
 
   const editionLabels: Record<string, string> = {
-    learning_tree: "شجرة التعلم",
-    nashaa: "نشأة",
+    learning_tree: i18n.language === "ar" ? "شجرة التعلم" : "Learning Tree",
+    nashaa: i18n.language === "ar" ? "نشأة" : "Naashah",
   };
-
-
 
   function openEditDialog(org: any) {
     setEditingOrg(org);
@@ -126,15 +108,14 @@ export default function OrganizationsList() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">إدارة المنظمات</h1>
-          <p className="text-sm text-muted-foreground mt-1">عرض وإدارة جميع الحضانات والمنظمات المسجلة على المنصة</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("superadmin.manageOrganizations")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {i18n.language === "ar" ? "عرض وإدارة جميع الحضانات والمنظمات المسجلة على المنصة" : "View and manage all registered nurseries and organizations"}
+          </p>
         </div>
-        <Button
-          onClick={() => navigate("/super-admin/organizations/new")}
-          className="rounded-xl shadow-sm"
-        >
+        <Button onClick={() => navigate("/super-admin/organizations/new")} className="rounded-xl shadow-sm">
           <Plus className="w-4 h-4 ml-2" />
-          إضافة حضانة جديدة
+          {t("superadmin.createOrganization")}
         </Button>
       </div>
 
@@ -145,7 +126,7 @@ export default function OrganizationsList() {
             <div className="relative flex-1 w-full sm:max-w-xs">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="بحث بالاسم أو المعرف..."
+                placeholder={t("superadmin.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pr-9 rounded-xl"
@@ -153,19 +134,19 @@ export default function OrganizationsList() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-40 rounded-xl">
-                <SelectValue placeholder="الحالة" />
+                <SelectValue placeholder={t("superadmin.status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="active">نشطة</SelectItem>
-                <SelectItem value="trial">تجريبية</SelectItem>
-                <SelectItem value="pending">قيد المراجعة</SelectItem>
-                <SelectItem value="suspended">معلّقة</SelectItem>
+                <SelectItem value="all">{t("superadmin.allStatuses")}</SelectItem>
+                <SelectItem value="active">{t("superadmin.active")}</SelectItem>
+                <SelectItem value="trial">{t("superadmin.trial")}</SelectItem>
+                <SelectItem value="pending">{i18n.language === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+                <SelectItem value="suspended">{t("superadmin.suspended")}</SelectItem>
               </SelectContent>
             </Select>
             {orgsData && (
               <div className="text-sm text-muted-foreground">
-                {orgsData.total} منظمة
+                {orgsData.total} {t("superadmin.organizations")}
               </div>
             )}
           </div>
@@ -177,7 +158,7 @@ export default function OrganizationsList() {
         <CardHeader className="pb-2">
           <CardTitle className="text-foreground text-lg flex items-center gap-2">
             <Building2 className="h-5 w-5 text-[#7B61FF]" />
-            قائمة المنظمات
+            {t("superadmin.organizations")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -194,14 +175,14 @@ export default function OrganizationsList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">المنظمة</TableHead>
-                      <TableHead className="text-right">النوع</TableHead>
-                      <TableHead className="text-right">النسخة</TableHead>
-                      <TableHead className="text-right">المدينة</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right">الحد الأقصى</TableHead>
-                      <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-                      <TableHead className="text-right">إجراءات</TableHead>
+                      <TableHead className="text-right">{t("superadmin.organization")}</TableHead>
+                      <TableHead className="text-right">{i18n.language === "ar" ? "النوع" : "Type"}</TableHead>
+                      <TableHead className="text-right">{t("superadmin.edition")}</TableHead>
+                      <TableHead className="text-right">{i18n.language === "ar" ? "المدينة" : "City"}</TableHead>
+                      <TableHead className="text-right">{t("superadmin.status")}</TableHead>
+                      <TableHead className="text-right">{i18n.language === "ar" ? "الحد الأقصى" : "Capacity"}</TableHead>
+                      <TableHead className="text-right">{t("superadmin.created")}</TableHead>
+                      <TableHead className="text-right">{t("common.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -223,7 +204,7 @@ export default function OrganizationsList() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs rounded-lg">
-                              حضانة / روضة
+                              {i18n.language === "ar" ? "حضانة / روضة" : "Nursery"}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -247,7 +228,7 @@ export default function OrganizationsList() {
                             </div>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {org.createdAt ? new Date(org.createdAt).toLocaleDateString("ar-SA") : "—"}
+                            {org.createdAt ? new Date(org.createdAt).toLocaleDateString(locale) : "—"}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -259,23 +240,23 @@ export default function OrganizationsList() {
                               <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem onClick={() => navigate(`/super-admin/organizations/${org.id}`)}>
                                   <Eye className="w-4 h-4 ml-2" />
-                                  عرض التفاصيل
+                                  {t("superadmin.viewDetails")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => openEditDialog(org)}>
                                   <Edit className="w-4 h-4 ml-2" />
-                                  تعديل
+                                  {t("common.edit")}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => openStatusDialog(org)}>
                                   {org.status === "suspended" ? (
                                     <>
                                       <Power className="w-4 h-4 ml-2 text-emerald-600" />
-                                      <span className="text-emerald-600">تفعيل</span>
+                                      <span className="text-emerald-600">{t("superadmin.activate")}</span>
                                     </>
                                   ) : (
                                     <>
                                       <PowerOff className="w-4 h-4 ml-2 text-red-600" />
-                                      <span className="text-red-600">تعليق</span>
+                                      <span className="text-red-600">{t("superadmin.suspend")}</span>
                                     </>
                                   )}
                                 </DropdownMenuItem>
@@ -295,10 +276,7 @@ export default function OrganizationsList() {
                   const status = statusConfig[org.status] || statusConfig.pending;
                   const StatusIcon = status.icon;
                   return (
-                    <div
-                      key={org.id}
-                      className="p-4 rounded-xl border border-border/50 bg-muted/20 space-y-3"
-                    >
+                    <div key={org.id} className="p-4 rounded-xl border border-border/50 bg-muted/20 space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-[#7B61FF]/10 flex items-center justify-center">
@@ -321,34 +299,23 @@ export default function OrganizationsList() {
                           </span>
                         )}
                         <span className="flex items-center gap-1">
-                          <GraduationCap className="w-3 h-3" /> {org.maxChildren} طفل
+                          <GraduationCap className="w-3 h-3" /> {org.maxChildren} {t("superadmin.childrenCount")}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" /> {org.maxStaff} موظف
+                          <Users className="w-3 h-3" /> {org.maxStaff} {t("superadmin.staffCount")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 rounded-lg text-xs h-8"
-                          onClick={() => navigate(`/super-admin/organizations/${org.id}`)}
-                        >
+                        <Button variant="outline" size="sm" className="flex-1 rounded-lg text-xs h-8" onClick={() => navigate(`/super-admin/organizations/${org.id}`)}>
                           <Eye className="w-3.5 h-3.5 ml-1" />
-                          عرض
+                          {t("superadmin.viewDetails")}
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 rounded-lg text-xs h-8"
-                          onClick={() => openEditDialog(org)}
-                        >
+                        <Button variant="outline" size="sm" className="flex-1 rounded-lg text-xs h-8" onClick={() => openEditDialog(org)}>
                           <Edit className="w-3.5 h-3.5 ml-1" />
-                          تعديل
+                          {t("common.edit")}
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="outline" size="sm"
                           className={`rounded-lg text-xs h-8 ${org.status === "suspended" ? "text-emerald-600 border-emerald-200" : "text-red-600 border-red-200"}`}
                           onClick={() => openStatusDialog(org)}
                         >
@@ -363,21 +330,18 @@ export default function OrganizationsList() {
               {/* Pagination info */}
               {orgsData.totalPages > 1 && (
                 <div className="text-center text-sm text-muted-foreground mt-4">
-                  صفحة {orgsData.page} من {orgsData.totalPages} ({orgsData.total} منظمة)
+                  {i18n.language === "ar" ? `صفحة ${orgsData.page} من ${orgsData.totalPages} (${orgsData.total} منظمة)` : `Page ${orgsData.page} of ${orgsData.totalPages} (${orgsData.total} organizations)`}
                 </div>
               )}
             </>
           ) : (
             <div className="text-center py-16 text-muted-foreground">
               <Building2 className="w-14 h-14 mx-auto mb-4 opacity-20" />
-              <p className="text-lg font-medium mb-1">لا توجد منظمات</p>
-              <p className="text-sm">لم يتم العثور على منظمات تطابق معايير البحث</p>
-              <Button
-                className="mt-4 rounded-xl"
-                onClick={() => navigate("/super-admin/organizations/new")}
-              >
+              <p className="text-lg font-medium mb-1">{i18n.language === "ar" ? "لا توجد منظمات" : "No organizations"}</p>
+              <p className="text-sm">{i18n.language === "ar" ? "لم يتم العثور على منظمات تطابق معايير البحث" : "No organizations match the search criteria"}</p>
+              <Button className="mt-4 rounded-xl" onClick={() => navigate("/super-admin/organizations/new")}>
                 <Plus className="w-4 h-4 ml-2" />
-                إضافة حضانة جديدة
+                {t("superadmin.createOrganization")}
               </Button>
             </div>
           )}
@@ -388,98 +352,59 @@ export default function OrganizationsList() {
       <Dialog open={editDialog} onOpenChange={setEditDialog}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تعديل المنظمة</DialogTitle>
-            <DialogDescription>تعديل بيانات المنظمة الأساسية</DialogDescription>
+            <DialogTitle>{i18n.language === "ar" ? "تعديل المنظمة" : "Edit Organization"}</DialogTitle>
+            <DialogDescription>{i18n.language === "ar" ? "تعديل بيانات المنظمة الأساسية" : "Edit basic organization data"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>الاسم (عربي)</Label>
-                <Input
-                  value={editForm.nameAr}
-                  onChange={(e) => setEditForm({ ...editForm, nameAr: e.target.value })}
-                  className="rounded-lg"
-                />
+                <Label>{t("superadmin.organizationNameAr")}</Label>
+                <Input value={editForm.nameAr} onChange={(e) => setEditForm({ ...editForm, nameAr: e.target.value })} className="rounded-lg" />
               </div>
               <div className="space-y-2">
-                <Label>الاسم (إنجليزي)</Label>
-                <Input
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="rounded-lg"
-                />
+                <Label>{t("superadmin.organizationName")}</Label>
+                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="rounded-lg" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>البريد الإلكتروني</Label>
-                <Input
-                  value={editForm.email}
-                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                  className="rounded-lg"
-                  type="email"
-                />
+                <Label>{t("common.email")}</Label>
+                <Input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="rounded-lg" type="email" />
               </div>
               <div className="space-y-2">
-                <Label>الهاتف</Label>
-                <Input
-                  value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  className="rounded-lg"
-                />
+                <Label>{t("common.phone")}</Label>
+                <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="rounded-lg" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>المدينة</Label>
-                <Input
-                  value={editForm.city}
-                  onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                  className="rounded-lg"
-                />
+                <Label>{i18n.language === "ar" ? "المدينة" : "City"}</Label>
+                <Input value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} className="rounded-lg" />
               </div>
               <div className="space-y-2">
-                <Label>رقم الترخيص</Label>
-                <Input
-                  value={editForm.licenseNumber}
-                  onChange={(e) => setEditForm({ ...editForm, licenseNumber: e.target.value })}
-                  className="rounded-lg"
-                />
+                <Label>{i18n.language === "ar" ? "رقم الترخيص" : "License Number"}</Label>
+                <Input value={editForm.licenseNumber} onChange={(e) => setEditForm({ ...editForm, licenseNumber: e.target.value })} className="rounded-lg" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>العنوان</Label>
-              <Input
-                value={editForm.address}
-                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                className="rounded-lg"
-              />
+              <Label>{i18n.language === "ar" ? "العنوان" : "Address"}</Label>
+              <Input value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} className="rounded-lg" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>الحد الأقصى للأطفال</Label>
-                <Input
-                  value={editForm.maxChildren}
-                  onChange={(e) => setEditForm({ ...editForm, maxChildren: parseInt(e.target.value) || 0 })}
-                  className="rounded-lg"
-                  type="number"
-                />
+                <Label>{i18n.language === "ar" ? "الحد الأقصى للأطفال" : "Max Children"}</Label>
+                <Input value={editForm.maxChildren} onChange={(e) => setEditForm({ ...editForm, maxChildren: parseInt(e.target.value) || 0 })} className="rounded-lg" type="number" />
               </div>
               <div className="space-y-2">
-                <Label>الحد الأقصى للموظفين</Label>
-                <Input
-                  value={editForm.maxStaff}
-                  onChange={(e) => setEditForm({ ...editForm, maxStaff: parseInt(e.target.value) || 0 })}
-                  className="rounded-lg"
-                  type="number"
-                />
+                <Label>{i18n.language === "ar" ? "الحد الأقصى للموظفين" : "Max Staff"}</Label>
+                <Input value={editForm.maxStaff} onChange={(e) => setEditForm({ ...editForm, maxStaff: parseInt(e.target.value) || 0 })} className="rounded-lg" type="number" />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialog(false)} className="rounded-lg">إلغاء</Button>
+            <Button variant="outline" onClick={() => setEditDialog(false)} className="rounded-lg">{t("common.cancel")}</Button>
             <Button onClick={handleEditSubmit} disabled={updateMutation.isPending} className="rounded-lg">
-              {updateMutation.isPending ? "جاري الحفظ..." : "حفظ التعديلات"}
+              {updateMutation.isPending ? t("common.loading") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -490,23 +415,23 @@ export default function OrganizationsList() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              {statusTarget?.newStatus === "active" ? "تفعيل المنظمة" : "تعليق المنظمة"}
+              {statusTarget?.newStatus === "active" ? t("superadmin.activate") : t("superadmin.suspend")}
             </DialogTitle>
             <DialogDescription>
               {statusTarget?.newStatus === "active"
-                ? `هل أنت متأكد من تفعيل "${statusTarget?.name}"؟ سيتمكن أعضاؤها من الوصول للمنصة.`
-                : `هل أنت متأكد من تعليق "${statusTarget?.name}"؟ لن يتمكن أعضاؤها من الوصول للمنصة.`
+                ? (i18n.language === "ar" ? `هل أنت متأكد من تفعيل "${statusTarget?.name}"؟` : `Are you sure you want to activate "${statusTarget?.name}"?`)
+                : (i18n.language === "ar" ? `هل أنت متأكد من تعليق "${statusTarget?.name}"؟` : `Are you sure you want to suspend "${statusTarget?.name}"?`)
               }
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setStatusDialog(false)} className="rounded-lg">إلغاء</Button>
+            <Button variant="outline" onClick={() => setStatusDialog(false)} className="rounded-lg">{t("common.cancel")}</Button>
             <Button
               onClick={handleStatusToggle}
               disabled={toggleStatusMutation.isPending}
               className={`rounded-lg ${statusTarget?.newStatus === "suspended" ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"}`}
             >
-              {toggleStatusMutation.isPending ? "جاري التنفيذ..." : statusTarget?.newStatus === "active" ? "تفعيل" : "تعليق"}
+              {toggleStatusMutation.isPending ? t("common.loading") : statusTarget?.newStatus === "active" ? t("superadmin.activate") : t("superadmin.suspend")}
             </Button>
           </DialogFooter>
         </DialogContent>

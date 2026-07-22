@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingBag, ArrowLeft, Package } from "lucide-react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 const statusLabels: Record<string, string> = {
   pending: "بانتظار الدفع",
@@ -27,6 +28,8 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ParentStoreOrders() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const { data: orders, isLoading } = trpc.store.getMyOrders.useQuery();
 

@@ -6,11 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Utensils, Moon, Droplets, Baby, Sun, ThermometerSun, StickyNote } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { useTranslation } from "react-i18next";
 
 const iconMap: Record<string, any> = { meal: Utensils, snack: Utensils, nap_start: Moon, nap_end: Moon, diaper: Baby, toilet: Droplets, water: Droplets, medication: ThermometerSun, outdoor_play: Sun, indoor_play: Sun, mood: StickyNote, temperature: ThermometerSun, note: StickyNote };
 const labelMap: Record<string, string> = { meal: "وجبة", snack: "وجبة خفيفة", nap_start: "بداية قيلولة", nap_end: "نهاية قيلولة", diaper: "حفاض", toilet: "دورة مياه", water: "ماء", medication: "دواء", outdoor_play: "لعب خارجي", indoor_play: "لعب داخلي", mood: "المزاج", temperature: "حرارة", note: "ملاحظة" };
 
 export default function ParentDailyReport() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const { data: activities, isLoading } = trpc.dailyActivities.byChild.useQuery(

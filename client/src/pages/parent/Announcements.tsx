@@ -8,8 +8,11 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function ParentAnnouncements() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: announcements, isLoading } = trpc.announcements.list.useQuery();
   const { data: readIds } = trpc.announcements.myReadStatus.useQuery();
   const utils = trpc.useUtils();

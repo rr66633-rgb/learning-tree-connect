@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, AlertTriangle, Pill, Phone, Plus, Stethoscope, Shield, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 function ChildMedicalCard({ child }: { child: any }) {
+  const { t, i18n } = useTranslation();
   const { data: medicalInfo, isLoading: medLoading } = trpc.medicalInfo.get.useQuery({ childId: child.id });
   const { data: emergencyContacts, isLoading: ecLoading } = trpc.emergencyContacts.list.useQuery({ childId: child.id });
   const utils = trpc.useUtils();
@@ -138,7 +140,7 @@ function ChildMedicalCard({ child }: { child: any }) {
                 </div>
                 <DialogFooter>
                   <Button onClick={() => createContact.mutate({ childId: child.id, name: ecName, phone: ecPhone, relationship: ecRelationship, isAuthorizedPickup: ecPickup })} disabled={!ecName || !ecPhone || !ecRelationship || createContact.isPending}>
-                    {createContact.isPending ? "جاري..." : "إضافة"}
+                    {createContact.isPending ? "جاري..." : t("common.add")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -175,6 +177,8 @@ function ChildMedicalCard({ child }: { child: any }) {
 }
 
 export default function ParentMedical() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children, isLoading } = trpc.children.list.useQuery();
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;

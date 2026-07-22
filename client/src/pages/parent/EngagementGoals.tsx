@@ -12,8 +12,11 @@ import { ArrowRight, Target, Sparkles, CheckCircle, Clock, TrendingUp, RefreshCw
 import { EmptyState } from "@/components/EmptyState";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function EngagementGoals() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<any>(null);

@@ -5,8 +5,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, Package } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function Cart() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const { data: cart, isLoading } = trpc.store.getCart.useQuery();
   const utils = trpc.useUtils();

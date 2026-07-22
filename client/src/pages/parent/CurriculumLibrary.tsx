@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, FileText, Download, Loader2, Eye, X, ZoomIn, ZoomOut, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 const LEVEL_LABELS: Record<string, string> = {
   nursery: "حضانة",
@@ -25,6 +26,8 @@ interface CurriculumItem {
 }
 
 export default function CurriculumLibrary() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: curricula, isLoading } = trpc.curriculum.listForParent.useQuery();
   const [previewItem, setPreviewItem] = useState<CurriculumItem | null>(null);
 
