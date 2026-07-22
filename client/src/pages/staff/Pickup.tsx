@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
 };
 
 export default function StaffPickup() {
+  const { t } = useTranslation();
   const { data: activeRequests, isLoading, refetch } = trpc.pickup.active.useQuery(undefined, {
     refetchInterval: 5000,
   });

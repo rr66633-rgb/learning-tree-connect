@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 
 export default function StaffMessages() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal" || user?.role === "owner";
   const { data: adminConvs, isLoading: loadingAdminConvs } = trpc.messages.allConversations.useQuery(

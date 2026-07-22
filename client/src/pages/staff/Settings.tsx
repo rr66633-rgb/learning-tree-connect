@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -171,6 +172,7 @@ function TestNotificationSection() {
 }
 
 export default function StaffSettings() {
+  const { t } = useTranslation();
   const { data: settings, isLoading } = trpc.centerSettings.get.useQuery();
   const utils = trpc.useUtils();
   const update = trpc.centerSettings.update.useMutation({

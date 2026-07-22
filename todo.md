@@ -2430,3 +2430,8 @@ Fix:
 - [x] Add i18n translations to Dashboard page (staff)
 - [x] Add i18n translations to Attendance page (staff)
 - [x] Add i18n translations to DailyReports page (staff)
+- [x] Add i18n translations to WeeklyPlan page (staff)
+- [x] Add i18n translations to Assessments page (staff)
+- [x] Add i18n translations to CustomAssessments page (staff)
+- [x] Add i18n translations to ApplyAssessment page (staff)
+- [x] Add i18n translations to MediaUpload page (staff)

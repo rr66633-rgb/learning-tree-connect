@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { apiUrl } from "@/lib/apiBase";
 
 export default function StaffAnnouncements() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: announcements, isLoading } = trpc.announcements.list.useQuery();
   const utils = trpc.useUtils();

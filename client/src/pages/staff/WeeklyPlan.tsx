@@ -16,34 +16,57 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { WEEKLY_PLAN_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesForAgeGroup, type WeeklyPlanTemplate } from "@/lib/weeklyPlanTemplates";
 
-const SECTION_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  theme_overview: { label: "نظرة عامة على الموضوع", icon: BookOpen, color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
-  learning_objectives: { label: "أهداف التعلم", icon: FileText, color: "bg-blue-50 border-blue-200 text-blue-800" },
-  arabic_activities: { label: "أنشطة اللغة العربية", icon: BookMarked, color: "bg-amber-50 border-amber-200 text-amber-800" },
-  english_activities: { label: "أنشطة اللغة الإنجليزية", icon: BookMarked, color: "bg-indigo-50 border-indigo-200 text-indigo-800" },
-  math_activities: { label: "أنشطة الرياضيات", icon: Calculator, color: "bg-purple-50 border-purple-200 text-purple-800" },
-  science_activities: { label: "أنشطة العلوم", icon: FlaskConical, color: "bg-teal-50 border-teal-200 text-teal-800" },
-  art_activities: { label: "أنشطة الفنون", icon: Palette, color: "bg-pink-50 border-pink-200 text-pink-800" },
-  sensory_activities: { label: "أنشطة حسية", icon: Hand, color: "bg-orange-50 border-orange-200 text-orange-800" },
-  physical_activities: { label: "أنشطة بدنية", icon: Dumbbell, color: "bg-red-50 border-red-200 text-red-800" },
-  quran_islamic: { label: "القرآن والدراسات الإسلامية", icon: Moon, color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
-  story_of_week: { label: "قصة الأسبوع", icon: BookOpen, color: "bg-violet-50 border-violet-200 text-violet-800" },
-  song_of_week: { label: "نشيد الأسبوع", icon: Music, color: "bg-sky-50 border-sky-200 text-sky-800" },
-  home_activity: { label: "نشاط منزلي", icon: Home, color: "bg-lime-50 border-lime-200 text-lime-800" },
-  parent_notes: { label: "ملاحظات لأولياء الأمور", icon: MessageSquare, color: "bg-cyan-50 border-cyan-200 text-cyan-800" },
+// Section config without labels (labels come from i18n)
+const SECTION_ICONS: Record<string, { icon: any; color: string }> = {
+  theme_overview: { icon: BookOpen, color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
+  learning_objectives: { icon: FileText, color: "bg-blue-50 border-blue-200 text-blue-800" },
+  arabic_activities: { icon: BookMarked, color: "bg-amber-50 border-amber-200 text-amber-800" },
+  english_activities: { icon: BookMarked, color: "bg-indigo-50 border-indigo-200 text-indigo-800" },
+  math_activities: { icon: Calculator, color: "bg-purple-50 border-purple-200 text-purple-800" },
+  science_activities: { icon: FlaskConical, color: "bg-teal-50 border-teal-200 text-teal-800" },
+  art_activities: { icon: Palette, color: "bg-pink-50 border-pink-200 text-pink-800" },
+  sensory_activities: { icon: Hand, color: "bg-orange-50 border-orange-200 text-orange-800" },
+  physical_activities: { icon: Dumbbell, color: "bg-red-50 border-red-200 text-red-800" },
+  quran_islamic: { icon: Moon, color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
+  story_of_week: { icon: BookOpen, color: "bg-violet-50 border-violet-200 text-violet-800" },
+  song_of_week: { icon: Music, color: "bg-sky-50 border-sky-200 text-sky-800" },
+  home_activity: { icon: Home, color: "bg-lime-50 border-lime-200 text-lime-800" },
+  parent_notes: { icon: MessageSquare, color: "bg-cyan-50 border-cyan-200 text-cyan-800" },
 };
 
-const AGE_GROUPS = [
-  { value: "nursery", label: "الحضانة (٢-٣ سنوات)" },
-  { value: "kg1", label: "تمهيدي أول KG1 (٣-٤ سنوات)" },
-  { value: "kg2", label: "تمهيدي ثاني KG2 (٤-٥ سنوات)" },
-  { value: "kg3", label: "تمهيدي ثالث KG3 (٥-٦ سنوات)" },
-];
+// Map section keys to i18n keys
+const SECTION_LABEL_KEYS: Record<string, string> = {
+  theme_overview: "sectionThemeOverview",
+  learning_objectives: "sectionLearningObjectives",
+  arabic_activities: "sectionArabicActivities",
+  english_activities: "sectionEnglishActivities",
+  math_activities: "sectionMathActivities",
+  science_activities: "sectionScienceActivities",
+  art_activities: "sectionArtActivities",
+  sensory_activities: "sectionSensoryActivities",
+  physical_activities: "sectionPhysicalActivities",
+  quran_islamic: "sectionQuranIslamic",
+  story_of_week: "sectionStoryOfWeek",
+  song_of_week: "sectionSongOfWeek",
+  home_activity: "sectionHomeActivity",
+  parent_notes: "sectionParentNotes",
+};
 
-function SectionContent({ content, sectionKey }: { content: any; sectionKey: string }) {
-  if (!content) return <p className="text-gray-400 text-sm">لا يوجد محتوى</p>;
+// Map object keys to i18n label keys
+const OBJECT_LABEL_KEYS: Record<string, string> = {
+  surah: "labelSurah", dua: "labelDua", value: "labelValue", activity: "labelActivity",
+  title: "labelTitle", summary: "labelSummary", discussion_questions: "labelDiscussionQuestions",
+  lessons: "labelLessons", lyrics: "labelLyrics", movements: "labelMovements",
+  description: "labelDescription", materials: "labelMaterials", connection: "labelConnection",
+  hadith: "labelHadith", ayah: "labelAyah", islamic_value: "labelIslamicValue",
+  memorization: "labelMemorization", religious_activity: "labelReligiousActivity",
+};
+
+function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: string; t: (key: string) => string }) {
+  if (!content) return <p className="text-gray-400 text-sm">{t('weeklyPlan.noContent')}</p>;
 
   // Handle string content
   if (typeof content === "string") {
@@ -64,17 +87,17 @@ function SectionContent({ content, sectionKey }: { content: any; sectionKey: str
                 {item.description && <p className="text-sm text-gray-600">{item.description}</p>}
                 {item.materials && (
                   <p className="text-xs text-gray-500">
-                    <span className="font-medium">المواد:</span> {Array.isArray(item.materials) ? item.materials.join("، ") : item.materials}
+                    <span className="font-medium">{t('weeklyPlan.labelMaterials')}:</span> {Array.isArray(item.materials) ? item.materials.join("، ") : item.materials}
                   </p>
                 )}
-                {item.duration && <p className="text-xs text-gray-500"><span className="font-medium">المدة:</span> {item.duration}</p>}
-                {item.implementation && <p className="text-xs text-gray-500"><span className="font-medium">التنفيذ:</span> {item.implementation}</p>}
-                {item.steps && <p className="text-xs text-gray-500"><span className="font-medium">الخطوات:</span> {Array.isArray(item.steps) ? item.steps.join(" → ") : item.steps}</p>}
-                {item.concept && <p className="text-xs text-gray-500"><span className="font-medium">المفهوم:</span> {item.concept}</p>}
-                {item.math_concept && <p className="text-xs text-gray-500"><span className="font-medium">المفهوم الرياضي:</span> {item.math_concept}</p>}
-                {item.experiment && <p className="text-xs text-gray-500"><span className="font-medium">التجربة:</span> {item.experiment}</p>}
-                {item.targeted_senses && <p className="text-xs text-gray-500"><span className="font-medium">الحواس المستهدفة:</span> {Array.isArray(item.targeted_senses) ? item.targeted_senses.join("، ") : item.targeted_senses}</p>}
-                {item.targeted_skills && <p className="text-xs text-gray-500"><span className="font-medium">المهارات المستهدفة:</span> {Array.isArray(item.targeted_skills) ? item.targeted_skills.join("، ") : item.targeted_skills}</p>}
+                {item.duration && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelDuration')}:</span> {item.duration}</p>}
+                {item.implementation && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelImplementation')}:</span> {item.implementation}</p>}
+                {item.steps && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelSteps')}:</span> {Array.isArray(item.steps) ? item.steps.join(" → ") : item.steps}</p>}
+                {item.concept && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelConcept')}:</span> {item.concept}</p>}
+                {item.math_concept && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelMathConcept')}:</span> {item.math_concept}</p>}
+                {item.experiment && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelExperiment')}:</span> {item.experiment}</p>}
+                {item.targeted_senses && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelTargetedSenses')}:</span> {Array.isArray(item.targeted_senses) ? item.targeted_senses.join("، ") : item.targeted_senses}</p>}
+                {item.targeted_skills && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelTargetedSkills')}:</span> {Array.isArray(item.targeted_skills) ? item.targeted_skills.join("، ") : item.targeted_skills}</p>}
               </div>
             )}
           </div>
@@ -89,15 +112,8 @@ function SectionContent({ content, sectionKey }: { content: any; sectionKey: str
       <div className="space-y-2">
         {Object.entries(content).map(([key, value]: [string, any]) => {
           if (!value) return null;
-          const labelMap: Record<string, string> = {
-            surah: "السورة", dua: "الدعاء", value: "القيمة", activity: "النشاط",
-            title: "العنوان", summary: "الملخص", discussion_questions: "أسئلة المناقشة",
-            lessons: "الدروس المستفادة", lyrics: "الكلمات", movements: "الحركات",
-            description: "الوصف", materials: "المواد", connection: "الارتباط",
-            hadith: "الحديث", ayah: "الآية", islamic_value: "القيمة الإسلامية",
-            memorization: "الحفظ", religious_activity: "النشاط الديني",
-          };
-          const displayLabel = labelMap[key] || key;
+          const labelKey = OBJECT_LABEL_KEYS[key];
+          const displayLabel = labelKey ? t(`weeklyPlan.${labelKey}`) : key;
           return (
             <div key={key} className="p-2 bg-white rounded border border-gray-50">
               <span className="text-xs font-semibold text-gray-500">{displayLabel}: </span>
@@ -130,19 +146,19 @@ function SectionEditor({ content, onChange }: { content: any; onChange: (val: st
   );
 }
 
-function TemplateCard({ template, onSelect }: { template: WeeklyPlanTemplate; onSelect: (t: WeeklyPlanTemplate) => void }) {
+function TemplateCard({ template, onSelect, isEn }: { template: WeeklyPlanTemplate; onSelect: (t: WeeklyPlanTemplate) => void; isEn: boolean }) {
   return (
     <button
       onClick={() => onSelect(template)}
       className={`p-3 rounded-xl border-2 text-right transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] ${template.color}`}
     >
       <div className="text-2xl mb-2">{template.icon}</div>
-      <h4 className="font-bold text-sm text-gray-800 mb-1 line-clamp-1">{template.titleAr}</h4>
+      <h4 className="font-bold text-sm text-gray-800 mb-1 line-clamp-1">{isEn ? (template.titleEn || template.titleAr) : template.titleAr}</h4>
       <p className="text-xs text-gray-500 line-clamp-2">{template.description}</p>
       <div className="mt-2 flex flex-wrap gap-1">
         {template.ageGroups.slice(0, 2).map(ag => (
           <span key={ag} className="text-[10px] bg-white/70 rounded px-1.5 py-0.5 text-gray-600">
-            {ag === 'nursery' ? 'حضانة' : ag.toUpperCase()}
+            {ag === 'nursery' ? (isEn ? 'Nursery' : 'حضانة') : ag.toUpperCase()}
           </span>
         ))}
         {template.ageGroups.length > 2 && (
@@ -154,6 +170,9 @@ function TemplateCard({ template, onSelect }: { template: WeeklyPlanTemplate; on
 }
 
 export default function WeeklyPlanPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+
   const [view, setView] = useState<"list" | "generate" | "preview">("list");
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -169,6 +188,14 @@ export default function WeeklyPlanPage() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateCategory, setTemplateCategory] = useState<string>("");
 
+  // Age groups with translated labels
+  const AGE_GROUPS = [
+    { value: "nursery", label: t('weeklyPlan.nursery') },
+    { value: "kg1", label: t('weeklyPlan.kg1') },
+    { value: "kg2", label: t('weeklyPlan.kg2') },
+    { value: "kg3", label: t('weeklyPlan.kg3') },
+  ];
+
   // Queries
   const classesQuery = trpc.classes.list.useQuery();
   const plansQuery = trpc.weeklyPlan.list.useQuery({ limit: 50 });
@@ -180,57 +207,57 @@ export default function WeeklyPlanPage() {
   // Mutations
   const generateMutation = trpc.weeklyPlan.generate.useMutation({
     onSuccess: (data) => {
-      toast.success("تم إنشاء الخطة الأسبوعية بنجاح!");
+      toast.success(t('weeklyPlan.planCreatedSuccess'));
       setSelectedPlanId(data.id);
       setView("preview");
       plansQuery.refetch();
     },
     onError: (err) => {
-      toast.error(err.message || "فشل في إنشاء الخطة. يرجى المحاولة مرة أخرى.");
+      toast.error(err.message || t('weeklyPlan.planCreateError'));
     },
   });
 
   const saveMutation = trpc.weeklyPlan.save.useMutation({
     onSuccess: () => {
-      toast.success("تم حفظ التعديلات بنجاح");
+      toast.success(t('weeklyPlan.editsSaved'));
       setIsEditing(false);
       selectedPlan.refetch();
     },
-    onError: () => toast.error("فشل في حفظ التعديلات"),
+    onError: () => toast.error(t('weeklyPlan.editsSaveError')),
   });
 
   const publishMutation = trpc.weeklyPlan.publish.useMutation({
     onSuccess: () => {
-      toast.success("تم نشر الخطة الأسبوعية وإشعار أولياء الأمور");
+      toast.success(t('weeklyPlan.publishedAndNotified'));
       selectedPlan.refetch();
       plansQuery.refetch();
     },
-    onError: (err) => toast.error(err.message || "فشل في نشر الخطة"),
+    onError: (err) => toast.error(err.message || t('weeklyPlan.publishError')),
   });
 
   const duplicateMutation = trpc.weeklyPlan.duplicate.useMutation({
     onSuccess: (data) => {
-      toast.success("تم نسخ الخطة بنجاح");
+      toast.success(t('weeklyPlan.duplicated'));
       setSelectedPlanId(data.id);
       setView("preview");
       plansQuery.refetch();
     },
-    onError: () => toast.error("فشل في نسخ الخطة"),
+    onError: () => toast.error(t('weeklyPlan.duplicateError')),
   });
 
   const deleteMutation = trpc.weeklyPlan.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف الخطة");
+      toast.success(t('weeklyPlan.deleted'));
       setSelectedPlanId(null);
       setView("list");
       plansQuery.refetch();
     },
-    onError: () => toast.error("فشل في حذف الخطة"),
+    onError: () => toast.error(t('weeklyPlan.deleteError')),
   });
 
   const handleGenerate = () => {
     if (!ageGroup || !weekStart || !weekEnd || !theme) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error(t('weeklyPlan.fillAllRequired'));
       return;
     }
     generateMutation.mutate({
@@ -265,7 +292,7 @@ export default function WeeklyPlanPage() {
 
   const handlePublish = () => {
     if (!selectedPlanId) return;
-    if (confirm("هل أنت متأكد من نشر هذه الخطة؟ سيتم إشعار جميع أولياء أمور الفصل.")) {
+    if (confirm(t('weeklyPlan.confirmPublish'))) {
       publishMutation.mutate({ id: selectedPlanId });
     }
   };
@@ -277,12 +304,12 @@ export default function WeeklyPlanPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">الخطة الأسبوعية</h1>
-            <p className="text-sm text-gray-500 mt-1">إنشاء وإدارة الخطط الأسبوعية بالذكاء الاصطناعي</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('weeklyPlan.title')}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t('weeklyPlan.subtitle')}</p>
           </div>
           <Button onClick={() => setView("generate")} className="bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="h-4 w-4 ml-2" />
-            إنشاء خطة جديدة
+            <Plus className={`h-4 w-4 ${isEn ? 'mr-2' : 'ml-2'}`} />
+            {t('weeklyPlan.createNewPlan')}
           </Button>
         </div>
 
@@ -295,11 +322,11 @@ export default function WeeklyPlanPage() {
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <CalendarDays className="h-16 w-16 text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">لا توجد خطط أسبوعية بعد</h3>
-              <p className="text-sm text-gray-400 mb-6 text-center">ابدأ بإنشاء أول خطة أسبوعية باستخدام الذكاء الاصطناعي</p>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">{t('weeklyPlan.noPlansYet')}</h3>
+              <p className="text-sm text-gray-400 mb-6 text-center">{t('weeklyPlan.startWithAI')}</p>
               <Button onClick={() => setView("generate")} variant="outline">
-                <Sparkles className="h-4 w-4 ml-2" />
-                إنشاء خطة جديدة
+                <Sparkles className={`h-4 w-4 ${isEn ? 'mr-2' : 'ml-2'}`} />
+                {t('weeklyPlan.createNewPlan')}
               </Button>
             </CardContent>
           </Card>
@@ -315,7 +342,7 @@ export default function WeeklyPlanPage() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <Badge variant={plan.status === "published" ? "default" : "secondary"} className={plan.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
-                      {plan.status === "published" ? "منشورة" : "مسودة"}
+                      {plan.status === "published" ? (isEn ? "Published" : "منشورة") : (isEn ? "Draft" : "مسودة")}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       {AGE_GROUPS.find(g => g.value === plan.ageGroup)?.label?.split(" ")[0] || plan.ageGroup}
@@ -328,7 +355,7 @@ export default function WeeklyPlanPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                     <Clock className="h-3 w-3" />
-                    <span>{new Date(plan.createdAt).toLocaleDateString("ar-SA")}</span>
+                    <span>{new Date(plan.createdAt).toLocaleDateString(isEn ? "en-US" : "ar-SA")}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -349,8 +376,8 @@ export default function WeeklyPlanPage() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">إنشاء خطة أسبوعية جديدة</h1>
-            <p className="text-sm text-gray-500 mt-1">سيقوم الذكاء الاصطناعي بإنشاء خطة كاملة من 14 قسماً</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('weeklyPlan.createNewPlan')}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t('weeklyPlan.aiGeneratingDescription').split('...')[0]}</p>
           </div>
         </div>
 
@@ -360,7 +387,7 @@ export default function WeeklyPlanPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <LayoutGrid className="h-5 w-5 text-emerald-600" />
-                <h3 className="font-bold text-gray-800">قوالب المواضيع الجاهزة</h3>
+                <h3 className="font-bold text-gray-800">{t('weeklyPlan.readyTemplates')}</h3>
               </div>
               <Button 
                 variant="ghost" 
@@ -368,10 +395,10 @@ export default function WeeklyPlanPage() {
                 onClick={() => setShowTemplates(!showTemplates)}
                 className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
               >
-                {showTemplates ? "إخفاء" : "عرض القوالب"}
+                {showTemplates ? t('weeklyPlan.hideTemplates') : t('weeklyPlan.showTemplates')}
               </Button>
             </div>
-            <p className="text-sm text-gray-500 mb-3">اختر قالباً جاهزاً لملء الموضوع تلقائياً أو اكتب موضوعك الخاص</p>
+            <p className="text-sm text-gray-500 mb-3">{t('weeklyPlan.chooseTemplateOrWrite')}</p>
             
             {showTemplates && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -383,7 +410,7 @@ export default function WeeklyPlanPage() {
                     onClick={() => setTemplateCategory("")}
                     className={templateCategory === "" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
                   >
-                    الكل
+                    {t('weeklyPlan.allTemplates')}
                   </Button>
                   {TEMPLATE_CATEGORIES.map(cat => (
                     <Button
@@ -393,7 +420,7 @@ export default function WeeklyPlanPage() {
                       onClick={() => setTemplateCategory(cat.id)}
                       className={templateCategory === cat.id ? "bg-emerald-600 hover:bg-emerald-700" : ""}
                     >
-                      {cat.labelAr}
+                      {isEn ? (cat.labelEn || cat.labelAr) : cat.labelAr}
                     </Button>
                   ))}
                 </div>
@@ -405,11 +432,12 @@ export default function WeeklyPlanPage() {
                     .map(template => (
                       <TemplateCard 
                         key={template.id} 
-                        template={template} 
-                        onSelect={(t) => {
-                          setTheme(t.suggestedThemes[0].ar);
+                        template={template}
+                        isEn={isEn}
+                        onSelect={(tmpl) => {
+                          setTheme(tmpl.suggestedThemes[0].ar);
                           setShowTemplates(false);
-                          toast.success(`تم اختيار قالب: ${t.titleAr}`);
+                          toast.success(`${t('weeklyPlan.templateSelected')} ${isEn ? (tmpl.titleEn || tmpl.titleAr) : tmpl.titleAr}`);
                         }}
                       />
                     ))}
@@ -425,10 +453,10 @@ export default function WeeklyPlanPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Classroom */}
               <div className="space-y-2">
-                <Label>الفصل (اختياري)</Label>
+                <Label>{t('weeklyPlan.classOptional')}</Label>
                 <Select value={classId} onValueChange={setClassId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر الفصل" />
+                    <SelectValue placeholder={t('weeklyPlan.selectClass')} />
                   </SelectTrigger>
                   <SelectContent>
                     {classesQuery.data?.map((cls: any) => (
@@ -442,10 +470,10 @@ export default function WeeklyPlanPage() {
 
               {/* Age Group */}
               <div className="space-y-2">
-                <Label>الفئة العمرية *</Label>
+                <Label>{t('weeklyPlan.ageGroupRequired')}</Label>
                 <Select value={ageGroup} onValueChange={setAgeGroup}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر الفئة العمرية" />
+                    <SelectValue placeholder={t('weeklyPlan.selectAgeGroup')} />
                   </SelectTrigger>
                   <SelectContent>
                     {AGE_GROUPS.map(g => (
@@ -457,7 +485,7 @@ export default function WeeklyPlanPage() {
 
               {/* Week Start */}
               <div className="space-y-2">
-                <Label>بداية الأسبوع *</Label>
+                <Label>{t('weeklyPlan.weekStartRequired')}</Label>
                 <Input 
                   type="date" 
                   value={weekStart} 
@@ -475,32 +503,32 @@ export default function WeeklyPlanPage() {
 
               {/* Week End */}
               <div className="space-y-2">
-                <Label>نهاية الأسبوع *</Label>
+                <Label>{t('weeklyPlan.weekEndRequired')}</Label>
                 <Input type="date" value={weekEnd} onChange={(e) => setWeekEnd(e.target.value)} />
               </div>
 
               {/* Theme */}
               <div className="space-y-2 md:col-span-2">
-                <Label>الموضوع الأسبوعي *</Label>
+                <Label>{t('weeklyPlan.weeklyThemeRequired')}</Label>
                 <Input 
                   value={theme} 
                   onChange={(e) => setTheme(e.target.value)}
-                  placeholder="مثال: الفصول الأربعة، الحيوانات، الماء، الفضاء..."
+                  placeholder={t('weeklyPlan.themePlaceholder')}
                   className="text-lg"
                 />
               </div>
 
               {/* Language */}
               <div className="space-y-2">
-                <Label>لغة الخطة</Label>
+                <Label>{t('weeklyPlan.planLanguage')}</Label>
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ar">عربي</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="bilingual">ثنائي اللغة</SelectItem>
+                    <SelectItem value="ar">{t('weeklyPlan.arabic')}</SelectItem>
+                    <SelectItem value="en">{t('weeklyPlan.english')}</SelectItem>
+                    <SelectItem value="bilingual">{t('weeklyPlan.bilingual')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -516,19 +544,19 @@ export default function WeeklyPlanPage() {
               >
                 {generateMutation.isPending ? (
                   <>
-                    <Loader2 className="h-5 w-5 ml-2 animate-spin" />
-                    جاري إنشاء الخطة... (قد يستغرق 15-30 ثانية)
+                    <Loader2 className={`h-5 w-5 ${isEn ? 'mr-2' : 'ml-2'} animate-spin`} />
+                    {t('weeklyPlan.generatingPlan')}
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-5 w-5 ml-2" />
-                    إنشاء الخطة الأسبوعية بالذكاء الاصطناعي
+                    <Sparkles className={`h-5 w-5 ${isEn ? 'mr-2' : 'ml-2'}`} />
+                    {t('weeklyPlan.generateAIPlan')}
                   </>
                 )}
               </Button>
               {generateMutation.isPending && (
                 <p className="text-sm text-gray-500 mt-3">
-                  يقوم الذكاء الاصطناعي بإنشاء خطة كاملة تشمل 14 قسماً مع أنشطة مفصلة ومواد مطلوبة...
+                  {t('weeklyPlan.aiGeneratingDescription')}
                 </p>
               )}
             </div>
@@ -554,7 +582,7 @@ export default function WeeklyPlanPage() {
             <h1 className="text-xl font-bold text-gray-900">{plan?.theme || "..."}</h1>
             <div className="flex items-center gap-3 mt-1">
               <Badge variant={plan?.status === "published" ? "default" : "secondary"} className={plan?.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
-                {plan?.status === "published" ? "منشورة" : "مسودة"}
+                {plan?.status === "published" ? (isEn ? "Published" : "منشورة") : (isEn ? "Draft" : "مسودة")}
               </Badge>
               <span className="text-xs text-gray-500">{plan?.weekStartDate} - {plan?.weekEndDate}</span>
               <span className="text-xs text-gray-500">
@@ -570,40 +598,40 @@ export default function WeeklyPlanPage() {
             <>
               {!isEditing ? (
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                  <Edit3 className="h-4 w-4 ml-1" />
-                  تعديل
+                  <Edit3 className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+                  {t('weeklyPlan.editBtn')}
                 </Button>
               ) : (
                 <Button variant="outline" size="sm" onClick={handleSaveEdits} disabled={saveMutation.isPending}>
-                  <Save className="h-4 w-4 ml-1" />
-                  حفظ التعديلات
+                  <Save className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+                  {t('weeklyPlan.saveEdits')}
                 </Button>
               )}
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handlePublish} disabled={publishMutation.isPending}>
-                <Send className="h-4 w-4 ml-1" />
-                نشر وإشعار الأهل
+                <Send className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+                {t('weeklyPlan.publishAndNotify')}
               </Button>
             </>
           )}
           <Button variant="outline" size="sm" onClick={() => duplicateMutation.mutate({ id: selectedPlanId! })}>
-            <Copy className="h-4 w-4 ml-1" />
-            نسخ
+            <Copy className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+            {t('weeklyPlan.duplicate')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => {
             // Trigger PDF download (handled in separate component)
             window.dispatchEvent(new CustomEvent("download-weekly-plan-pdf", { detail: { plan } }));
           }}>
-            <Download className="h-4 w-4 ml-1" />
-            تحميل PDF
+            <Download className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+            {t('weeklyPlan.downloadPDF')}
           </Button>
           {plan?.status === "draft" && (
             <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={() => {
-              if (confirm("هل أنت متأكد من حذف هذه الخطة؟")) {
+              if (confirm(t('weeklyPlan.confirmDelete'))) {
                 deleteMutation.mutate({ id: selectedPlanId! });
               }
             }}>
-              <Trash2 className="h-4 w-4 ml-1" />
-              حذف
+              <Trash2 className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+              {t('weeklyPlan.deleteBtn')}
             </Button>
           )}
         </div>
@@ -616,17 +644,18 @@ export default function WeeklyPlanPage() {
         </div>
       ) : sections ? (
         <div className="grid gap-4 md:grid-cols-2">
-          {Object.entries(SECTION_CONFIG).map(([key, config]) => {
+          {Object.entries(SECTION_ICONS).map(([key, config]) => {
             const Icon = config.icon;
             const sectionContent = sections[key];
             const colorClasses = config.color.split(" ");
+            const labelKey = SECTION_LABEL_KEYS[key];
 
             return (
               <Card key={key} className={`border ${colorClasses[1] || ""}`}>
                 <CardHeader className={`py-3 px-4 ${colorClasses[0] || ""}`}>
                   <CardTitle className={`text-sm font-bold flex items-center gap-2 ${colorClasses[2] || ""}`}>
                     <Icon className="h-4 w-4" />
-                    {config.label}
+                    {t(`weeklyPlan.${labelKey}`)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
@@ -636,7 +665,7 @@ export default function WeeklyPlanPage() {
                       onChange={(val) => setEditedSections(prev => ({ ...prev, [key]: val }))}
                     />
                   ) : (
-                    <SectionContent content={sectionContent} sectionKey={key} />
+                    <SectionContent content={sectionContent} sectionKey={key} t={t} />
                   )}
                 </CardContent>
               </Card>
@@ -644,7 +673,7 @@ export default function WeeklyPlanPage() {
           })}
         </div>
       ) : (
-        <div className="text-center py-10 text-gray-400">لا يوجد محتوى</div>
+        <div className="text-center py-10 text-gray-400">{t('weeklyPlan.noContent')}</div>
       )}
     </div>
   );

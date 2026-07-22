@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,7 @@ function getCategoryLabel(cat: string) {
 }
 
 export default function StaffCalendar() {
+  const { t } = useTranslation();
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 import { MapPin, Clock, LogIn, LogOut, CheckCircle2, AlertCircle, UserX, UserCheck, Timer, AlertTriangle } from "lucide-react";
 
 export default function StaffStaffAttendance() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "principal" || user?.role === "owner";
   const today = new Date().toISOString().split("T")[0];

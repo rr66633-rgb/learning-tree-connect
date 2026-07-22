@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Bell, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export default function StaffNotifications() {
+  const { t } = useTranslation();
   const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
   const { data: unreadCount } = trpc.notifications.unreadCount.useQuery();
   const utils = trpc.useUtils();

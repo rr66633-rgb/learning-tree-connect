@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ const initialFormState = {
 };
 
 export default function StaffChildren() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
@@ -168,10 +170,10 @@ export default function StaffChildren() {
   const renderForm = () => (
     <Tabs defaultValue="personal" className="w-full" dir="rtl">
       <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="personal">{"البيانات الشخصية"}</TabsTrigger>
-        <TabsTrigger value="parent">{"ولي الأمر"}</TabsTrigger>
-        <TabsTrigger value="medical">{"المعلومات الطبية"}</TabsTrigger>
-        <TabsTrigger value="nursery">{"الحضانة"}</TabsTrigger>
+        <TabsTrigger value="personal">{t('children.personalData')}</TabsTrigger>
+        <TabsTrigger value="parent">{t('children.parentInfo')}</TabsTrigger>
+        <TabsTrigger value="medical">{t('children.medicalInfo')}</TabsTrigger>
+        <TabsTrigger value="nursery">{t('children.nurseryInfo')}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="personal" className="space-y-4 mt-4">
@@ -204,45 +206,45 @@ export default function StaffChildren() {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>{"\u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0623\u0648\u0644 *"}</Label>
+            <Label>{t('children.firstName')} *</Label>
             <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0633\u0645 \u0627\u0644\u0639\u0627\u0626\u0644\u0629 *"}</Label>
+            <Label>{t('children.lastName')} *</Label>
             <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064A"}</Label>
+            <Label>{t('children.arabicName')}</Label>
             <Input value={form.arabicName} onChange={(e) => setForm({ ...form, arabicName: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0645\u064A\u0644\u0627\u062F *"}</Label>
+            <Label>{t('children.dateOfBirth')} *</Label>
             <Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0644\u062C\u0646\u0633 *"}</Label>
+            <Label>{t('children.gender')} *</Label>
             <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v as "male" | "female" })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">{"\u0630\u0643\u0631"}</SelectItem>
-                <SelectItem value="female">{"\u0623\u0646\u062B\u0649"}</SelectItem>
+                <SelectItem value="male">{t('children.male')}</SelectItem>
+                <SelectItem value="female">{t('children.female')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>{"\u0627\u0644\u062C\u0646\u0633\u064A\u0629"}</Label>
+            <Label>{t('children.nationality')}</Label>
             <Input value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0631\u0642\u0645 \u0627\u0644\u0647\u0648\u064A\u0629 / \u0627\u0644\u0625\u0642\u0627\u0645\u0629"}</Label>
+            <Label>{t('children.nationalId')}</Label>
             <Input value={form.childNationalId} onChange={(e) => setForm({ ...form, childNationalId: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0644\u0641\u0635\u0644"}</Label>
+            <Label>{t('children.class')}</Label>
             <Select value={form.classId ? String(form.classId) : "none"} onValueChange={(v) => setForm({ ...form, classId: v === "none" ? undefined : Number(v) })}>
-              <SelectTrigger><SelectValue placeholder={"\u0627\u062E\u062A\u0631 \u0627\u0644\u0641\u0635\u0644"} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('children.selectClass')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{"\u0628\u062F\u0648\u0646 \u0641\u0635\u0644"}</SelectItem>
+                <SelectItem value="none">{t('children.noClass')}</SelectItem>
                 {(classes as any[]).map((c: any) => (
                   <SelectItem key={c.id} value={String(c.id)}>{c.nameAr || c.name}</SelectItem>
                 ))}
@@ -255,27 +257,27 @@ export default function StaffChildren() {
       <TabsContent value="parent" className="space-y-4 mt-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>{"\u0627\u0633\u0645 \u0627\u0644\u0623\u0628"}</Label>
+            <Label>{t('children.fatherName')}</Label>
             <Input value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0633\u0645 \u0627\u0644\u0623\u0645"}</Label>
+            <Label>{t('children.motherName')}</Label>
             <Input value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A"}</Label>
+            <Label>{t('children.email')}</Label>
             <Input type="email" value={form.parentEmail} onChange={(e) => setForm({ ...form, parentEmail: e.target.value })} dir="ltr" />
           </div>
           <div>
-            <Label>{"\u0631\u0642\u0645 \u0627\u0644\u062C\u0648\u0627\u0644"}</Label>
+            <Label>{t('children.mobile')}</Label>
             <Input value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} dir="ltr" />
           </div>
           <div>
-            <Label>{"\u0631\u0642\u0645 \u0628\u062F\u064A\u0644"}</Label>
+            <Label>{t('children.altPhone')}</Label>
             <Input value={form.altPhone} onChange={(e) => setForm({ ...form, altPhone: e.target.value })} dir="ltr" />
           </div>
           <div className="col-span-2">
-            <Label>{"\u0627\u0644\u0639\u0646\u0648\u0627\u0646"}</Label>
+            <Label>{t('children.address')}</Label>
             <Textarea value={form.homeAddress} onChange={(e) => setForm({ ...form, homeAddress: e.target.value })} />
           </div>
         </div>
@@ -284,31 +286,31 @@ export default function StaffChildren() {
       <TabsContent value="medical" className="space-y-4 mt-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>{"\u0627\u0644\u062D\u0633\u0627\u0633\u064A\u0629"}</Label>
+            <Label>{t('children.allergies')}</Label>
             <Textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0644\u062D\u0627\u0644\u0627\u062A \u0627\u0644\u0637\u0628\u064A\u0629"}</Label>
+            <Label>{t('children.medicalConditions')}</Label>
             <Textarea value={form.medicalConditions} onChange={(e) => setForm({ ...form, medicalConditions: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0644\u0623\u062F\u0648\u064A\u0629"}</Label>
+            <Label>{t('children.medications')}</Label>
             <Textarea value={form.medications} onChange={(e) => setForm({ ...form, medications: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0644\u0627\u062D\u062A\u064A\u0627\u062C\u0627\u062A \u0627\u0644\u062E\u0627\u0635\u0629"}</Label>
+            <Label>{t('children.specialNeeds')}</Label>
             <Textarea value={form.specialNeeds} onChange={(e) => setForm({ ...form, specialNeeds: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0627\u0633\u0645 \u0627\u0644\u0637\u0628\u064A\u0628"}</Label>
+            <Label>{t('children.doctorName')}</Label>
             <Input value={form.doctorName} onChange={(e) => setForm({ ...form, doctorName: e.target.value })} />
           </div>
           <div>
-            <Label>{"\u0641\u0635\u064A\u0644\u0629 \u0627\u0644\u062F\u0645"}</Label>
+            <Label>{t('children.bloodType')}</Label>
             <Select value={form.bloodType || "unknown"} onValueChange={(v) => setForm({ ...form, bloodType: v === "unknown" ? "" : v })}>
               <SelectTrigger><SelectValue placeholder={"\u0627\u062E\u062A\u0631"} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="unknown">{"\u063A\u064A\u0631 \u0645\u062D\u062F\u062F"}</SelectItem>
+                <SelectItem value="unknown">{t('children.unknown')}</SelectItem>
                 <SelectItem value="A+">A+</SelectItem>
                 <SelectItem value="A-">A-</SelectItem>
                 <SelectItem value="B+">B+</SelectItem>
@@ -321,7 +323,7 @@ export default function StaffChildren() {
             </Select>
           </div>
           <div className="col-span-2">
-            <Label>{"\u0645\u0644\u0627\u062D\u0638\u0627\u062A \u0637\u0628\u064A\u0629"}</Label>
+            <Label>{t('children.medicalNotes')}</Label>
             <Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} />
           </div>
         </div>
@@ -330,15 +332,15 @@ export default function StaffChildren() {
       <TabsContent value="nursery" className="space-y-4 mt-4">
         <div className="grid grid-cols-1 gap-4">
           <div>
-            <Label>{"\u0627\u0644\u0645\u0635\u0631\u062D \u0644\u0647\u0645 \u0628\u0627\u0644\u0627\u0633\u062A\u0644\u0627\u0645"}</Label>
-            <Textarea value={form.pickupAuthorization} onChange={(e) => setForm({ ...form, pickupAuthorization: e.target.value })} rows={4} placeholder={"\u0627\u0633\u0645 - \u0631\u0642\u0645 \u0627\u0644\u0647\u0648\u064A\u0629 - \u0635\u0644\u0629 \u0627\u0644\u0642\u0631\u0627\u0628\u0629"} />
+            <Label>{t('children.pickupAuth')}</Label>
+            <Textarea value={form.pickupAuthorization} onChange={(e) => setForm({ ...form, pickupAuthorization: e.target.value })} rows={4} placeholder={t('children.pickupPlaceholder')} />
           </div>
           <div className="flex items-center gap-3">
             <Switch checked={form.busRequired} onCheckedChange={(v) => setForm({ ...form, busRequired: v })} />
-            <Label>{"\u064A\u062D\u062A\u0627\u062C \u0646\u0642\u0644 \u0628\u0627\u0644\u0628\u0627\u0635"}</Label>
+            <Label>{t('children.busRequired')}</Label>
           </div>
           <div>
-            <Label>{"\u0645\u0644\u0627\u062D\u0638\u0627\u062A \u0639\u0627\u0645\u0629"}</Label>
+            <Label>{t('children.generalNotes')}</Label>
             <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
         </div>
@@ -350,8 +352,8 @@ export default function StaffChildren() {
     <div className="space-y-6 max-w-7xl mx-auto" dir="rtl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{"\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0623\u0637\u0641\u0627\u0644"}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{filtered.length} \u0637\u0641\u0644 \u0645\u0633\u062C\u0644</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('children.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} {t('children.childRegistered')}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -362,10 +364,10 @@ export default function StaffChildren() {
               if (classFilter !== 'all') params.set('classId', classFilter);
               if (statusFilter !== 'all') params.set('status', statusFilter);
               const url = `/api/export-children${params.toString() ? '?' + params.toString() : ''}`;
-              toast.info('جاري تحميل ملف التصدير...');
+              toast.info(t('children.exportDownloading'));
               fetch(url, { credentials: 'include' })
                 .then(r => {
-                  if (!r.ok) throw new Error('فشل التصدير');
+                  if (!r.ok) throw new Error('export failed');
                   return r.blob();
                 })
                 .then(blob => {
@@ -374,27 +376,27 @@ export default function StaffChildren() {
                   a.download = `children_export_${new Date().toISOString().split('T')[0]}.xlsx`;
                   a.click();
                   URL.revokeObjectURL(a.href);
-                  toast.success('تم تصدير البيانات بنجاح');
+                  toast.success(t('children.exportSuccess'));
                 })
-                .catch(() => toast.error('حدث خطأ أثناء التصدير'));
+                .catch(() => toast.error(t('children.exportFailed')));
             }}
           >
             <Download className="h-4 w-4" />
-            تصدير Excel
+            {t('children.exportExcel')}
           </Button>
           <Dialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (!open) setForm(initialFormState); }}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl shadow-sm btn-press"><Plus className="ml-2 h-4 w-4" /> {"إضافة طفل"}</Button>
+              <Button className="rounded-xl shadow-sm btn-press"><Plus className="ml-2 h-4 w-4" /> {t('children.addChild')}</Button>
             </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{"\u0625\u0636\u0627\u0641\u0629 \u0637\u0641\u0644 \u062C\u062F\u064A\u062F"}</DialogTitle>
+              <DialogTitle>{t('children.addNewChild')}</DialogTitle>
             </DialogHeader>
             {renderForm()}
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{"\u0625\u0644\u063A\u0627\u0621"}</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{t('children.cancel')}</Button>
               <Button onClick={handleCreate} disabled={createChild.isPending}>
-                {createChild.isPending ? "\u062C\u0627\u0631\u064D \u0627\u0644\u062D\u0641\u0638..." : "\u062D\u0641\u0638"}
+                {createChild.isPending ? t('children.saving') : t('children.save')}
               </Button>
             </div>
           </DialogContent>
@@ -406,25 +408,25 @@ export default function StaffChildren() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={"\u0628\u062D\u062B \u0628\u0627\u0644\u0627\u0633\u0645..."} className="pr-10 rounded-xl" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('children.searchByName')} className="pr-10 rounded-xl" />
         </div>
         <Select value={classFilter} onValueChange={setClassFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder={"\u062C\u0645\u064A\u0639 \u0627\u0644\u0641\u0635\u0648\u0644"} /></SelectTrigger>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder={t('children.allClasses')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{"\u062C\u0645\u064A\u0639 \u0627\u0644\u0641\u0635\u0648\u0644"}</SelectItem>
+            <SelectItem value="all">{t('children.allClasses')}</SelectItem>
             {(classes as any[]).map((c: any) => (
               <SelectItem key={c.id} value={String(c.id)}>{c.nameAr || c.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]"><SelectValue placeholder={"\u062C\u0645\u064A\u0639 \u0627\u0644\u062D\u0627\u0644\u0627\u062A"} /></SelectTrigger>
+          <SelectTrigger className="w-[150px]"><SelectValue placeholder={t('children.allStatuses')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{"\u062C\u0645\u064A\u0639 \u0627\u0644\u062D\u0627\u0644\u0627\u062A"}</SelectItem>
-            <SelectItem value="active">{"\u0646\u0634\u0637"}</SelectItem>
-            <SelectItem value="inactive">{"\u063A\u064A\u0631 \u0646\u0634\u0637"}</SelectItem>
-            <SelectItem value="graduated">{"\u0645\u062A\u062E\u0631\u062C"}</SelectItem>
-            <SelectItem value="waitlist">{"\u0642\u0627\u0626\u0645\u0629 \u0627\u0646\u062A\u0638\u0627\u0631"}</SelectItem>
+            <SelectItem value="all">{t('children.allStatuses')}</SelectItem>
+            <SelectItem value="active">{t('children.active')}</SelectItem>
+            <SelectItem value="inactive">{t('children.inactive')}</SelectItem>
+            <SelectItem value="graduated">{t('children.graduated')}</SelectItem>
+            <SelectItem value="waitlist">{t('children.waitlist')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -438,13 +440,13 @@ export default function StaffChildren() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="p-3 text-right">{"\u0627\u0644\u0627\u0633\u0645"}</th>
-                  <th className="p-3 text-right">{"\u0627\u0644\u0627\u0633\u0645 \u0628\u0627\u0644\u0639\u0631\u0628\u064A"}</th>
-                  <th className="p-3 text-right">{"\u0627\u0644\u0641\u0635\u0644"}</th>
-                  <th className="p-3 text-right">{"\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0645\u064A\u0644\u0627\u062F"}</th>
-                  <th className="p-3 text-right">{"\u0627\u0644\u062C\u0646\u0633"}</th>
-                  <th className="p-3 text-right">{"\u0627\u0644\u062D\u0627\u0644\u0629"}</th>
-                  <th className="p-3 text-right">{"\u0627\u0644\u0625\u062C\u0631\u0627\u0621\u0627\u062A"}</th>
+                  <th className="p-3 text-right">{t('children.name')}</th>
+                  <th className="p-3 text-right">{t('children.arabicName')}</th>
+                  <th className="p-3 text-right">{t('children.class')}</th>
+                  <th className="p-3 text-right">{t('children.dateOfBirth')}</th>
+                  <th className="p-3 text-right">{t('children.gender')}</th>
+                  <th className="p-3 text-right">{t('children.status')}</th>
+                  <th className="p-3 text-right">{t('children.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -468,43 +470,43 @@ export default function StaffChildren() {
                     <td className="p-3">{child.arabicName || "-"}</td>
                     <td className="p-3">{(classes as any[]).find((c: any) => c.id === child.classId)?.nameAr || (classes as any[]).find((c: any) => c.id === child.classId)?.name || "-"}</td>
                     <td className="p-3">{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString("ar-SA") : "-"}</td>
-                    <td className="p-3">{child.gender === "male" ? "\u0630\u0643\u0631" : "\u0623\u0646\u062B\u0649"}</td>
+                    <td className="p-3">{child.gender === "male" ? t('children.male') : t('children.female')}</td>
                     <td className="p-3">
                       <Badge variant={child.status === "active" ? "default" : "secondary"}>
-                        {child.status === "active" ? "\u0646\u0634\u0637" : child.status === "inactive" ? "\u063A\u064A\u0631 \u0646\u0634\u0637" : child.status === "graduated" ? "\u0645\u062A\u062E\u0631\u062C" : "\u0642\u0627\u0626\u0645\u0629 \u0627\u0646\u062A\u0638\u0627\u0631"}
+                        {child.status === "active" ? t('children.active') : child.status === "inactive" ? t('children.inactive') : child.status === "graduated" ? t('children.graduated') : t('children.waitlist')}
                       </Badge>
                     </td>
                     <td className="p-3">
                       <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/children/${child.id}`)} title={"\u0639\u0631\u0636 \u0627\u0644\u0645\u0644\u0641"}>
+                        <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/children/${child.id}`)} title={t('children.viewProfile')}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleEdit(child)} title={"\u062A\u0639\u062F\u064A\u0644"}>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(child)} title={t('children.edit')}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {child.status === "active" ? (
-                          <Button size="sm" variant="ghost" onClick={() => archiveChild.mutate({ id: child.id })} title={"\u0623\u0631\u0634\u0641\u0629"}>
+                          <Button size="sm" variant="ghost" onClick={() => archiveChild.mutate({ id: child.id })} title={t('children.archive')}>
                             <Archive className="h-4 w-4" />
                           </Button>
                         ) : (
-                          <Button size="sm" variant="ghost" onClick={() => activateChild.mutate({ id: child.id })} title={"\u062A\u0641\u0639\u064A\u0644"}>
+                          <Button size="sm" variant="ghost" onClick={() => activateChild.mutate({ id: child.id })} title={t('children.activate')}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
                         )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="ghost" className="text-destructive" title={"\u062D\u0630\u0641"}>
+                            <Button size="sm" variant="ghost" className="text-destructive" title={t('children.delete')}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>{"\u062A\u0623\u0643\u064A\u062F \u0627\u0644\u062D\u0630\u0641"}</AlertDialogTitle>
-                              <AlertDialogDescription>{"\u0647\u0644 \u0623\u0646\u062A \u0645\u062A\u0623\u0643\u062F \u0645\u0646 \u062D\u0630\u0641"} {child.firstName} {child.lastName}{"? \u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0644\u062A\u0631\u0627\u062C\u0639 \u0639\u0646 \u0647\u0630\u0627 \u0627\u0644\u0625\u062C\u0631\u0627\u0621."}</AlertDialogDescription>
+                              <AlertDialogTitle>{t('children.confirmDelete')}</AlertDialogTitle>
+                              <AlertDialogDescription>{t('children.confirmDeleteMsg')} {child.firstName} {child.lastName}? {t('children.cannotUndo')}</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>{"\u0625\u0644\u063A\u0627\u0621"}</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteChild.mutate({ id: child.id })}>{"\u062D\u0630\u0641"}</AlertDialogAction>
+                              <AlertDialogCancel>{t('children.cancel')}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteChild.mutate({ id: child.id })}>{t('children.delete')}</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -514,7 +516,7 @@ export default function StaffChildren() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">{"\u0644\u0627 \u064A\u0648\u062C\u062F \u0623\u0637\u0641\u0627\u0644 \u0645\u0633\u062C\u0644\u064A\u0646"}</td>
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">{t('children.noChildren')}</td>
                   </tr>
                 )}
               </tbody>
@@ -527,13 +529,13 @@ export default function StaffChildren() {
       <Dialog open={showEditDialog} onOpenChange={(open) => { setShowEditDialog(open); if (!open) { setEditingChild(null); setForm(initialFormState); } }}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{"\u062A\u0639\u062F\u064A\u0644 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0637\u0641\u0644"}</DialogTitle>
+            <DialogTitle>{t('children.editChild')}</DialogTitle>
           </DialogHeader>
           {renderForm()}
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>{"\u0625\u0644\u063A\u0627\u0621"}</Button>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>{t('children.cancel')}</Button>
             <Button onClick={handleUpdate} disabled={updateChild.isPending}>
-              {updateChild.isPending ? "\u062C\u0627\u0631\u064D \u0627\u0644\u062D\u0641\u0638..." : "\u062D\u0641\u0638 \u0627\u0644\u062A\u0639\u062F\u064A\u0644\u0627\u062A"}
+              {updateChild.isPending ? t('children.saving') : t('children.saveChanges')}
             </Button>
           </div>
         </DialogContent>

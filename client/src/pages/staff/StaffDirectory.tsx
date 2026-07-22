@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export default function StaffDirectory() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [jobFilter, setJobFilter] = useState("all");

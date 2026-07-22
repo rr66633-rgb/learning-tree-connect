@@ -12,28 +12,12 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Eye, ClipboardList, Share2, ChevronRight, Play } from "lucide-react";
 import { useLocation } from "wouter";
-
-const AGE_GROUPS: Record<string, string> = {
-  nursery: "حضانة",
-  kg1: "تمهيدي أول",
-  kg2: "تمهيدي ثاني",
-  kg3: "تمهيدي ثالث",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: "مسودة",
-  active: "نشط",
-  archived: "مؤرشف",
-};
-
-const QUESTION_TYPES: Record<string, string> = {
-  multiple_choice: "اختيار من متعدد",
-  true_false: "صح / خطأ",
-  rating: "تقييم",
-  text: "نص حر",
-};
+import { useTranslation } from "react-i18next";
 
 export default function CustomAssessments() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+
   const [, navigate] = useLocation();
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<number | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -53,6 +37,27 @@ export default function CustomAssessments() {
   const [qCorrectAnswer, setQCorrectAnswer] = useState("");
   const [qMaxRating, setQMaxRating] = useState(5);
 
+  // Translated maps (inside component)
+  const AGE_GROUPS: Record<string, string> = {
+    nursery: t('customAssessments.nursery'),
+    kg1: t('customAssessments.kg1'),
+    kg2: t('customAssessments.kg2'),
+    kg3: t('customAssessments.kg3'),
+  };
+
+  const STATUS_LABELS: Record<string, string> = {
+    draft: t('customAssessments.statusDraft'),
+    active: t('customAssessments.statusPublished'),
+    archived: t('customAssessments.statusArchived'),
+  };
+
+  const QUESTION_TYPES: Record<string, string> = {
+    multiple_choice: t('customAssessments.typeMultiChoice'),
+    true_false: t('customAssessments.typeYesNo'),
+    rating: t('customAssessments.typeRating'),
+    text: t('customAssessments.typeText'),
+  };
+
   const utils = trpc.useUtils();
   const classesQuery = trpc.classes.list.useQuery();
   const assessmentsQuery = trpc.customAssessment.list.useQuery({});
@@ -63,17 +68,17 @@ export default function CustomAssessments() {
 
   const createMutation = trpc.customAssessment.create.useMutation({
     onSuccess: () => {
-      toast.success("تم إنشاء الاختبار بنجاح");
+      toast.success(t('customAssessments.createdSuccess'));
       utils.customAssessment.list.invalidate();
       setShowCreateDialog(false);
       resetForm();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(err.message || t('customAssessments.createError')),
   });
 
   const updateMutation = trpc.customAssessment.update.useMutation({
     onSuccess: () => {
-      toast.success("تم التحديث");
+      toast.success(t('customAssessments.publishedSuccess'));
       utils.customAssessment.list.invalidate();
       utils.customAssessment.get.invalidate();
     },
@@ -82,26 +87,26 @@ export default function CustomAssessments() {
 
   const deleteMutation = trpc.customAssessment.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف الاختبار");
+      toast.success(t('customAssessments.deletedSuccess'));
       utils.customAssessment.list.invalidate();
       setSelectedAssessmentId(null);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(err.message || t('customAssessments.deleteError')),
   });
 
   const addQuestionMutation = trpc.customAssessment.addQuestion.useMutation({
     onSuccess: () => {
-      toast.success("تم إضافة السؤال");
+      toast.success(t('customAssessments.questionAdded'));
       utils.customAssessment.get.invalidate();
       setShowQuestionDialog(false);
       resetQuestionForm();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(err.message || t('customAssessments.questionAddError')),
   });
 
   const updateQuestionMutation = trpc.customAssessment.updateQuestion.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث السؤال");
+      toast.success(t('customAssessments.questionAdded'));
       utils.customAssessment.get.invalidate();
       setShowQuestionDialog(false);
       resetQuestionForm();
@@ -111,10 +116,10 @@ export default function CustomAssessments() {
 
   const deleteQuestionMutation = trpc.customAssessment.deleteQuestion.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف السؤال");
+      toast.success(t('customAssessments.questionDeleted'));
       utils.customAssessment.get.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(err.message || t('customAssessments.questionDeleteError')),
   });
 
   function resetForm() {
@@ -134,7 +139,7 @@ export default function CustomAssessments() {
   }
 
   function handleCreateAssessment() {
-    if (!newTitle.trim()) { toast.error("يرجى إدخال عنوان الاختبار"); return; }
+    if (!newTitle.trim()) { toast.error(t('customAssessments.fillRequired')); return; }
     createMutation.mutate({
       title: newTitle.trim(),
       description: newDescription.trim() || undefined,
@@ -144,11 +149,11 @@ export default function CustomAssessments() {
   }
 
   function handleSaveQuestion() {
-    if (!qText.trim()) { toast.error("يرجى إدخال نص السؤال"); return; }
+    if (!qText.trim()) { toast.error(t('customAssessments.fillRequired')); return; }
     
     const filteredOptions = qOptions.filter(o => o.trim());
     if (qType === "multiple_choice" && filteredOptions.length < 2) {
-      toast.error("يرجى إضافة خيارين على الأقل");
+      toast.error(t('customAssessments.fillRequired'));
       return;
     }
 
@@ -195,7 +200,7 @@ export default function CustomAssessments() {
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setSelectedAssessmentId(null)}>
               <ChevronRight className="h-4 w-4" />
-              رجوع
+              {t('customAssessments.back')}
             </Button>
             <div>
               <h1 className="text-xl font-bold">{assessment?.title || "..."}</h1>
@@ -210,7 +215,7 @@ export default function CustomAssessments() {
                   updateMutation.mutate({ id: selectedAssessmentId, shareWithParents: checked });
                 }}
               />
-              <Label className="text-sm">مشاركة مع أولياء الأمور</Label>
+              <Label className="text-sm">{t('customAssessments.share')}</Label>
             </div>
             <Select
               value={assessment?.status || "draft"}
@@ -222,23 +227,23 @@ export default function CustomAssessments() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">مسودة</SelectItem>
-                <SelectItem value="active">نشط</SelectItem>
-                <SelectItem value="archived">مؤرشف</SelectItem>
+                <SelectItem value="draft">{t('customAssessments.statusDraft')}</SelectItem>
+                <SelectItem value="active">{t('customAssessments.statusPublished')}</SelectItem>
+                <SelectItem value="archived">{t('customAssessments.statusArchived')}</SelectItem>
               </SelectContent>
             </Select>
             <Button
               size="sm"
               onClick={() => navigate(`/staff/custom-assessments/${selectedAssessmentId}/apply`)}
             >
-              <Play className="h-4 w-4 ml-1" />
-              تطبيق
+              <Play className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+              {t('customAssessments.applyToChild')}
             </Button>
             <Button
               variant="destructive"
               size="sm"
               onClick={() => {
-                if (confirm("هل أنت متأكد من حذف هذا الاختبار؟")) {
+                if (confirm(t('customAssessments.confirmDelete'))) {
                   deleteMutation.mutate({ id: selectedAssessmentId });
                 }
               }}
@@ -251,10 +256,10 @@ export default function CustomAssessments() {
         {/* Questions */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">الأسئلة ({questions.length})</h2>
+            <h2 className="text-lg font-semibold">{t('customAssessments.questions')} ({questions.length})</h2>
             <Button size="sm" onClick={() => { resetQuestionForm(); setShowQuestionDialog(true); }}>
-              <Plus className="h-4 w-4 ml-1" />
-              إضافة سؤال
+              <Plus className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+              {t('customAssessments.addQuestion')}
             </Button>
           </div>
 
@@ -262,7 +267,7 @@ export default function CustomAssessments() {
             <Card className="border-dashed">
               <CardContent className="p-8 text-center text-muted-foreground">
                 <ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>لا توجد أسئلة بعد. اضغط "إضافة سؤال" للبدء.</p>
+                <p>{t('customAssessments.noAssessments')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -292,7 +297,7 @@ export default function CustomAssessments() {
                         )}
                         {q.questionType === "rating" && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            تقييم من 1 إلى {q.maxRating}
+                            {t('customAssessments.typeRating')}: 1-{q.maxRating}
                           </p>
                         )}
                       </div>
@@ -304,7 +309,7 @@ export default function CustomAssessments() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (confirm("هل تريد حذف هذا السؤال؟")) {
+                            if (confirm(t('customAssessments.confirmDelete'))) {
                               deleteQuestionMutation.mutate({ id: q.id });
                             }
                           }}
@@ -324,36 +329,36 @@ export default function CustomAssessments() {
         <Dialog open={showQuestionDialog} onOpenChange={setShowQuestionDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editingQuestion ? "تعديل السؤال" : "إضافة سؤال جديد"}</DialogTitle>
+              <DialogTitle>{editingQuestion ? t('customAssessments.addQuestion') : t('customAssessments.addQuestion')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>نص السؤال</Label>
+                <Label>{t('customAssessments.questionText')}</Label>
                 <Textarea
                   value={qText}
                   onChange={(e) => setQText(e.target.value)}
-                  placeholder="اكتب السؤال هنا..."
+                  placeholder={t('customAssessments.questionTextPlaceholder')}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label>نوع السؤال</Label>
+                <Label>{t('customAssessments.questionType')}</Label>
                 <Select value={qType} onValueChange={setQType}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="multiple_choice">اختيار من متعدد</SelectItem>
-                    <SelectItem value="true_false">صح / خطأ</SelectItem>
-                    <SelectItem value="rating">تقييم</SelectItem>
-                    <SelectItem value="text">نص حر</SelectItem>
+                    <SelectItem value="multiple_choice">{t('customAssessments.typeMultiChoice')}</SelectItem>
+                    <SelectItem value="true_false">{t('customAssessments.typeYesNo')}</SelectItem>
+                    <SelectItem value="rating">{t('customAssessments.typeRating')}</SelectItem>
+                    <SelectItem value="text">{t('customAssessments.typeText')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {qType === "multiple_choice" && (
                 <div>
-                  <Label>الخيارات</Label>
+                  <Label>{t('customAssessments.options')}</Label>
                   <div className="space-y-2 mt-1">
                     {qOptions.map((opt, i) => (
                       <div key={i} className="flex items-center gap-2">
@@ -364,7 +369,7 @@ export default function CustomAssessments() {
                             newOpts[i] = e.target.value;
                             setQOptions(newOpts);
                           }}
-                          placeholder={`الخيار ${i + 1}`}
+                          placeholder={`${t('customAssessments.options').split('(')[0].trim()} ${i + 1}`}
                         />
                         {qOptions.length > 2 && (
                           <Button
@@ -382,8 +387,8 @@ export default function CustomAssessments() {
                       size="sm"
                       onClick={() => setQOptions([...qOptions, ""])}
                     >
-                      <Plus className="h-4 w-4 ml-1" />
-                      إضافة خيار
+                      <Plus className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+                      {t('customAssessments.addQuestionBtn')}
                     </Button>
                   </div>
                 </div>
@@ -391,7 +396,7 @@ export default function CustomAssessments() {
 
               {qType === "rating" && (
                 <div>
-                  <Label>أعلى تقييم</Label>
+                  <Label>{t('customAssessments.typeRating')}</Label>
                   <Select value={String(qMaxRating)} onValueChange={(v) => setQMaxRating(Number(v))}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
@@ -404,21 +409,11 @@ export default function CustomAssessments() {
                   </Select>
                 </div>
               )}
-
-              <div>
-                <Label>الإجابة الصحيحة (اختياري)</Label>
-                <Input
-                  value={qCorrectAnswer}
-                  onChange={(e) => setQCorrectAnswer(e.target.value)}
-                  placeholder="اختياري - للمرجع فقط"
-                  className="mt-1"
-                />
-              </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowQuestionDialog(false)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setShowQuestionDialog(false)}>{t('assessments.cancel')}</Button>
               <Button onClick={handleSaveQuestion} disabled={addQuestionMutation.isPending || updateQuestionMutation.isPending}>
-                {editingQuestion ? "تحديث" : "إضافة"}
+                {editingQuestion ? t('assessments.save') : t('customAssessments.addQuestionBtn')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -432,12 +427,12 @@ export default function CustomAssessments() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">الاختبارات المخصصة</h1>
-          <p className="text-sm text-muted-foreground mt-1">إنشاء وإدارة اختبارات وتقييمات مخصصة للأطفال</p>
+          <h1 className="text-2xl font-bold">{t('customAssessments.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t('customAssessments.subtitle')}</p>
         </div>
         <Button onClick={() => { resetForm(); setShowCreateDialog(true); }}>
-          <Plus className="h-4 w-4 ml-1" />
-          اختبار جديد
+          <Plus className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
+          {t('customAssessments.createNew')}
         </Button>
       </div>
 
@@ -454,8 +449,8 @@ export default function CustomAssessments() {
         <Card className="border-dashed">
           <CardContent className="p-12 text-center text-muted-foreground">
             <ClipboardList className="h-16 w-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">لا توجد اختبارات بعد</p>
-            <p className="text-sm mt-1">اضغط "اختبار جديد" لإنشاء أول اختبار مخصص</p>
+            <p className="text-lg font-medium">{t('customAssessments.noAssessments')}</p>
+            <p className="text-sm mt-1">{t('customAssessments.noAssessmentsDesc')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -483,7 +478,7 @@ export default function CustomAssessments() {
                 )}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {a.ageGroup && <Badge variant="outline">{AGE_GROUPS[a.ageGroup] || a.ageGroup}</Badge>}
-                  <span>{new Date(a.createdAt).toLocaleDateString("ar-SA")}</span>
+                  <span>{new Date(a.createdAt).toLocaleDateString(isEn ? "en-US" : "ar-SA")}</span>
                 </div>
               </CardContent>
             </Card>
@@ -495,32 +490,32 @@ export default function CustomAssessments() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>إنشاء اختبار جديد</DialogTitle>
+            <DialogTitle>{t('customAssessments.createNew')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>عنوان الاختبار *</Label>
+              <Label>{t('customAssessments.assessmentName')} *</Label>
               <Input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="مثال: اختبار الحروف الهجائية"
+                placeholder={t('customAssessments.assessmentNamePlaceholder')}
                 className="mt-1"
               />
             </div>
             <div>
-              <Label>الوصف</Label>
+              <Label>{t('assessments.observationDesc')}</Label>
               <Textarea
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="وصف مختصر للاختبار..."
+                placeholder={t('customAssessments.subtitle')}
                 className="mt-1"
               />
             </div>
             <div>
-              <Label>الفصل</Label>
+              <Label>{t('weeklyPlan.classOptional')}</Label>
               <Select value={newClassId} onValueChange={setNewClassId}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="اختر الفصل" />
+                  <SelectValue placeholder={t('weeklyPlan.selectClass')} />
                 </SelectTrigger>
                 <SelectContent>
                   {classesQuery.data?.map((c: any) => (
@@ -532,10 +527,10 @@ export default function CustomAssessments() {
               </Select>
             </div>
             <div>
-              <Label>الفئة العمرية</Label>
+              <Label>{t('customAssessments.ageGroup')}</Label>
               <Select value={newAgeGroup} onValueChange={setNewAgeGroup}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="اختر الفئة" />
+                  <SelectValue placeholder={t('customAssessments.selectAgeGroup')} />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(AGE_GROUPS).map(([key, label]) => (
@@ -546,9 +541,9 @@ export default function CustomAssessments() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>{t('assessments.cancel')}</Button>
             <Button onClick={handleCreateAssessment} disabled={createMutation.isPending}>
-              إنشاء
+              {createMutation.isPending ? t('customAssessments.creating') : t('customAssessments.create')}
             </Button>
           </DialogFooter>
         </DialogContent>

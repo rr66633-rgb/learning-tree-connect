@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -14,14 +15,17 @@ import { generateCustomAssessmentPDF } from "@/lib/customAssessmentPdf";
 import { useRoute, useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
-const QUESTION_TYPES: Record<string, string> = {
-  multiple_choice: "اختيار من متعدد",
-  true_false: "صح / خطأ",
-  rating: "تقييم",
-  text: "نص حر",
-};
-
 export default function ApplyAssessment() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+
+  const QUESTION_TYPES: Record<string, string> = {
+    multiple_choice: t('customAssessments.typeMultiChoice'),
+    true_false: t('customAssessments.typeYesNo'),
+    rating: t('customAssessments.typeRating'),
+    text: t('customAssessments.typeText'),
+  };
+
   const [, params] = useRoute("/staff/custom-assessments/:id/apply");
   const [, navigate] = useLocation();
   const assessmentId = params?.id ? Number(params.id) : 0;
@@ -41,17 +45,17 @@ export default function ApplyAssessment() {
 
   const saveResponsesMutation = trpc.customAssessment.saveResponses.useMutation({
     onSuccess: () => {
-      toast.success("تم حفظ الإجابات بنجاح");
+      toast.success(t('applyAssessment.submitSuccess'));
       setSaved(true);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(err.message || t('applyAssessment.submitError')),
   });
 
   const emailToParentsMutation = trpc.customAssessment.emailReportToParents.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message || t('applyAssessment.emailSent'));
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(err.message || t('applyAssessment.emailError')),
   });
 
   // Load existing responses when child changes
@@ -81,7 +85,6 @@ export default function ApplyAssessment() {
     if (!childrenQuery.data) return [];
     if (assessment?.classId) {
       const filtered = childrenQuery.data.filter((c: any) => c.classId === assessment.classId);
-      // If classId filter yields no results, show all available children
       if (filtered.length > 0) return filtered;
     }
     return childrenQuery.data;
@@ -96,7 +99,7 @@ export default function ApplyAssessment() {
   }
 
   function handleSave() {
-    if (!selectedChildId) { toast.error("يرجى اختيار طفل أولاً"); return; }
+    if (!selectedChildId) { toast.error(t('applyAssessment.selectChild')); return; }
     
     const responsesList = questions.map((q: any) => ({
       questionId: q.id,
@@ -113,7 +116,7 @@ export default function ApplyAssessment() {
   }
 
   if (!assessmentId) {
-    return <div className="p-6 text-center text-muted-foreground">اختبار غير موجود</div>;
+    return <div className="p-6 text-center text-muted-foreground">{t('applyAssessment.back')}</div>;
   }
 
   return (
@@ -122,10 +125,10 @@ export default function ApplyAssessment() {
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate("/staff/custom-assessments")}>
           <ChevronRight className="h-4 w-4" />
-          رجوع
+          {t('applyAssessment.back')}
         </Button>
         <div>
-          <h1 className="text-xl font-bold">تطبيق: {assessment?.title || "..."}</h1>
+          <h1 className="text-xl font-bold">{t('applyAssessment.title')}: {assessment?.title || "..."}</h1>
           <p className="text-sm text-muted-foreground">{assessment?.description}</p>
         </div>
       </div>
@@ -133,17 +136,17 @@ export default function ApplyAssessment() {
       {/* Child Selection */}
       <Card>
         <CardContent className="p-4">
-          <Label className="text-base font-semibold">اختر الطفل</Label>
+          <Label className="text-base font-semibold">{t('applyAssessment.selectChild')}</Label>
           <Select
             value={selectedChildId ? String(selectedChildId) : ""}
             onValueChange={(v) => { setSelectedChildId(Number(v)); setSaved(false); }}
           >
             <SelectTrigger className="mt-2">
-              <SelectValue placeholder="اختر طفلاً لتطبيق الاختبار عليه" />
+              <SelectValue placeholder={t('applyAssessment.selectChildPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {filteredChildren.length === 0 ? (
-                <div className="p-3 text-center text-sm text-muted-foreground">لا يوجد أطفال مسجلين</div>
+                <div className="p-3 text-center text-sm text-muted-foreground">{t('children.noChildren')}</div>
               ) : (
                 filteredChildren.map((c: any) => (
                   <SelectItem key={c.id} value={String(c.id)}>
@@ -193,11 +196,11 @@ export default function ApplyAssessment() {
                   >
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="صح" id={`q${q.id}-true`} />
-                      <Label htmlFor={`q${q.id}-true`} className="cursor-pointer">صح</Label>
+                      <Label htmlFor={`q${q.id}-true`} className="cursor-pointer">{t('applyAssessment.yes')}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="خطأ" id={`q${q.id}-false`} />
-                      <Label htmlFor={`q${q.id}-false`} className="cursor-pointer">خطأ</Label>
+                      <Label htmlFor={`q${q.id}-false`} className="cursor-pointer">{t('applyAssessment.no')}</Label>
                     </div>
                   </RadioGroup>
                 )}
@@ -221,7 +224,7 @@ export default function ApplyAssessment() {
                         />
                       </button>
                     ))}
-                    <span className="text-sm text-muted-foreground mr-2">
+                    <span className={`text-sm text-muted-foreground ${isEn ? 'ml-2' : 'mr-2'}`}>
                       {responses[q.id]?.rating || 0} / {q.maxRating || 5}
                     </span>
                   </div>
@@ -232,17 +235,17 @@ export default function ApplyAssessment() {
                   <Textarea
                     value={responses[q.id]?.answer || ""}
                     onChange={(e) => updateResponse(q.id, "answer", e.target.value)}
-                    placeholder="اكتب الإجابة هنا..."
+                    placeholder={t('applyAssessment.textPlaceholder')}
                   />
                 )}
 
                 {/* Notes */}
                 <div>
-                  <Label className="text-xs text-muted-foreground">ملاحظات (اختياري)</Label>
+                  <Label className="text-xs text-muted-foreground">{t('assessments.notesLabel')}</Label>
                   <Input
                     value={responses[q.id]?.notes || ""}
                     onChange={(e) => updateResponse(q.id, "notes", e.target.value)}
-                    placeholder="ملاحظات إضافية..."
+                    placeholder={t('assessments.notesPlaceholder')}
                     className="mt-1"
                   />
                 </div>
@@ -260,13 +263,13 @@ export default function ApplyAssessment() {
             >
               {saved ? (
                 <>
-                  <CheckCircle2 className="h-5 w-5 ml-2" />
-                  محفوظ
+                  <CheckCircle2 className={`h-5 w-5 ${isEn ? 'mr-2' : 'ml-2'}`} />
+                  {t('applyAssessment.completed')}
                 </>
               ) : (
                 <>
-                  <Save className="h-5 w-5 ml-2" />
-                  حفظ الإجابات
+                  <Save className={`h-5 w-5 ${isEn ? 'mr-2' : 'ml-2'}`} />
+                  {t('applyAssessment.submit')}
                 </>
               )}
             </Button>
@@ -277,7 +280,7 @@ export default function ApplyAssessment() {
                   variant="outline"
                   onClick={() => {
                     const child = filteredChildren.find((c: any) => c.id === selectedChildId);
-                    const childName = child ? `${child.firstName} ${child.lastName || ""}`.trim() : "طفل";
+                    const childName = child ? `${child.firstName} ${child.lastName || ""}`.trim() : "";
                     generateCustomAssessmentPDF({
                       assessmentTitle: assessment?.title || "",
                       assessmentDescription: assessment?.description || undefined,
@@ -294,11 +297,11 @@ export default function ApplyAssessment() {
                         options: q.options || [],
                       })),
                     });
-                    toast.success("تم تصدير التقرير بنجاح");
+                    toast.success(t('applyAssessment.submitSuccess'));
                   }}
                 >
-                  <FileDown className="h-5 w-5 ml-2" />
-                  تصدير PDF
+                  <FileDown className={`h-5 w-5 ${isEn ? 'mr-2' : 'ml-2'}`} />
+                  {t('applyAssessment.exportPDF')}
                 </Button>
                 <Button
                   size="lg"
@@ -306,8 +309,8 @@ export default function ApplyAssessment() {
                   onClick={() => setEmailModalOpen(true)}
                   disabled={emailToParentsMutation.isPending}
                 >
-                  <Mail className="h-5 w-5 ml-2" />
-                  {emailToParentsMutation.isPending ? "جاري الإرسال..." : "إرسال للوالدين"}
+                  <Mail className={`h-5 w-5 ${isEn ? 'mr-2' : 'ml-2'}`} />
+                  {emailToParentsMutation.isPending ? t('applyAssessment.sending') : t('applyAssessment.emailReport')}
                 </Button>
               </>
             )}
@@ -318,26 +321,26 @@ export default function ApplyAssessment() {
       {selectedChildId && questions.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="p-8 text-center text-muted-foreground">
-            <p>لا توجد أسئلة في هذا الاختبار. يرجى إضافة أسئلة أولاً.</p>
+            <p>{t('customAssessments.noAssessments')}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* Modal لإضافة ملاحظات قبل الإرسال */}
+      {/* Email Modal */}
       <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>إرسال التقرير لأولياء الأمور</DialogTitle>
+            <DialogTitle>{t('applyAssessment.emailReport')}</DialogTitle>
             <DialogDescription>
-              يمكنك إضافة ملاحظات أو توصيات إضافية تُرفق مع التقرير المرسل عبر البريد الإلكتروني.
+              {t('assessments.notesPlaceholder')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="additional-notes">ملاحظات وتوصيات إضافية (اختياري)</Label>
+              <Label htmlFor="additional-notes">{t('assessments.notesLabel')}</Label>
               <Textarea
                 id="additional-notes"
-                placeholder="اكتب ملاحظاتك أو توصياتك هنا... مثلاً: يحتاج الطفل لمزيد من التدريب على..."
+                placeholder={t('assessments.notesPlaceholder')}
                 value={additionalNotes}
                 onChange={(e) => setAdditionalNotes(e.target.value)}
                 rows={4}
@@ -353,7 +356,7 @@ export default function ApplyAssessment() {
                 setAdditionalNotes("");
               }}
             >
-              إلغاء
+              {t('assessments.cancel')}
             </Button>
             <Button
               onClick={() => {
@@ -367,8 +370,8 @@ export default function ApplyAssessment() {
               }}
               disabled={emailToParentsMutation.isPending}
             >
-              <Mail className="h-4 w-4 ml-2" />
-              {emailToParentsMutation.isPending ? "جاري الإرسال..." : "إرسال التقرير"}
+              <Mail className={`h-4 w-4 ${isEn ? 'mr-2' : 'ml-2'}`} />
+              {emailToParentsMutation.isPending ? t('applyAssessment.sending') : t('applyAssessment.sendEmail')}
             </Button>
           </DialogFooter>
         </DialogContent>

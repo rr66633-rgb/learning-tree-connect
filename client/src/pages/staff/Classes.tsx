@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 
 export default function StaffClasses() {
+  const { t } = useTranslation();
   const { data: classes, isLoading } = trpc.classes.list.useQuery();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
