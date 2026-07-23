@@ -27,14 +27,14 @@ const getDOMAIN_LABELS = (isAr: boolean): Record<string, string>  => ({
   personal_social: (isAr ? "المهارات الشخصية والاجتماعية" : "Personal & Social Skills"),
 });
 
-function getInterpretationConfig(interpretation: string) {
+function getInterpretationConfig(interpretation: string, isAr: boolean = true) {
   switch (interpretation) {
     case "on_track":
-      return { label: "نمو ضمن المتوقع", color: "bg-green-100 text-green-800", icon: CheckCircle2, iconColor: "text-green-600" };
+      return { label: isAr ? "نمو ضمن المتوقع" : "On Track", color: "bg-green-100 text-green-800", icon: CheckCircle2, iconColor: "text-green-600" };
     case "needs_support":
-      return { label: "يحتاج متابعة ودعم", color: "bg-yellow-100 text-yellow-800", icon: AlertTriangle, iconColor: "text-yellow-600" };
+      return { label: isAr ? "يحتاج متابعة ودعم" : "Needs Support", color: "bg-yellow-100 text-yellow-800", icon: AlertTriangle, iconColor: "text-yellow-600" };
     case "needs_referral":
-      return { label: "يوصى بإحالة لمختص", color: "bg-red-100 text-red-800", icon: XCircle, iconColor: "text-red-600" };
+      return { label: isAr ? "يوصى بإحالة لمختص" : "Needs Referral", color: "bg-red-100 text-red-800", icon: XCircle, iconColor: "text-red-600" };
     default:
       return { label: interpretation, color: "bg-gray-100 text-gray-800", icon: CheckCircle2, iconColor: "text-gray-600" };
   }
@@ -211,7 +211,7 @@ export default function ParentDevelopmentalAssessment() {
                 </div>
                 <div className="mt-3">
                   {(() => {
-                    const config = getInterpretationConfig(latestAssessment.interpretation);
+                    const config = getInterpretationConfig(latestAssessment.interpretation, isAr);
                     const Icon = config.icon;
                     return (
                       <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${config.color}`}>
@@ -253,7 +253,7 @@ export default function ParentDevelopmentalAssessment() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {assessments.slice(1).map((assessment: any) => {
-                  const config = getInterpretationConfig(assessment.interpretation);
+                  const config = getInterpretationConfig(assessment.interpretation, isAr);
                   const Icon = config.icon;
                   return (
                     <div key={assessment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

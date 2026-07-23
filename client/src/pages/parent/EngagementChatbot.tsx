@@ -157,7 +157,7 @@ export default function EngagementChatbot() {
               <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
                 <Sparkles className="h-8 w-8 text-emerald-600" />
               </div>
-              <h2 className="text-lg font-bold">مرحباً {user?.name?.split(" ")[0]}</h2>
+              <h2 className="text-lg font-bold">{isAr ? `مرحباً ${user?.name?.split(" ")[0]}` : `Hello ${user?.name?.split(" ")[0]}`}</h2>
               <p className="text-sm text-muted-foreground max-w-sm">
                 أنا مستشارك في تربية وتنمية {selectedChild?.firstName || (isAr ? "طفلك" : "Your child")}. اسألني عن أي شيء يتعلق بنمو طفلك وتطوره.
               </p>

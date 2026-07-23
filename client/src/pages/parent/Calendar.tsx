@@ -19,8 +19,8 @@ const getCATEGORIES = (isAr: boolean) => ([
   { value: "other", label: (isAr ? "أخرى" : "Other"), color: "bg-gray-100 text-gray-700" },
 ]);
 
-const getMONTHS_AR = (isAr: boolean) => ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-const getDAYS_AR = (isAr: boolean) => ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const getMONTHS_AR = (isAr: boolean) => isAr ? ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"] : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const getDAYS_AR = (isAr: boolean) => isAr ? ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function getCategoryStyle(cat: string, isAr: boolean) {
   return getCATEGORIES(isAr).find(c => c.value === cat)?.color || "bg-gray-100 text-gray-700";
@@ -100,7 +100,7 @@ export default function ParentCalendar() {
     if (diff === 0) return (isAr ? "اليوم" : "Today");
     if (diff === 1) return (isAr ? "غداً" : "Tomorrow");
     if (diff < 0) return (isAr ? "انتهى" : "Ended");
-    return (isAr ? `بعد ${diff} أيام` : `After${diff}Days`);
+    return (isAr ? `بعد ${diff} أيام` : `In ${diff} days`);
   }
 
   return (
@@ -172,9 +172,9 @@ export default function ParentCalendar() {
                         key={ev.id}
                         className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer hover:opacity-80 ${getCategoryStyle(ev.category, isAr)}`}
                         onClick={() => setViewEvent(ev)}
-                        title={ev.titleAr}
+                        title={isAr ? ev.titleAr : (ev.titleEn || ev.titleAr)}
                       >
-                        {ev.titleAr}
+                        {isAr ? ev.titleAr : (ev.titleEn || ev.titleAr)}
                       </div>
                     ))}
                     {dayEvents.length > 2 && (
@@ -213,13 +213,13 @@ export default function ParentCalendar() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">{ev.titleAr}</span>
+                        <span className="font-medium truncate">{isAr ? ev.titleAr : (ev.titleEn || ev.titleAr)}</span>
                         <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(ev.category, isAr)}`}>
                           {getCategoryLabel(ev.category, isAr)}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(ev.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long" })}
+                        {new Date(ev.eventDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}
                         {ev.eventTime && ` - ${ev.eventTime}`}
                       </p>
                     </div>
@@ -238,7 +238,7 @@ export default function ParentCalendar() {
       <Dialog open={!!viewEvent} onOpenChange={(o) => { if (!o) setViewEvent(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg">{viewEvent?.titleAr}</DialogTitle>
+            <DialogTitle className="text-lg">{isAr ? viewEvent?.titleAr : (viewEvent?.titleEn || viewEvent?.titleAr)}</DialogTitle>
           </DialogHeader>
           {viewEvent && (
             <div className="space-y-4">
@@ -251,10 +251,10 @@ export default function ParentCalendar() {
                   <div>
                     <p className="text-xs text-muted-foreground">{isAr ? "التاريخ" : "Date"}</p>
                     <p className="font-medium text-sm">
-                      {new Date(viewEvent.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                      {new Date(viewEvent.eventDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                     </p>
                     {viewEvent.endDate && (
-                      <p className="text-xs text-muted-foreground">حتى {new Date(viewEvent.endDate + "T00:00:00").toLocaleDateString("ar-SA", { day: "numeric", month: "long" })}</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "حتى" : "Until"} {new Date(viewEvent.endDate + "T00:00:00").toLocaleDateString(locale, { day: "numeric", month: "long" })}</p>
                     )}
                   </div>
                 </div>

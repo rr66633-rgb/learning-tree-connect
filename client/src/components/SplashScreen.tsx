@@ -125,7 +125,7 @@ export function SplashScreen({ onComplete, minDuration = 4000 }: SplashScreenPro
           style={{ transitionDelay: "550ms" }}
         >
           <p className="text-base text-gray-500 font-medium">
-            عينك عليهم
+            {isAr ? "عينك عليهم" : "Watching over them"}
           </p>
         </div>
 

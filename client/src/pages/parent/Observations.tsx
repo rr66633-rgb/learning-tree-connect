@@ -63,7 +63,7 @@ export default function ParentObservations() {
 
   const tabs = [
     { id: "progress", label: (isAr ? "التقدم" : "Progress"), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", activeBg: "bg-emerald-100 border-emerald-300" },
-    { id: "assessments", label: "تقييمات EYFS", icon: GraduationCap, color: "text-blue-600", bg: "bg-blue-50", activeBg: "bg-blue-100 border-blue-300" },
+    { id: "assessments", label: (isAr ? "تقييمات EYFS" : "EYFS Assessments"), icon: GraduationCap, color: "text-blue-600", bg: "bg-blue-50", activeBg: "bg-blue-100 border-blue-300" },
     { id: "observations", label: (isAr ? "الملاحظات" : "Notes"), icon: Eye, color: "text-purple-600", bg: "bg-purple-50", activeBg: "bg-purple-100 border-purple-300" },
   ];
 
