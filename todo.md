@@ -2445,8 +2445,8 @@ Fix:
 - [x] Translate shared components (ChangePassword, NotificationSoundSettings, PushNotificationBanner + NotificationBell)
 - [x] Translate remaining toast notifications in sub-components (all 182+ toast messages translated)
 - [x] Translate landing page (NurseriesLanding.tsx) with full i18n and add language switcher button
-- [ ] Fix parent/Children.tsx - still shows only Arabic, not switching with language
-- [ ] Fix parent/DailySchedule.tsx - still shows only Arabic, not switching with language
+- [x] Fix parent/Children.tsx - translated remaining form labels
+- [x] Fix parent/DailySchedule.tsx - file does not exist (was likely renamed to DailyReport.tsx which is already translated)
 
 ## English Language Support Fix (Batch Translation)
 - [x] Fix 338 TypeScript errors from batch translation script (isAr not in scope)

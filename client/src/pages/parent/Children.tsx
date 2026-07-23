@@ -16,9 +16,11 @@ import { apiUrl } from "@/lib/apiBase";
 import { useTranslation } from "react-i18next";
 
 function ChildEmergencyContacts({ childId }: { childId: number }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: contacts, isLoading } = trpc.emergencyContacts.list.useQuery({ childId });
   if (isLoading) return <Skeleton className="h-16 w-full" />;
-  if (!contacts || contacts.length === 0) return <p className="text-sm text-muted-foreground">{"لا توجد جهات اتصال طارئة مسجلة"}</p>;
+  if (!contacts || contacts.length === 0) return <p className="text-sm text-muted-foreground">{isAr ? "لا توجد جهات اتصال طارئة مسجلة" : "No emergency contacts registered"}</p>;
   return (
     <div className="space-y-2">
       {contacts.map((ec: any) => (
@@ -28,7 +30,7 @@ function ChildEmergencyContacts({ childId }: { childId: number }) {
             <p className="text-sm font-medium">{ec.name} ({ec.relationship})</p>
             <p className="text-xs text-muted-foreground" dir="ltr">{ec.phone}</p>
           </div>
-          {ec.isAuthorizedPickup && <Badge variant="secondary" className="text-xs mr-auto">{"مصرح بالاستلام"}</Badge>}
+          {ec.isAuthorizedPickup && <Badge variant="secondary" className="text-xs mr-auto">{isAr ? "مصرح بالاستلام" : "Authorized for Pickup"}</Badge>}
         </div>
       ))}
     </div>
@@ -357,14 +359,14 @@ export default function ParentChildren() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <h4 className="font-medium text-sm text-primary">البيانات الأساسية *</h4>
+            <h4 className="font-medium text-sm text-primary">{isAr ? "البيانات الأساسية *" : "Basic Information *"}</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>الاسم الأول *</Label>
+                <Label>{isAr ? "الاسم الأول *" : "First Name *"}</Label>
                 <Input value={regForm.firstName} onChange={(e) => setRegForm({...regForm, firstName: e.target.value})} placeholder={isAr ? "اسم الطفل" : "Child's Name"} />
               </div>
               <div>
-                <Label>اسم العائلة *</Label>
+                <Label>{isAr ? "اسم العائلة *" : "Last Name *"}</Label>
                 <Input value={regForm.lastName} onChange={(e) => setRegForm({...regForm, lastName: e.target.value})} placeholder={isAr ? "اسم العائلة" : "Last Name"} />
               </div>
             </div>
@@ -374,11 +376,11 @@ export default function ParentChildren() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>تاريخ الميلاد *</Label>
+                <Label>{isAr ? "تاريخ الميلاد *" : "Date of Birth *"}</Label>
                 <Input type="date" value={regForm.dateOfBirth} onChange={(e) => setRegForm({...regForm, dateOfBirth: e.target.value})} />
               </div>
               <div>
-                <Label>الجنس *</Label>
+                <Label>{isAr ? "الجنس *" : "Gender *"}</Label>
                 <Select value={regForm.gender} onValueChange={(v) => setRegForm({...regForm, gender: v as "male" | "female"})}>
                   <SelectTrigger><SelectValue placeholder={isAr ? "اختر" : "Select"} /></SelectTrigger>
                   <SelectContent>
