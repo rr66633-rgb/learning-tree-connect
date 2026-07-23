@@ -8,10 +8,10 @@ export default function TermsOfService() {
         <div className="mb-8 flex items-center gap-3">
           <img
             src="/assets/logo.webp"
-            alt={isAr ? "نشأة" : "Nasha'a"}
+            alt={isAr ? "نشأة" : "Nashaa"}
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-slate-800">Naashah</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Nashaa</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="ltr">
@@ -19,8 +19,8 @@ export default function TermsOfService() {
           <p className="text-sm text-gray-500 mb-8">Last Updated: June 20, 2026</p>
 
           <p>
-            These Terms of Service ("Terms") govern your use of the Naashah mobile
-            application ("App") operated by Naashah ("we," "our," or "us").
+            These Terms of Service ("Terms") govern your use of the Nashaa mobile
+            application ("App") operated by Nashaa ("we," "our," or "us").
           </p>
           <p>
             By using the App, you agree to be bound by these Terms. If you do not agree, do not use

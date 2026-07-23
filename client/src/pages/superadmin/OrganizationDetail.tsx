@@ -236,7 +236,7 @@ export default function OrganizationDetail() {
             <InfoRow label={isAr ? "الاسم بالعربية" : "Name (Arabic)"} value={org.nameAr} />
             <InfoRow label={isAr ? "الاسم بالإنجليزية" : "Name (English)"} value={org.name} />
             <InfoRow label={isAr ? "المعرف" : "Identifier"} value={org.slug} />
-            <InfoRow label={t("superadmin.edition")} value={org.edition === "learning_tree" ? (isAr ? "شجرة التعلم" : "Learning Tree") : (isAr ? "نشأة" : "Nasha'a")} />
+            <InfoRow label={t("superadmin.edition")} value={org.edition === "learning_tree" ? (isAr ? "شجرة التعلم" : "Learning Tree") : (isAr ? "نشأة" : "Nashaa")} />
             <InfoRow label={t("common.phone")} value={org.phone || (isAr ? "غير محدد" : "Undefined")} icon={<Phone className="w-3.5 h-3.5" />} />
             <InfoRow label="البريد" value={org.email || (isAr ? "غير محدد" : "Undefined")} icon={<Mail className="w-3.5 h-3.5" />} />
             <InfoRow label="المدينة" value={org.city || (isAr ? "غير محدد" : "Undefined")} icon={<MapPin className="w-3.5 h-3.5" />} />

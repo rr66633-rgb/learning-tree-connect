@@ -137,7 +137,7 @@ export default function CreateOrganization() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nashaa">{isAr ? "نشأة" : "Nasha\'a"}</SelectItem>
+                    <SelectItem value="nashaa">{isAr ? "نشأة" : "Nashaa"}</SelectItem>
                     <SelectItem value="learning_tree">{isAr ? "شجرة التعلم" : "Learning Tree"}</SelectItem>
                   </SelectContent>
                 </Select>

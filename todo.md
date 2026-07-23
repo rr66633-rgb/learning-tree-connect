@@ -2472,3 +2472,6 @@ Fix:
 - [x] Fix remaining Arabic-only strings (batch fixed: Finance, AIMarketingEventContent, Calendar, OrganizationDetail, PushNotificationRequired, DashboardLayout, DutyToggle, NotificationSoundSettings, ParentArrivalAlert, PushNotificationBanner, DailyReports, BulkImport, staff/Calendar, staff/DailyLog)
 - [x] Add vitest unit tests for language switching functionality (20 tests passing)
 - [x] Add confirmation toast when user changes language
+
+## Brand Name Fix
+- [x] Rename all UI occurrences of 'Naashah' to 'Nashaa' (domain naashah.com stays unchanged)

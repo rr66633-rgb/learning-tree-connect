@@ -129,14 +129,14 @@ async function startServer() {
     // With CapacitorHttp enabled + local webDir:
     // - Requests come with Origin: capacitor://localhost
     // - Or with no Origin at all (native HTTP plugin)
-    // - Or with the NaashahApp User-Agent identifier
+    // - Or with the NashaaApp User-Agent identifier
     const origin = req.headers['origin'] || '';
     const userAgent = req.headers['user-agent'] || '';
     const isNativeApp = 
       !origin || // No origin = native HTTP request (CapacitorHttp)
       origin.startsWith('capacitor://') || 
       origin.startsWith('ionic://') || 
-      userAgent.includes('NaashahApp') ||
+      userAgent.includes('NashaaApp') ||
       // WKWebView on iOS with our app
       (userAgent.includes('Mobile') && !userAgent.includes('Safari/') && userAgent.includes('AppleWebKit'));
     

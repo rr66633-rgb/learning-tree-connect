@@ -8,10 +8,10 @@ export default function PrivacyPolicy() {
         <div className="mb-8 flex items-center gap-3">
           <img
             src="/assets/logo.webp"
-            alt={isAr ? "نشأة" : "Nasha\'a"}
+            alt={isAr ? "نشأة" : "Nashaa"}
             className="w-12 h-12 object-contain"
           />
-          <h1 className="text-2xl font-bold text-slate-800">{isAr ? "نشأة" : "Nasha\'a"}</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{isAr ? "نشأة" : "Nashaa"}</h1>
         </div>
 
         <article className="prose prose-sm max-w-none text-gray-800" dir="rtl">

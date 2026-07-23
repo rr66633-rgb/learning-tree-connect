@@ -308,12 +308,12 @@ export default function DashboardLayout({
             <div className="w-28 h-28 rounded-3xl bg-white shadow-xl shadow-primary/10 flex items-center justify-center p-3 border border-border/50">
               <img
                 src="/assets/logo.webp"
-                alt="Naashah"
+                alt="Nashaa"
                 className="w-full h-full object-contain"
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-center text-foreground">
-              {isAr ? 'نشأة' : 'Naashah'} <span className="text-[#00C9B7]">{isAr ? '' : ''}</span>
+              {isAr ? 'نشأة' : 'Nashaa'} <span className="text-[#00C9B7]">{isAr ? '' : ''}</span>
             </h1>
             <p className="text-base text-muted-foreground text-center max-w-sm leading-relaxed">
               {isAr ? "منصة متكاملة لإدارة الحضانات ورياض الأطفال" : "Integrated Nursery and Kindergarten Management Platform"}
@@ -455,14 +455,14 @@ function DashboardLayoutContent({
                         <Crown className="w-4 h-4 text-white" />
                       </div>
                       <span className="font-bold tracking-tight truncate text-foreground">
-                        {isAr ? 'Naashah - الإدارة' : 'Naashah - Admin'}
+                        {isAr ? 'Nashaa - الإدارة' : 'Nashaa - Admin'}
                       </span>
                     </>
                   ) : (
                     <>
-                      <img src="/assets/logo.webp" alt="Naashah" className="w-8 h-8 object-contain rounded-lg" />
+                      <img src="/assets/logo.webp" alt="Nashaa" className="w-8 h-8 object-contain rounded-lg" />
                       <span className="font-bold tracking-tight truncate text-foreground">
-                        Naashah
+                        Nashaa
                       </span>
                     </>
                   )}
@@ -473,7 +473,7 @@ function DashboardLayoutContent({
                     <Crown className="w-4 h-4 text-white" />
                   </div>
                 ) : (
-                  <img src="/assets/logo.webp" alt="Naashah" className="w-8 h-8 object-contain rounded-lg" />
+                  <img src="/assets/logo.webp" alt="Nashaa" className="w-8 h-8 object-contain rounded-lg" />
                 )
               )}
             </div>

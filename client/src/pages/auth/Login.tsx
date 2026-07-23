@@ -176,7 +176,7 @@ export default function Login() {
         <CardHeader className="text-center pb-2">
           <img
             src="/assets/logo.webp"
-            alt={isAr ? "نشأة" : "Nasha\'a"}
+            alt={isAr ? "نشأة" : "Nashaa"}
             className="w-20 h-20 mx-auto mb-3 object-contain"
           />
           <h1 className="text-2xl font-bold text-slate-800">{isAr ? "تسجيل الدخول" : "Login"}</h1>

@@ -69,7 +69,7 @@ export default function OrganizationsList() {
 
   const editionLabels: Record<string, string> = {
     learning_tree: i18n.language === "ar" ? isAr ? "شجرة التعلم" : "Learning Tree" : "Learning Tree",
-    nashaa: i18n.language === "ar" ? isAr ? "نشأة" : "Nasha'a" : "Naashah",
+    nashaa: i18n.language === "ar" ? isAr ? "نشأة" : "Nashaa" : "Nashaa",
   };
 
   function openEditDialog(org: any) {

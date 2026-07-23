@@ -82,7 +82,7 @@ export default function StoreCheckout() {
             supported_networks: ["visa", "mastercard", "mada"],
             apple_pay: {
               country: "SA",
-              label: "Naashah Store",
+              label: "Nashaa Store",
               validate_merchant_url: "https://api.moyasar.com/v1/applepay/initiate",
               version: 6,
               supported_countries: ["SA"],

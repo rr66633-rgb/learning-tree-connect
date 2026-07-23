@@ -146,8 +146,8 @@ export default function NurseryRegister() {
       <header className="py-4 px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button onClick={() => setLocation("/")} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <span className="text-2xl font-bold" style={{ color: '#00C9B7' }}>{isAr ? "نشأة" : "Nasha'a"}</span>
-            <span className="text-sm text-gray-500 font-medium">Naashah</span>
+            <span className="text-2xl font-bold" style={{ color: '#00C9B7' }}>{isAr ? "نشأة" : "Nashaa"}</span>
+            <span className="text-sm text-gray-500 font-medium">Nashaa</span>
           </button>
           <button 
             onClick={() => setLocation("/login")}

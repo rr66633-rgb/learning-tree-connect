@@ -47,7 +47,7 @@ export default function SuperAdminDashboard() {
 
   const editionLabels: Record<string, string> = {
     learning_tree: isAr ? "شجرة التعلم" : "Learning Tree",
-    nashaa: isAr ? "نشأة" : "Nasha\'a",
+    nashaa: isAr ? "نشأة" : "Nashaa",
   };
 
   return (

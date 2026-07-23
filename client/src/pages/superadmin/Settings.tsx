@@ -47,7 +47,7 @@ export default function SuperAdminSettings() {
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">{isAr ? "اسم المنصة" : "Platform Name"}</span>
-              <span className="font-medium">{isAr ? "نشأة" : "Nasha\'a"}</span>
+              <span className="font-medium">{isAr ? "نشأة" : "Nashaa"}</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">{isAr ? "الإصدار" : "Version"}</span>

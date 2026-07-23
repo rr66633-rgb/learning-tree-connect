@@ -14,7 +14,7 @@ export const brandingRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    // Default to organization 1 (Naashah) if no user or no org membership
+    // Default to organization 1 (Nashaa) if no user or no org membership
     let orgId = 1;
 
     if (ctx.user) {

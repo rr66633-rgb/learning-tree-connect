@@ -28,7 +28,7 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 
 // Sender Configuration
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@naashah.com';
-const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'نشأة - Naashah';
+const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'نشأة - Nashaa';
 
 // App URL for links in emails
 const APP_URL = process.env.APP_URL || 'https://naashah.com';

@@ -123,7 +123,7 @@ function createTextOverlaySvg(input: PosterInput, width: number, height: number)
   
   <!-- Bottom brand bar -->
   <rect x="0" y="${height - 50}" width="${width}" height="50" fill="${COLORS.secondary}" />
-  <text x="${width / 2}" y="${height - 20}" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="${COLORS.white}" font-weight="bold">نشأة | Naashah</text>
+  <text x="${width / 2}" y="${height - 20}" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="${COLORS.white}" font-weight="bold">نشأة | Nashaa</text>
 </svg>`;
 }
 

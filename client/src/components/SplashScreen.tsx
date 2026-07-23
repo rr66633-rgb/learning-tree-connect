@@ -111,7 +111,7 @@ export function SplashScreen({ onComplete, minDuration = 4000 }: SplashScreenPro
             className="text-4xl font-bold tracking-tight"
             style={{ color: "#1A1F36" }}
           >
-            {isAr ? "نشأة" : "Nasha'a"}
+            {isAr ? "نشأة" : "Nashaa"}
           </h1>
         </div>
 

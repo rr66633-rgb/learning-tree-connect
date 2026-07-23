@@ -69,7 +69,7 @@ export default function NurseriesLanding() {
   useEffect(() => {
     document.title = isAr 
       ? isAr ? "نشأة - النظام المتكامل لإدارة الحضانات ومراكز التأهيل والرعاية النهارية" : "Nash'ah - Integrated System for Nursery, Rehabilitation, and Daycare Management"
-      : "Naashah - The Complete Nursery & Daycare Management System";
+      : "Nashaa - The Complete Nursery & Daycare Management System";
   }, [isAr]);
 
   // Intersection observer for stats animation
@@ -171,15 +171,15 @@ export default function NurseriesLanding() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[60px] sm:h-[68px]">
             <div className="flex items-center gap-3">
-              <img src={LOGO_URL} alt={isAr ? "نشأة" : "Naashah"} className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
+              <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nashaa"} className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
               <span className="text-lg sm:text-xl font-bold bg-gradient-to-l from-[#00C9B7] to-[#7B61FF] bg-clip-text text-transparent">
-                {isAr ? "نشأة" : "Naashah"}
+                {isAr ? "نشأة" : "Nashaa"}
               </span>
             </div>
 
             <div className="hidden md:flex items-center gap-6 lg:gap-8">
               <a href="#features" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors">{isAr ? "المزايا" : "Features"}</a>
-              <a href="#stats" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors">{isAr ? "لماذا نشأة؟" : "Why Naashah?"}</a>
+              <a href="#stats" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors">{isAr ? "لماذا نشأة؟" : "Why Nashaa?"}</a>
               <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors">{isAr ? "الباقات" : "Pricing"}</a>
               <a href="#demo" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors">{isAr ? "احجز عرض" : "Book Demo"}</a>
             </div>
@@ -224,7 +224,7 @@ export default function NurseriesLanding() {
           <div className="sm:hidden bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-lg">
             <div className="px-5 py-5 space-y-1">
               <a href="#features" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>{isAr ? "المزايا" : "Features"}</a>
-              <a href="#stats" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>{isAr ? "لماذا نشأة؟" : "Why Naashah?"}</a>
+              <a href="#stats" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>{isAr ? "لماذا نشأة؟" : "Why Nashaa?"}</a>
               <a href="#pricing" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>{isAr ? "الباقات" : "Pricing"}</a>
               <a href="#demo" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-[#00C9B7]/5" onClick={() => setMobileMenuOpen(false)}>{isAr ? "احجز عرض" : "Book Demo"}</a>
               {/* Mobile language switcher */}
@@ -357,7 +357,7 @@ export default function NurseriesLanding() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1F36] mb-4">
-              {isAr ? <>لماذا <span className="text-[#00C9B7]">نشأة</span>؟</> : <>Why <span className="text-[#00C9B7]">Naashah</span>?</>}
+              {isAr ? <>لماذا <span className="text-[#00C9B7]">نشأة</span>؟</> : <>Why <span className="text-[#00C9B7]">Nashaa</span>?</>}
             </h2>
           </div>
           
@@ -383,7 +383,7 @@ export default function NurseriesLanding() {
           {/* Comparison Table */}
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
             <h3 className="text-lg sm:text-xl font-bold text-[#1A1F36] mb-6 text-center">
-              {isAr ? "الفرق بين الإدارة التقليدية ونشأة" : "Traditional Management vs Naashah"}
+              {isAr ? "الفرق بين الإدارة التقليدية ونشأة" : "Traditional Management vs Nashaa"}
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -391,7 +391,7 @@ export default function NurseriesLanding() {
                   <tr className="border-b border-gray-200">
                     <th className={`py-3 ${isAr ? "text-right" : "text-left"} text-gray-500 font-medium`}>{isAr ? "الميزة" : "Feature"}</th>
                     <th className="py-3 text-center text-gray-500 font-medium">{isAr ? "الطريقة التقليدية" : "Traditional"}</th>
-                    <th className="py-3 text-center text-[#00C9B7] font-bold">{isAr ? "نشأة" : "Naashah"}</th>
+                    <th className="py-3 text-center text-[#00C9B7] font-bold">{isAr ? "نشأة" : "Nashaa"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -503,7 +503,7 @@ export default function NurseriesLanding() {
             {isAr ? <>شركاء <span className="text-[#00C9B7]">نفخر بهم</span></> : <>Partners we're <span className="text-[#00C9B7]">proud of</span></>}
           </h2>
           <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto mb-12">
-            {isAr ? "مراكز رائدة اختارت نشأة لإدارة عملياتها اليومية" : "Leading centers that chose Naashah for their daily operations"}
+            {isAr ? "مراكز رائدة اختارت نشأة لإدارة عملياتها اليومية" : "Leading centers that chose Nashaa for their daily operations"}
           </p>
           <div className="flex items-center justify-center">
             <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] transition-all duration-300">
@@ -527,7 +527,7 @@ export default function NurseriesLanding() {
               {isAr ? <>ماذا يقول <span className="text-[#00C9B7]">عملاؤنا</span></> : <>What our <span className="text-[#00C9B7]">clients say</span></>}
             </h2>
             <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
-              {isAr ? "تجارب حقيقية من مراكز تستخدم نشأة يومياً" : "Real experiences from centers using Naashah daily"}
+              {isAr ? "تجارب حقيقية من مراكز تستخدم نشأة يومياً" : "Real experiences from centers using Nashaa daily"}
             </p>
           </div>
 
@@ -546,7 +546,7 @@ export default function NurseriesLanding() {
               <blockquote className="text-base sm:text-lg text-[#1A1F36] leading-[2] mb-8 font-medium">
                 {isAr 
                   ? "\"قبل نشأة كنت كل يوم أتابع المعلمات - وين الخطة الأسبوعية؟ خلّصتي تقييم الأطفال؟ كان شغل مرهق ومتكرر. الحين الخطة صارت بضغطة زر والتقييمات الفردية كلها على النظام، كل معلمة تعرف المطلوب منها وتسلّمه بوقته. حتى متطلبات الـ NDNA صرنا نغطيها بشكل منظم بدون ما أركض ورا أحد. نشأة ريّحني كمديرة وخلّى فريقي يشتغل باستقلالية.\""
-                  : "\"Before Naashah, I used to follow up with teachers every day - where's the weekly plan? Did you finish the children's assessments? It was exhausting and repetitive. Now the plan is done with one click and all individual assessments are on the system. Every teacher knows what's required and delivers on time. Even NDNA requirements are covered systematically. Naashah relieved me as a director and made my team work independently.\""
+                  : "\"Before Nashaa, I used to follow up with teachers every day - where's the weekly plan? Did you finish the children's assessments? It was exhausting and repetitive. Now the plan is done with one click and all individual assessments are on the system. Every teacher knows what's required and delivers on time. Even NDNA requirements are covered systematically. Nashaa relieved me as a director and made my team work independently.\""
                 }
               </blockquote>
 
@@ -715,7 +715,7 @@ export default function NurseriesLanding() {
         
         <div className="relative max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-5 sm:mb-6">
-            {isAr ? "جرّب نشأة مجاناً لمدة ١٤ يوم" : "Try Naashah free for 14 days"}
+            {isAr ? "جرّب نشأة مجاناً لمدة ١٤ يوم" : "Try Nashaa free for 14 days"}
           </h2>
           <p className="text-base sm:text-lg text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
             {isAr ? "جرّب قبل أن تقرر. بدون بطاقة ائتمان، بدون التزام." : "Try before you decide. No credit card, no commitment."}
@@ -747,8 +747,8 @@ export default function NurseriesLanding() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div className="sm:col-span-2">
               <div className="flex items-center gap-3 mb-4">
-                <img src={LOGO_URL} alt={isAr ? "نشأة" : "Naashah"} className="w-10 h-10 object-contain" />
-                <span className="text-xl font-bold text-white">{isAr ? "نشأة" : "Naashah"}</span>
+                <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nashaa"} className="w-10 h-10 object-contain" />
+                <span className="text-xl font-bold text-white">{isAr ? "نشأة" : "Nashaa"}</span>
               </div>
               <p className="text-sm text-white/60 leading-[1.8] max-w-sm">
                 {isAr 
@@ -777,7 +777,7 @@ export default function NurseriesLanding() {
             </div>
           </div>
           <div className="border-t border-white/10 mt-10 pt-6 text-center text-sm text-white/40">
-            <p>{isAr ? "جميع الحقوق محفوظة لمنصة نشأة ٢٠٢٦" : "All rights reserved. Naashah Platform 2026"}</p>
+            <p>{isAr ? "جميع الحقوق محفوظة لمنصة نشأة ٢٠٢٦" : "All rights reserved. Nashaa Platform 2026"}</p>
           </div>
         </div>
       </footer>

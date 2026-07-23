@@ -2,8 +2,8 @@
  * White-Label Architecture Configuration
  * 
  * This file defines the two editions of the platform:
- * 1. Naashah Edition - Private branded version for Naashah nursery platform
- * 2. Naashah Edition - Multi-tenant SaaS platform for nurseries and kindergartens
+ * 1. Nashaa Edition - Private branded version for Nashaa nursery platform
+ * 2. Nashaa Edition - Multi-tenant SaaS platform for nurseries and kindergartens
  * 
  * Both editions share the same:
  * - Backend codebase
@@ -60,7 +60,7 @@ export const EDITIONS: Record<Edition, WhiteLabelConfig> = {
   },
   nashaa: {
     edition: "nashaa",
-    name: "Naashah",
+    name: "Nashaa",
     nameAr: "نشأة",
     domain: "naashah.com",
     defaultColors: {

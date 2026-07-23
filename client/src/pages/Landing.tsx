@@ -77,10 +77,10 @@ export default function Landing() {
             <div className="flex items-center gap-3 sm:gap-3.5">
               <img 
                 src={LOGO_URL} 
-                alt={isAr ? "نشأة" : "Nasha\'a"} 
+                alt={isAr ? "نشأة" : "Nashaa"} 
                 className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" 
               />
-              <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nasha\'a"}</span>
+              <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nashaa"}</span>
             </div>
 
             {/* Desktop nav links - centered */}
@@ -370,8 +370,8 @@ export default function Landing() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             <div className="sm:col-span-2">
               <div className="flex items-center gap-2.5 sm:gap-3 mb-3 sm:mb-4">
-                <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nasha\'a"} className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" />
-                <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nasha\'a"}</span>
+                <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nashaa"} className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" />
+                <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nashaa"}</span>
               </div>
               <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 leading-[1.7] max-w-sm">
                 {isAr ? "منصة متكاملة لإدارة الحضانات ورياض الأطفال. نساعد المراكز التعليمية في المملكة العربية السعودية على إدارة عملياتها اليومية بكفاءة وذكاء." : "An integrated platform for managing nurseries and kindergartens. We help educational centers in Saudi Arabia manage their daily operations efficiently and smartly."}
@@ -397,7 +397,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="border-t border-gray-100 mt-6 sm:mt-8 pt-5 sm:pt-6 md:pt-8 text-center text-[10px] sm:text-xs md:text-sm text-gray-500">
-            <p>جميع الحقوق محفوظة لمنصة نشأة Naashah ٢٠٢٦ | <a href="https://naashah.com" className="hover:text-[#00C9B7] transition-colors duration-200">naashah.com</a></p>
+            <p>جميع الحقوق محفوظة لمنصة نشأة Nashaa ٢٠٢٦ | <a href="https://naashah.com" className="hover:text-[#00C9B7] transition-colors duration-200">naashah.com</a></p>
           </div>
         </div>
       </footer>

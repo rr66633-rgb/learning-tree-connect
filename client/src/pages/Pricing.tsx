@@ -25,7 +25,7 @@ export default function Pricing() {
 
   useEffect(() => {
     trackViewContent("Pricing Page", "pricing");
-    document.title = isAr ? "الأسعار - نشأة | منصة إدارة الحضانات ورياض الأطفال" : "Pricing - Naashah | Nursery & Kindergarten Management Platform";
+    document.title = isAr ? "الأسعار - نشأة | منصة إدارة الحضانات ورياض الأطفال" : "Pricing - Nashaa | Nursery & Kindergarten Management Platform";
   }, []);
 
   const tierIcons: Record<string, any> = {
@@ -65,8 +65,8 @@ export default function Pricing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[60px] sm:h-[68px] md:h-[72px]">
             <div className="flex items-center gap-3 sm:gap-3.5 cursor-pointer" onClick={() => navigate("/")}>
-              <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nasha\'a"} className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" />
-              <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nasha\'a"}</span>
+              <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nashaa"} className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" />
+              <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nashaa"}</span>
             </div>
 
             <div className="hidden md:flex items-center gap-6 lg:gap-8">
@@ -357,14 +357,14 @@ export default function Pricing() {
       <footer className="py-8 px-4 sm:px-6 border-t border-gray-100 bg-white">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nasha\'a"} className="w-6 h-6 object-contain" />
-            <span className="text-sm font-medium text-gray-700">{isAr ? "نشأة" : "Nasha\'a"}</span>
+            <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nashaa"} className="w-6 h-6 object-contain" />
+            <span className="text-sm font-medium text-gray-700">{isAr ? "نشأة" : "Nashaa"}</span>
             <span className="text-xs text-gray-400">{isAr ? "• منصة إدارة الحضانات ورياض الأطفال" : "• Nursery and Kindergarten Management Platform"}</span>
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-500">
             <a href="/privacy" className="hover:text-[#00C9B7] transition-colors">{isAr ? "سياسة الخصوصية" : "Privacy Policy"}</a>
             <a href="/terms" className="hover:text-[#00C9B7] transition-colors">{isAr ? "الشروط والأحكام" : "Terms & Conditions"}</a>
-            <span>© {new Date().getFullYear()} {isAr ? "نشأة" : "Nasha'a"}</span>
+            <span>© {new Date().getFullYear()} {isAr ? "نشأة" : "Nashaa"}</span>
           </div>
         </div>
       </footer>

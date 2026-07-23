@@ -107,7 +107,7 @@ export default function OnboardingWizard() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Sparkles className="w-6 h-6 text-[#00C9B7]" />
-            <h1 className="text-2xl font-bold text-foreground">{isAr ? "إعداد منشأتك على نشأة" : "Setup Your Organization on Naashah"}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{isAr ? "إعداد منشأتك على نشأة" : "Setup Your Organization on Nashaa"}</h1>
           </div>
           <p className="text-muted-foreground">{isAr ? "أكمل الخطوات التالية لبدء استخدام المنصة" : "Complete the following steps to start using the platform"}</p>
         </div>

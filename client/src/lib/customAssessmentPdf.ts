@@ -68,7 +68,7 @@ function getLabels(lang: "ar" | "en") {
     summary: "Summary",
     questionsAnswered: "Questions answered:",
     averageRating: "Average rating:",
-    footer: "Naashah - Custom Assessment Report",
+    footer: "Nashaa - Custom Assessment Report",
     generated: "Generated:",
     page: "Page",
     of: "of",
@@ -105,7 +105,7 @@ export async function generateCustomAssessmentPDF(data: ExportData): Promise<voi
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("Naashah", pageWidth / 2, 15, { align: "center" });
+  doc.text("Nashaa", pageWidth / 2, 15, { align: "center" });
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");

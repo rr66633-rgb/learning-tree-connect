@@ -58,7 +58,7 @@ export default function ResetPassword() {
         <CardHeader className="text-center pb-2">
           <img
             src="/assets/logo.webp"
-            alt={isAr ? "نشأة" : "Nasha\'a"}
+            alt={isAr ? "نشأة" : "Nashaa"}
             className="w-16 h-16 mx-auto mb-2 object-contain"
           />
           <h1 className="text-xl font-bold text-slate-800">

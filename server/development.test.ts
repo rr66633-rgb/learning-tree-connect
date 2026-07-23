@@ -278,7 +278,7 @@ describe("Development Module - White Label Support", () => {
 
   it("should support multiple organizations accessing same module", () => {
     const org1 = { id: 1, name: "Learning Tree" };
-    const org2 = { id: 2, name: "Naashah Nursery" };
+    const org2 = { id: 2, name: "Nashaa Nursery" };
     expect(org1.id).not.toBe(org2.id);
   });
 });

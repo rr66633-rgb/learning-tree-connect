@@ -690,7 +690,7 @@ export default function AIPlanner() {
         </div>` : ''}
     </div>
     <div class="footer">
-      <p class="logo-text">Naashah</p>
+      <p class="logo-text">Nashaa</p>
       <p>خطة أسبوعية تفصيلية — تم إنشاؤها بواسطة المساعد الذكي | ${today}</p>
       <p>{isAr ? "هذه الخطة مُعدّة للاستخدام المباشر في الفصل الدراسي" : "This plan is ready for direct use in the classroom"}</p>
     </div>
