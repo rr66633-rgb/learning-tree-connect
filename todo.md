@@ -2456,3 +2456,9 @@ Fix:
 - [x] Translate remaining Arabic strings in components (DashboardLayout, EmptyState, etc.)
 - [x] Fix broken JSX structure in AIMarketingEventContent.tsx (reverted to safe state)
 - [x] Ensure all pages display in English when English language is selected
+
+## English Translation Fixes - Round 2
+- [x] Fix Pickup page crash (runtime error in production - Pickup-DBdHobJl.js)
+- [ ] Translate Notifications page content to English (notification titles/body still Arabic)
+- [ ] Translate Photos/Activities page empty state to English ("لا توجد صور أو فيديو بعد")
+- [ ] Translate Daily Schedule page "اختر الطفل" dropdown to English

@@ -61,9 +61,9 @@ export default function ParentNotifications() {
             <CardContent className="p-4 flex items-start gap-3">
               {getIcon(n)}
               <div className="flex-1">
-                <p className="font-medium text-sm">{n.titleAr || n.title}</p>
-                <p className="text-sm text-muted-foreground">{n.bodyAr || n.body || n.content}</p>
-                <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="font-medium text-sm">{isAr ? (n.titleAr || n.title) : (n.title || n.titleAr)}</p>
+                <p className="text-sm text-muted-foreground">{isAr ? (n.bodyAr || n.body || n.content) : (n.body || n.content || n.bodyAr)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
               </div>
               {!n.isRead && <Button size="sm" variant="ghost" onClick={() => markRead.mutate({ id: n.id })}><Check className="h-4 w-4" /></Button>}
             </CardContent>

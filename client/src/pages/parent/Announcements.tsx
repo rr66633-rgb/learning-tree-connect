@@ -70,7 +70,7 @@ export default function ParentAnnouncements() {
                     />
                   )}
                   <div className="flex items-center justify-between mt-3">
-                    <p className="text-xs text-muted-foreground">{new Date(a.createdAt).toLocaleDateString('ar-SA')}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(a.createdAt).toLocaleDateString(locale)}</p>
                     {!isRead(a.id) && (
                       <Button
                         size="sm"

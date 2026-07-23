@@ -191,7 +191,7 @@ export default function ParentObservations() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline" className="text-xs">{getLEVELS(isAr).find(l => l.value === a.level)?.label}</Badge>
-                                <span className="text-xs text-muted-foreground">{new Date(a.assessedAt).toLocaleDateString('ar-SA')}</span>
+                                <span className="text-xs text-muted-foreground">{new Date(a.assessedAt).toLocaleDateString(locale)}</span>
                               </div>
                             </div>
                           ))}
@@ -233,7 +233,7 @@ export default function ParentObservations() {
                             </div>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap bg-muted/50 px-2 py-1 rounded-lg">{new Date(obs.observedAt).toLocaleDateString('ar-SA')}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap bg-muted/50 px-2 py-1 rounded-lg">{new Date(obs.observedAt).toLocaleDateString(locale)}</span>
                       </div>
                     </CardContent>
                   </Card>

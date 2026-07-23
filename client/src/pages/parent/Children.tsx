@@ -40,6 +40,7 @@ function ChildEmergencyContacts({ childId }: { childId: number }) {
 function ChildDocumentsSection({ childId }: { childId: number }) {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: documents, isLoading } = trpc.childDocuments.listByChild.useQuery({ childId });
   const utils = trpc.useUtils();
   const createDoc = trpc.childDocuments.create.useMutation({
@@ -123,7 +124,7 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">{doc.name}</p>
-                  <p className="text-xs text-muted-foreground">{typeLabels[doc.type] || doc.type} • {new Date(doc.createdAt).toLocaleDateString('ar-SA')}</p>
+                  <p className="text-xs text-muted-foreground">{typeLabels[doc.type] || doc.type} • {new Date(doc.createdAt).toLocaleDateString(locale)}</p>
                   {doc.reviewNote && <p className="text-xs text-amber-600 mt-1">{isAr ? "ملاحظة:" : "Note"} {doc.reviewNote}</p>}
                 </div>
               </div>
@@ -302,7 +303,7 @@ export default function ParentChildren() {
                 </div>
                 <div>
                   <CardTitle>{child.firstName} {child.lastName}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString('ar-SA') : ""}</p>
+                  <p className="text-sm text-muted-foreground">{child.dateOfBirth ? new Date(child.dateOfBirth).toLocaleDateString(locale) : ""}</p>
                 </div>
               </div>
               <Button variant="outline" size="sm" className="gap-1" onClick={() => startEdit(child)}>

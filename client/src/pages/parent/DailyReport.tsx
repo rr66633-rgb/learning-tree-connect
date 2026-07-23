@@ -56,7 +56,7 @@ export default function ParentDailyReport() {
                   </div>
                 );
               })()}
-              <CardTitle>{isAr ? "أنشطة اليوم -" : "Today's Activities -"} {new Date().toLocaleDateString('ar-SA')}</CardTitle>
+              <CardTitle>{isAr ? "أنشطة اليوم -" : "Today's Activities -"} {new Date().toLocaleDateString(locale)}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -72,7 +72,7 @@ export default function ParentDailyReport() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm">{labelMap[act.type] || act.type}</span>
-                          <span className="text-xs text-muted-foreground">{new Date(act.timestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-xs text-muted-foreground">{new Date(act.timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                         {act.details && <p className="text-sm text-muted-foreground mt-1">{act.details}</p>}
                       </div>

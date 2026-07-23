@@ -17,9 +17,9 @@ const getSTATUS_STEPS = (isAr: boolean) => ([
 ]);
 
 // Live timer showing how long the parent has been waiting
+function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
-function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function ParentPickup() {
         <h1 className="text-2xl font-bold">{isAr ? "طلب الاستلام" : "Pick-up request"}</h1>
         <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
           <History className="h-4 w-4 ml-2" />
-          {showHistory ? "الطلبات الحالية" : (isAr ? "السجل" : "Record")}
+          {showHistory ? (isAr ? "الطلبات الحالية" : "Current Requests") : (isAr ? "السجل" : "History")}
         </Button>
       </div>
 
@@ -178,17 +178,17 @@ export default function ParentPickup() {
                                 )}
                                 {isCompleted && i === 0 && req.requestedAt && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    {new Date(req.requestedAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(req.requestedAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 )}
                                 {isCompleted && i === 1 && req.teacherResponseAt && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    {new Date(req.teacherResponseAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(req.teacherResponseAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 )}
                                 {isCompleted && i === 2 && req.arrivedReceptionAt && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    {new Date(req.arrivedReceptionAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(req.arrivedReceptionAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 )}
                               </div>
@@ -205,7 +205,7 @@ export default function ParentPickup() {
 
           {/* Children cards with "I'm Here" button */}
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">أطفالي</h2>
+            <h2 className="text-lg font-semibold">{isAr ? "أطفالي" : "My Children"}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {children?.map((child: any) => {
                 const hasActive = hasActiveRequest(child.id);
@@ -282,7 +282,7 @@ export default function ParentPickup() {
                       <div className="flex-1">
                         <p className="font-medium">{req.childFirstName} {req.childLastName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {req.pickedUpAt ? new Date(req.pickedUpAt).toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date(req.requestedAt).toLocaleDateString('ar-SA')}
+                          {req.pickedUpAt ? new Date(req.pickedUpAt).toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date(req.requestedAt).toLocaleDateString(locale)}
                         </p>
                         {totalMinutes !== null && (
                           <p className="text-xs text-muted-foreground">مدة الانتظار: {totalMinutes} دقيقة</p>

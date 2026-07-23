@@ -92,7 +92,7 @@ export default function ParentPhotos() {
               <div className="p-4 border-t">
                 <p className="text-sm">{previewItem.caption}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(previewItem.createdAt).toLocaleDateString('ar-SA', {
+                  {new Date(previewItem.createdAt).toLocaleDateString(locale, {
                     year: 'numeric', month: 'long', day: 'numeric',
                     hour: '2-digit', minute: '2-digit'
                   })}
@@ -114,8 +114,9 @@ function MediaGallery({ items, onPreview }: { items: any[] | undefined; onPrevie
   }
 
   // Group by date
+  const locale = isAr ? 'ar-SA' : 'en-US';
   const grouped = items.reduce((acc: Record<string, any[]>, item: any) => {
-    const date = new Date(item.createdAt).toLocaleDateString('ar-SA', {
+    const date = new Date(item.createdAt).toLocaleDateString(locale, {
       year: 'numeric', month: 'long', day: 'numeric'
     });
     if (!acc[date]) acc[date] = [];

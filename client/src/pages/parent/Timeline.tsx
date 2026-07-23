@@ -92,7 +92,7 @@ export default function ParentTimeline() {
 
       <div className="flex flex-col sm:flex-row gap-4">
         <Select value={selectedChild} onValueChange={setSelectedChild}>
-          <SelectTrigger className="max-w-xs"><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+          <SelectTrigger className="max-w-xs"><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
           <SelectContent>
             {children?.map((c: any) => (
               <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>

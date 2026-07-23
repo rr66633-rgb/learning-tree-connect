@@ -184,15 +184,15 @@ export default function ParentFinance() {
     // Generate a simple PDF-like receipt
     const content = `
 فاتورة رقم: ${invoice.invoiceNumber}
-التاريخ: ${new Date(invoice.createdAt).toLocaleDateString('ar-SA')}
-تاريخ الاستحقاق: ${new Date(invoice.dueDate).toLocaleDateString('ar-SA')}
+التاريخ: ${new Date(invoice.createdAt).toLocaleDateString(locale)}
+تاريخ الاستحقاق: ${new Date(invoice.dueDate).toLocaleDateString(locale)}
 الطفل: ${invoice.childName || ''}
 الوصف: ${invoice.description || ''}
-المبلغ الأساسي: ${Number(invoice.subtotal).toLocaleString('ar-SA')} ر.س
-ضريبة القيمة المضافة (${invoice.vatRate}%): ${Number(invoice.vatAmount).toLocaleString('ar-SA')} ر.س
-الإجمالي: ${Number(invoice.total).toLocaleString('ar-SA')} ر.س
+المبلغ الأساسي: ${Number(invoice.subtotal).toLocaleString(locale)} ر.س
+ضريبة القيمة المضافة (${invoice.vatRate}%): ${Number(invoice.vatAmount).toLocaleString(locale)} ر.س
+الإجمالي: ${Number(invoice.total).toLocaleString(locale)} ر.س
 الحالة: ${statusLabels[invoice.status]}
-${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Date(invoice.paidAt).toLocaleDateString('ar-SA')}` : ''}
+${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Date(invoice.paidAt).toLocaleDateString(locale)}` : ''}
     `.trim();
     
     const blob = new Blob(["\uFEFF" + content], { type: "text/plain;charset=utf-8" });
@@ -218,7 +218,7 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
             <AlertTriangle className="h-8 w-8 text-amber-600 shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">{isAr ? "المبلغ المستحق" : "Amount Due"}</p>
-              <p className="text-lg font-bold text-amber-600">{totalPending.toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</p>
+              <p className="text-lg font-bold text-amber-600">{totalPending.toLocaleString(locale)} {isAr ? "ر.س" : "SAR"}</p>
             </div>
           </CardContent>
         </Card>
@@ -227,7 +227,7 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
             <CheckCircle2 className="h-8 w-8 text-green-600 shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">{isAr ? "إجمالي المدفوع" : "Total Paid"}</p>
-              <p className="text-lg font-bold text-green-600">{totalPaid.toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</p>
+              <p className="text-lg font-bold text-green-600">{totalPaid.toLocaleString(locale)} {isAr ? "ر.س" : "SAR"}</p>
             </div>
           </CardContent>
         </Card>
@@ -293,9 +293,9 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
                         <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
                         <TableCell className="font-medium">{inv.childName || "—"}</TableCell>
                         <TableCell><Badge variant="outline">{invoiceTypeLabels[inv.invoiceType] || isAr ? "رسوم" : "Fees"}</Badge></TableCell>
-                        <TableCell className="font-bold">{Number(inv.total).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</TableCell>
+                        <TableCell className="font-bold">{Number(inv.total).toLocaleString(locale)} {isAr ? "ر.س" : "SAR"}</TableCell>
                         <TableCell><Badge className={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge></TableCell>
-                        <TableCell>{new Date(inv.dueDate).toLocaleDateString('ar-SA')}</TableCell>
+                        <TableCell>{new Date(inv.dueDate).toLocaleDateString(locale)}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             {(inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partially_paid') && (
@@ -338,11 +338,11 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{inv.description || isAr ? "بدون وصف" : "No Description"}</span>
-                    <span className="font-bold text-lg">{Number(inv.total).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span>
+                    <span className="font-bold text-lg">{Number(inv.total).toLocaleString(locale)} {isAr ? "ر.س" : "SAR"}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
                     <span>{inv.invoiceNumber}</span>
-                    <span>{isAr ? "استحقاق:" : "Due:"} {new Date(inv.dueDate).toLocaleDateString('ar-SA')}</span>
+                    <span>{isAr ? "استحقاق:" : "Due:"} {new Date(inv.dueDate).toLocaleDateString(locale)}</span>
                   </div>
                   <div className="flex gap-2 pt-1">
                     {(inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partially_paid') && (
@@ -392,10 +392,10 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
                       </div>
                       <div className="text-left">
                         <p className={`font-bold ${payment.status === 'paid' ? 'text-green-600' : ''}`}>
-                          {Number(payment.amount).toLocaleString('ar-SA')} ر.س
+                          {Number(payment.amount).toLocaleString(locale)} ر.س
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {payment.paidAt ? new Date(payment.paidAt).toLocaleDateString('ar-SA') : new Date(payment.createdAt).toLocaleDateString('ar-SA')}
+                          {payment.paidAt ? new Date(payment.paidAt).toLocaleDateString(locale) : new Date(payment.createdAt).toLocaleDateString(locale)}
                         </p>
                       </div>
                     </div>
@@ -420,7 +420,7 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
                 <div className="flex justify-between"><span className="text-muted-foreground">{isAr ? "رقم الفاتورة" : "Invoice Number"}</span><span className="font-mono">{selectedInvoice.invoiceNumber}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">{isAr ? "الطفل" : "Child"}</span><span>{selectedInvoice.childName}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">{isAr ? "الوصف" : "Description"}</span><span>{selectedInvoice.description}</span></div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2"><span>{isAr ? "المبلغ المطلوب" : "Amount Required"}</span><span>{(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)).toLocaleString('ar-SA')} ر.س</span></div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2"><span>{isAr ? "المبلغ المطلوب" : "Amount Required"}</span><span>{(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)).toLocaleString(locale)} ر.س</span></div>
               </div>
 
               {!gatewayStatus?.isConfigured ? (
@@ -450,14 +450,14 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
                 <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "الطفل" : "Child"}</span><span>{selectedInvoice.childName}</span></div>
                 <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "النوع" : "Type"}</span><span>{invoiceTypeLabels[selectedInvoice.invoiceType] || "رسوم"}</span></div>
                 <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "الوصف" : "Description"}</span><span>{selectedInvoice.description || "—"}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "تاريخ الإنشاء" : "Creation Date"}</span><span>{new Date(selectedInvoice.createdAt).toLocaleDateString('ar-SA')}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "تاريخ الاستحقاق" : "Due Date"}</span><span>{new Date(selectedInvoice.dueDate).toLocaleDateString('ar-SA')}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "المبلغ الأساسي" : "Base Amount"}</span><span>{Number(selectedInvoice.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "ضريبة القيمة المضافة (" : "VAT ("}{selectedInvoice.vatRate}%)</span><span>{Number(selectedInvoice.vatAmount).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span></div>
-                <div className="flex justify-between py-1 border-b font-bold text-base"><span>{isAr ? "الإجمالي" : "Total"}</span><span>{Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "تاريخ الإنشاء" : "Creation Date"}</span><span>{new Date(selectedInvoice.createdAt).toLocaleDateString(locale)}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "تاريخ الاستحقاق" : "Due Date"}</span><span>{new Date(selectedInvoice.dueDate).toLocaleDateString(locale)}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "المبلغ الأساسي" : "Base Amount"}</span><span>{Number(selectedInvoice.subtotal).toLocaleString(locale)} ر.س</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "ضريبة القيمة المضافة (" : "VAT ("}{selectedInvoice.vatRate}%)</span><span>{Number(selectedInvoice.vatAmount).toLocaleString(locale)} {isAr ? "ر.س" : "SAR"}</span></div>
+                <div className="flex justify-between py-1 border-b font-bold text-base"><span>{isAr ? "الإجمالي" : "Total"}</span><span>{Number(selectedInvoice.total).toLocaleString(locale)} ر.س</span></div>
                 <div className="flex justify-between py-1"><span className="text-muted-foreground">{isAr ? "الحالة" : "Status"}</span><Badge className={statusColors[selectedInvoice.status]}>{statusLabels[selectedInvoice.status]}</Badge></div>
                 {selectedInvoice.paidAt && (
-                  <div className="flex justify-between py-1 border-t"><span className="text-muted-foreground">{isAr ? "تاريخ الدفع" : "Payment Date"}</span><span>{new Date(selectedInvoice.paidAt).toLocaleDateString('ar-SA')}</span></div>
+                  <div className="flex justify-between py-1 border-t"><span className="text-muted-foreground">{isAr ? "تاريخ الدفع" : "Payment Date"}</span><span>{new Date(selectedInvoice.paidAt).toLocaleDateString(locale)}</span></div>
                 )}
               </div>
               <div className="flex gap-2">
