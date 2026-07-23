@@ -264,7 +264,7 @@ export default function StaffDailyLog() {
                       <SelectTrigger><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
                       <SelectContent>
                         {childrenLoading ? (
-                          <SelectItem value="loading" disabled>جاري التحميل...</SelectItem>
+                          <SelectItem value="loading" disabled>{isAr ? "جاري التحميل..." : "Loading..."}</SelectItem>
                         ) : filteredChildren.length === 0 ? (
                           <SelectItem value="empty" disabled>{isAr ? "لا يوجد نتائج" : "No results"}</SelectItem>
                         ) : (

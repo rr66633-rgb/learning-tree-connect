@@ -351,7 +351,7 @@ export default function StaffCalendar() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+            <div className="text-center py-8 text-muted-foreground">{isAr ? "جاري التحميل..." : "Loading..."}</div>
           ) : !events || events.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">{isAr ? "لا توجد أحداث في هذا الشهر" : "No events this month"}</div>
           ) : (
@@ -579,10 +579,10 @@ export default function StaffCalendar() {
                   <Bell className="h-4 w-4 ml-2" />التذكيرات
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => { setViewEvent(null); openEdit(viewEvent); }}>
-                  <Pencil className="h-4 w-4 ml-2" />تعديل
+                  <Pencil className="h-4 w-4 ml-2" />{isAr ? "تعديل" : "Edit"}
                 </Button>
                 <Button variant="destructive" className="flex-1" onClick={() => { setViewEvent(null); setDeleteConfirm(viewEvent.id); }}>
-                  <Trash2 className="h-4 w-4 ml-2" />حذف
+                  <Trash2 className="h-4 w-4 ml-2" />{isAr ? "حذف" : "Delete"}
                 </Button>
               </div>
             </div>

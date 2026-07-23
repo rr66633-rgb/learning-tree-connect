@@ -187,7 +187,7 @@ export default function DailyReports() {
                 <Label className="font-semibold flex items-center gap-2">
                   <Camera className="h-4 w-4" />
                   {isAr ? "صور الأنشطة" : "Activity Photos"}
-                  <span className="text-xs text-muted-foreground font-normal">(اختياري - حد أقصى 5 صور)</span>
+                  <span className="text-xs text-muted-foreground font-normal">{isAr ? "(اختياري - حد أقصى 5 صور)" : "(Optional - max 5 photos)"}</span>
                 </Label>
                 <input
                   ref={fileInputRef}

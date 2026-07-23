@@ -148,7 +148,7 @@ export default function ParentDevelopmentalAssessment() {
 
       {selectedChildId && isLoading && (
         <div className="text-center py-12 text-gray-400">
-          <div className="animate-pulse">جاري التحميل...</div>
+          <div className="animate-pulse">{isAr ? "جاري التحميل..." : "Loading..."}</div>
         </div>
       )}
 

@@ -129,7 +129,7 @@ export default function BulkImport() {
   return (
     <div className="container max-w-4xl py-8 space-y-6" dir="rtl">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">الاستيراد الجماعي من Excel</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{isAr ? "الاستيراد الجماعي من Excel" : "Bulk Import from Excel"}</h1>
         <p className="text-gray-600 mt-2">استيراد بيانات الأطفال وأولياء الأمور والمعلمات والموظفين من ملفات Excel</p>
       </div>
 
@@ -194,7 +194,7 @@ export default function BulkImport() {
               <div className="space-y-2">
                 <Upload className="w-12 h-12 mx-auto text-gray-400" />
                 <p className="text-gray-600">{isAr ? "اضغط هنا لاختيار ملف أو اسحب الملف" : "Click here to choose file or drag file"}</p>
-                <p className="text-sm text-gray-400">الحد الأقصى: 5 ميجابايت | الصيغ المدعومة: .xlsx, .xls</p>
+                <p className="text-sm text-gray-400">{isAr ? "الحد الأقصى: 5 ميجابايت | الصيغ المدعومة: .xlsx, .xls" : "Max: 5MB | Supported formats: .xlsx, .xls"}</p>
               </div>
             )}
           </div>

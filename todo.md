@@ -2466,3 +2466,9 @@ Fix:
 ## English Translation Fixes - Round 3
 - [x] Fix AIAssistant.tsx line 172 corrupted by sed unicode escapes (restored proper Arabic hadith quote)
 - [x] Fix AIAssistant.tsx timestamp locale (hardcoded ar-SA → dynamic based on language)
+
+## English Translation Fixes - Round 4 (Comprehensive Scan & Tests)
+- [x] Scan all page files for remaining hardcoded Arabic text not wrapped in isAr ternary (found 539 issues in 78 files)
+- [x] Fix remaining Arabic-only strings (batch fixed: Finance, AIMarketingEventContent, Calendar, OrganizationDetail, PushNotificationRequired, DashboardLayout, DutyToggle, NotificationSoundSettings, ParentArrivalAlert, PushNotificationBanner, DailyReports, BulkImport, staff/Calendar, staff/DailyLog)
+- [x] Add vitest unit tests for language switching functionality (20 tests passing)
+- [x] Add confirmation toast when user changes language

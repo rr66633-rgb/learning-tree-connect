@@ -129,8 +129,8 @@ export function ParentArrivalAlert() {
                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-amber-300 rounded-full animate-ping" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-bold">ولي أمر وصل للاستلام</h2>
-                <p className="text-emerald-100 text-sm">يرجى الاستجابة</p>
+                <h2 className="text-xl font-bold">{isAr ? "ولي أمر وصل للاستلام" : "Parent Arrived for Pickup"}</h2>
+                <p className="text-emerald-100 text-sm">{isAr ? "يرجى الاستجابة" : "Please respond"}</p>
               </div>
               <Button
                 variant="ghost"

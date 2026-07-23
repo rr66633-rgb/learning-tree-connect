@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Bell, BellRing, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -13,6 +14,8 @@ import { toast } from 'sonner';
  * Cannot be dismissed - must enable notifications or skip (with warning).
  */
 export function PushNotificationRequired() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
   const { user } = useAuth();
   const { permission, isSubscribed, isLoading, isSupported, subscribe } = usePushNotifications();
   const [skipped, setSkipped] = useState(() => {
@@ -40,7 +43,7 @@ export function PushNotificationRequired() {
     const success = await subscribe();
     if (success) {
       setShowSuccess(true);
-      toast.success('تم تفعيل الإشعارات بنجاح! ستتلقى تنبيهات فورية.');
+      toast.success(isAr ? 'تم تفعيل الإشعارات بنجاح! ستتلقى تنبيهات فورية.' : 'Notifications enabled successfully! You will receive instant alerts.');
       // Send test notification
       try {
         await testPush.mutateAsync();
@@ -50,7 +53,7 @@ export function PushNotificationRequired() {
         setShowSuccess(false);
       }, 2000);
     } else {
-      toast.error('فشل تفعيل الإشعارات. يرجى المحاولة مرة أخرى أو التحقق من إعدادات المتصفح.');
+      toast.error(isAr ? 'فشل تفعيل الإشعارات. يرجى المحاولة مرة أخرى أو التحقق من إعدادات المتصفح.' : 'Failed to enable notifications. Please try again or check browser settings.');
     }
   };
 
@@ -58,8 +61,8 @@ export function PushNotificationRequired() {
     setSkipped(true);
     localStorage.setItem('push-required-skipped', 'true');
     const msg = isParent
-      ? 'تم تخطي تفعيل الإشعارات. قد لا تتلقى تنبيهات أنشطة طفلك!'
-      : 'تم تخطي تفعيل الإشعارات. قد لا تسمع تنبيهات الاستلام!';
+      ? (isAr ? 'تم تخطي تفعيل الإشعارات. قد لا تتلقى تنبيهات أنشطة طفلك!' : "Notifications skipped. You may not receive alerts about your child's activities!")
+      : (isAr ? 'تم تخطي تفعيل الإشعارات. قد لا تسمع تنبيهات الاستلام!' : 'Notifications skipped. You may not hear pickup alerts!');
     toast.warning(msg, { duration: 5000 });
   };
 
@@ -71,9 +74,9 @@ export function PushNotificationRequired() {
             <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-emerald-600" />
             </div>
-            <h3 className="text-xl font-bold text-emerald-700">تم التفعيل بنجاح!</h3>
+            <h3 className="text-xl font-bold text-emerald-700">{isAr ? "تم التفعيل بنجاح!" : "Enabled Successfully!"}</h3>
             <p className="text-muted-foreground">
-              {isParent ? 'ستتلقى إشعارات فورية عن أنشطة طفلك' : 'ستتلقى إشعارات فورية لطلبات الاستلام'}
+              {isParent ? (isAr ? 'ستتلقى إشعارات فورية عن أنشطة طفلك' : "You will receive instant notifications about your child's activities") : (isAr ? 'ستتلقى إشعارات فورية لطلبات الاستلام' : 'You will receive instant notifications for pickup requests')}
             </p>
           </CardContent>
         </Card>
@@ -82,26 +85,26 @@ export function PushNotificationRequired() {
   }
 
   // Different messaging for parents vs staff
-  const title = isParent ? 'تفعيل الإشعارات' : 'تفعيل الإشعارات مطلوب';
+  const title = isParent ? (isAr ? 'تفعيل الإشعارات' : 'Enable Notifications') : (isAr ? 'تفعيل الإشعارات مطلوب' : 'Notifications Required');
   const description = isParent
-    ? 'لتلقي تنبيهات فورية عن أنشطة طفلك (وصول، وجبات، نوم، مغادرة)، يرجى تفعيل الإشعارات'
-    : 'لضمان سماع تنبيهات استلام الأطفال، يرجى تفعيل الإشعارات الفورية';
+    ? (isAr ? 'لتلقي تنبيهات فورية عن أنشطة طفلك (وصول، وجبات، نوم، مغادرة)، يرجى تفعيل الإشعارات' : "To receive instant alerts about your child's activities (arrival, meals, nap, departure), please enable notifications")
+    : (isAr ? 'لضمان سماع تنبيهات استلام الأطفال، يرجى تفعيل الإشعارات الفورية' : 'To ensure you hear child pickup alerts, please enable push notifications');
   const warningText = isParent
-    ? 'بدون تفعيل الإشعارات، لن تتلقى تنبيهات فورية عند تسجيل أنشطة طفلك مثل الوصول والوجبات والمغادرة.'
-    : 'بدون تفعيل الإشعارات، لن تسمع تنبيهات طلبات الاستلام عندما يصل ولي الأمر. هذا قد يؤدي إلى تأخير في تسليم الأطفال.';
+    ? (isAr ? 'بدون تفعيل الإشعارات، لن تتلقى تنبيهات فورية عند تسجيل أنشطة طفلك مثل الوصول والوجبات والمغادرة.' : "Without enabling notifications, you won't receive instant alerts when your child's activities are recorded such as arrival, meals, and departure.")
+    : (isAr ? 'بدون تفعيل الإشعارات، لن تسمع تنبيهات طلبات الاستلام عندما يصل ولي الأمر. هذا قد يؤدي إلى تأخير في تسليم الأطفال.' : "Without enabling notifications, you won't hear pickup request alerts when a parent arrives. This may cause delays in child handover.");
   
   const benefits = isParent
     ? [
-        'تنبيه فوري عند وصول طفلك للحضانة',
-        'إشعار عند تناول طفلك للوجبات',
-        'تنبيه عند مغادرة طفلك',
-        'يعمل حتى عند استخدام تطبيق آخر',
+        (isAr ? 'تنبيه فوري عند وصول طفلك للحضانة' : 'Instant alert when your child arrives at nursery'),
+        (isAr ? 'إشعار عند تناول طفلك للوجبات' : 'Notification when your child has meals'),
+        (isAr ? 'تنبيه عند مغادرة طفلك' : 'Alert when your child leaves'),
+        (isAr ? 'يعمل حتى عند استخدام تطبيق آخر' : 'Works even when using another app'),
       ]
     : [
-        'تنبيه فوري عند طلب استلام طفل',
-        'صوت واضح يسهل سماعه في الفصل',
-        'يعمل حتى عند استخدام تطبيق آخر',
-        'يمكنك التحكم بمستوى الصوت والنغمة لاحقاً',
+        (isAr ? 'تنبيه فوري عند طلب استلام طفل' : 'Instant alert when a child pickup is requested'),
+        (isAr ? 'صوت واضح يسهل سماعه في الفصل' : 'Clear sound easy to hear in classroom'),
+        (isAr ? 'يعمل حتى عند استخدام تطبيق آخر' : 'Works even when using another app'),
+        (isAr ? 'يمكنك التحكم بمستوى الصوت والنغمة لاحقاً' : 'You can control volume and tone later'),
       ];
 
   return (
@@ -119,7 +122,7 @@ export function PushNotificationRequired() {
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-sm text-amber-800">
-              <p className="font-medium">مهم جداً</p>
+              <p className="font-medium">{isAr ? "مهم جداً" : "Very Important"}</p>
               <p className="mt-1">{warningText}</p>
             </div>
           </div>

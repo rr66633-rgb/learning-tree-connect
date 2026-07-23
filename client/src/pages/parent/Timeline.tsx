@@ -108,7 +108,7 @@ export default function ParentTimeline() {
               <span className="text-sm font-medium">{new Date(date).toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
             </div>
             <Button variant="outline" size="icon" onClick={() => changeDate(1)} disabled={isToday}><ChevronLeft className="h-4 w-4" /></Button>
-            {!isToday && <Button variant="ghost" size="sm" onClick={() => setDate(new Date().toISOString().split('T')[0])}>اليوم</Button>}
+            {!isToday && <Button variant="ghost" size="sm" onClick={() => setDate(new Date().toISOString().split('T')[0])}>{isAr ? "اليوم" : "Today"}</Button>}
           </div>
         )}
       </div>

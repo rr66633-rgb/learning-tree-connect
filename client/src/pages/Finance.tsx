@@ -165,10 +165,10 @@ export default function Finance() {
         <h1 className="text-2xl font-bold">{isAr ? "المالية والمدفوعات" : "Finance & Payments"}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV} disabled={!invoices?.length}>
-            <Download className="h-4 w-4 ml-2" />تصدير
+            <Download className="h-4 w-4 ml-2" />{isAr ? "تصدير" : "Export"}
           </Button>
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />فاتورة جديدة</Button></DialogTrigger>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{isAr ? "فاتورة جديدة" : "New Invoice"}</Button></DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader><DialogTitle>{isAr ? "إنشاء فاتورة جديدة" : "Create New Invoice"}</DialogTitle></DialogHeader>
               <form onSubmit={handleCreateInvoice} className="space-y-4">
@@ -198,10 +198,10 @@ export default function Finance() {
                     </Select>
                   </div>
                 </div>
-                <div><Label>الوصف</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={isAr ? "وصف الفاتورة" : "Invoice Description"} required /></div>
+                <div><Label>{isAr ? "الوصف" : "Description"}</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={isAr ? "وصف الفاتورة" : "Invoice Description"} required /></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div><Label>{isAr ? "المبلغ (ر.س)" : "Amount (SAR)"}</Label><Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required /></div>
-                  <div><Label>تاريخ الاستحقاق</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required /></div>
+                  <div><Label>{isAr ? "تاريخ الاستحقاق" : "Due Date"}</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required /></div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={form.isRecurring} onCheckedChange={v => setForm(f => ({ ...f, isRecurring: v }))} />
@@ -227,15 +227,15 @@ export default function Finance() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card><CardContent className="p-4 flex items-center gap-3"><TrendingUp className="h-8 w-8 text-green-600 shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "الإيرادات الكلية" : "Total Revenue"}</p><p className="text-lg font-bold text-green-600">{(summary?.totalRevenue ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3"><DollarSign className="h-8 w-8 text-blue-600 shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "إيرادات الشهر" : "Monthly Revenue"}</p><p className="text-lg font-bold text-blue-600">{(summary?.thisMonthRevenue ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><Clock className="h-8 w-8 text-amber-600 shrink-0" /><div><p className="text-xs text-muted-foreground">معلقة</p><p className="text-lg font-bold text-amber-600">{(summary?.pendingAmount ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-red-600 shrink-0" /><div><p className="text-xs text-muted-foreground">متأخرة</p><p className="text-lg font-bold text-red-600">{(summary?.overdueAmount ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><Clock className="h-8 w-8 text-amber-600 shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "معلقة" : "Pending"}</p><p className="text-lg font-bold text-amber-600">{(summary?.pendingAmount ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-red-600 shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "متأخرة" : "Overdue"}</p><p className="text-lg font-bold text-red-600">{(summary?.overdueAmount ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3"><CreditCard className="h-8 w-8 text-primary shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "إجمالي الفواتير" : "Total Invoices"}</p><p className="text-lg font-bold">{summary?.totalInvoices ?? 0}</p></div></CardContent></Card>
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="invoices" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="invoices"><FileText className="h-4 w-4 ml-1" />الفواتير</TabsTrigger>
+          <TabsTrigger value="invoices"><FileText className="h-4 w-4 ml-1" />{isAr ? "الفواتير" : "Invoices"}</TabsTrigger>
           <TabsTrigger value="transactions"><Receipt className="h-4 w-4 ml-1" />{isAr ? "المعاملات" : "Transactions"}</TabsTrigger>
           <TabsTrigger value="refunds"><Undo2 className="h-4 w-4 ml-1" />{isAr ? "الاستردادات" : "Refunds"}</TabsTrigger>
           <TabsTrigger value="plans"><CalendarClock className="h-4 w-4 ml-1" />{isAr ? "خطط الرسوم" : "Fee Plans"}</TabsTrigger>
@@ -246,16 +246,16 @@ export default function Finance() {
         <TabsContent value="invoices">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>الفواتير</CardTitle>
+              <CardTitle>{isAr ? "الفواتير" : "Invoices"}</CardTitle>
               <div className="flex gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]"><SelectValue placeholder="الحالة" /></SelectTrigger>
+                  <SelectTrigger className="w-[140px]"><SelectValue placeholder={isAr ? "الحالة" : "Status"} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
-                    <SelectItem value="pending">معلقة</SelectItem>
-                    <SelectItem value="paid">مدفوعة</SelectItem>
-                    <SelectItem value="overdue">متأخرة</SelectItem>
-                    <SelectItem value="partially_paid">مدفوعة جزئياً</SelectItem>
+                    <SelectItem value="pending">{isAr ? "معلقة" : "Pending"}</SelectItem>
+                    <SelectItem value="paid">{isAr ? "مدفوعة" : "Paid"}</SelectItem>
+                    <SelectItem value="overdue">{isAr ? "متأخرة" : "Overdue"}</SelectItem>
+                    <SelectItem value="partially_paid">{isAr ? "مدفوعة جزئياً" : "Partially Paid"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -264,13 +264,13 @@ export default function Finance() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">رقم الفاتورة</TableHead>
+                    <TableHead className="text-right">{isAr ? "رقم الفاتورة" : "Invoice Number"}</TableHead>
                     <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
-                    <TableHead className="text-right">ولي الأمر</TableHead>
+                    <TableHead className="text-right">{isAr ? "ولي الأمر" : "Parent"}</TableHead>
                     <TableHead className="text-right">{isAr ? "النوع" : "Type"}</TableHead>
                     <TableHead className="text-right">{isAr ? "الإجمالي" : "Total"}</TableHead>
                     <TableHead className="text-right">{isAr ? "المدفوع" : "Paid"}</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
                     <TableHead className="text-right">{isAr ? "الاستحقاق" : "Entitlement"}</TableHead>
                     <TableHead className="text-right">{isAr ? "إجراءات" : "Actions"}</TableHead>
                   </TableRow>
@@ -293,17 +293,17 @@ export default function Finance() {
                           <div className="flex gap-1 flex-wrap">
                             {(inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partially_paid') && (
                               <Button size="sm" variant="default" onClick={() => { setSelectedInvoice(inv); setOpenMarkPaid(true); }}>
-                                <CreditCard className="h-3 w-3 ml-1" />دفع
+                                <CreditCard className="h-3 w-3 ml-1" />{isAr ? "دفع" : "Pay"}
                               </Button>
                             )}
                             {(inv.status === 'pending' || inv.status === 'overdue') && (
                               <Button size="sm" variant="outline" onClick={() => sendReminder.mutate({ id: inv.id })}>
-                                <Send className="h-3 w-3 ml-1" />تذكير
+                                <Send className="h-3 w-3 ml-1" />{isAr ? "تذكير" : "Reminder"}
                               </Button>
                             )}
                             {inv.status === 'paid' && (
                               <Button size="sm" variant="outline" onClick={() => { setSelectedInvoice(inv); setRefundForm({ amount: inv.total, reason: "", transactionId: 0 }); setOpenRefund(true); }}>
-                                <Undo2 className="h-3 w-3 ml-1" />استرداد
+                                <Undo2 className="h-3 w-3 ml-1" />{isAr ? "استرداد" : "Refund"}
                               </Button>
                             )}
                             {inv.status === 'pending' && (
@@ -333,13 +333,13 @@ export default function Finance() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">{isAr ? "التاريخ" : "Date"}</TableHead>
-                    <TableHead className="text-right">رقم الفاتورة</TableHead>
+                    <TableHead className="text-right">{isAr ? "رقم الفاتورة" : "Invoice Number"}</TableHead>
                     <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
-                    <TableHead className="text-right">ولي الأمر</TableHead>
+                    <TableHead className="text-right">{isAr ? "ولي الأمر" : "Parent"}</TableHead>
                     <TableHead className="text-right">{isAr ? "النوع" : "Type"}</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">{isAr ? "المبلغ" : "Amount"}</TableHead>
                     <TableHead className="text-right">{isAr ? "الطريقة" : "Method"}</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -386,11 +386,11 @@ export default function Finance() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">{isAr ? "التاريخ" : "Date"}</TableHead>
-                    <TableHead className="text-right">رقم الفاتورة</TableHead>
-                    <TableHead className="text-right">ولي الأمر</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">{isAr ? "رقم الفاتورة" : "Invoice Number"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "ولي الأمر" : "Parent"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "المبلغ" : "Amount"}</TableHead>
                     <TableHead className="text-right">{isAr ? "السبب" : "Reason"}</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -460,7 +460,7 @@ export default function Finance() {
                       </div>
                       <div><Label>{isAr ? "اسم الخطة" : "Plan Name"}</Label><Input value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} placeholder="رسوم الفصل الأول" required /></div>
                       <div><Label>{isAr ? "المبلغ (ر.س)" : "Amount (SAR)"}</Label><Input type="number" step="0.01" value={planForm.amount} onChange={e => setPlanForm(f => ({ ...f, amount: e.target.value }))} required /></div>
-                      <div><Label>الوصف</Label><Input value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف اختياري" /></div>
+                      <div><Label>{isAr ? "الوصف" : "Description"}</Label><Input value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف اختياري" /></div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><Label>{isAr ? "تاريخ البدء" : "Start Date"}</Label><Input type="date" value={planForm.startDate} onChange={e => setPlanForm(f => ({ ...f, startDate: e.target.value }))} required /></div>
                         <div><Label>{isAr ? "تاريخ الانتهاء (اختياري)" : "End Date (Optional)"}</Label><Input type="date" value={planForm.endDate} onChange={e => setPlanForm(f => ({ ...f, endDate: e.target.value }))} /></div>
@@ -479,11 +479,11 @@ export default function Finance() {
                   <TableRow>
                     <TableHead className="text-right">{isAr ? "الاسم" : "Name"}</TableHead>
                     <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
-                    <TableHead className="text-right">ولي الأمر</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">{isAr ? "ولي الأمر" : "Parent"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "المبلغ" : "Amount"}</TableHead>
                     <TableHead className="text-right">{isAr ? "التكرار" : "Repetition"}</TableHead>
                     <TableHead className="text-right">{isAr ? "الفوترة القادمة" : "Upcoming Billing"}</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -521,7 +521,7 @@ export default function Finance() {
               <CardHeader><CardTitle>{isAr ? "ملخص مالي" : "Financial Summary"}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">إجمالي الإيرادات</span>
+                  <span className="text-muted-foreground">{isAr ? "إجمالي الإيرادات" : "Total Revenue"}</span>
                   <span className="font-bold text-green-600">{(summary?.totalRevenue ?? 0).toLocaleString('ar-SA')} ر.س</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">

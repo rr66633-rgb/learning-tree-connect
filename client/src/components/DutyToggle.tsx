@@ -1,12 +1,15 @@
 import { trpc } from '@/lib/trpc';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from 'react-i18next';
 
 /**
  * DutyToggle - ON DUTY / OFF DUTY toggle for staff
  * When OFF DUTY, staff won't receive pickup alerts
  */
 export function DutyToggle() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === 'ar';
   const { data: dutyStatus, isLoading } = trpc.pickup.dutyStatus.useQuery();
   const utils = trpc.useUtils();
   
@@ -34,7 +37,7 @@ export function DutyToggle() {
           : 'bg-gray-400 text-white hover:bg-gray-500'
         }
       >
-        {isOnDuty ? 'في الخدمة' : 'خارج الخدمة'}
+        {isOnDuty ? (isAr ? 'في الخدمة' : 'On Duty') : (isAr ? 'خارج الخدمة' : 'Off Duty')}
       </Badge>
     </div>
   );

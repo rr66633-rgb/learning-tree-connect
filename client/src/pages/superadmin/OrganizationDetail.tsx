@@ -269,7 +269,7 @@ export default function OrganizationDetail() {
             {org.subscription ? (
               <>
                 <InfoRow label={isAr ? "الخطة" : "Plan"} value={plans?.find(p => p.id === org.subscription?.planId)?.nameAr || "غير محدد"} />
-                <InfoRow label={t("common.status")} value={org.subscription.status === "active" ? "نشط" : org.subscription.status === "trialing" ? "تجريبي" : org.subscription.status} />
+                <InfoRow label={t("common.status")} value={org.subscription.status === "active" ? "نشط" : org.subscription.status === "trialing" ? (isAr ? "تجريبي" : "Trial") : org.subscription.status} />
                 <InfoRow label={isAr ? "دورة الفوترة" : "Billing Cycle"} value={org.subscription.billingCycle === "monthly" ? "شهرية" : "سنوية"} />
                 <InfoRow label={t("superadmin.amount")} value={`${org.subscription.amount} ${org.subscription.currency}`} />
               </>

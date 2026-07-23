@@ -23,7 +23,7 @@ export function NotificationSoundSettings() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Music className="h-5 w-5 text-primary" />
-          <CardTitle>إعدادات صوت الإشعارات</CardTitle>
+          <CardTitle>{isAr ? "إعدادات صوت الإشعارات" : "Notification Sound Settings"}</CardTitle>
         </div>
         <CardDescription>تخصيص أصوات الإشعارات ومستوى الصوت والاهتزاز</CardDescription>
       </CardHeader>

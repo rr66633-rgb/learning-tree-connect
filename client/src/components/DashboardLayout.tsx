@@ -41,6 +41,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTranslation } from "react-i18next";
 import { Globe } from "lucide-react";
+import { toast } from "sonner";
 
 type MenuItem = { icon: any; label: string; labelEn: string; path: string; color?: string };
 
@@ -307,12 +308,12 @@ export default function DashboardLayout({
             <div className="w-28 h-28 rounded-3xl bg-white shadow-xl shadow-primary/10 flex items-center justify-center p-3 border border-border/50">
               <img
                 src="/assets/logo.webp"
-                alt="نشأة"
+                alt="Naashah"
                 className="w-full h-full object-contain"
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-center text-foreground">
-              نشأة <span className="text-[#00C9B7]">Naashah</span>
+              {isAr ? 'نشأة' : 'Naashah'} <span className="text-[#00C9B7]">{isAr ? '' : ''}</span>
             </h1>
             <p className="text-base text-muted-foreground text-center max-w-sm leading-relaxed">
               {isAr ? "منصة متكاملة لإدارة الحضانات ورياض الأطفال" : "Integrated Nursery and Kindergarten Management Platform"}
@@ -328,7 +329,7 @@ export default function DashboardLayout({
             {isAr ? "تسجيل الدخول" : "Login"}
           </Button>
           <p className="text-xs text-muted-foreground/60 text-center">
-            منصة آمنة ومشفرة لحماية بياناتك
+            {isAr ? 'منصة آمنة ومشفرة لحماية بياناتك' : 'A secure and encrypted platform to protect your data'}
           </p>
         </div>
       </div>
@@ -382,6 +383,10 @@ function DashboardLayoutContent({
     i18n.changeLanguage(newLang);
     document.documentElement.lang = newLang;
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+    toast.success(
+      newLang === 'ar' ? 'تم تغيير اللغة إلى العربية' : 'Language changed to English',
+      { duration: 2000 }
+    );
   };
   const menuItems = getMenuItems(user?.role, basePath);
   const isMobile = useIsMobile();
@@ -438,7 +443,7 @@ function DashboardLayoutContent({
               <button
                 onClick={toggleSidebar}
                 className="h-10 w-10 flex items-center justify-center hover:bg-primary/10 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="تبديل القائمة"
+                aria-label={isAr ? "تبديل القائمة" : "Toggle menu"}
               >
                 <PanelLeft className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -450,12 +455,12 @@ function DashboardLayoutContent({
                         <Crown className="w-4 h-4 text-white" />
                       </div>
                       <span className="font-bold tracking-tight truncate text-foreground">
-                        Naashah - الإدارة
+                        {isAr ? 'Naashah - الإدارة' : 'Naashah - Admin'}
                       </span>
                     </>
                   ) : (
                     <>
-                      <img src="/assets/logo.webp" alt="نشأة" className="w-8 h-8 object-contain rounded-lg" />
+                      <img src="/assets/logo.webp" alt="Naashah" className="w-8 h-8 object-contain rounded-lg" />
                       <span className="font-bold tracking-tight truncate text-foreground">
                         Naashah
                       </span>
@@ -468,7 +473,7 @@ function DashboardLayoutContent({
                     <Crown className="w-4 h-4 text-white" />
                   </div>
                 ) : (
-                  <img src="/assets/logo.webp" alt="نشأة" className="w-8 h-8 object-contain rounded-lg" />
+                  <img src="/assets/logo.webp" alt="Naashah" className="w-8 h-8 object-contain rounded-lg" />
                 )
               )}
             </div>
@@ -570,7 +575,7 @@ function DashboardLayoutContent({
               <button
                 onClick={toggleSidebar}
                 className="h-10 w-10 flex items-center justify-center hover:bg-accent/60 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="تبديل القائمة"
+                aria-label={isAr ? "تبديل القائمة" : "Toggle menu"}
               >
                 <PanelLeft className="h-5 w-5 text-muted-foreground" />
               </button>

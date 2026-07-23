@@ -141,7 +141,7 @@ export default function AIMarketingEventContent() {
             </Select>
           </div>
           <Button onClick={handleGenerate} disabled={generateMutation.isPending} className="w-full bg-emerald-600 hover:bg-emerald-700">
-            {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء المحتوى</>}
+            {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Generating..."}</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء المحتوى</>}
           </Button>
         </CardContent>
       </Card>
