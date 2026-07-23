@@ -190,7 +190,7 @@ export default function AIPlanner() {
   const [ageGroup, setAgeGroup] = useState("");
   const [theme, setTheme] = useState("");
   const [learningGoals, setLearningGoals] = useState("");
-  const [language, setLanguage] = useState<"ar" | "en">("ar");
+  const [language, setLanguage] = useState<"ar" | "en" | "bilingual">("bilingual");
   const [result, setResult] = useState<any>(null);
   const [contentId, setContentId] = useState<number | null>(null);
 
@@ -774,11 +774,12 @@ export default function AIPlanner() {
               </div>
               <div className="space-y-2">
                 <Label>{isAr ? "اللغة" : "Language"}</Label>
-                <Select value={language} onValueChange={(v) => setLanguage(v as "ar" | "en")}>
+                <Select value={language} onValueChange={(v) => setLanguage(v as "ar" | "en" | "bilingual")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="bilingual">{isAr ? "ثنائي اللغة (عربي + إنجليزي)" : "Bilingual (Arabic + English)"}</SelectItem>
+                    <SelectItem value="ar">{isAr ? "العربية فقط" : "Arabic Only"}</SelectItem>
+                    <SelectItem value="en">{isAr ? "الإنجليزية فقط" : "English Only"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

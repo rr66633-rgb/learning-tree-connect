@@ -2475,3 +2475,10 @@ Fix:
 
 ## Brand Name Fix
 - [x] Rename all UI occurrences of 'Naashah' to 'Nashaa' (domain naashah.com stays unchanged)
+
+## AI Planner Bilingual Fix
+- [x] Make AI Planner generate weekly plans in both Arabic and English (bilingual output)
+
+## AI Planner & Assessment Print Improvements
+- [x] Make AI weekly plan generation always bilingual (Arabic + English) by default
+- [x] Add language selection (Arabic/English) option when printing child assessments

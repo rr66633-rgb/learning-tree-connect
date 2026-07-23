@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useMemo, useCallback } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { TreePine, TrendingUp, CheckCircle2, AlertTriangle, XCircle, Calendar, User, Download, Loader2 } from "lucide-react";
 import { generateAssessmentPDF } from "@/lib/assessmentPdf";
 import { toast } from "sonner";
@@ -47,6 +48,8 @@ export default function ParentDevelopmentalAssessment() {
   const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [pdfLangDialogOpen, setPdfLangDialogOpen] = useState(false);
+  const [pendingAssessment, setPendingAssessment] = useState<any>(null);
   const utils = trpc.useUtils();
 
   // Get parent's children
@@ -66,8 +69,17 @@ export default function ParentDevelopmentalAssessment() {
   // Get latest assessment for summary
   const latestAssessment = assessments?.[0];
 
-  // Handle PDF download
-  const handleDownloadPDF = useCallback(async (assessment: any) => {
+  // Show language selection dialog before PDF download
+  const handleDownloadClick = useCallback((assessment: any) => {
+    setPendingAssessment(assessment);
+    setPdfLangDialogOpen(true);
+  }, []);
+
+  // Handle PDF download with selected language
+  const handleDownloadPDF = useCallback(async (pdfLanguage: "ar" | "en") => {
+    const assessment = pendingAssessment;
+    if (!assessment) return;
+    setPdfLangDialogOpen(false);
     try {
       setDownloadingId(assessment.id);
 
@@ -96,6 +108,7 @@ export default function ParentDevelopmentalAssessment() {
         interpretation: assessment.interpretation,
         notes: assessment.notes,
         responses,
+        language: pdfLanguage,
       });
 
       toast.success(isAr ? "تم تحميل التقرير بنجاح" : "Report downloaded successfully");
@@ -104,8 +117,9 @@ export default function ParentDevelopmentalAssessment() {
       toast.error(isAr ? "حدث خطأ أثناء إنشاء التقرير" : "Error creating report");
     } finally {
       setDownloadingId(null);
+      setPendingAssessment(null);
     }
-  }, [selectedChild, utils]);
+  }, [selectedChild, utils, pendingAssessment]);
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto" dir="rtl">
@@ -173,7 +187,7 @@ export default function ParentDevelopmentalAssessment() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDownloadPDF(latestAssessment)}
+                  onClick={() => handleDownloadClick(latestAssessment)}
                   disabled={downloadingId === latestAssessment.id}
                   className="gap-2 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
                 >
@@ -281,7 +295,7 @@ export default function ParentDevelopmentalAssessment() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDownloadPDF(assessment)}
+                          onClick={() => handleDownloadClick(assessment)}
                           disabled={downloadingId === assessment.id}
                           className="h-8 w-8 text-gray-500 hover:text-emerald-600"
                           title={isAr ? "تحميل التقرير" : "Download Report"}
@@ -322,6 +336,33 @@ export default function ParentDevelopmentalAssessment() {
           </Card>
         </>
       )}
+
+      {/* Language Selection Dialog for PDF */}
+      <Dialog open={pdfLangDialogOpen} onOpenChange={setPdfLangDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir={isAr ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle>{isAr ? "اختر لغة التقرير" : "Choose Report Language"}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+            <Button
+              variant="outline"
+              className="h-14 text-base justify-start gap-3 border-2 hover:border-emerald-500 hover:bg-emerald-50"
+              onClick={() => handleDownloadPDF("ar")}
+            >
+              <span className="text-2xl">🇸🇦</span>
+              <span>{isAr ? "العربية" : "Arabic"}</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 text-base justify-start gap-3 border-2 hover:border-blue-500 hover:bg-blue-50"
+              onClick={() => handleDownloadPDF("en")}
+            >
+              <span className="text-2xl">🇬🇧</span>
+              <span>{isAr ? "الإنجليزية" : "English"}</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

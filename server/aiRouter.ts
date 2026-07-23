@@ -120,13 +120,14 @@ Write the response in JSON format with this structure:
       ageGroup: z.string().min(1),
       theme: z.string().min(1),
       learningGoals: z.array(z.string()).optional(),
-      language: z.enum(["ar", "en"]).default("ar"),
+      language: z.enum(["ar", "en", "bilingual"]).default("bilingual"),
       classId: z.number().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const goals = input.learningGoals?.join("، ") || "";
-      const isArabic = input.language === "ar";
+      const isArabic = input.language === "ar" || input.language === "bilingual";
+      const isBilingual = input.language === "bilingual";
       
       const DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
       const DAYS_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
@@ -154,7 +155,7 @@ ${CULTURAL_GUIDELINES}
   "parentInvolvement": "أنشطة منزلية مقترحة لإشراك الأهل",
   "weeklyAssessment": "ملخص تقييم نهاية الأسبوع"
 }
-اكتبي بالعربية فقط.`
+${isBilingual ? "اكتبي كل حقل بالعربية أولاً ثم الترجمة الإنجليزية بين قوسين. مثال: \"استكشاف الألوان (Exploring Colors)\"." : "اكتبي بالعربية فقط."}`
         : `You are an expert EYFS curriculum planner in Saudi Arabia.
 
 Age group: ${input.ageGroup}
@@ -252,7 +253,7 @@ ${CULTURAL_GUIDELINES}
   },
   "totalDuration": "المدة الإجمالية"
 }
-اكتبي بالعربية فقط. لا تترك أي حقل فارغاً.`
+${isBilingual ? "اكتبي كل حقل بالعربية أولاً ثم الترجمة الإنجليزية بين قوسين. مثال: \"استكشاف الألوان (Exploring Colors)\". لا تترك أي حقل فارغاً." : "اكتبي بالعربية فقط. لا تترك أي حقل فارغاً."}`
           : `You are an expert EYFS curriculum planner in Saudi Arabia. Create the plan for ${dayName} ONLY (day ${dayNumber} of 5).
 
 Age group: ${input.ageGroup}

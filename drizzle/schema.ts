@@ -771,7 +771,7 @@ export const aiGeneratedContent = mysqlTable("ai_generated_content", {
   type: mysqlEnum("type", ["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story"]).notNull(),
   title: varchar("title", { length: 500 }).notNull(),
   content: json("content").notNull(),
-  language: mysqlEnum("language", ["ar", "en"]).default("ar").notNull(),
+  language: mysqlEnum("language", ["ar", "en", "bilingual"]).default("bilingual").notNull(),
   childId: int("childId"),
   classId: int("classId"),
   ageGroup: varchar("ageGroup", { length: 50 }),
