@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   Building2,
   Palette,
@@ -17,14 +18,17 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const STEPS = [
-  { id: 1, title: "معلومات المنشأة", icon: Building2 },
-  { id: 2, title: "الهوية البصرية", icon: Palette },
-  { id: 3, title: "خطة الاشتراك", icon: CreditCard },
-  { id: 4, title: "التأكيد", icon: CheckCircle2 },
-];
 
 export default function OnboardingWizard() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const STEPS = [
+  { id: 1, title: isAr ? "معلومات المنشأة" : "Organization Info", icon: Building2 },
+  { id: 2, title: isAr ? "الهوية البصرية" : "Visual Identity", icon: Palette },
+  { id: 3, title: isAr ? "خطة الاشتراك" : "Subscription Plan", icon: CreditCard },
+  { id: 4, title: isAr ? "التأكيد" : "Confirmation", icon: CheckCircle2 },
+  ];
+
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
@@ -103,9 +107,9 @@ export default function OnboardingWizard() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Sparkles className="w-6 h-6 text-[#00C9B7]" />
-            <h1 className="text-2xl font-bold text-foreground">إعداد منشأتك على نشأة</h1>
+            <h1 className="text-2xl font-bold text-foreground">{isAr ? "إعداد منشأتك على نشأة" : "Setup Your Organization on Naashah"}</h1>
           </div>
-          <p className="text-muted-foreground">أكمل الخطوات التالية لبدء استخدام المنصة</p>
+          <p className="text-muted-foreground">{isAr ? "أكمل الخطوات التالية لبدء استخدام المنصة" : "Complete the following steps to start using the platform"}</p>
         </div>
 
         {/* Progress Steps */}
@@ -141,7 +145,7 @@ export default function OnboardingWizard() {
           <CardContent className="p-6">
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-foreground mb-4">المعلومات الأساسية</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{isAr ? "المعلومات الأساسية" : "Basic Information"}</h2>
 
                 {/* Organization Type - fixed to nursery */}
 
@@ -152,7 +156,7 @@ export default function OnboardingWizard() {
                       value={form.nameAr}
                       onChange={(e) => setForm((p) => ({ ...p, nameAr: e.target.value }))}
                       className="bg-background border-input text-foreground mt-1"
-                      placeholder="حضانة السعادة"
+                      placeholder={isAr ? "حضانة السعادة" : "Happiness Nursery"}
                       dir="rtl"
                     />
                   </div>
@@ -181,7 +185,7 @@ export default function OnboardingWizard() {
                     <p className="text-xs text-muted-foreground">{form.slug || "xxx"}.naashah.com</p>
                     {form.slug.length >= 2 && (
                       <span className={`text-xs ${slugCheck?.available ? "text-[#00C9B7]" : "text-red-400"}`}>
-                        {slugCheck?.available ? "✓ متاح" : "✗ غير متاح"}
+                        {slugCheck?.available ? isAr ? "✓ متاح" : "Available" : isAr ? "✗ غير متاح" : "Unavailable"}
                       </span>
                     )}
                   </div>
@@ -189,7 +193,7 @@ export default function OnboardingWizard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-foreground">الهاتف</Label>
+                    <Label className="text-foreground">{isAr ? "الهاتف" : "Phone"}</Label>
                     <Input
                       value={form.phone}
                       onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
@@ -199,7 +203,7 @@ export default function OnboardingWizard() {
                     />
                   </div>
                   <div>
-                    <Label className="text-foreground">البريد الإلكتروني</Label>
+                    <Label className="text-foreground">{isAr ? "البريد الإلكتروني" : "Email"}</Label>
                     <Input
                       value={form.email}
                       onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
@@ -212,21 +216,21 @@ export default function OnboardingWizard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-foreground">المدينة</Label>
+                    <Label className="text-foreground">{isAr ? "المدينة" : "City"}</Label>
                     <Input
                       value={form.city}
                       onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
                       className="bg-background border-input text-foreground mt-1"
-                      placeholder="الرياض"
+                      placeholder={isAr ? "الرياض" : "Riyadh"}
                     />
                   </div>
                   <div>
-                    <Label className="text-foreground">رقم الترخيص</Label>
+                    <Label className="text-foreground">{isAr ? "رقم الترخيص" : "License Number"}</Label>
                     <Input
                       value={form.licenseNumber}
                       onChange={(e) => setForm((p) => ({ ...p, licenseNumber: e.target.value }))}
                       className="bg-background border-input text-foreground mt-1"
-                      placeholder="اختياري"
+                      placeholder={isAr ? "اختياري" : "Optional"}
                     />
                   </div>
                 </div>
@@ -235,12 +239,12 @@ export default function OnboardingWizard() {
 
             {step === 2 && (
               <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">تخصيص الهوية البصرية</h2>
-                <p className="text-sm text-muted-foreground mb-4">اختر ألوان حضانتك. يمكنك تغييرها لاحقاً من الإعدادات.</p>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{isAr ? "تخصيص الهوية البصرية" : "Customize Visual Identity"}</h2>
+                <p className="text-sm text-muted-foreground mb-4">{isAr ? "اختر ألوان حضانتك. يمكنك تغييرها لاحقاً من الإعدادات." : "Choose your nursery colors. You can change them later from settings."}</p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-foreground">اللون الأساسي</Label>
+                    <Label className="text-foreground">{isAr ? "اللون الأساسي" : "Primary Color"}</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="color"
@@ -257,7 +261,7 @@ export default function OnboardingWizard() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-foreground">اللون الثانوي</Label>
+                    <Label className="text-foreground">{isAr ? "اللون الثانوي" : "Secondary Color"}</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="color"
@@ -274,7 +278,7 @@ export default function OnboardingWizard() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-foreground">اللون المميز</Label>
+                    <Label className="text-foreground">{isAr ? "اللون المميز" : "Accent Color"}</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="color"
@@ -299,16 +303,16 @@ export default function OnboardingWizard() {
                       <Building2 className="w-5 h-5 text-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-foreground">{form.nameAr || "اسم الحضانة"}</h3>
+                      <h3 className="font-bold text-foreground">{form.nameAr || (isAr ? "اسم الحضانة" : "Nursery Name")}</h3>
                       <p className="text-xs" style={{ color: form.accentColor }}>{form.name || "Nursery Name"}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <div className="px-3 py-1.5 rounded text-foreground text-sm" style={{ backgroundColor: form.primaryColor }}>
-                      زر أساسي
+                      {isAr ? "زر أساسي" : "Primary Button"}
                     </div>
                     <div className="px-3 py-1.5 rounded text-sm border" style={{ borderColor: form.secondaryColor, color: form.secondaryColor }}>
-                      زر ثانوي
+                      {isAr ? "زر ثانوي" : "Secondary Button"}
                     </div>
                   </div>
                 </div>
@@ -317,8 +321,8 @@ export default function OnboardingWizard() {
 
             {step === 3 && (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-foreground mb-4">اختر خطة الاشتراك</h2>
-                <p className="text-sm text-muted-foreground mb-4">جميع الخطط تشمل فترة تجريبية مجانية لمدة 14 يوم</p>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{isAr ? "اختر خطة الاشتراك" : "Choose Subscription Plan"}</h2>
+                <p className="text-sm text-muted-foreground mb-4">{isAr ? "جميع الخطط تشمل فترة تجريبية مجانية لمدة 14 يوم" : "All plans include a 14-day free trial"}</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {plans?.map((plan) => (
@@ -332,21 +336,21 @@ export default function OnboardingWizard() {
                       onClick={() => setForm((p) => ({ ...p, planId: plan.id }))}
                     >
                       <h3 className="font-semibold text-foreground">{plan.nameAr}</h3>
-                      <p className="text-2xl font-bold text-foreground mt-2">{plan.priceMonthly} <span className="text-sm text-muted-foreground">ر.س/شهر</span></p>
-                      <p className="text-xs text-muted-foreground mt-1">حتى {plan.maxChildren >= 999 ? "غير محدود" : plan.maxChildren} طفل</p>
+                      <p className="text-2xl font-bold text-foreground mt-2">{plan.priceMonthly} <span className="text-sm text-muted-foreground">{isAr ? "ر.س/شهر" : "SAR/month"}</span></p>
+                      <p className="text-xs text-muted-foreground mt-1">حتى {plan.maxChildren >= 999 ? (isAr ? "غير محدود" : "Unlimited") : plan.maxChildren} طفل</p>
                     </div>
                   ))}
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-foreground">دورة الفوترة</Label>
+                  <Label className="text-foreground">{isAr ? "دورة الفوترة" : "Billing Cycle"}</Label>
                   <Select value={form.billingCycle} onValueChange={(v) => setForm((p) => ({ ...p, billingCycle: v as any }))}>
                     <SelectTrigger className="bg-background border-input text-foreground mt-1 w-48">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="monthly">شهرية</SelectItem>
-                      <SelectItem value="yearly">سنوية (خصم)</SelectItem>
+                      <SelectItem value="monthly">{isAr ? "شهرية" : "Monthly"}</SelectItem>
+                      <SelectItem value="yearly">{isAr ? "سنوية (خصم)" : "Annual (Discount)"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -355,18 +359,18 @@ export default function OnboardingWizard() {
 
             {step === 4 && (
               <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">مراجعة وتأكيد</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{isAr ? "مراجعة وتأكيد" : "Review and Confirm"}</h2>
                 
                 <div className="space-y-4">
                   <div className="p-4 rounded-lg bg-background border border-border">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">معلومات الحضانة</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{isAr ? "معلومات الحضانة" : "Nursery Information"}</h3>
                     <p className="text-foreground font-medium">{form.nameAr}</p>
                     <p className="text-muted-foreground text-sm">{form.name}</p>
                     <p className="text-muted-foreground text-xs mt-1">{form.slug}.naashah.com</p>
                   </div>
 
                   <div className="p-4 rounded-lg bg-background border border-border">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">الهوية البصرية</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{isAr ? "الهوية البصرية" : "Visual Identity"}</h3>
                     <div className="flex gap-2">
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: form.primaryColor }} />
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: form.secondaryColor }} />
@@ -375,12 +379,12 @@ export default function OnboardingWizard() {
                   </div>
 
                   <div className="p-4 rounded-lg bg-background border border-border">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">خطة الاشتراك</h3>
-                    <p className="text-foreground font-medium">{selectedPlan?.nameAr || "غير محدد"}</p>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{isAr ? "خطة الاشتراك" : "Subscription Plan"}</h3>
+                    <p className="text-foreground font-medium">{selectedPlan?.nameAr || (isAr ? "غير محدد" : "Not Specified")}</p>
                     <p className="text-muted-foreground text-sm">
-                      {form.billingCycle === "monthly" ? `${selectedPlan?.priceMonthly} ر.س/شهر` : `${selectedPlan?.priceYearly} ر.س/سنة`}
+                      {form.billingCycle === "monthly" ? `${selectedPlan?.priceMonthly} ر.س/${isAr ? "شهر" : "Month"}` : `${selectedPlan?.priceYearly} ر.س/${isAr ? "سنة" : "Year"}`}
                     </p>
-                    <p className="text-[#00C9B7] text-xs mt-1">تشمل فترة تجريبية مجانية 14 يوم</p>
+                    <p className="text-[#00C9B7] text-xs mt-1">{isAr ? "تشمل فترة تجريبية مجانية 14 يوم" : "Includes 14-day free trial"}</p>
                   </div>
                 </div>
               </div>
@@ -397,7 +401,7 @@ export default function OnboardingWizard() {
             className="border-input text-foreground"
           >
             <ArrowRight className="w-4 h-4 ml-1" />
-            السابق
+            {isAr ? "السابق" : "Previous"}
           </Button>
 
           {step < 4 ? (
@@ -406,7 +410,7 @@ export default function OnboardingWizard() {
               disabled={!canProceed}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              التالي
+              {isAr ? "التالي" : "Next"}
               <ArrowLeft className="w-4 h-4 mr-1" />
             </Button>
           ) : (
@@ -415,10 +419,10 @@ export default function OnboardingWizard() {
               disabled={completeOnboarding.isPending}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              {completeOnboarding.isPending ? "جاري الإنشاء..." : (
+              {completeOnboarding.isPending ? (isAr ? "جاري الإنشاء..." : "Creating...") : (
                 <>
                   <CheckCircle2 className="w-4 h-4 ml-1" />
-                  إنشاء الحضانة
+                  {isAr ? "إنشاء الحضانة" : "Create Nursery"}
                 </>
               )}
             </Button>

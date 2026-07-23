@@ -31,7 +31,7 @@ export default function AIMarketingMediaCaption() {
       toast.success(isAr ? "تم إنشاء الكابشن بنجاح!" : "Caption created successfully!");
     },
     onError: (err) => {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
     },
   });
 
@@ -87,7 +87,7 @@ export default function AIMarketingMediaCaption() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`تم نسخ ${label}`);
+    toast.success(`${isAr ? "تم نسخ " : "Copied"}${label}`);
   };
 
   return (
@@ -97,19 +97,19 @@ export default function AIMarketingMediaCaption() {
           <Button variant="ghost" size="icon"><ArrowRight className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">كابشن من الصور/الفيديو</h1>
-          <p className="text-sm text-gray-500">ارفع صورة أو فيديو والذكاء الاصطناعي يكتب الكابشن</p>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "كابشن من الصور/الفيديو" : "Caption from Photos/Video"}</h1>
+          <p className="text-sm text-gray-500">{isAr ? "ارفع صورة أو فيديو والذكاء الاصطناعي يكتب الكابشن" : "Upload a photo or video and AI writes the caption"}</p>
         </div>
       </div>
 
       <Card className="mb-6">
         <CardContent className="p-5 space-y-4">
           <div className="space-y-2">
-            <Label>الصور / الفيديو</Label>
+            <Label>{isAr ? "الصور / الفيديو" : "Photos / Video"}</Label>
             <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-emerald-400 transition-colors">
               <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-500">اضغط لرفع صور أو فيديو</p>
-              <p className="text-xs text-gray-400 mt-1">الحد الأقصى: 5 ملفات</p>
+              <p className="text-sm text-gray-500">{isAr ? "اضغط لرفع صور أو فيديو" : "Click to upload photos or video"}</p>
+              <p className="text-xs text-gray-400 mt-1">{isAr ? "الحد الأقصى: 5 ملفات" : "Max: 5 Files"}</p>
             </div>
             <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple onChange={handleFileChange} className="hidden" />
           </div>
@@ -130,20 +130,20 @@ export default function AIMarketingMediaCaption() {
           )}
 
           <div className="space-y-2">
-            <Label>سياق إضافي</Label>
+            <Label>{isAr ? "سياق إضافي" : "Additional Context"}</Label>
             <Input placeholder="مثال: صور من رحلة حديقة الحيوان مع أطفال KG1" value={form.context} onChange={(e) => setForm({ ...form, context: e.target.value })} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>المنصة</Label>
+              <Label>{isAr ? "المنصة" : "Platform"}</Label>
               <Select value={form.platform} onValueChange={(v: any) => setForm({ ...form, platform: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="instagram">انستقرام</SelectItem>
-                  <SelectItem value="tiktok">تيك توك</SelectItem>
-                  <SelectItem value="snapchat">سناب شات</SelectItem>
-                  <SelectItem value="whatsapp">واتساب</SelectItem>
+                  <SelectItem value="instagram">{isAr ? "انستقرام" : "Instagram"}</SelectItem>
+                  <SelectItem value="tiktok">{isAr ? "تيك توك" : "TikTok"}</SelectItem>
+                  <SelectItem value="snapchat">{isAr ? "سناب شات" : "Snapchat"}</SelectItem>
+                  <SelectItem value="whatsapp">{isAr ? "واتساب" : "WhatsApp"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -152,16 +152,16 @@ export default function AIMarketingMediaCaption() {
               <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">عربي</SelectItem>
-                  <SelectItem value="en">إنجليزي</SelectItem>
-                  <SelectItem value="both">عربي وإنجليزي</SelectItem>
+                  <SelectItem value="ar">{isAr ? "عربي" : "Arabic"}</SelectItem>
+                  <SelectItem value="en">{isAr ? "إنجليزي" : "English"}</SelectItem>
+                  <SelectItem value="both">{isAr ? "عربي وإنجليزي" : "Arabic and English"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <Button onClick={handleGenerate} disabled={generateMutation.isPending || isUploading} className="w-full bg-orange-600 hover:bg-orange-700">
-            {(generateMutation.isPending || isUploading) ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء الكابشن</>}
+            {(generateMutation.isPending || isUploading) ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Creating..."}</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء الكابشن</>}
           </Button>
         </CardContent>
       </Card>
@@ -186,8 +186,8 @@ export default function AIMarketingMediaCaption() {
               <CardContent><div className="flex flex-wrap gap-2">{result.hashtags.map((h: string, i: number) => <span key={i} className="text-sm bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{h}</span>)}</div></CardContent>
             </Card>
           )}
-          <Button onClick={() => copyToClipboard(`${result.captionAr || ""}\n\n${result.captionEn || ""}\n\n${result.hashtags?.join(" ") || ""}`, "كل المحتوى")} variant="outline" className="w-full">
-            <Copy className="h-4 w-4 ml-2" />نسخ كل المحتوى
+          <Button onClick={() => copyToClipboard(`${result.captionAr || ""}\n\n${result.captionEn || ""}\n\n${result.hashtags?.join(" ") || ""}`, isAr ? "كل المحتوى" : "All Content")} variant="outline" className="w-full">
+            <Copy className="h-4 w-4 ml-2" />{isAr ? "نسخ كل المحتوى" : "Copy All Content"}
           </Button>
         </div>
       )}

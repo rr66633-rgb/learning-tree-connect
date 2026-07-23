@@ -14,47 +14,47 @@ import { Plus, ChevronRight, ChevronLeft, Calendar as CalIcon, Pencil, Trash2, E
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
-const CATEGORIES = [
-  { value: "holiday", label: "إجازة", color: "bg-red-100 text-red-700 border-red-200" },
-  { value: "event", label: "فعالية", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  { value: "meeting", label: "اجتماع", color: "bg-purple-100 text-purple-700 border-purple-200" },
-  { value: "exam", label: "اختبار", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  { value: "activity", label: "نشاط", color: "bg-green-100 text-green-700 border-green-200" },
-  { value: "celebration", label: "احتفال", color: "bg-pink-100 text-pink-700 border-pink-200" },
-  { value: "other", label: "أخرى", color: "bg-gray-100 text-gray-700 border-gray-200" },
-];
+const getCATEGORIES = (isAr: boolean) => ([
+  { value: "holiday", label: (isAr ? "إجازة" : "Leave"), color: "bg-red-100 text-red-700 border-red-200" },
+  { value: "event", label: (isAr ? "فعالية" : "Event"), color: "bg-blue-100 text-blue-700 border-blue-200" },
+  { value: "meeting", label: (isAr ? "اجتماع" : "Meeting"), color: "bg-purple-100 text-purple-700 border-purple-200" },
+  { value: "exam", label: (isAr ? "اختبار" : "Test"), color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { value: "activity", label: (isAr ? "نشاط" : "Activity"), color: "bg-green-100 text-green-700 border-green-200" },
+  { value: "celebration", label: (isAr ? "احتفال" : "Celebration"), color: "bg-pink-100 text-pink-700 border-pink-200" },
+  { value: "other", label: (isAr ? "أخرى" : "Other"), color: "bg-gray-100 text-gray-700 border-gray-200" },
+]);
 
-const AUDIENCES = [
-  { value: "all", label: "الجميع" },
-  { value: "parents", label: "أولياء الأمور" },
-  { value: "staff", label: "الموظفين" },
-  { value: "admin", label: "الإدارة فقط" },
-];
+const getAUDIENCES = (isAr: boolean) => ([
+  { value: "all", label: (isAr ? "الجميع" : "All") },
+  { value: "parents", label: (isAr ? "أولياء الأمور" : "Parents") },
+  { value: "staff", label: (isAr ? "الموظفين" : "Employees") },
+  { value: "admin", label: (isAr ? "الإدارة فقط" : "Management Only") },
+]);
 
-const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-const DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const getMONTHS_AR = (isAr: boolean) => ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const getDAYS_AR = (isAr: boolean) => ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
-const REMINDER_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد الانتظار", color: "bg-yellow-100 text-yellow-700" },
-  sent: { label: "تم الإرسال", color: "bg-green-100 text-green-700" },
-  cancelled: { label: "ملغي", color: "bg-red-100 text-red-700" },
-};
+const getREMINDER_STATUS_MAP = (isAr: boolean): Record<string, { label: string; color: string }>  => ({
+  pending: { label: (isAr ? "قيد الانتظار" : "Pending"), color: "bg-yellow-100 text-yellow-700" },
+  sent: { label: (isAr ? "تم الإرسال" : "Sent"), color: "bg-green-100 text-green-700" },
+  cancelled: { label: (isAr ? "ملغي" : "Canceled"), color: "bg-red-100 text-red-700" },
+});
 
-const REMINDER_TYPE_MAP: Record<string, string> = {
-  parent_upcoming: "تذكير ولي أمر",
-  parent_update: "تحديث للأهل",
-  parent_cancellation: "إلغاء",
-  teacher_preparation: "تحضير معلمة",
-  teacher_materials: "تجهيز مواد",
-  teacher_setup: "إعداد المكان",
-  manual: "يدوي",
-};
+const getREMINDER_TYPE_MAP = (isAr: boolean): Record<string, string>  => ({
+  parent_upcoming: (isAr ? "تذكير ولي أمر" : "Parent Reminder"),
+  parent_update: (isAr ? "تحديث للأهل" : "Update for Parents"),
+  parent_cancellation: (isAr ? "إلغاء" : "Cancel"),
+  teacher_preparation: (isAr ? "تحضير معلمة" : "Teacher Preparation"),
+  teacher_materials: (isAr ? "تجهيز مواد" : "Prepare Materials"),
+  teacher_setup: (isAr ? "إعداد المكان" : "Location Setup"),
+  manual: (isAr ? "يدوي" : "Manual"),
+});
 
-function getCategoryStyle(cat: string) {
-  return CATEGORIES.find(c => c.value === cat)?.color || "bg-gray-100 text-gray-700";
+function getCategoryStyle(cat: string, isAr: boolean) {
+  return getCATEGORIES(isAr).find(c => c.value === cat)?.color || "bg-gray-100 text-gray-700";
 }
-function getCategoryLabel(cat: string) {
-  return CATEGORIES.find(c => c.value === cat)?.label || cat;
+function getCategoryLabel(cat: string, isAr: boolean) {
+  return getCATEGORIES(isAr).find(c => c.value === cat)?.label || cat;
 }
 
 export default function StaffCalendar() {
@@ -131,7 +131,7 @@ export default function StaffCalendar() {
   const publishMutation = trpc.calendar.publish.useMutation({
     onSuccess: (data: any) => {
       utils.calendar.list.invalidate();
-      toast.success(data.status === "published" ? "تم نشر الحدث وجدولة التذكيرات" : "تم إلغاء نشر الحدث");
+      toast.success(data.status === "published" ? "تم نشر الحدث وجدولة التذكيرات" : (isAr ? "تم إلغاء نشر الحدث" : "Event unpublished"));
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -139,7 +139,7 @@ export default function StaffCalendar() {
   const sendReminderMutation = trpc.calendar.sendReminder.useMutation({
     onSuccess: (data: any) => {
       utils.calendar.reminderHistory.invalidate();
-      toast.success(`تم إرسال التذكير إلى ${data.sentTo} مستخدم`);
+      toast.success(isAr ? `تم إرسال التذكير إلى ${data.sentTo} مستخدم` : `Reminder sent to${data.sentTo}User`);
       setManualReminderMsg("");
     },
     onError: (e: any) => toast.error(e.message),
@@ -273,13 +273,13 @@ export default function StaffCalendar() {
             <CalIcon className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">التقويم السنوي</h1>
-            <p className="text-sm text-muted-foreground">إدارة الأحداث والمناسبات والإجازات</p>
+            <h1 className="text-2xl font-bold text-foreground">{isAr ? "التقويم السنوي" : "Annual Calendar"}</h1>
+            <p className="text-sm text-muted-foreground">{isAr ? "إدارة الأحداث والمناسبات والإجازات" : "Manage Events, Occasions & Holidays"}</p>
           </div>
         </div>
         <Button onClick={() => openCreate()} className="shadow-sm">
           <Plus className="h-4 w-4 ml-2" />
-          إضافة حدث
+          {isAr ? "إضافة حدث" : "Add Event"}
         </Button>
       </div>
 
@@ -291,7 +291,7 @@ export default function StaffCalendar() {
               <ChevronRight className="h-5 w-5" />
             </Button>
             <CardTitle className="text-xl">
-              {MONTHS_AR[month - 1]} {year}
+              {getMONTHS_AR(isAr)[month - 1]} {year}
             </CardTitle>
             <Button variant="ghost" size="icon" onClick={() => setCurrentDate(new Date(year, month, 1))}>
               <ChevronLeft className="h-5 w-5" />
@@ -301,7 +301,7 @@ export default function StaffCalendar() {
         <CardContent>
           {/* Day headers */}
           <div className="grid grid-cols-7 mb-2">
-            {DAYS_AR.map(d => (
+            {getDAYS_AR(isAr).map(d => (
               <div key={d} className="text-center text-sm font-medium text-muted-foreground py-2">{d}</div>
             ))}
           </div>
@@ -326,7 +326,7 @@ export default function StaffCalendar() {
                     {dayEvents.slice(0, 3).map((ev: any) => (
                       <div
                         key={ev.id}
-                        className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer ${getCategoryStyle(ev.category)} ${ev.status === "draft" ? "opacity-60 border border-dashed" : ""}`}
+                        className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer ${getCategoryStyle(ev.category, isAr)} ${ev.status === "draft" ? "opacity-60 border border-dashed" : ""}`}
                         onClick={(e) => { e.stopPropagation(); setViewEvent(ev); }}
                         title={ev.titleAr}
                       >
@@ -347,28 +347,28 @@ export default function StaffCalendar() {
       {/* Events List Below Calendar */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">أحداث {MONTHS_AR[month - 1]}</CardTitle>
+          <CardTitle className="text-lg">أحداث {getMONTHS_AR(isAr)[month - 1]}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
           ) : !events || events.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">لا توجد أحداث في هذا الشهر</div>
+            <div className="text-center py-8 text-muted-foreground">{isAr ? "لا توجد أحداث في هذا الشهر" : "No events this month"}</div>
           ) : (
             <div className="space-y-3">
               {events.map((ev: any) => (
                 <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-sm transition-shadow">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${getCategoryStyle(ev.category)}`}>
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${getCategoryStyle(ev.category, isAr)}`}>
                     <CalIcon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium truncate">{ev.titleAr}</span>
-                      <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(ev.category)}`}>
-                        {getCategoryLabel(ev.category)}
+                      <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(ev.category, isAr)}`}>
+                        {getCategoryLabel(ev.category, isAr)}
                       </Badge>
                       {ev.status === "draft" && (
-                        <Badge variant="outline" className="text-[10px] bg-yellow-50 text-yellow-700 border-yellow-200">مسودة</Badge>
+                        <Badge variant="outline" className="text-[10px] bg-yellow-50 text-yellow-700 border-yellow-200">{isAr ? "مسودة" : "Draft"}</Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -384,7 +384,7 @@ export default function StaffCalendar() {
                         onCheckedChange={(checked) => publishMutation.mutate({ id: ev.id, published: checked })}
                         className="scale-75"
                       />
-                      <span className="text-[10px] text-muted-foreground">{ev.status === "published" ? "منشور" : "مسودة"}</span>
+                      <span className="text-[10px] text-muted-foreground">{ev.status === "published" ? (isAr ? "منشور" : "Published") : (isAr ? "مسودة" : "Draft")}</span>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReminderDialog(ev)} title="التذكيرات">
                       <Bell className="h-4 w-4" />
@@ -410,15 +410,15 @@ export default function StaffCalendar() {
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) { setEditingEvent(null); resetForm(); } }}>
         <DialogContent className="max-w-lg max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle>{editingEvent ? "تعديل الحدث" : "إضافة حدث جديد"}</DialogTitle>
+            <DialogTitle>{editingEvent ? "تعديل الحدث" : (isAr ? "إضافة حدث جديد" : "Add New Event")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
             <div>
               <Label>العنوان بالعربية *</Label>
-              <Input value={form.titleAr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, titleAr: e.target.value }))} placeholder="مثال: إجازة اليوم الوطني" />
+              <Input value={form.titleAr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, titleAr: e.target.value }))} placeholder={isAr ? "مثال: إجازة اليوم الوطني" : "Example: National Day Holiday"} />
             </div>
             <div>
-              <Label>العنوان بالإنجليزية</Label>
+              <Label>{isAr ? "العنوان بالإنجليزية" : "Address in English"}</Label>
               <Input value={form.titleEn} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, titleEn: e.target.value }))} placeholder="National Day Holiday" dir="ltr" />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -427,59 +427,59 @@ export default function StaffCalendar() {
                 <Input type="date" value={form.eventDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, eventDate: e.target.value }))} />
               </div>
               <div>
-                <Label>تاريخ النهاية (اختياري)</Label>
+                <Label>{isAr ? "تاريخ النهاية (اختياري)" : "End Date (Optional)"}</Label>
                 <Input type="date" value={form.endDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, endDate: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="flex items-center gap-1"><Clock className="h-3 w-3" />الوقت</Label>
+                <Label className="flex items-center gap-1"><Clock className="h-3 w-3" />{isAr ? "الوقت" : "Time"}</Label>
                 <Input type="time" value={form.eventTime} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, eventTime: e.target.value }))} />
               </div>
               <div>
-                <Label className="flex items-center gap-1"><MapPin className="h-3 w-3" />الموقع</Label>
-                <Input value={form.location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, location: e.target.value }))} placeholder="مثال: القاعة الرئيسية" />
+                <Label className="flex items-center gap-1"><MapPin className="h-3 w-3" />{isAr ? "الموقع" : "Location"}</Label>
+                <Input value={form.location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, location: e.target.value }))} placeholder={isAr ? "مثال: القاعة الرئيسية" : "Example: Main Hall"} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>التصنيف</Label>
+                <Label>{isAr ? "التصنيف" : "Category"}</Label>
                 <Select value={form.category} onValueChange={(v) => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {getCATEGORIES(isAr).map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>الجمهور</Label>
+                <Label>{isAr ? "الجمهور" : "Audience"}</Label>
                 <Select value={form.audience} onValueChange={(v) => setForm(f => ({ ...f, audience: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {AUDIENCES.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                    {getAUDIENCES(isAr).map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div>
-              <Label className="flex items-center gap-1"><Package className="h-3 w-3" />المواد المطلوبة</Label>
-              <Input value={form.requiredMaterials} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, requiredMaterials: e.target.value }))} placeholder="مثال: ملابس رياضية، قبعة شمسية" />
+              <Label className="flex items-center gap-1"><Package className="h-3 w-3" />{isAr ? "المواد المطلوبة" : "Required Materials"}</Label>
+              <Input value={form.requiredMaterials} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, requiredMaterials: e.target.value }))} placeholder={isAr ? "مثال: ملابس رياضية، قبعة شمسية" : "Example: Sportswear, sun hat"} />
             </div>
             <div>
-              <Label className="flex items-center gap-1"><Shirt className="h-3 w-3" />الزي المطلوب</Label>
-              <Input value={form.dressCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, dressCode: e.target.value }))} placeholder="مثال: ملابس بيضاء" />
+              <Label className="flex items-center gap-1"><Shirt className="h-3 w-3" />{isAr ? "الزي المطلوب" : "Required Uniform"}</Label>
+              <Input value={form.dressCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, dressCode: e.target.value }))} placeholder={isAr ? "مثال: ملابس بيضاء" : "Example: White clothes"} />
             </div>
             <div>
               <Label>{isAr ? "الوصف" : "Description"}</Label>
-              <Textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="تفاصيل إضافية عن الحدث..." />
+              <Textarea value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder={isAr ? "تفاصيل إضافية عن الحدث..." : "Additional event details..."} />
             </div>
             <div className="flex items-center justify-between border-t pt-3">
               <div className="flex items-center gap-3">
-                <Label>نشر مباشرة</Label>
+                <Label>{isAr ? "نشر مباشرة" : "Publish Directly"}</Label>
                 <Switch checked={form.status === "published"} onCheckedChange={(c) => setForm(f => ({ ...f, status: c ? "published" : "draft" }))} />
               </div>
               <div className="flex items-center gap-3">
-                <Label className="flex items-center gap-1"><BellRing className="h-3 w-3" />تذكيرات تلقائية</Label>
+                <Label className="flex items-center gap-1"><BellRing className="h-3 w-3" />{isAr ? "تذكيرات تلقائية" : "Automatic Reminders"}</Label>
                 <Switch checked={form.autoReminders} onCheckedChange={(c) => setForm(f => ({ ...f, autoReminders: c }))} />
               </div>
             </div>
@@ -489,7 +489,7 @@ export default function StaffCalendar() {
               <Button variant="outline">{isAr ? "إلغاء" : "Cancel"}</Button>
             </DialogClose>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
-              {(createMutation.isPending || updateMutation.isPending) ? "جاري الحفظ..." : editingEvent ? "تحديث" : "إضافة"}
+              {(createMutation.isPending || updateMutation.isPending) ? "جاري الحفظ..." : editingEvent ? "تحديث" : (isAr ? "إضافة" : "Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -506,7 +506,7 @@ export default function StaffCalendar() {
               {viewEvent.titleEn && <p className="text-muted-foreground" dir="ltr">{viewEvent.titleEn}</p>}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">التاريخ:</span>
+                  <span className="text-muted-foreground">{isAr ? "التاريخ:" : "Date:"}</span>
                   <p className="font-medium">
                     {new Date(viewEvent.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                   </p>
@@ -521,7 +521,7 @@ export default function StaffCalendar() {
                   <div className="flex items-start gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <span className="text-muted-foreground">الوقت:</span>
+                      <span className="text-muted-foreground">{isAr ? "الوقت:" : "Time:"}</span>
                       <p className="font-medium">{viewEvent.eventTime}</p>
                     </div>
                   </div>
@@ -530,23 +530,23 @@ export default function StaffCalendar() {
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <span className="text-muted-foreground">الموقع:</span>
+                      <span className="text-muted-foreground">{isAr ? "الموقع:" : "Location:"}</span>
                       <p className="font-medium">{viewEvent.location}</p>
                     </div>
                   </div>
                 )}
                 <div>
-                  <span className="text-muted-foreground">التصنيف:</span>
-                  <Badge className={`mt-1 ${getCategoryStyle(viewEvent.category)}`}>{getCategoryLabel(viewEvent.category)}</Badge>
+                  <span className="text-muted-foreground">{isAr ? "التصنيف:" : "Category:"}</span>
+                  <Badge className={`mt-1 ${getCategoryStyle(viewEvent.category, isAr)}`}>{getCategoryLabel(viewEvent.category, isAr)}</Badge>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">الجمهور:</span>
-                  <p className="font-medium">{AUDIENCES.find(a => a.value === viewEvent.audience)?.label || viewEvent.audience}</p>
+                  <span className="text-muted-foreground">{isAr ? "الجمهور:" : "Audience:"}</span>
+                  <p className="font-medium">{getAUDIENCES(isAr).find(a => a.value === viewEvent.audience)?.label || viewEvent.audience}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">الحالة:</span>
+                  <span className="text-muted-foreground">{isAr ? "الحالة:" : "Status:"}</span>
                   <Badge variant="outline" className={viewEvent.status === "published" ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}>
-                    {viewEvent.status === "published" ? "منشور" : "مسودة"}
+                    {viewEvent.status === "published" ? (isAr ? "منشور" : "Published") : (isAr ? "مسودة" : "Draft")}
                   </Badge>
                 </div>
               </div>
@@ -554,7 +554,7 @@ export default function StaffCalendar() {
                 <div className="flex items-start gap-2 text-sm">
                   <Package className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <span className="text-muted-foreground">المواد المطلوبة:</span>
+                    <span className="text-muted-foreground">{isAr ? "المواد المطلوبة:" : "Required Materials:"}</span>
                     <p className="font-medium">{viewEvent.requiredMaterials}</p>
                   </div>
                 </div>
@@ -563,14 +563,14 @@ export default function StaffCalendar() {
                 <div className="flex items-start gap-2 text-sm">
                   <Shirt className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <span className="text-muted-foreground">الزي المطلوب:</span>
+                    <span className="text-muted-foreground">{isAr ? "الزي المطلوب:" : "Required Uniform:"}</span>
                     <p className="font-medium">{viewEvent.dressCode}</p>
                   </div>
                 </div>
               )}
               {viewEvent.description && (
                 <div>
-                  <span className="text-sm text-muted-foreground">الوصف:</span>
+                  <span className="text-sm text-muted-foreground">{isAr ? "الوصف:" : "Description:"}</span>
                   <p className="mt-1 text-sm whitespace-pre-wrap">{viewEvent.description}</p>
                 </div>
               )}
@@ -602,35 +602,35 @@ export default function StaffCalendar() {
           {reminderDialog && (
             <Tabs defaultValue="send" className="w-full">
               <TabsList className="w-full">
-                <TabsTrigger value="send" className="flex-1">إرسال تذكير</TabsTrigger>
-                <TabsTrigger value="history" className="flex-1">سجل التذكيرات</TabsTrigger>
+                <TabsTrigger value="send" className="flex-1">{isAr ? "إرسال تذكير" : "Send Reminder"}</TabsTrigger>
+                <TabsTrigger value="history" className="flex-1">{isAr ? "سجل التذكيرات" : "Reminders Log"}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="send" className="space-y-4 mt-4">
                 <div>
-                  <Label>الرسالة</Label>
+                  <Label>{isAr ? "الرسالة" : "Message"}</Label>
                   <Textarea
                     value={manualReminderMsg}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setManualReminderMsg(e.target.value)}
-                    placeholder={`مثال: ${reminderDialog.titleAr} غداً - لا تنسوا إحضار...`}
+                    placeholder={(isAr ? `مثال: ${reminderDialog.titleAr} غداً - لا تنسوا إحضار...` : `Example:${reminderDialog.titleAr} غداً - لا تنسوا إحضار...`)}
                     rows={3}
                   />
                 </div>
                 <div>
-                  <Label>إرسال إلى</Label>
+                  <Label>{isAr ? "إرسال إلى" : "Send To"}</Label>
                   <Select value={manualReminderAudience} onValueChange={(v: any) => setManualReminderAudience(v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="parents">أولياء الأمور</SelectItem>
-                      <SelectItem value="staff">الموظفين</SelectItem>
-                      <SelectItem value="all">الجميع</SelectItem>
+                      <SelectItem value="parents">{isAr ? "أولياء الأمور" : "Parents"}</SelectItem>
+                      <SelectItem value="staff">{isAr ? "الموظفين" : "Employees"}</SelectItem>
+                      <SelectItem value="all">{isAr ? "الجميع" : "All"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={handleSendManualReminder} disabled={!manualReminderMsg.trim() || sendReminderMutation.isPending} className="flex-1">
                     <Send className="h-4 w-4 ml-2" />
-                    {sendReminderMutation.isPending ? "جاري الإرسال..." : "إرسال الآن"}
+                    {sendReminderMutation.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : (isAr ? "إرسال الآن" : "Send Now")}
                   </Button>
                   <Button
                     variant="outline"
@@ -638,7 +638,7 @@ export default function StaffCalendar() {
                     disabled={cancelRemindersMutation.isPending}
                     className="text-destructive"
                   >
-                    إلغاء المعلقة
+                    {isAr ? "إلغاء المعلقة" : "Cancel Pending"}
                   </Button>
                 </div>
               </TabsContent>
@@ -646,17 +646,17 @@ export default function StaffCalendar() {
               <TabsContent value="history" className="mt-4">
                 <div className="max-h-[40vh] overflow-y-auto space-y-2">
                   {!reminderHistory || reminderHistory.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">لا توجد تذكيرات مجدولة</p>
+                    <p className="text-center text-muted-foreground py-4">{isAr ? "لا توجد تذكيرات مجدولة" : "No scheduled reminders"}</p>
                   ) : (
                     reminderHistory.map((r: any) => (
                       <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border text-sm">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline" className={REMINDER_STATUS_MAP[r.status]?.color || ""}>
-                              {REMINDER_STATUS_MAP[r.status]?.label || r.status}
+                            <Badge variant="outline" className={getREMINDER_STATUS_MAP(isAr)[r.status]?.color || ""}>
+                              {getREMINDER_STATUS_MAP(isAr)[r.status]?.label || r.status}
                             </Badge>
                             <span className="text-muted-foreground text-xs">
-                              {REMINDER_TYPE_MAP[r.reminderType] || r.reminderType}
+                              {getREMINDER_TYPE_MAP(isAr)[r.reminderType] || r.reminderType}
                             </span>
                           </div>
                           <p className="mt-1 truncate">{r.message}</p>
@@ -689,13 +689,13 @@ export default function StaffCalendar() {
       <Dialog open={deleteConfirm !== null} onOpenChange={(o) => { if (!o) setDeleteConfirm(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{isAr ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle>
           </DialogHeader>
-          <p className="text-muted-foreground">هل أنت متأكد من حذف هذا الحدث؟ سيتم إلغاء جميع التذكيرات المرتبطة به. لا يمكن التراجع عن هذا الإجراء.</p>
+          <p className="text-muted-foreground">{isAr ? "هل أنت متأكد من حذف هذا الحدث؟ سيتم إلغاء جميع التذكيرات المرتبطة به. لا يمكن التراجع عن هذا الإجراء." : "Are you sure you want to delete this event? All associated reminders will be canceled. This action cannot be undone."}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirm(null)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button variant="destructive" onClick={() => deleteConfirm && deleteMutation.mutate({ id: deleteConfirm })} disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending ? "جاري الحذف..." : "حذف"}
+              {deleteMutation.isPending ? "جاري الحذف..." : (isAr ? "حذف" : "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

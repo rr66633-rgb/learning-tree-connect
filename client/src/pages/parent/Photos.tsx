@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 
 export default function ParentPhotos() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
@@ -27,16 +28,16 @@ export default function ParentPhotos() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">الصور والأنشطة</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "الصور والأنشطة" : "Images & Activities"}</h1>
       </div>
 
       {/* Child Filter */}
       <Select value={selectedChild} onValueChange={setSelectedChild}>
         <SelectTrigger className="max-w-xs">
-          <SelectValue placeholder="جميع الأطفال" />
+          <SelectValue placeholder={isAr ? "جميع الأطفال" : "All Children"} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">جميع الأطفال</SelectItem>
+          <SelectItem value="all">{isAr ? "جميع الأطفال" : "All Children"}</SelectItem>
           {children?.map((c: any) => (
             <SelectItem key={c.id} value={c.id.toString()}>
               {c.firstName} {c.lastName}
@@ -48,9 +49,9 @@ export default function ParentPhotos() {
       {/* Tabs */}
       <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="all">الكل</TabsTrigger>
-          <TabsTrigger value="photos">الصور</TabsTrigger>
-          <TabsTrigger value="videos">الفيديو</TabsTrigger>
+          <TabsTrigger value="all">{isAr ? "الكل" : "All"}</TabsTrigger>
+          <TabsTrigger value="photos">{isAr ? "الصور" : "Images"}</TabsTrigger>
+          <TabsTrigger value="videos">{isAr ? "الفيديو" : "Video"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-4">
@@ -106,6 +107,8 @@ export default function ParentPhotos() {
 }
 
 function MediaGallery({ items, onPreview }: { items: any[] | undefined; onPreview: (item: any) => void }) {
+  const { i18n: subI18n } = useTranslation();
+  const isAr = subI18n.language === 'ar';
   if (!items || items.length === 0) {
     return <EmptyState variant="photos" />;
   }
@@ -140,7 +143,7 @@ function MediaGallery({ items, onPreview }: { items: any[] | undefined; onPrevie
                       <Film className="h-12 w-12 text-muted-foreground/50" />
                       <Badge className="absolute bottom-2 right-2 text-xs" variant="secondary">
                         <Film className="h-3 w-3 ml-1" />
-                        فيديو
+                        {isAr ? "فيديو" : "Video"}
                       </Badge>
                     </div>
                   )}

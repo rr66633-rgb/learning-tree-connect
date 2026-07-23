@@ -41,22 +41,22 @@ function WaitTimer({ requestedAt }: { requestedAt: string | Date }) {
   );
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; step: number }> = {
-  waiting_teacher: { label: "بانتظار المعلمة", color: "bg-amber-100 text-amber-800", icon: Clock, step: 1 },
-  sent_to_reception: { label: "في الطريق للاستقبال", color: "bg-blue-100 text-blue-800", icon: Send, step: 2 },
-  waiting_at_reception: { label: "بالاستقبال", color: "bg-purple-100 text-purple-800", icon: Building2, step: 3 },
-  picked_up: { label: "تم الاستلام", color: "bg-green-100 text-green-800", icon: CheckCircle2, step: 4 },
-};
+const getStatusConfig = (isAr: boolean): Record<string, { label: string; color: string; icon: any; step: number }> => ({
+  waiting_teacher: { label: (isAr ? "بانتظار المعلمة" : "Awaiting Teacher"), color: "bg-amber-100 text-amber-800", icon: Clock, step: 1 },
+  sent_to_reception: { label: (isAr ? "في الطريق للاستقبال" : "On the way for pickup"), color: "bg-blue-100 text-blue-800", icon: Send, step: 2 },
+  waiting_at_reception: { label: (isAr ? "بالاستقبال" : "At Reception"), color: "bg-purple-100 text-purple-800", icon: Building2, step: 3 },
+  picked_up: { label: (isAr ? "تم الاستلام" : "Received"), color: "bg-green-100 text-green-800", icon: CheckCircle2, step: 4 },
+});
 
-const RELATIONSHIP_LABELS: Record<string, string> = {
-  father: "الأب",
-  mother: "الأم",
-  grandfather: "الجد",
-  grandmother: "الجدة",
-  driver: "السائق",
-  relative: "قريب مخول",
-  other: "شخص مخول آخر",
-};
+const getRELATIONSHIP_LABELS = (isAr: boolean): Record<string, string>  => ({
+  father: (isAr ? "الأب" : "Father"),
+  mother: (isAr ? "الأم" : "Mother"),
+  grandfather: (isAr ? "الجد" : "Grandfather"),
+  grandmother: (isAr ? "الجدة" : "Grandmother"),
+  driver: (isAr ? "السائق" : "Driver"),
+  relative: (isAr ? "قريب مخول" : "Authorized Relative"),
+  other: (isAr ? "شخص مخول آخر" : "Another Authorized Person"),
+});
 
 export default function StaffPickup() {
   const { t, i18n } = useTranslation();
@@ -85,7 +85,7 @@ export default function StaffPickup() {
       refetch();
     },
     onError: (err: any) => {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
     },
   });
 
@@ -96,7 +96,7 @@ export default function StaffPickup() {
       refetch();
     },
     onError: (err: any) => {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
     },
   });
 
@@ -109,7 +109,7 @@ export default function StaffPickup() {
       setSelectedPerson(null);
     },
     onError: (err: any) => {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
     },
   });
 
@@ -147,7 +147,7 @@ export default function StaffPickup() {
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Send className="h-4 w-4 ml-1" />
-            تم إرسال الطفل للاستقبال
+            {isAr ? "تم إرسال الطفل للاستقبال" : "Child sent to reception"}
           </Button>
         );
       case "sent_to_reception":
@@ -159,7 +159,7 @@ export default function StaffPickup() {
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             <Building2 className="h-4 w-4 ml-1" />
-            الطفل وصل الاستقبال
+            {isAr ? "الطفل وصل الاستقبال" : "Child Arrived at Reception"}
           </Button>
         );
       case "waiting_at_reception":
@@ -171,7 +171,7 @@ export default function StaffPickup() {
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <UserCheck className="h-4 w-4 ml-1" />
-            تسليم الطفل
+            {isAr ? "تسليم الطفل" : "Child Handover"}
           </Button>
         );
       default:
@@ -202,7 +202,7 @@ export default function StaffPickup() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">إدارة الاستلام</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "إدارة الاستلام" : "Pickup Management"}</h1>
         {activeRequests && activeRequests.length > 0 && (
           <Badge className="bg-red-100 text-red-800 text-sm px-3 py-1">
             <AlertCircle className="h-4 w-4 ml-1" />
@@ -217,13 +217,13 @@ export default function StaffPickup() {
           <Card className="border-amber-200 bg-amber-50/50">
             <CardContent className="p-4 text-center">
               <div className="text-3xl font-bold text-amber-700">{stats.pendingCount}</div>
-              <p className="text-xs text-amber-600 mt-1">طلبات معلقة</p>
+              <p className="text-xs text-amber-600 mt-1">{isAr ? "طلبات معلقة" : "Pending requests"}</p>
             </CardContent>
           </Card>
           <Card className="border-green-200 bg-green-50/50">
             <CardContent className="p-4 text-center">
               <div className="text-3xl font-bold text-green-700">{stats.completedToday}</div>
-              <p className="text-xs text-green-600 mt-1">مكتمل اليوم</p>
+              <p className="text-xs text-green-600 mt-1">{isAr ? "مكتمل اليوم" : "Completed Today"}</p>
             </CardContent>
           </Card>
           <Card className="border-blue-200 bg-blue-50/50">
@@ -231,7 +231,7 @@ export default function StaffPickup() {
               <div className="text-3xl font-bold text-blue-700">
                 {stats.avgResponseSeconds ? `${Math.round(stats.avgResponseSeconds / 60)}د` : "-"}
               </div>
-              <p className="text-xs text-blue-600 mt-1">متوسط استجابة المعلمة</p>
+              <p className="text-xs text-blue-600 mt-1">{isAr ? "متوسط استجابة المعلمة" : "Average Teacher Response"}</p>
             </CardContent>
           </Card>
           <Card className="border-purple-200 bg-purple-50/50">
@@ -239,14 +239,14 @@ export default function StaffPickup() {
               <div className="text-3xl font-bold text-purple-700">
                 {stats.avgTotalSeconds ? `${Math.round(stats.avgTotalSeconds / 60)}د` : "-"}
               </div>
-              <p className="text-xs text-purple-600 mt-1">متوسط وقت الاستلام</p>
+              <p className="text-xs text-purple-600 mt-1">{isAr ? "متوسط وقت الاستلام" : "Average Pickup Time"}</p>
             </CardContent>
           </Card>
           {stats.escalatedCount > 0 && (
             <Card className="border-red-300 bg-red-50/50 animate-pulse">
               <CardContent className="p-4 text-center">
                 <div className="text-3xl font-bold text-red-700">{stats.escalatedCount}</div>
-                <p className="text-xs text-red-600 mt-1">تنبيهات تصعيدية</p>
+                <p className="text-xs text-red-600 mt-1">{isAr ? "تنبيهات تصعيدية" : "Escalation Alerts"}</p>
               </CardContent>
             </Card>
           )}
@@ -288,12 +288,12 @@ export default function StaffPickup() {
       <Tabs defaultValue="active" className="w-full">
         <TabsList className="w-full md:w-auto">
           <TabsTrigger value="active" className="flex-1 md:flex-none">
-            الطلبات النشطة
+            {isAr ? "الطلبات النشطة" : "Active Orders"}
             {activeRequests && activeRequests.length > 0 && (
               <Badge className="mr-2 bg-red-500 text-white text-xs">{activeRequests.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex-1 md:flex-none">السجل</TabsTrigger>
+          <TabsTrigger value="history" className="flex-1 md:flex-none">{isAr ? "السجل" : "Record"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="mt-4">
@@ -306,14 +306,14 @@ export default function StaffPickup() {
             <Card>
               <CardContent className="p-12 text-center">
                 <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                <p className="text-lg font-medium">لا توجد طلبات استلام حالياً</p>
-                <p className="text-sm text-muted-foreground mt-1">ستظهر الطلبات الجديدة هنا تلقائياً</p>
+                <p className="text-lg font-medium">{isAr ? "لا توجد طلبات استلام حالياً" : "No pickup requests currently"}</p>
+                <p className="text-sm text-muted-foreground mt-1">{isAr ? "ستظهر الطلبات الجديدة هنا تلقائياً" : "New orders will appear here automatically"}</p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
               {sortedRequests.map((req: any) => {
-                const config = STATUS_CONFIG[req.status] || STATUS_CONFIG.waiting_teacher;
+                const config = getStatusConfig(isAr)[req.status] || getStatusConfig(isAr).waiting_teacher;
                 const StatusIcon = config.icon;
                 const cardBorder = getCardBorderColor(req.requestedAt, req.status);
                 return (
@@ -360,7 +360,7 @@ export default function StaffPickup() {
                             {req.escalatedAt && (
                               <Badge className="bg-red-600 text-white text-xs animate-pulse">
                                 <AlertCircle className="h-3 w-3 ml-1" />
-                                تنبيه تصعيدي
+                                {isAr ? "تنبيه تصعيدي" : "Escalation Alert"}
                               </Badge>
                             )}
                           </div>
@@ -369,10 +369,10 @@ export default function StaffPickup() {
                         {/* Progress steps - 4 step workflow */}
                         <div className="flex items-center gap-1">
                           {[
-                            { label: "طلب ولي الأمر", done: true },
-                            { label: "أُرسل للاستقبال", done: config.step >= 2 },
-                            { label: "بالاستقبال", done: config.step >= 3 },
-                            { label: "تم التسليم", done: config.step >= 4 },
+                            { label: (isAr ? "طلب ولي الأمر" : "Parent's request"), done: true },
+                            { label: (isAr ? "أُرسل للاستقبال" : "Sent to Reception"), done: config.step >= 2 },
+                            { label: (isAr ? "بالاستقبال" : "At Reception"), done: config.step >= 3 },
+                            { label: (isAr ? "تم التسليم" : "Delivered"), done: config.step >= 4 },
                           ].map((step, i) => (
                             <div key={i} className="flex items-center flex-1">
                               <div className={`h-2 flex-1 rounded-full transition-colors ${step.done ? 'bg-primary' : 'bg-muted'}`} />
@@ -380,10 +380,10 @@ export default function StaffPickup() {
                           ))}
                         </div>
                         <div className="flex justify-between text-[10px] text-muted-foreground -mt-2">
-                          <span>طلب</span>
-                          <span>أُرسل</span>
-                          <span>استقبال</span>
-                          <span>تسليم</span>
+                          <span>{isAr ? "طلب" : "Request"}</span>
+                          <span>{isAr ? "أُرسل" : "Sent"}</span>
+                          <span>{isAr ? "استقبال" : "Reception"}</span>
+                          <span>{isAr ? "تسليم" : "Delivery"}</span>
                         </div>
 
                         {/* Action button */}
@@ -401,7 +401,7 @@ export default function StaffPickup() {
 
         <TabsContent value="history" className="mt-4">
           {!history || history.length === 0 ? (
-            <Card><CardContent className="p-8 text-center text-muted-foreground">لا يوجد سجل استلام</CardContent></Card>
+            <Card><CardContent className="p-8 text-center text-muted-foreground">{isAr ? "لا يوجد سجل استلام" : "No pick-up record"}</CardContent></Card>
           ) : (
             <div className="space-y-2">
               {history.map((req: any) => {
@@ -438,7 +438,7 @@ export default function StaffPickup() {
                             {req.pickedUpAt ? new Date(req.pickedUpAt).toLocaleString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "-"}
                           </p>
                           {req.pickedUpBy && <p className="text-xs font-medium">المستلم: {req.pickedUpBy}</p>}
-                          {req.pickedUpByRelationship && <p className="text-xs text-muted-foreground">{RELATIONSHIP_LABELS[req.pickedUpByRelationship] || req.pickedUpByRelationship}</p>}
+                          {req.pickedUpByRelationship && <p className="text-xs text-muted-foreground">{getRELATIONSHIP_LABELS(isAr)[req.pickedUpByRelationship] || req.pickedUpByRelationship}</p>}
                         </div>
                       </div>
                     </CardContent>
@@ -456,18 +456,18 @@ export default function StaffPickup() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              تسليم الطفل - التحقق من المستلم
+              {isAr ? "تسليم الطفل - التحقق من المستلم" : "Child Handover - Verify Recipient"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-3 text-center">
               <p className="font-bold text-lg">{pickupDialog?.childName}</p>
-              <p className="text-sm text-muted-foreground">يجب اختيار شخص مخول من القائمة</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "يجب اختيار شخص مخول من القائمة" : "An authorized person must be selected from the list"}</p>
             </div>
 
             {/* Authorized pickup persons - REQUIRED selection */}
             <div>
-              <label className="text-sm font-medium mb-2 block">الأشخاص المصرح لهم بالاستلام:</label>
+              <label className="text-sm font-medium mb-2 block">{isAr ? "الأشخاص المصرح لهم بالاستلام:" : "Authorized Pick-up Persons:"}</label>
               {authorizedPersons && authorizedPersons.length > 0 ? (
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {authorizedPersons.map((person: any) => (
@@ -483,7 +483,7 @@ export default function StaffPickup() {
                       <User className="h-5 w-5 text-muted-foreground" />
                       <div className="flex-1">
                         <p className="font-medium text-sm">{person.name}</p>
-                        <p className="text-xs text-muted-foreground">{RELATIONSHIP_LABELS[person.relationship] || person.relationship}</p>
+                        <p className="text-xs text-muted-foreground">{getRELATIONSHIP_LABELS(isAr)[person.relationship] || person.relationship}</p>
                       </div>
                       {selectedPerson?.name === person.name && selectedPerson?.relationship === person.relationship && (
                         <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -494,8 +494,8 @@ export default function StaffPickup() {
               ) : (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
                   <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                  <p className="text-sm text-red-700 font-medium">لا يوجد أشخاص مخولين مسجلين لهذا الطفل</p>
-                  <p className="text-xs text-red-600 mt-1">يرجى إضافة أشخاص مخولين في ملف الطفل أولاً</p>
+                  <p className="text-sm text-red-700 font-medium">{isAr ? "لا يوجد أشخاص مخولين مسجلين لهذا الطفل" : "No authorized persons registered for this child"}</p>
+                  <p className="text-xs text-red-600 mt-1">{isAr ? "يرجى إضافة أشخاص مخولين في ملف الطفل أولاً" : "Please add authorized persons to the child's profile first"}</p>
                 </div>
               )}
             </div>
@@ -508,7 +508,7 @@ export default function StaffPickup() {
               className="bg-green-600 hover:bg-green-700"
             >
               <UserCheck className="h-4 w-4 ml-1" />
-              {completePickup.isPending ? "جاري التسليم..." : "تأكيد التسليم"}
+              {completePickup.isPending ? "جاري التسليم..." : (isAr ? "تأكيد التسليم" : "Confirm Handover")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -18,20 +18,6 @@ type SubStatus = "all" | "active" | "expired" | "cancelled" | "past_due" | "tria
 
 // statusConfig moved inside component
 
-function getDaysRemaining(endDate: string | Date | null): { days: number; text: string; urgent: boolean } {
-  if (!endDate) return { days: 0, text: "غير محدد", urgent: false };
-  const end = new Date(endDate);
-  const now = new Date();
-  const diff = end.getTime() - now.getTime();
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  
-  if (days < 0) return { days, text: `منتهي منذ ${Math.abs(days)} يوم`, urgent: true };
-  if (days === 0) return { days: 0, text: "ينتهي اليوم", urgent: true };
-  if (days <= 7) return { days, text: `${days} أيام متبقية`, urgent: true };
-  if (days <= 30) return { days, text: `${days} يوم متبقي`, urgent: false };
-  return { days, text: `${days} يوم متبقي`, urgent: false };
-}
-
 function formatDate(date: string | Date | null): string {
   if (!date) return "—";
   return new Date(date).toLocaleDateString("ar-SA", {
@@ -44,6 +30,21 @@ function formatDate(date: string | Date | null): string {
 export default function SubscriptionsManagement() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+
+  function getDaysRemaining(endDate: string | Date | null): { days: number; text: string; urgent: boolean } {
+  if (!endDate) return { days: 0, text: isAr ? "غير محدد" : "Not Specified", urgent: false };
+  const end = new Date(endDate);
+  const now = new Date();
+  const diff = end.getTime() - now.getTime();
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  
+  if (days < 0) return { days, text: `${isAr ? "منتهي منذ " : "Expired Since"}${Math.abs(days)} ${isAr ? "يوم" : "Day"}`, urgent: true };
+  if (days === 0) return { days: 0, text: isAr ? "ينتهي اليوم" : "Ends today", urgent: true };
+  if (days <= 7) return { days, text: `${days} ${isAr ? "أيام متبقية" : "Days Remaining"}`, urgent: true };
+  if (days <= 30) return { days, text: `${days} ${isAr ? "يوم متبقي" : "Day remaining"}`, urgent: false };
+  return { days, text: `${days} ${isAr ? "يوم متبقي" : "Day remaining"}`, urgent: false };
+  }
+
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
     active: { label: t("statuses.active"), color: "text-emerald-700", bgColor: "bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
@@ -85,10 +86,10 @@ export default function SubscriptionsManagement() {
 
   // Summary cards data
   const summaryCards = useMemo(() => [
-    { label: "إجمالي الاشتراكات", value: stats?.total || 0, icon: Crown, color: "#7C3AED", bg: "bg-purple-50" },
-    { label: "نشط", value: stats?.active || 0, icon: CheckCircle2, color: "#10b981", bg: "bg-emerald-50" },
-    { label: "فترة تجريبية", value: stats?.trialing || 0, icon: Clock, color: "#3b82f6", bg: "bg-blue-50" },
-    { label: "منتهي / ملغي", value: (stats?.expired || 0) + (stats?.cancelled || 0), icon: XCircle, color: "#ef4444", bg: "bg-red-50" },
+    { label: isAr ? "إجمالي الاشتراكات" : "Total Subscriptions", value: stats?.total || 0, icon: Crown, color: "#7C3AED", bg: "bg-purple-50" },
+    { label: isAr ? "نشط" : "Active", value: stats?.active || 0, icon: CheckCircle2, color: "#10b981", bg: "bg-emerald-50" },
+    { label: isAr ? "فترة تجريبية" : "Trial Period", value: stats?.trialing || 0, icon: Clock, color: "#3b82f6", bg: "bg-blue-50" },
+    { label: isAr ? "منتهي / ملغي" : "Expired / Canceled", value: (stats?.expired || 0) + (stats?.cancelled || 0), icon: XCircle, color: "#ef4444", bg: "bg-red-50" },
   ], [stats]);
 
   if (isLoading) {
@@ -110,9 +111,9 @@ export default function SubscriptionsManagement() {
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Crown className="w-6 h-6 text-[#F97316]" />
-            إدارة الاشتراكات
+            {isAr ? "إدارة الاشتراكات" : "Subscription Management"}
           </h1>
-          <p className="text-muted-foreground mt-1">متابعة جميع اشتراكات الحضانات وحالتها</p>
+          <p className="text-muted-foreground mt-1">{isAr ? "متابعة جميع اشتراكات الحضانات وحالتها" : "Track all nursery subscriptions and their status"}</p>
         </div>
       </div>
 
@@ -145,7 +146,7 @@ export default function SubscriptionsManagement() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="بحث باسم الحضانة..."
+                placeholder={isAr ? "بحث باسم الحضانة..." : "Search by Nursery Name..."}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pr-10"
@@ -153,15 +154,15 @@ export default function SubscriptionsManagement() {
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as SubStatus)}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="حالة الاشتراك" />
+                <SelectValue placeholder={isAr ? "حالة الاشتراك" : "Subscription Status"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="active">نشط</SelectItem>
-                <SelectItem value="trialing">فترة تجريبية</SelectItem>
-                <SelectItem value="expired">منتهي</SelectItem>
-                <SelectItem value="past_due">متأخر الدفع</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
+                <SelectItem value="all">{isAr ? "جميع الحالات" : "All Statuses"}</SelectItem>
+                <SelectItem value="active">{isAr ? "نشط" : "Active"}</SelectItem>
+                <SelectItem value="trialing">{isAr ? "فترة تجريبية" : "Trial Period"}</SelectItem>
+                <SelectItem value="expired">{isAr ? "منتهي" : "Expired"}</SelectItem>
+                <SelectItem value="past_due">{isAr ? "متأخر الدفع" : "Late Payment"}</SelectItem>
+                <SelectItem value="cancelled">{isAr ? "ملغي" : "Cancelled"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -173,7 +174,7 @@ export default function SubscriptionsManagement() {
         <Card>
           <CardContent className="p-12 text-center">
             <Crown className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">لا توجد اشتراكات مطابقة</p>
+            <p className="text-muted-foreground">{isAr ? "لا توجد اشتراكات مطابقة" : "No matching subscriptions"}</p>
           </CardContent>
         </Card>
       ) : (
@@ -197,7 +198,7 @@ export default function SubscriptionsManagement() {
                           {sub.orgNameAr || sub.orgName || "—"}
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                          {sub.planNameAr || sub.planName || "—"} • {sub.billingCycle === "yearly" ? "سنوي" : "شهري"}
+                          {sub.planNameAr || sub.planName || "—"} • {sub.billingCycle === "yearly" ? isAr ? "سنوي" : "Annual" : isAr ? "شهري" : "Monthly"}
                         </p>
                       </div>
                     </div>
@@ -228,8 +229,8 @@ export default function SubscriptionsManagement() {
 
                     {/* Period */}
                     <div className="text-xs text-muted-foreground min-w-[160px]">
-                      <div>من: {formatDate(sub.currentPeriodStart)}</div>
-                      <div>إلى: {formatDate(sub.currentPeriodEnd)}</div>
+                      <div>{isAr ? "من:" : "From:"} {formatDate(sub.currentPeriodStart)}</div>
+                      <div>{isAr ? "إلى:" : "To:"} {formatDate(sub.currentPeriodEnd)}</div>
                     </div>
 
                     {/* Actions */}
@@ -245,7 +246,7 @@ export default function SubscriptionsManagement() {
                           }}
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
-                          تجديد
+                          {isAr ? "تجديد" : "Renew"}
                         </Button>
                       )}
                       {(sub.status === "active" || sub.status === "trialing") && (
@@ -254,13 +255,13 @@ export default function SubscriptionsManagement() {
                           variant="ghost"
                           className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() => {
-                            if (confirm("هل أنت متأكد من إلغاء هذا الاشتراك؟")) {
+                            if (confirm(isAr ? "هل أنت متأكد من إلغاء هذا الاشتراك؟" : "Are you sure you want to cancel this subscription?")) {
                               cancelMutation.mutate({ subscriptionId: sub.id });
                             }
                           }}
                         >
                           <XCircle className="w-3.5 h-3.5" />
-                          إلغاء
+                          {isAr ? "إلغاء" : "Cancel"}
                         </Button>
                       )}
                     </div>
@@ -276,24 +277,24 @@ export default function SubscriptionsManagement() {
       <Dialog open={renewDialogOpen} onOpenChange={setRenewDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>تجديد الاشتراك</DialogTitle>
+            <DialogTitle>{isAr ? "تجديد الاشتراك" : "Renew Subscription"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">دورة الفوترة</label>
+              <label className="text-sm font-medium">{isAr ? "دورة الفوترة" : "Billing Cycle"}</label>
               <Select value={renewCycle} onValueChange={(v) => setRenewCycle(v as "monthly" | "yearly")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="yearly">سنوي</SelectItem>
-                  <SelectItem value="monthly">شهري</SelectItem>
+                  <SelectItem value="yearly">{isAr ? "سنوي" : "Annual"}</SelectItem>
+                  <SelectItem value="monthly">{isAr ? "شهري" : "Monthly"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex gap-3 justify-end">
               <Button variant="outline" onClick={() => setRenewDialogOpen(false)}>
-                إلغاء
+                {isAr ? "إلغاء" : "Cancel"}
               </Button>
               <Button
                 onClick={() => {
@@ -304,7 +305,7 @@ export default function SubscriptionsManagement() {
                 disabled={renewMutation.isPending}
               >
                 <RefreshCw className="w-4 h-4 ml-2" />
-                {renewMutation.isPending ? "جاري التجديد..." : "تأكيد التجديد"}
+                {renewMutation.isPending ? isAr ? "جاري التجديد..." : "Renewing..." : isAr ? "تأكيد التجديد" : "Confirm Renewal"}
               </Button>
             </div>
           </div>

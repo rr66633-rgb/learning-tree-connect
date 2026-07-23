@@ -71,33 +71,33 @@ export default function Children() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">إدارة الأطفال</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "إدارة الأطفال" : "Children Management"}</h1>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />إضافة طفل</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{isAr ? "إضافة طفل" : "Add Child"}</Button></DialogTrigger>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>إضافة طفل جديد</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{isAr ? "إضافة طفل جديد" : "Add New Child"}</DialogTitle></DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>الاسم الأول</Label><Input value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} required /></div>
-                <div><Label>اسم العائلة</Label><Input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required /></div>
+                <div><Label>{isAr ? "الاسم الأول" : "First Name"}</Label><Input value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} required /></div>
+                <div><Label>{isAr ? "اسم العائلة" : "Last Name"}</Label><Input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>تاريخ الميلاد</Label><Input type="date" value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} required /></div>
-                <div><Label>الجنس</Label>
+                <div><Label>{isAr ? "تاريخ الميلاد" : "Date of Birth"}</Label><Input type="date" value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} required /></div>
+                <div><Label>{isAr ? "الجنس" : "Gender"}</Label>
                   <Select value={form.gender} onValueChange={v => setForm(f => ({ ...f, gender: v as "male" | "female" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="male">ذكر</SelectItem><SelectItem value="female">أنثى</SelectItem></SelectContent>
+                    <SelectContent><SelectItem value="male">{isAr ? "ذكر" : "Male"}</SelectItem><SelectItem value="female">{isAr ? "أنثى" : "Female"}</SelectItem></SelectContent>
                   </Select>
                 </div>
               </div>
-              <div><Label>الفصل</Label><Input value={form.className} onChange={e => setForm(f => ({ ...f, className: e.target.value }))} placeholder="مثال: الروضة أ" /></div>
+              <div><Label>{isAr ? "الفصل" : "Class"}</Label><Input value={form.className} onChange={e => setForm(f => ({ ...f, className: e.target.value }))} placeholder="مثال: الروضة أ" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>جهة اتصال الطوارئ</Label><Input value={form.emergencyContact} onChange={e => setForm(f => ({ ...f, emergencyContact: e.target.value }))} /></div>
-                <div><Label>هاتف الطوارئ</Label><Input value={form.emergencyPhone} onChange={e => setForm(f => ({ ...f, emergencyPhone: e.target.value }))} /></div>
+                <div><Label>{isAr ? "جهة اتصال الطوارئ" : "Emergency Contact"}</Label><Input value={form.emergencyContact} onChange={e => setForm(f => ({ ...f, emergencyContact: e.target.value }))} /></div>
+                <div><Label>{isAr ? "هاتف الطوارئ" : "Emergency Phone"}</Label><Input value={form.emergencyPhone} onChange={e => setForm(f => ({ ...f, emergencyPhone: e.target.value }))} /></div>
               </div>
-              <div><Label>الحساسية</Label><Input value={form.allergies} onChange={e => setForm(f => ({ ...f, allergies: e.target.value }))} placeholder="مثال: حساسية الفول السوداني" /></div>
-              <div><Label>ملاحظات طبية</Label><Input value={form.medicalNotes} onChange={e => setForm(f => ({ ...f, medicalNotes: e.target.value }))} /></div>
-              <Button type="submit" className="w-full" disabled={createChild.isPending}>{createChild.isPending ? "جارٍ الإضافة..." : "إضافة الطفل"}</Button>
+              <div><Label>{isAr ? "الحساسية" : "Allergies"}</Label><Input value={form.allergies} onChange={e => setForm(f => ({ ...f, allergies: e.target.value }))} placeholder={isAr ? "مثال: حساسية الفول السوداني" : "Example: Peanut allergy"} /></div>
+              <div><Label>{isAr ? "ملاحظات طبية" : "Medical Notes"}</Label><Input value={form.medicalNotes} onChange={e => setForm(f => ({ ...f, medicalNotes: e.target.value }))} /></div>
+              <Button type="submit" className="w-full" disabled={createChild.isPending}>{createChild.isPending ? (isAr ? "جارٍ الإضافة..." : "Adding...") : "إضافة الطفل"}</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -106,29 +106,29 @@ export default function Children() {
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>تعديل بيانات الطفل</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "تعديل بيانات الطفل" : "Edit Child Data"}</DialogTitle></DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>الاسم الأول</Label><Input value={editForm.firstName} onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))} required /></div>
-              <div><Label>اسم العائلة</Label><Input value={editForm.lastName} onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} required /></div>
+              <div><Label>{isAr ? "الاسم الأول" : "First Name"}</Label><Input value={editForm.firstName} onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))} required /></div>
+              <div><Label>{isAr ? "اسم العائلة" : "Last Name"}</Label><Input value={editForm.lastName} onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} required /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>تاريخ الميلاد</Label><Input type="date" value={editForm.dateOfBirth} onChange={e => setEditForm(f => ({ ...f, dateOfBirth: e.target.value }))} /></div>
-              <div><Label>الجنس</Label>
+              <div><Label>{isAr ? "تاريخ الميلاد" : "Date of Birth"}</Label><Input type="date" value={editForm.dateOfBirth} onChange={e => setEditForm(f => ({ ...f, dateOfBirth: e.target.value }))} /></div>
+              <div><Label>{isAr ? "الجنس" : "Gender"}</Label>
                 <Select value={editForm.gender} onValueChange={v => setEditForm(f => ({ ...f, gender: v as "male" | "female" }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="male">ذكر</SelectItem><SelectItem value="female">أنثى</SelectItem></SelectContent>
+                  <SelectContent><SelectItem value="male">{isAr ? "ذكر" : "Male"}</SelectItem><SelectItem value="female">{isAr ? "أنثى" : "Female"}</SelectItem></SelectContent>
                 </Select>
               </div>
             </div>
-            <div><Label>الفصل</Label><Input value={editForm.className} onChange={e => setEditForm(f => ({ ...f, className: e.target.value }))} /></div>
+            <div><Label>{isAr ? "الفصل" : "Class"}</Label><Input value={editForm.className} onChange={e => setEditForm(f => ({ ...f, className: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>جهة اتصال الطوارئ</Label><Input value={editForm.emergencyContact} onChange={e => setEditForm(f => ({ ...f, emergencyContact: e.target.value }))} /></div>
-              <div><Label>هاتف الطوارئ</Label><Input value={editForm.emergencyPhone} onChange={e => setEditForm(f => ({ ...f, emergencyPhone: e.target.value }))} /></div>
+              <div><Label>{isAr ? "جهة اتصال الطوارئ" : "Emergency Contact"}</Label><Input value={editForm.emergencyContact} onChange={e => setEditForm(f => ({ ...f, emergencyContact: e.target.value }))} /></div>
+              <div><Label>{isAr ? "هاتف الطوارئ" : "Emergency Phone"}</Label><Input value={editForm.emergencyPhone} onChange={e => setEditForm(f => ({ ...f, emergencyPhone: e.target.value }))} /></div>
             </div>
-            <div><Label>الحساسية</Label><Input value={editForm.allergies} onChange={e => setEditForm(f => ({ ...f, allergies: e.target.value }))} /></div>
-            <div><Label>ملاحظات طبية</Label><Input value={editForm.medicalNotes} onChange={e => setEditForm(f => ({ ...f, medicalNotes: e.target.value }))} /></div>
-            <Button type="submit" className="w-full" disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ التحديث..." : "حفظ التعديلات"}</Button>
+            <div><Label>{isAr ? "الحساسية" : "Allergies"}</Label><Input value={editForm.allergies} onChange={e => setEditForm(f => ({ ...f, allergies: e.target.value }))} /></div>
+            <div><Label>{isAr ? "ملاحظات طبية" : "Medical Notes"}</Label><Input value={editForm.medicalNotes} onChange={e => setEditForm(f => ({ ...f, medicalNotes: e.target.value }))} /></div>
+            <Button type="submit" className="w-full" disabled={updateChild.isPending}>{updateChild.isPending ? isAr ? "جارٍ التحديث..." : "Updating..." : isAr ? "حفظ التعديلات" : "Save Changes"}</Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -136,7 +136,7 @@ export default function Children() {
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>ملف الطفل</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "ملف الطفل" : "Child Profile"}</DialogTitle></DialogHeader>
           {selectedChild && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -145,21 +145,21 @@ export default function Children() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold">{selectedChild.firstName} {selectedChild.lastName}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedChild.className || "بدون فصل"}</p>
+                  <p className="text-sm text-muted-foreground">{selectedChild.className || isAr ? "بدون فصل" : "No Class"}</p>
                 </div>
               </div>
               <Separator />
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">الجنس:</span> <span className="font-medium">{selectedChild.gender === "male" ? "ذكر" : "أنثى"}</span></div>
-                <div><span className="text-muted-foreground">تاريخ الميلاد:</span> <span className="font-medium">{selectedChild.dateOfBirth ? new Date(selectedChild.dateOfBirth).toLocaleDateString('ar-SA') : "-"}</span></div>
-                <div><span className="text-muted-foreground">الحالة:</span> <Badge variant={selectedChild.status === "active" ? "default" : "secondary"}>{selectedChild.status === "active" ? "نشط" : "غير نشط"}</Badge></div>
-                <div><span className="text-muted-foreground">تاريخ التسجيل:</span> <span className="font-medium">{new Date(selectedChild.enrollmentDate).toLocaleDateString('ar-SA')}</span></div>
+                <div><span className="text-muted-foreground">{isAr ? "الجنس:" : "Gender:"}</span> <span className="font-medium">{selectedChild.gender === "male" ? "ذكر" : "أنثى"}</span></div>
+                <div><span className="text-muted-foreground">{isAr ? "تاريخ الميلاد:" : "Date of Birth:"}</span> <span className="font-medium">{selectedChild.dateOfBirth ? new Date(selectedChild.dateOfBirth).toLocaleDateString('ar-SA') : "-"}</span></div>
+                <div><span className="text-muted-foreground">الحالة:</span> <Badge variant={selectedChild.status === "active" ? "default" : "secondary"}>{selectedChild.status === "active" ? (isAr ? "نشط" : "Active") : (isAr ? "غير نشط" : "Inactive")}</Badge></div>
+                <div><span className="text-muted-foreground">{isAr ? "تاريخ التسجيل:" : "Registration Date:"}</span> <span className="font-medium">{new Date(selectedChild.enrollmentDate).toLocaleDateString('ar-SA')}</span></div>
               </div>
               {(selectedChild.emergencyContact || selectedChild.emergencyPhone) && (
                 <>
                   <Separator />
                   <div className="space-y-2">
-                    <h4 className="font-semibold flex items-center gap-2"><Phone className="h-4 w-4" />جهة اتصال الطوارئ</h4>
+                    <h4 className="font-semibold flex items-center gap-2"><Phone className="h-4 w-4" />{isAr ? "جهة اتصال الطوارئ" : "Emergency Contact"}</h4>
                     <p className="text-sm">{selectedChild.emergencyContact} - {selectedChild.emergencyPhone}</p>
                   </div>
                 </>
@@ -168,7 +168,7 @@ export default function Children() {
                 <>
                   <Separator />
                   <div className="space-y-2">
-                    <h4 className="font-semibold flex items-center gap-2 text-amber-600"><AlertTriangle className="h-4 w-4" />الحساسية</h4>
+                    <h4 className="font-semibold flex items-center gap-2 text-amber-600"><AlertTriangle className="h-4 w-4" />{isAr ? "الحساسية" : "Allergies"}</h4>
                     <p className="text-sm">{selectedChild.allergies}</p>
                   </div>
                 </>
@@ -177,7 +177,7 @@ export default function Children() {
                 <>
                   <Separator />
                   <div className="space-y-2">
-                    <h4 className="font-semibold">ملاحظات طبية</h4>
+                    <h4 className="font-semibold">{isAr ? "ملاحظات طبية" : "Medical Notes"}</h4>
                     <p className="text-sm">{selectedChild.medicalNotes}</p>
                   </div>
                 </>
@@ -192,39 +192,39 @@ export default function Children() {
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="بحث بالاسم أو الفصل..." value={search} onChange={e => setSearch(e.target.value)} className="pr-10" />
+              <Input placeholder={isAr ? "بحث بالاسم أو الفصل..." : "Search by Name or Class..."} value={search} onChange={e => setSearch(e.target.value)} className="pr-10" />
             </div>
-            <Badge variant="secondary">{filtered.length} طفل</Badge>
+            <Badge variant="secondary">{filtered.length} {isAr ? "طفل" : "Child"}</Badge>
           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">الاسم</TableHead>
-                <TableHead className="text-right">الفصل</TableHead>
-                <TableHead className="text-right">الجنس</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
-                <TableHead className="text-right">تاريخ التسجيل</TableHead>
-                <TableHead className="text-right">إجراءات</TableHead>
+                <TableHead className="text-right">{isAr ? "الاسم" : "Name"}</TableHead>
+                <TableHead className="text-right">{isAr ? "الفصل" : "Class"}</TableHead>
+                <TableHead className="text-right">{isAr ? "الجنس" : "Gender"}</TableHead>
+                <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
+                <TableHead className="text-right">{isAr ? "تاريخ التسجيل" : "Registration Date"}</TableHead>
+                <TableHead className="text-right">{isAr ? "إجراءات" : "Actions"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map(child => (
                 <TableRow key={child.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetail(child)}>
                   <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
-                  <TableCell>{child.classId ? `فصل ${child.classId}` : "-"}</TableCell>
-                  <TableCell>{child.gender === "male" ? "ذكر" : "أنثى"}</TableCell>
+                  <TableCell>{child.classId ? `${isAr ? "فصل " : " الفصل"}${child.classId}` : "-"}</TableCell>
+                  <TableCell>{child.gender === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}</TableCell>
                   <TableCell>
                     <Badge variant={child.status === "active" ? "default" : "secondary"}>
-                      {child.status === "active" ? "نشط" : child.status === "graduated" ? "متخرج" : "غير نشط"}
+                      {child.status === "active" ? (isAr ? "نشط" : "Active") : child.status === "graduated" ? (isAr ? "متخرج" : "Graduated") : (isAr ? "غير نشط" : "Inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell>{new Date(child.enrollmentDate).toLocaleDateString('ar-SA')}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" onClick={() => openEdit(child)}><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { if (confirm("هل أنت متأكد من الحذف؟")) deleteChild.mutate({ id: child.id }); }}><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { if (confirm(isAr ? "هل أنت متأكد من الحذف؟" : "Are you sure you want to delete?")) deleteChild.mutate({ id: child.id }); }}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -235,7 +235,7 @@ export default function Children() {
                 ))}</>
               )}
               {!isLoading && filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا يوجد أطفال مسجلين</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{isAr ? "لا يوجد أطفال مسجلين" : "No children registered"}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

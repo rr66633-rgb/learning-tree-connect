@@ -80,7 +80,7 @@ export default function ParentMessages() {
     formData.append("file", file);
     try {
       const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error("فشل الرفع");
+      if (!res.ok) throw new Error((isAr ? "فشل الرفع" : "Upload failed"));
       const data = await res.json();
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";
       sendMsg.mutate(
@@ -130,25 +130,25 @@ export default function ParentMessages() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <MessageCircle className="h-6 w-6" />
-          الرسائل
+          {isAr ? "الرسائل" : "Messages"}
         </h1>
         <Dialog open={showNewConv} onOpenChange={setShowNewConv}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1">
               <Plus className="h-4 w-4" />
-              محادثة جديدة
+              {isAr ? "محادثة جديدة" : "New Chat"}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>محادثة جديدة</DialogTitle>
+              <DialogTitle>{isAr ? "محادثة جديدة" : "New Chat"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">اختر الطفل</label>
+                <label className="text-sm font-medium mb-1 block">{isAr ? "اختر الطفل" : "Select Child"}</label>
                 <Select value={selectedChild} onValueChange={setSelectedChild}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر الطفل" />
+                    <SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} />
                   </SelectTrigger>
                   <SelectContent>
                     {children?.map((child: any) => (
@@ -160,28 +160,28 @@ export default function ParentMessages() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">اختر المعلم/ة</label>
+                <label className="text-sm font-medium mb-1 block">{isAr ? "اختر المعلم/ة" : "Select Teacher"}</label>
                 <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر المعلم/ة" />
+                    <SelectValue placeholder={isAr ? "اختر المعلم/ة" : "Select Teacher"} />
                   </SelectTrigger>
                   <SelectContent>
                     {contacts?.map((contact: any) => (
                       <SelectItem key={contact.id} value={contact.id.toString()}>
                         {contact.name}
                         <span className="text-muted-foreground mr-2 text-xs">
-                          ({contact.role === 'teacher' ? 'معلم/ة' : contact.role === 'assistant' ? 'مساعد/ة' : 'إدارة'})
+                          ({contact.role === 'teacher' ? 'معلم/ة' : contact.role === 'assistant' ? 'مساعد/ة' : isAr ? 'إدارة' : 'Management'})
                         </span>
                       </SelectItem>
                     ))}
                     {selectedChild && (!contacts || contacts.length === 0) && (
-                      <div className="p-2 text-sm text-muted-foreground text-center">لا يوجد معلمون مسجلون لهذا الفصل</div>
+                      <div className="p-2 text-sm text-muted-foreground text-center">{isAr ? "لا يوجد معلمون مسجلون لهذا الفصل" : "No teachers registered for this class"}</div>
                     )}
                   </SelectContent>
                 </Select>
               </div>
               <Button onClick={handleCreateConversation} disabled={!selectedChild || !selectedTeacher} className="w-full">
-                بدء المحادثة
+                {isAr ? "بدء المحادثة" : "Start Chat"}
               </Button>
             </div>
           </DialogContent>
@@ -193,7 +193,7 @@ export default function ParentMessages() {
         <Card className="flex flex-col min-h-0">
           <div className="p-3 border-b">
             <Input
-              placeholder="بحث في المحادثات..."
+              placeholder={isAr ? "بحث في المحادثات..." : "Search in Chats..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9"
@@ -229,7 +229,7 @@ export default function ParentMessages() {
                         <p className="text-[11px] text-primary/70 mt-0.5">{c.childName}</p>
                       )}
                       <p className="text-xs text-muted-foreground truncate mt-1">
-                        {c.lastMessagePreview || "بدء محادثة"}
+                        {c.lastMessagePreview || isAr ? "بدء محادثة" : "Start Chat"}
                       </p>
                     </div>
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -254,7 +254,7 @@ export default function ParentMessages() {
                 <div>
                   <p className="font-medium text-sm">{selectedConversation?.otherUserName}</p>
                   {selectedConversation?.childName && (
-                    <p className="text-xs text-muted-foreground">بخصوص: {selectedConversation.childName}</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "بخصوص:" : "Regarding:"} {selectedConversation.childName}</p>
                   )}
                 </div>
               </div>
@@ -267,7 +267,7 @@ export default function ParentMessages() {
                   </div>
                 ) : messages?.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                    لا توجد رسائل بعد. ابدأ المحادثة!
+                    {isAr ? "لا توجد رسائل بعد. ابدأ المحادثة!" : "No messages yet. Start the conversation!"}
                   </div>
                 ) : (
                   messages?.map((msg: any) => (
@@ -290,7 +290,7 @@ export default function ParentMessages() {
                             {msg.attachmentType === "image" ? (
                               <img
                                 src={msg.attachmentUrl}
-                                alt={msg.attachmentName || "صورة"}
+                                alt={msg.attachmentName || (isAr ? "صورة" : "Photo")}
                                 className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
                                 onClick={() => window.open(msg.attachmentUrl, "_blank")}
                               />
@@ -302,7 +302,7 @@ export default function ParentMessages() {
                                 className="flex items-center gap-2 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
                               >
                                 <FileText className="h-4 w-4" />
-                                <span className="text-xs truncate">{msg.attachmentName || "ملف مرفق"}</span>
+                                <span className="text-xs truncate">{msg.attachmentName || isAr ? "ملف مرفق" : "Attached File"}</span>
                               </a>
                             )}
                           </div>
@@ -352,7 +352,7 @@ export default function ParentMessages() {
                 <Input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="اكتب رسالتك..."
+                  placeholder={isAr ? "اكتب رسالتك..." : "Type your message..."}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
                   className="flex-1"
                 />
@@ -370,7 +370,7 @@ export default function ParentMessages() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <MessageCircle className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-                <p className="text-muted-foreground">اختر محادثة أو ابدأ محادثة جديدة</p>
+                <p className="text-muted-foreground">{isAr ? "اختر محادثة أو ابدأ محادثة جديدة" : "Choose a conversation or start a new one"}</p>
               </div>
             </div>
           )}

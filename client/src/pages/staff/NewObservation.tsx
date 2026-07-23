@@ -88,7 +88,7 @@ export default function NewObservation() {
           <Brain className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold">ملاحظة تطورية جديدة</h1>
+          <h1 className="text-xl font-bold">{isAr ? "ملاحظة تطورية جديدة" : "New Developmental Note"}</h1>
           <p className="text-sm text-muted-foreground">سجّل ملاحظة عن تطور الطفل في أحد مجالات EYFS</p>
         </div>
       </div>
@@ -101,7 +101,7 @@ export default function NewObservation() {
               <Label className="font-medium">الطفل *</Label>
               <Select value={childId} onValueChange={setChildId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر الطفل" />
+                  <SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} />
                 </SelectTrigger>
                 <SelectContent>
                   {children.map((child: any) => (
@@ -118,7 +118,7 @@ export default function NewObservation() {
               <Label className="font-medium">مجال التطور *</Label>
               <Select value={areaId} onValueChange={setAreaId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر مجال التطور" />
+                  <SelectValue placeholder={isAr ? "اختر مجال التطور" : "Select Development Area"} />
                 </SelectTrigger>
                 <SelectContent>
                   {allAreas.map((area: any) => (
@@ -135,13 +135,13 @@ export default function NewObservation() {
               <Label className="font-medium">مستوى التطور *</Label>
               <Select value={level} onValueChange={setLevel}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر المستوى" />
+                  <SelectValue placeholder={isAr ? "اختر المستوى" : "Select Level"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="emerging">ناشئ - بداية الاستكشاف</SelectItem>
-                  <SelectItem value="developing">يتطور - يُظهر تقدماً</SelectItem>
-                  <SelectItem value="secure">مستقر - يتقن المهارة</SelectItem>
-                  <SelectItem value="exceeding">متفوق - يتجاوز التوقعات</SelectItem>
+                  <SelectItem value="emerging">{isAr ? "ناشئ - بداية الاستكشاف" : "Emerging - Beginning to Explore"}</SelectItem>
+                  <SelectItem value="developing">{isAr ? "يتطور - يُظهر تقدماً" : "Developing - Shows Progress"}</SelectItem>
+                  <SelectItem value="secure">{isAr ? "مستقر - يتقن المهارة" : "Stable - Masters Skill"}</SelectItem>
+                  <SelectItem value="exceeding">{isAr ? "متفوق - يتجاوز التوقعات" : "Exceeding - Exceeds Expectations"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -152,7 +152,7 @@ export default function NewObservation() {
               <Textarea
                 value={observation}
                 onChange={(e) => setObservation(e.target.value)}
-                placeholder="صف ما لاحظته عن الطفل بالتفصيل..."
+                placeholder={isAr ? "صف ما لاحظته عن الطفل بالتفصيل..." : "Describe what you observed about the child in detail..."}
                 rows={4}
                 className="resize-none"
               />
@@ -160,30 +160,30 @@ export default function NewObservation() {
 
             {/* Context */}
             <div className="space-y-2">
-              <Label className="font-medium">السياق</Label>
+              <Label className="font-medium">{isAr ? "السياق" : "Context"}</Label>
               <Select value={context} onValueChange={setContext}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر سياق الملاحظة (اختياري)" />
+                  <SelectValue placeholder={isAr ? "اختر سياق الملاحظة (اختياري)" : "Select observation context (optional)"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="free_play">لعب حر</SelectItem>
-                  <SelectItem value="guided_activity">نشاط موجه</SelectItem>
-                  <SelectItem value="group_time">وقت المجموعة</SelectItem>
-                  <SelectItem value="outdoor">خارجي</SelectItem>
-                  <SelectItem value="meal_time">وقت الوجبة</SelectItem>
-                  <SelectItem value="transition">انتقال</SelectItem>
-                  <SelectItem value="one_to_one">فردي</SelectItem>
+                  <SelectItem value="free_play">{isAr ? "لعب حر" : "Free play"}</SelectItem>
+                  <SelectItem value="guided_activity">{isAr ? "نشاط موجه" : "Guided Activity"}</SelectItem>
+                  <SelectItem value="group_time">{isAr ? "وقت المجموعة" : "Group Time"}</SelectItem>
+                  <SelectItem value="outdoor">{isAr ? "خارجي" : "External"}</SelectItem>
+                  <SelectItem value="meal_time">{isAr ? "وقت الوجبة" : "Meal Time"}</SelectItem>
+                  <SelectItem value="transition">{isAr ? "انتقال" : "Transfer"}</SelectItem>
+                  <SelectItem value="one_to_one">{isAr ? "فردي" : "Individual"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Evidence */}
             <div className="space-y-2">
-              <Label className="font-medium">الدليل / الشواهد</Label>
+              <Label className="font-medium">{isAr ? "الدليل / الشواهد" : "Evidence / Proof"}</Label>
               <Textarea
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
-                placeholder="أضف أي أدلة داعمة (صور، أعمال الطفل، اقتباسات)..."
+                placeholder={isAr ? "أضف أي أدلة داعمة (صور، أعمال الطفل، اقتباسات)..." : "Add any supporting evidence (photos, child\'s work, quotes)..."}
                 rows={2}
                 className="resize-none"
               />
@@ -191,11 +191,11 @@ export default function NewObservation() {
 
             {/* Next Steps */}
             <div className="space-y-2">
-              <Label className="font-medium">الخطوات التالية</Label>
+              <Label className="font-medium">{isAr ? "الخطوات التالية" : "Next Steps"}</Label>
               <Textarea
                 value={nextSteps}
                 onChange={(e) => setNextSteps(e.target.value)}
-                placeholder="ما الخطوات التالية المقترحة لدعم تطور الطفل؟"
+                placeholder={isAr ? "ما الخطوات التالية المقترحة لدعم تطور الطفل؟" : "What are the suggested next steps to support child development?"}
                 rows={2}
                 className="resize-none"
               />
@@ -205,10 +205,10 @@ export default function NewObservation() {
             <div className="flex gap-3 pt-4">
               <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={createMutation.isPending}>
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
-                حفظ الملاحظة
+                {isAr ? "حفظ الملاحظة" : "Save Note"}
               </Button>
               <Button type="button" variant="outline" onClick={() => navigate(-1 as any)}>
-                إلغاء
+                {isAr ? "إلغاء" : "Cancel"}
               </Button>
             </div>
           </CardContent>

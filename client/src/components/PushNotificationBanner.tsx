@@ -49,7 +49,7 @@ export function PushNotificationBanner() {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <Button size="sm" onClick={handleSubscribe} disabled={isLoading}>
-          {isLoading ? 'جاري التفعيل...' : 'تفعيل'}
+          {isLoading ? 'جاري التفعيل...' : (isAr ? "تفعيل" : "Activate")}
         </Button>
         <button onClick={handleDismiss} className="text-muted-foreground hover:text-foreground p-1">
           <X className="h-4 w-4" />
@@ -60,6 +60,8 @@ export function PushNotificationBanner() {
 }
 
 export function PushNotificationToggle() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { permission, isSubscribed, isLoading, isSupported, subscribe, unsubscribe } = usePushNotifications();
   const testPush = trpc.push.test.useMutation();
 
@@ -117,7 +119,7 @@ export function PushNotificationToggle() {
         onClick={handleToggle}
         disabled={isLoading}
       >
-        {isLoading ? '...' : isSubscribed ? 'إيقاف' : 'تفعيل'}
+        {isLoading ? '...' : isSubscribed ? 'إيقاف' : (isAr ? "تفعيل" : "Activate")}
       </Button>
     </div>
   );

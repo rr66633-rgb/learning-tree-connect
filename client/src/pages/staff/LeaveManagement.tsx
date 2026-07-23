@@ -13,25 +13,27 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-const LEAVE_TYPES: Record<string, { label: string; icon: any; color: string }> = {
-  annual: { label: "سنوية", icon: Palmtree, color: "text-blue-600 bg-blue-50" },
-  sick: { label: "مرضية", icon: Stethoscope, color: "text-orange-600 bg-orange-50" },
-  emergency: { label: "اضطرارية", icon: AlertTriangle, color: "text-red-600 bg-red-50" },
-  unpaid: { label: "بدون راتب", icon: CalendarDays, color: "text-gray-600 bg-gray-50" },
-  maternity: { label: "أمومة", icon: Calendar, color: "text-pink-600 bg-pink-50" },
-  other: { label: "أخرى", icon: Calendar, color: "text-purple-600 bg-purple-50" },
-};
 
-const LEAVE_STATUS: Record<string, { label: string; icon: any; color: string; badgeColor: string }> = {
-  pending: { label: "قيد المراجعة", icon: Clock, color: "text-amber-600", badgeColor: "bg-amber-100 text-amber-800 border-amber-200" },
-  approved: { label: "مقبولة", icon: CheckCircle, color: "text-emerald-600", badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-  rejected: { label: "مرفوضة", icon: XCircle, color: "text-red-600", badgeColor: "bg-red-100 text-red-800 border-red-200" },
-  cancelled: { label: "ملغاة", icon: AlertCircle, color: "text-gray-500", badgeColor: "bg-gray-100 text-gray-800 border-gray-200" },
-};
 
 export default function LeaveManagement() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const LEAVE_TYPES: Record<string, { label: string; icon: any; color: string }> = {
+  annual: { label: isAr ? "سنوية" : "Annual", icon: Palmtree, color: "text-blue-600 bg-blue-50" },
+  sick: { label: isAr ? "مرضية" : "Sick", icon: Stethoscope, color: "text-orange-600 bg-orange-50" },
+  emergency: { label: isAr ? "اضطرارية" : "Emergency", icon: AlertTriangle, color: "text-red-600 bg-red-50" },
+  unpaid: { label: isAr ? "بدون راتب" : "Unpaid", icon: CalendarDays, color: "text-gray-600 bg-gray-50" },
+  maternity: { label: isAr ? "أمومة" : "Maternity", icon: Calendar, color: "text-pink-600 bg-pink-50" },
+  other: { label: isAr ? "أخرى" : "Other", icon: Calendar, color: "text-purple-600 bg-purple-50" },
+  };
+
+  const LEAVE_STATUS: Record<string, { label: string; icon: any; color: string; badgeColor: string }> = {
+  pending: { label: isAr ? "قيد المراجعة" : "Under Review", icon: Clock, color: "text-amber-600", badgeColor: "bg-amber-100 text-amber-800 border-amber-200" },
+  approved: { label: isAr ? "مقبولة" : "Accepted", icon: CheckCircle, color: "text-emerald-600", badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  rejected: { label: isAr ? "مرفوضة" : "Rejected", icon: XCircle, color: "text-red-600", badgeColor: "bg-red-100 text-red-800 border-red-200" },
+  cancelled: { label: isAr ? "ملغاة" : "Cancelled", icon: AlertCircle, color: "text-gray-500", badgeColor: "bg-gray-100 text-gray-800 border-gray-200" },
+  };
+
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -71,7 +73,7 @@ export default function LeaveManagement() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">{isAr ? "إدارة الإجازات" : "Leave Management"}</h1>
-        <p className="text-sm text-muted-foreground mt-1">مراجعة وإدارة طلبات الإجازات لجميع الموظفين</p>
+        <p className="text-sm text-muted-foreground mt-1">{isAr ? "مراجعة وإدارة طلبات الإجازات لجميع الموظفين" : "Review and manage leave requests for all employees"}</p>
       </div>
 
       {/* Stats */}
@@ -79,25 +81,25 @@ export default function LeaveManagement() {
         <Card className="border-r-4 border-r-amber-500">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-amber-600">{pendingCount}</p>
-            <p className="text-xs text-muted-foreground">بانتظار المراجعة</p>
+            <p className="text-xs text-muted-foreground">{isAr ? "بانتظار المراجعة" : "Awaiting Review"}</p>
           </CardContent>
         </Card>
         <Card className="border-r-4 border-r-blue-500">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-blue-600">{data?.items?.filter((i: any) => i.leave.type === "annual").length ?? 0}</p>
-            <p className="text-xs text-muted-foreground">إجازات سنوية</p>
+            <p className="text-xs text-muted-foreground">{isAr ? "إجازات سنوية" : "Annual Leave"}</p>
           </CardContent>
         </Card>
         <Card className="border-r-4 border-r-orange-500">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-orange-600">{data?.items?.filter((i: any) => i.leave.type === "sick").length ?? 0}</p>
-            <p className="text-xs text-muted-foreground">إجازات مرضية</p>
+            <p className="text-xs text-muted-foreground">{isAr ? "إجازات مرضية" : "Sick Leave"}</p>
           </CardContent>
         </Card>
         <Card className="border-r-4 border-r-red-500">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-red-600">{data?.items?.filter((i: any) => i.leave.type === "emergency").length ?? 0}</p>
-            <p className="text-xs text-muted-foreground">إجازات اضطرارية</p>
+            <p className="text-xs text-muted-foreground">{isAr ? "إجازات اضطرارية" : "Emergency Leave"}</p>
           </CardContent>
         </Card>
       </div>
@@ -111,7 +113,7 @@ export default function LeaveManagement() {
                 <SelectValue placeholder={isAr ? "الحالة" : "Status"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="all">{isAr ? "جميع الحالات" : "All Statuses"}</SelectItem>
                 {Object.entries(LEAVE_STATUS).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v.label}</SelectItem>
                 ))}
@@ -119,10 +121,10 @@ export default function LeaveManagement() {
             </Select>
             <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="النوع" />
+                <SelectValue placeholder={isAr ? "النوع" : "Type"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الأنواع</SelectItem>
+                <SelectItem value="all">{isAr ? "جميع الأنواع" : "All Types"}</SelectItem>
                 {Object.entries(LEAVE_TYPES).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v.label}</SelectItem>
                 ))}
@@ -141,8 +143,8 @@ export default function LeaveManagement() {
         <Card>
           <CardContent className="py-12 text-center">
             <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">لا توجد طلبات إجازة</h3>
-            <p className="text-muted-foreground">لم يتم تقديم أي طلبات إجازة بعد</p>
+            <h3 className="text-lg font-semibold mb-2">{isAr ? "لا توجد طلبات إجازة" : "No leave requests"}</h3>
+            <p className="text-muted-foreground">{isAr ? "لم يتم تقديم أي طلبات إجازة بعد" : "No leave requests submitted yet"}</p>
           </CardContent>
         </Card>
       ) : (
@@ -162,10 +164,10 @@ export default function LeaveManagement() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-sm">{item.staffName || "موظف"}</h3>
+                          <h3 className="font-semibold text-sm">{item.staffName || isAr ? "موظف" : "Employee"}</h3>
                           {item.staffJobTitle && (
                             <span className="text-xs text-muted-foreground">({
-                              { teacher: "معلم/ة", supervisor: "مشرف/ة", principal: "مدير/ة", assistant: "مساعد/ة", admin_staff: "إداري/ة", specialist: "أخصائي/ة" }[item.staffJobTitle as string] || item.staffJobTitle
+                              { teacher: isAr ? "معلم/ة" : "Teacher", supervisor: isAr ? "مشرف/ة" : "Supervisor", principal: isAr ? "مدير/ة" : "Manager", assistant: isAr ? "مساعد/ة" : "Assistant", admin_staff: isAr ? "إداري/ة" : "Administrator", specialist: isAr ? "أخصائي/ة" : "Specialist" }[item.staffJobTitle as string] || item.staffJobTitle
                             })</span>
                           )}
                         </div>
@@ -186,7 +188,7 @@ export default function LeaveManagement() {
                             disabled={approveLeave.isPending}
                           >
                             <CheckCircle className="h-3.5 w-3.5 ml-1" />
-                            قبول
+                            {isAr ? "قبول" : "Accept"}
                           </Button>
                           <Button
                             size="sm"
@@ -196,7 +198,7 @@ export default function LeaveManagement() {
                             disabled={rejectLeave.isPending}
                           >
                             <XCircle className="h-3.5 w-3.5 ml-1" />
-                            رفض
+                            {isAr ? "رفض" : "Reject"}
                           </Button>
                         </div>
                       )}
@@ -215,7 +217,7 @@ export default function LeaveManagement() {
           <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground">صفحة {page} من {totalPages}</span>
+          <span className="text-sm text-muted-foreground">{isAr ? "صفحة" : "Page"} {page} {isAr ? "من" : "From"} {totalPages}</span>
           <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>

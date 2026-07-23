@@ -47,46 +47,46 @@ export default function StaffDocuments() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">إدارة المستندات</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "إدارة المستندات" : "Document Management"}</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />إضافة مستند</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{isAr ? "إضافة مستند" : "Add Document"}</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>إضافة مستند جديد</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{isAr ? "إضافة مستند جديد" : "Add New Document"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>اسم المستند</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="اسم المستند" /></div>
+              <div><Label>{isAr ? "اسم المستند" : "Document Name"}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={isAr ? "اسم المستند" : "Document Name"} /></div>
               <div>
-                <Label>النوع</Label>
+                <Label>{isAr ? "النوع" : "Type"}</Label>
                 <Select value={type} onValueChange={setType}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="policy">سياسة</SelectItem>
-                    <SelectItem value="form">نموذج</SelectItem>
-                    <SelectItem value="report">تقرير</SelectItem>
-                    <SelectItem value="certificate">شهادة</SelectItem>
-                    <SelectItem value="other">أخرى</SelectItem>
+                    <SelectItem value="policy">{isAr ? "سياسة" : "Policy"}</SelectItem>
+                    <SelectItem value="form">{isAr ? "نموذج" : "Template"}</SelectItem>
+                    <SelectItem value="report">{isAr ? "تقرير" : "Report"}</SelectItem>
+                    <SelectItem value="certificate">{isAr ? "شهادة" : "Certificate"}</SelectItem>
+                    <SelectItem value="other">{isAr ? "أخرى" : "Other"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>رابط المستند</Label><Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." dir="ltr" /></div>
+              <div><Label>{isAr ? "رابط المستند" : "Document Link"}</Label><Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." dir="ltr" /></div>
               <div>
-                <Label>الجمهور</Label>
+                <Label>{isAr ? "الجمهور" : "Audience"}</Label>
                 <Select value={audience} onValueChange={setAudience}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">الجميع</SelectItem>
-                    <SelectItem value="parents">أولياء الأمور</SelectItem>
-                    <SelectItem value="staff">الموظفون</SelectItem>
+                    <SelectItem value="all">{isAr ? "الجميع" : "All"}</SelectItem>
+                    <SelectItem value="parents">{isAr ? "أولياء الأمور" : "Parents"}</SelectItem>
+                    <SelectItem value="staff">{isAr ? "الموظفون" : "Staff"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="sig" checked={requiresSignature} onChange={e => setRequiresSignature(e.target.checked)} className="rounded" />
-                <Label htmlFor="sig">يتطلب توقيع ولي الأمر</Label>
+                <Label htmlFor="sig">{isAr ? "يتطلب توقيع ولي الأمر" : "Requires Parent/Guardian Signature"}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button onClick={() => create.mutate({ name, type: type as any, url, audience: audience as any, requiresSignature })} disabled={!name || !url || create.isPending}>
-                {create.isPending ? "جاري..." : "إضافة"}
+                {create.isPending ? "جاري..." : (isAr ? "إضافة" : "Add")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -98,16 +98,16 @@ export default function StaffDocuments() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>المستند</TableHead>
-                <TableHead>النوع</TableHead>
-                <TableHead>الجمهور</TableHead>
-                <TableHead>التوقيع</TableHead>
-                <TableHead>الإجراءات</TableHead>
+                <TableHead>{isAr ? "المستند" : "Document"}</TableHead>
+                <TableHead>{isAr ? "النوع" : "Type"}</TableHead>
+                <TableHead>{isAr ? "الجمهور" : "Audience"}</TableHead>
+                <TableHead>{isAr ? "التوقيع" : "Signature"}</TableHead>
+                <TableHead>{isAr ? "الإجراءات" : "Actions"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow> :
-              documents?.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">لا توجد مستندات</TableCell></TableRow> :
+              documents?.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{isAr ? "لا توجد مستندات" : "No documents"}</TableCell></TableRow> :
               documents?.map((d: any) => (
                 <TableRow key={d.id}>
                   <TableCell>
@@ -117,11 +117,11 @@ export default function StaffDocuments() {
                     </div>
                   </TableCell>
                   <TableCell><Badge variant="secondary">{typeLabels[d.type] || d.type}</Badge></TableCell>
-                  <TableCell>{audienceLabels[d.audience] || d.audience || "الجميع"}</TableCell>
+                  <TableCell>{audienceLabels[d.audience] || d.audience || isAr ? "الجميع" : "All"}</TableCell>
                   <TableCell>
                     {d.requiresSignature ? (
                       <Badge className="bg-amber-100 text-amber-700 gap-1">
-                        <FileCheck className="h-3 w-3" />يتطلب توقيع
+                        <FileCheck className="h-3 w-3" />{isAr ? "يتطلب توقيع" : "Requires Signature"}
                       </Badge>
                     ) : "-"}
                   </TableCell>

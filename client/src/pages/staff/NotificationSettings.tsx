@@ -19,7 +19,7 @@ export default function NotificationSettings() {
       if (data.success) {
         toast.success(isAr ? "تم إرسال رسالة SMS تجريبية بنجاح" : "Test SMS sent successfully");
       } else {
-        toast.error(data.message || "فشل إرسال الرسالة التجريبية");
+        toast.error(data.message || isAr ? "فشل إرسال الرسالة التجريبية" : "Failed to Send Test Message");
       }
     },
     onError: () => toast.error(isAr ? "حدث خطأ أثناء إرسال الرسالة التجريبية" : "Error sending test message"),
@@ -29,7 +29,7 @@ export default function NotificationSettings() {
       if (data.success) {
         toast.success(isAr ? "تم إرسال بريد إلكتروني تجريبي بنجاح" : "Test email sent successfully");
       } else {
-        toast.error(data.message || "فشل إرسال البريد التجريبي");
+        toast.error(data.message || isAr ? "فشل إرسال البريد التجريبي" : "Failed to Send Test Email");
       }
     },
     onError: () => toast.error(isAr ? "حدث خطأ أثناء إرسال البريد التجريبي" : "Error sending test email"),
@@ -56,7 +56,7 @@ export default function NotificationSettings() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">{isAr ? "إعدادات الإشعارات" : "Notification Settings"}</h1>
           <p className="text-muted-foreground mt-1">
-            إدارة خدمات الرسائل القصيرة والبريد الإلكتروني للمنصة
+            {isAr ? "إدارة خدمات الرسائل القصيرة والبريد الإلكتروني للمنصة" : "Manage Platform SMS & Email Services"}
           </p>
         </div>
         <Button
@@ -66,7 +66,7 @@ export default function NotificationSettings() {
           className="gap-2"
         >
           <RefreshCw className="h-4 w-4" />
-          تحديث الحالة
+          {isAr ? "تحديث الحالة" : "Update Status"}
         </Button>
       </div>
 
@@ -78,9 +78,9 @@ export default function NotificationSettings() {
               <Shield className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">الحالة العامة</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "الحالة العامة" : "General Status"}</p>
               <p className="font-semibold">
-                {status?.sms.configured || status?.email.configured ? "مُفعّل جزئياً" : "غير مُفعّل"}
+                {status?.sms.configured || status?.email.configured ? isAr ? "مُفعّل جزئياً" : "Partially Active" : isAr ? "غير مُفعّل" : "Inactive"}
               </p>
             </div>
           </CardContent>
@@ -91,9 +91,9 @@ export default function NotificationSettings() {
               <MessageSquare className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">الرسائل القصيرة</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "الرسائل القصيرة" : "SMS"}</p>
               <p className="font-semibold">
-                {status?.sms.configured ? "مُفعّل" : "غير مُفعّل"}
+                {status?.sms.configured ? isAr ? "مُفعّل" : "Active" : isAr ? "غير مُفعّل" : "Inactive"}
               </p>
             </div>
           </CardContent>
@@ -106,7 +106,7 @@ export default function NotificationSettings() {
             <div>
               <p className="text-sm text-muted-foreground">{isAr ? "البريد الإلكتروني" : "Email"}</p>
               <p className="font-semibold">
-                {status?.email.configured ? "مُفعّل" : "غير مُفعّل"}
+                {status?.email.configured ? isAr ? "مُفعّل" : "Active" : isAr ? "غير مُفعّل" : "Inactive"}
               </p>
             </div>
           </CardContent>
@@ -124,15 +124,15 @@ export default function NotificationSettings() {
                   <Phone className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">خدمة الرسائل القصيرة</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "خدمة الرسائل القصيرة" : "SMS Service"}</CardTitle>
                   <CardDescription>Twilio SMS</CardDescription>
                 </div>
               </div>
               <Badge variant={status?.sms.configured ? "default" : "secondary"} className={status?.sms.configured ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" : ""}>
                 {status?.sms.configured ? (
-                  <><CheckCircle2 className="h-3 w-3 ml-1" /> مُفعّل</>
+                  <><CheckCircle2 className="h-3 w-3 ml-1" />{isAr ? " مُفعّل" : "Active"}</>
                 ) : (
-                  <><XCircle className="h-3 w-3 ml-1" /> غير مُفعّل</>
+                  <><XCircle className="h-3 w-3 ml-1" />{isAr ? " غير مُفعّل" : "Inactive"}</>
                 )}
               </Badge>
             </div>
@@ -142,13 +142,13 @@ export default function NotificationSettings() {
             <div className="space-y-3">
               <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
                 <Settings2 className="h-4 w-4" />
-                حالة الإعداد
+                {isAr ? "حالة الإعداد" : "Setup Status"}
               </h4>
               <div className="space-y-2 bg-muted/50 rounded-lg p-3">
-                <ConfigItem label="معرّف الحساب" configured={status?.sms.details?.hasAccountSid ?? false} />
-                <ConfigItem label="رمز المصادقة" configured={status?.sms.details?.hasAuthToken ?? false} />
-                <ConfigItem label="رقم الهاتف" configured={status?.sms.details?.hasPhoneNumber ?? false} value={status?.sms.details?.phoneNumber} />
-                <ConfigItem label="الخدمة مُفعّلة" configured={status?.sms.details?.enabled ?? false} />
+                <ConfigItem label={isAr ? "معرّف الحساب" : "Account ID"} configured={status?.sms.details?.hasAccountSid ?? false} />
+                <ConfigItem label={isAr ? "رمز المصادقة" : "Authentication Code"} configured={status?.sms.details?.hasAuthToken ?? false} />
+                <ConfigItem label={isAr ? "رقم الهاتف" : "Phone Number"} configured={status?.sms.details?.hasPhoneNumber ?? false} value={status?.sms.details?.phoneNumber} />
+                <ConfigItem label={isAr ? "الخدمة مُفعّلة" : "Service Enabled"} configured={status?.sms.details?.enabled ?? false} />
               </div>
             </div>
 
@@ -158,13 +158,13 @@ export default function NotificationSettings() {
             <div className="space-y-3">
               <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
                 <Send className="h-4 w-4" />
-                الخدمات المتاحة
+                {isAr ? "الخدمات المتاحة" : "Available Services"}
               </h4>
               <div className="grid grid-cols-1 gap-2">
-                <ServiceFeature label="إرسال رمز التحقق (OTP)" active={status?.sms.configured ?? false} />
-                <ServiceFeature label="رسالة ترحيب للمستخدمين الجدد" active={status?.sms.configured ?? false} />
-                <ServiceFeature label="إعادة تعيين كلمة المرور" active={status?.sms.configured ?? false} />
-                <ServiceFeature label="إشعارات استلام الأطفال" active={status?.sms.configured ?? false} />
+                <ServiceFeature label={isAr ? "إرسال رمز التحقق (OTP)" : "Send Verification Code (OTP)"} active={status?.sms.configured ?? false} />
+                <ServiceFeature label={isAr ? "رسالة ترحيب للمستخدمين الجدد" : "Welcome message for new users"} active={status?.sms.configured ?? false} />
+                <ServiceFeature label={isAr ? "إعادة تعيين كلمة المرور" : "Reset Password"} active={status?.sms.configured ?? false} />
+                <ServiceFeature label={isAr ? "إشعارات استلام الأطفال" : "Child Pickup Notifications"} active={status?.sms.configured ?? false} />
               </div>
             </div>
 
@@ -172,7 +172,7 @@ export default function NotificationSettings() {
 
             {/* Test Button */}
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">اختبار الخدمة</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "اختبار الخدمة" : "Test Service"}</p>
               <Button
                 size="sm"
                 variant="outline"
@@ -181,7 +181,7 @@ export default function NotificationSettings() {
                 className="gap-2"
               >
                 <Send className="h-3.5 w-3.5" />
-                {testSms.isPending ? "جاري الإرسال..." : "إرسال رسالة تجريبية"}
+                {testSms.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : "إرسال رسالة تجريبية"}
               </Button>
             </div>
 
@@ -191,11 +191,11 @@ export default function NotificationSettings() {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">خطوات التفعيل</p>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{isAr ? "خطوات التفعيل" : "Activation Steps"}</p>
                     <ol className="text-xs text-amber-700 dark:text-amber-300 mt-2 space-y-1 list-decimal list-inside">
                       <li>أنشئ حساباً في Twilio (twilio.com)</li>
-                      <li>احصل على رقم هاتف سعودي أو دولي</li>
-                      <li>أضف المتغيرات التالية في إعدادات المشروع:</li>
+                      <li>{isAr ? "احصل على رقم هاتف سعودي أو دولي" : "Get a Saudi or international phone number"}</li>
+                      <li>{isAr ? "أضف المتغيرات التالية في إعدادات المشروع:" : "Add the following variables in project settings:"}</li>
                     </ol>
                     <div className="mt-2 bg-amber-100 dark:bg-amber-900/50 rounded p-2 text-xs font-mono direction-ltr text-left space-y-0.5">
                       <div>TWILIO_ACCOUNT_SID</div>
@@ -219,15 +219,15 @@ export default function NotificationSettings() {
                   <Mail className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">خدمة البريد الإلكتروني</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "خدمة البريد الإلكتروني" : "Email Service"}</CardTitle>
                   <CardDescription>SendGrid</CardDescription>
                 </div>
               </div>
               <Badge variant={status?.email.configured ? "default" : "secondary"} className={status?.email.configured ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" : ""}>
                 {status?.email.configured ? (
-                  <><CheckCircle2 className="h-3 w-3 ml-1" /> مُفعّل</>
+                  <><CheckCircle2 className="h-3 w-3 ml-1" />{isAr ? " مُفعّل" : "Active"}</>
                 ) : (
-                  <><XCircle className="h-3 w-3 ml-1" /> غير مُفعّل</>
+                  <><XCircle className="h-3 w-3 ml-1" />{isAr ? " غير مُفعّل" : "Inactive"}</>
                 )}
               </Badge>
             </div>
@@ -237,13 +237,13 @@ export default function NotificationSettings() {
             <div className="space-y-3">
               <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
                 <Settings2 className="h-4 w-4" />
-                حالة الإعداد
+                {isAr ? "حالة الإعداد" : "Setup Status"}
               </h4>
               <div className="space-y-2 bg-muted/50 rounded-lg p-3">
-                <ConfigItem label="مفتاح API" configured={status?.email.details?.hasApiKey ?? false} />
-                <ConfigItem label="عنوان المرسل" configured={status?.email.details?.hasFromAddress ?? false} value={status?.email.details?.fromAddress} />
-                <ConfigItem label="اسم المرسل" configured={status?.email.details?.hasFromName ?? false} value={status?.email.details?.fromName} />
-                <ConfigItem label="الخدمة مُفعّلة" configured={status?.email.details?.enabled ?? false} />
+                <ConfigItem label={isAr ? "مفتاح API" : "API Key"} configured={status?.email.details?.hasApiKey ?? false} />
+                <ConfigItem label={isAr ? "عنوان المرسل" : "Sender Address"} configured={status?.email.details?.hasFromAddress ?? false} value={status?.email.details?.fromAddress} />
+                <ConfigItem label={isAr ? "اسم المرسل" : "Sender Name"} configured={status?.email.details?.hasFromName ?? false} value={status?.email.details?.fromName} />
+                <ConfigItem label={isAr ? "الخدمة مُفعّلة" : "Service Enabled"} configured={status?.email.details?.enabled ?? false} />
               </div>
             </div>
 
@@ -253,13 +253,13 @@ export default function NotificationSettings() {
             <div className="space-y-3">
               <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
                 <Send className="h-4 w-4" />
-                الخدمات المتاحة
+                {isAr ? "الخدمات المتاحة" : "Available Services"}
               </h4>
               <div className="grid grid-cols-1 gap-2">
-                <ServiceFeature label="إرسال رمز التحقق (OTP)" active={status?.email.configured ?? false} />
-                <ServiceFeature label="رسالة ترحيب للمستخدمين الجدد" active={status?.email.configured ?? false} />
-                <ServiceFeature label="إعادة تعيين كلمة المرور" active={status?.email.configured ?? false} />
-                <ServiceFeature label="إرسال الفواتير" active={status?.email.configured ?? false} />
+                <ServiceFeature label={isAr ? "إرسال رمز التحقق (OTP)" : "Send Verification Code (OTP)"} active={status?.email.configured ?? false} />
+                <ServiceFeature label={isAr ? "رسالة ترحيب للمستخدمين الجدد" : "Welcome message for new users"} active={status?.email.configured ?? false} />
+                <ServiceFeature label={isAr ? "إعادة تعيين كلمة المرور" : "Reset Password"} active={status?.email.configured ?? false} />
+                <ServiceFeature label={isAr ? "إرسال الفواتير" : "Send Invoices"} active={status?.email.configured ?? false} />
               </div>
             </div>
 
@@ -267,7 +267,7 @@ export default function NotificationSettings() {
 
             {/* Test Button */}
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">اختبار الخدمة</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "اختبار الخدمة" : "Test Service"}</p>
               <Button
                 size="sm"
                 variant="outline"
@@ -276,7 +276,7 @@ export default function NotificationSettings() {
                 className="gap-2"
               >
                 <Send className="h-3.5 w-3.5" />
-                {testEmail.isPending ? "جاري الإرسال..." : "إرسال بريد تجريبي"}
+                {testEmail.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : "إرسال بريد تجريبي"}
               </Button>
             </div>
 
@@ -286,12 +286,12 @@ export default function NotificationSettings() {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">خطوات التفعيل</p>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{isAr ? "خطوات التفعيل" : "Activation Steps"}</p>
                     <ol className="text-xs text-amber-700 dark:text-amber-300 mt-2 space-y-1 list-decimal list-inside">
                       <li>أنشئ حساباً في SendGrid (sendgrid.com)</li>
                       <li>أنشئ مفتاح API مع صلاحيات الإرسال</li>
                       <li>وثّق عنوان المرسل (Sender Authentication)</li>
-                      <li>أضف المتغيرات التالية في إعدادات المشروع:</li>
+                      <li>{isAr ? "أضف المتغيرات التالية في إعدادات المشروع:" : "Add the following variables in project settings:"}</li>
                     </ol>
                     <div className="mt-2 bg-amber-100 dark:bg-amber-900/50 rounded p-2 text-xs font-mono direction-ltr text-left space-y-0.5">
                       <div>SENDGRID_API_KEY</div>
@@ -313,9 +313,9 @@ export default function NotificationSettings() {
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
             <div className="space-y-2">
-              <p className="font-medium text-blue-900 dark:text-blue-100">آلية العمل الاحتياطية</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">{isAr ? "آلية العمل الاحتياطية" : "Fallback Mechanism"}</p>
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                في حال عدم تفعيل خدمات الرسائل القصيرة أو البريد الإلكتروني، تعمل المنصة بشكل طبيعي مع تسجيل جميع الرسائل في سجل النظام بدلاً من إرسالها فعلياً. هذا يضمن عدم توقف أي وظيفة في المنصة حتى بدون تفعيل الخدمات الخارجية.
+                {isAr ? "في حال عدم تفعيل خدمات الرسائل القصيرة أو البريد الإلكتروني، تعمل المنصة بشكل طبيعي مع تسجيل جميع الرسائل في سجل النظام بدلاً من إرسالها فعلياً. هذا يضمن عدم توقف أي وظيفة في المنصة حتى بدون تفعيل الخدمات الخارجية." : "If SMS or email services are not activated, the platform operates normally, with all messages recorded in the system log instead of being sent. This ensures no platform functionality is interrupted, even without external services activated."}
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <Badge variant="outline" className="text-xs bg-blue-100 dark:bg-blue-900">
@@ -324,7 +324,7 @@ export default function NotificationSettings() {
                 </Badge>
                 <Badge variant="outline" className="text-xs bg-blue-100 dark:bg-blue-900">
                   <Shield className="h-3 w-3 ml-1" />
-                  لا توقف للخدمات
+                  {isAr ? "لا توقف للخدمات" : "No service interruptions"}
                 </Badge>
               </div>
             </div>

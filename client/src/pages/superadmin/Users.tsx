@@ -10,17 +10,6 @@ import { useState, useMemo } from "react";
 import { Users as UsersIcon, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-const roleLabels: Record<string, string> = {
-  super_admin: "مدير عام",
-  admin: "مدير",
-  principal: "مدير حضانة",
-  teacher: "معلمة",
-  assistant: "مساعدة",
-  accountant: "محاسب",
-  receptionist: "استقبال",
-  parent: "ولي أمر",
-  user: "مستخدم",
-};
 
 const roleColors: Record<string, string> = {
   super_admin: "bg-red-100 text-red-800",
@@ -36,6 +25,19 @@ const roleColors: Record<string, string> = {
 
 export default function SuperAdminUsers() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const roleLabels: Record<string, string> = {
+  super_admin: isAr ? "مدير عام" : "General Manager",
+  admin: isAr ? "مدير" : "Manager",
+  principal: isAr ? "مدير حضانة" : "Nursery Manager",
+  teacher: isAr ? "معلمة" : "Teacher (female)",
+  assistant: isAr ? "مساعدة" : "Help",
+  accountant: isAr ? "محاسب" : "Accountant",
+  receptionist: isAr ? "استقبال" : "Reception",
+  parent: isAr ? "ولي أمر" : "Parent",
+  user: isAr ? "مستخدم" : "User",
+  };
+
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: orgs, isLoading: orgsLoading } = trpc.superAdmin.listOrganizations.useQuery({});
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
@@ -79,9 +81,9 @@ export default function SuperAdminUsers() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <UsersIcon className="w-6 h-6 text-[#7C3AED]" />
-          المستخدمون
+          {isAr ? "المستخدمون" : "Users"}
         </h1>
-        <p className="text-muted-foreground mt-1">إدارة مستخدمي المنظمات</p>
+        <p className="text-muted-foreground mt-1">{isAr ? "إدارة مستخدمي المنظمات" : "Manage Organization Users"}</p>
       </div>
 
       {/* Organization Selector */}
@@ -94,7 +96,7 @@ export default function SuperAdminUsers() {
                 onValueChange={(v) => setSelectedOrgId(Number(v))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر منظمة..." />
+                  <SelectValue placeholder={isAr ? "اختر منظمة..." : "Select Organization..."} />
                 </SelectTrigger>
                 <SelectContent>
                   {orgs?.organizations?.map((org: any) => (
@@ -108,7 +110,7 @@ export default function SuperAdminUsers() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="بحث بالاسم أو البريد..."
+                placeholder={isAr ? "بحث بالاسم أو البريد..." : "Search by Name or Email..."}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pr-9"
@@ -135,19 +137,19 @@ export default function SuperAdminUsers() {
               </div>
             ) : filteredMembers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                لا يوجد أعضاء
+                {isAr ? "لا يوجد أعضاء" : "No members"}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">المستخدم</TableHead>
-                      <TableHead className="text-right">البريد الإلكتروني</TableHead>
-                      <TableHead className="text-right">الهاتف</TableHead>
-                      <TableHead className="text-right">الدور</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right">تاريخ الانضمام</TableHead>
+                      <TableHead className="text-right">{isAr ? "المستخدم" : "User"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "البريد الإلكتروني" : "Email"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الهاتف" : "Phone"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الدور" : "Role"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "تاريخ الانضمام" : "Join Date"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -176,7 +178,7 @@ export default function SuperAdminUsers() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={member.isActive ? "default" : "destructive"}>
-                            {member.isActive ? "نشط" : "معطل"}
+                            {member.isActive ? (isAr ? "نشط" : "Active") : (isAr ? "معطل" : "Disabled")}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">

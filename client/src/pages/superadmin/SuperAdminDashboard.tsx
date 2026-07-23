@@ -26,6 +26,7 @@ import {
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
@@ -40,13 +41,13 @@ export default function SuperAdminDashboard() {
   const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
     active: { label: t("superadmin.active"), color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
     trial: { label: t("superadmin.trial"), color: "bg-blue-100 text-blue-700 border-blue-200", icon: Clock },
-    pending: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700 border-amber-200", icon: AlertCircle },
+    pending: { label: isAr ? "قيد المراجعة" : "Under Review", color: "bg-amber-100 text-amber-700 border-amber-200", icon: AlertCircle },
     suspended: { label: t("superadmin.suspended"), color: "bg-red-100 text-red-700 border-red-200", icon: Ban },
   };
 
   const editionLabels: Record<string, string> = {
-    learning_tree: "شجرة التعلم",
-    nashaa: "نشأة",
+    learning_tree: isAr ? "شجرة التعلم" : "Learning Tree",
+    nashaa: isAr ? "نشأة" : "Nasha\'a",
   };
 
   return (
@@ -54,15 +55,15 @@ export default function SuperAdminDashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">لوحة تحكم المدير العام</h1>
-          <p className="text-sm text-muted-foreground mt-1">إدارة جميع الحضانات والمنظمات على المنصة</p>
+          <h1 className="text-2xl font-bold text-foreground">{isAr ? "لوحة تحكم المدير العام" : "General Manager Dashboard"}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{isAr ? "إدارة جميع الحضانات والمنظمات على المنصة" : "Manage All Nurseries & Organizations on the Platform"}</p>
         </div>
         <Button
           onClick={() => navigate("/super-admin/organizations/new")}
           className="rounded-xl shadow-sm btn-press"
         >
           <Plus className="w-4 h-4 ml-2" />
-          إضافة حضانة جديدة
+          {isAr ? "إضافة حضانة جديدة" : "Add New Nursery"}
         </Button>
       </div>
 
@@ -75,7 +76,7 @@ export default function SuperAdminDashboard() {
                 <Building2 className="w-5 h-5 text-[#00C9B7]" />
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground">إجمالي المنظمات</p>
+                <p className="text-[11px] text-muted-foreground">{isAr ? "إجمالي المنظمات" : "Total Organizations"}</p>
                 {statsLoading ? (
                   <Skeleton className="h-6 w-12 mt-1" />
                 ) : (
@@ -93,7 +94,7 @@ export default function SuperAdminDashboard() {
                 <TrendingUp className="w-5 h-5 text-[#7B61FF]" />
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground">المنظمات النشطة</p>
+                <p className="text-[11px] text-muted-foreground">{isAr ? "المنظمات النشطة" : "Active Organizations"}</p>
                 {statsLoading ? (
                   <Skeleton className="h-6 w-12 mt-1" />
                 ) : (
@@ -111,7 +112,7 @@ export default function SuperAdminDashboard() {
                 <GraduationCap className="w-5 h-5 text-[#FF5CA8]" />
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground">إجمالي الأطفال</p>
+                <p className="text-[11px] text-muted-foreground">{isAr ? "إجمالي الأطفال" : "Total Children"}</p>
                 {statsLoading ? (
                   <Skeleton className="h-6 w-12 mt-1" />
                 ) : (
@@ -129,7 +130,7 @@ export default function SuperAdminDashboard() {
                 <Users className="w-5 h-5 text-[#FFB020]" />
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground">إجمالي المستخدمين</p>
+                <p className="text-[11px] text-muted-foreground">{isAr ? "إجمالي المستخدمين" : "Total Users"}</p>
                 {statsLoading ? (
                   <Skeleton className="h-6 w-12 mt-1" />
                 ) : (
@@ -147,7 +148,7 @@ export default function SuperAdminDashboard() {
                 <School className="w-5 h-5 text-[#00C9B7]" />
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground">إجمالي الفصول</p>
+                <p className="text-[11px] text-muted-foreground">{isAr ? "إجمالي الفصول" : "Total Classes"}</p>
                 {statsLoading ? (
                   <Skeleton className="h-6 w-12 mt-1" />
                 ) : (
@@ -165,13 +166,13 @@ export default function SuperAdminDashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <CardTitle className="text-foreground text-lg flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              المنظمات والحضانات
+              {isAr ? "المنظمات والحضانات" : "Organizations & Nurseries"}
             </CardTitle>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="بحث..."
+                  placeholder={isAr ? "بحث..." : "Search..."}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pr-9 w-48 rounded-xl"
@@ -182,11 +183,11 @@ export default function SuperAdminDashboard() {
                   <SelectValue placeholder={t("common.status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="active">نشطة</SelectItem>
-                  <SelectItem value="trial">تجريبية</SelectItem>
-                  <SelectItem value="pending">قيد المراجعة</SelectItem>
-                  <SelectItem value="suspended">معلّقة</SelectItem>
+                  <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
+                  <SelectItem value="active">{isAr ? "نشطة" : "Active"}</SelectItem>
+                  <SelectItem value="trial">{isAr ? "تجريبية" : "Trial"}</SelectItem>
+                  <SelectItem value="pending">{isAr ? "قيد المراجعة" : "Under Review"}</SelectItem>
+                  <SelectItem value="suspended">{isAr ? "معلّقة" : "Pending"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -236,7 +237,7 @@ export default function SuperAdminDashboard() {
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>لا توجد منظمات مسجلة</p>
+              <p>{isAr ? "لا توجد منظمات مسجلة" : "No organizations registered"}</p>
             </div>
           )}
         </CardContent>

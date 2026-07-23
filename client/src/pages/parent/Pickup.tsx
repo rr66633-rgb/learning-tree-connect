@@ -9,14 +9,16 @@ import { Clock, CheckCircle2, UserCheck, Bell, History, Car, Timer, Send, Buildi
 import { EmptyState } from "@/components/EmptyState";
 import { useTranslation } from "react-i18next";
 
-const STATUS_STEPS = [
-  { key: "waiting_teacher", label: "تم إرسال الطلب", description: "بانتظار استجابة المعلمة", icon: Clock, color: "text-amber-600" },
-  { key: "sent_to_reception", label: "طفلك في الطريق", description: "المعلمة أرسلت طفلك إلى الاستقبال", icon: Send, color: "text-blue-600" },
-  { key: "waiting_at_reception", label: "طفلك بالاستقبال", description: "طفلك وصل الاستقبال وينتظرك", icon: Building2, color: "text-purple-600" },
-  { key: "picked_up", label: "تم التسليم", description: "تم تسليم طفلك بنجاح", icon: UserCheck, color: "text-green-600" },
-];
+const getSTATUS_STEPS = (isAr: boolean) => ([
+  { key: "waiting_teacher", label: (isAr ? "تم إرسال الطلب" : "Request Sent"), description: (isAr ? "بانتظار استجابة المعلمة" : "Awaiting Teacher's Response"), icon: Clock, color: "text-amber-600" },
+  { key: "sent_to_reception", label: (isAr ? "طفلك في الطريق" : "Your child is on the way"), description: (isAr ? "المعلمة أرسلت طفلك إلى الاستقبال" : "Teacher sent your child to reception"), icon: Send, color: "text-blue-600" },
+  { key: "waiting_at_reception", label: (isAr ? "طفلك بالاستقبال" : "Your child at reception"), description: (isAr ? "طفلك وصل الاستقبال وينتظرك" : "Your child has arrived at reception and is waiting for you"), icon: Building2, color: "text-purple-600" },
+  { key: "picked_up", label: (isAr ? "تم التسليم" : "Delivered"), description: (isAr ? "تم تسليم طفلك بنجاح" : "Your child has been successfully delivered"), icon: UserCheck, color: "text-green-600" },
+]);
 
 // Live timer showing how long the parent has been waiting
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
 function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
   const [elapsed, setElapsed] = useState(0);
 
@@ -35,7 +37,7 @@ function ParentWaitTimer({ requestedAt }: { requestedAt: string | Date }) {
     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
       <Timer className="h-4 w-4" />
       <span className="font-mono">{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}</span>
-      <span className="text-xs">وقت الانتظار</span>
+      <span className="text-xs">{isAr ? "وقت الانتظار" : "Waiting Time"}</span>
     </div>
   );
 }
@@ -56,7 +58,7 @@ export default function ParentPickup() {
       refetchRequests();
     },
     onError: (err) => {
-      toast.error(err.message || "حدث خطأ أثناء إرسال الطلب");
+      toast.error(err.message || (isAr ? "حدث خطأ أثناء إرسال الطلب" : "An error occurred while submitting the request"));
     },
   });
 
@@ -87,10 +89,10 @@ export default function ParentPickup() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">طلب الاستلام</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "طلب الاستلام" : "Pick-up request"}</h1>
         <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
           <History className="h-4 w-4 ml-2" />
-          {showHistory ? "الطلبات الحالية" : "السجل"}
+          {showHistory ? "الطلبات الحالية" : (isAr ? "السجل" : "Record")}
         </Button>
       </div>
 
@@ -99,9 +101,9 @@ export default function ParentPickup() {
           {/* Active pickup requests with detailed status tracking */}
           {activeRequests.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">الطلبات النشطة</h2>
+              <h2 className="text-lg font-semibold">{isAr ? "الطلبات النشطة" : "Active Orders"}</h2>
               {activeRequests.map((req: any) => {
-                const currentStepIndex = STATUS_STEPS.findIndex(s => s.key === req.status);
+                const currentStepIndex = getSTATUS_STEPS(isAr).findIndex(s => s.key === req.status);
                 return (
                   <Card key={req.id} className={`border-2 ${req.status === 'waiting_at_reception' ? 'border-green-300 bg-green-50/30' : 'border-primary/20'}`}>
                     <CardContent className="p-5">
@@ -126,7 +128,7 @@ export default function ParentPickup() {
                             onClick={() => cancelPickup.mutate({ id: req.id })}
                             disabled={cancelPickup.isPending}
                           >
-                            إلغاء
+                            {isAr ? "إلغاء" : "Cancel"}
                           </Button>
                         )}
                       </div>
@@ -135,22 +137,22 @@ export default function ParentPickup() {
                       {req.status === 'waiting_at_reception' && (
                         <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4 text-center">
                           <Building2 className="h-8 w-8 text-green-600 mx-auto mb-1" />
-                          <p className="font-bold text-green-800">طفلك بالاستقبال!</p>
-                          <p className="text-sm text-green-700">يرجى التوجه إلى الاستقبال لاستلام طفلك</p>
+                          <p className="font-bold text-green-800">{isAr ? "طفلك بالاستقبال!" : "Your child is at reception!"}</p>
+                          <p className="text-sm text-green-700">{isAr ? "يرجى التوجه إلى الاستقبال لاستلام طفلك" : "Please go to reception to pick up your child"}</p>
                         </div>
                       )}
 
                       {req.status === 'sent_to_reception' && (
                         <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 mb-4 text-center">
                           <Send className="h-8 w-8 text-blue-600 mx-auto mb-1" />
-                          <p className="font-bold text-blue-800">طفلك في الطريق للاستقبال</p>
-                          <p className="text-sm text-blue-700">المعلمة أرسلت طفلك إلى الاستقبال</p>
+                          <p className="font-bold text-blue-800">{isAr ? "طفلك في الطريق للاستقبال" : "Your child is on the way to reception"}</p>
+                          <p className="text-sm text-blue-700">{isAr ? "المعلمة أرسلت طفلك إلى الاستقبال" : "Teacher sent your child to reception"}</p>
                         </div>
                       )}
 
                       {/* Step-by-step progress */}
                       <div className="space-y-0">
-                        {STATUS_STEPS.map((step, i) => {
+                        {getSTATUS_STEPS(isAr).map((step, i) => {
                           const isCompleted = i <= currentStepIndex;
                           const isCurrent = i === currentStepIndex;
                           const StepIcon = step.icon;
@@ -163,7 +165,7 @@ export default function ParentPickup() {
                                 } ${isCurrent ? 'ring-2 ring-primary/30 ring-offset-2' : ''}`}>
                                   <StepIcon className="h-4 w-4" />
                                 </div>
-                                {i < STATUS_STEPS.length - 1 && (
+                                {i < getSTATUS_STEPS(isAr).length - 1 && (
                                   <div className={`w-0.5 h-8 ${i < currentStepIndex ? 'bg-primary' : 'bg-muted'}`} />
                                 )}
                               </div>
@@ -233,9 +235,9 @@ export default function ParentPickup() {
                             activeReq?.status === 'waiting_at_reception' ? "bg-green-100 text-green-800 border-green-200" :
                             "bg-gray-100 text-gray-800 border-gray-200"
                           }>
-                            {activeReq?.status === 'waiting_teacher' && "بانتظار المعلمة"}
-                            {activeReq?.status === 'sent_to_reception' && "طفلك في الطريق للاستقبال"}
-                            {activeReq?.status === 'waiting_at_reception' && "طفلك بالاستقبال"}
+                            {activeReq?.status === 'waiting_teacher' && (isAr ? "بانتظار المعلمة" : "Awaiting Teacher")}
+                            {activeReq?.status === 'sent_to_reception' && (isAr ? "طفلك في الطريق للاستقبال" : "Your child is on the way to reception")}
+                            {activeReq?.status === 'waiting_at_reception' && (isAr ? "طفلك بالاستقبال" : "Your child at reception")}
                           </Badge>
                         </div>
                       ) : (
@@ -245,7 +247,7 @@ export default function ParentPickup() {
                           disabled={requestPickup.isPending}
                         >
                           <Car className="h-5 w-5 ml-2" />
-                          {requestPickup.isPending ? "جاري الإرسال..." : "أنا هنا - طلب استلام"}
+                          {requestPickup.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : (isAr ? "أنا هنا - طلب استلام" : "I am here - Pickup request")}
                         </Button>
                       )}
                     </CardContent>
@@ -258,9 +260,9 @@ export default function ParentPickup() {
       ) : (
         /* Pickup History */
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold">سجل الاستلام</h2>
+          <h2 className="text-lg font-semibold">{isAr ? "سجل الاستلام" : "Pickup Log"}</h2>
           {historyRequests.length === 0 ? (
-            <Card><CardContent><EmptyState variant="generic" compact title="لا يوجد سجل استلام سابق" description="ستظهر هنا طلبات الاستلام السابقة" /></CardContent></Card>
+            <Card><CardContent><EmptyState variant="generic" compact title={isAr ? "لا يوجد سجل استلام سابق" : "No previous pick-up record"} description={isAr ? "ستظهر هنا طلبات الاستلام السابقة" : "Previous pickup requests will appear here"} /></CardContent></Card>
           ) : (
             historyRequests.map((req: any) => {
               const totalMinutes = req.requestedAt && req.pickedUpAt
@@ -288,7 +290,7 @@ export default function ParentPickup() {
                         {req.pickedUpBy && <p className="text-xs text-muted-foreground">المستلم: {req.pickedUpBy}</p>}
                       </div>
                       <Badge className={req.status === 'picked_up' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-700"}>
-                        {req.status === 'picked_up' ? "تم الاستلام" : "ملغي"}
+                        {req.status === 'picked_up' ? "تم الاستلام" : (isAr ? "ملغي" : "Canceled")}
                       </Badge>
                     </div>
                   </CardContent>

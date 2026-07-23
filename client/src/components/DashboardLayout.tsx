@@ -278,6 +278,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
   basePath?: string;
 }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
@@ -313,7 +315,7 @@ export default function DashboardLayout({
               نشأة <span className="text-[#00C9B7]">Naashah</span>
             </h1>
             <p className="text-base text-muted-foreground text-center max-w-sm leading-relaxed">
-              منصة متكاملة لإدارة الحضانات ورياض الأطفال
+              {isAr ? "منصة متكاملة لإدارة الحضانات ورياض الأطفال" : "Integrated Nursery and Kindergarten Management Platform"}
             </p>
           </div>
           <Button
@@ -323,7 +325,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full h-12 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 bg-primary hover:bg-primary/90 text-primary-foreground text-base font-semibold btn-press"
           >
-            تسجيل الدخول
+            {isAr ? "تسجيل الدخول" : "Login"}
           </Button>
           <p className="text-xs text-muted-foreground/60 text-center">
             منصة آمنة ومشفرة لحماية بياناتك
@@ -373,6 +375,7 @@ function DashboardLayoutContent({
   useInAppNotifications();
   const { branding } = useBranding();
   const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const currentLang = i18n.language || 'ar';
   const toggleLanguage = () => {
     const newLang = currentLang === 'ar' ? 'en' : 'ar';
@@ -536,7 +539,7 @@ function DashboardLayoutContent({
                   className="cursor-pointer rounded-lg"
                 >
                   <Globe className={`h-4 w-4 ${currentLang === 'en' ? 'mr-2' : 'ml-2'}`} />
-                  <span>{currentLang === 'en' ? 'العربية' : 'English'}</span>
+                  <span>{currentLang === 'en' ? (isAr ? "العربية" : "Arabic") : 'English'}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}
@@ -572,7 +575,7 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-5 w-5 text-muted-foreground" />
               </button>
               <span className="font-semibold text-foreground text-base">
-                {activeMenuItem ? (currentLang === 'en' ? activeMenuItem.labelEn : activeMenuItem.label) : (currentLang === 'en' ? 'Menu' : 'القائمة')}
+                {activeMenuItem ? (currentLang === 'en' ? activeMenuItem.labelEn : activeMenuItem.label) : (currentLang === 'en' ? 'Menu' : (isAr ? "القائمة" : "Menu"))}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -587,7 +590,7 @@ function DashboardLayoutContent({
               <SidebarTrigger className="h-9 w-9 rounded-xl bg-accent/50" />
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-foreground text-sm">
-                  {activeMenuItem ? (currentLang === 'en' ? activeMenuItem.labelEn : activeMenuItem.label) : (currentLang === 'en' ? 'Menu' : 'القائمة')}
+                  {activeMenuItem ? (currentLang === 'en' ? activeMenuItem.labelEn : activeMenuItem.label) : (currentLang === 'en' ? 'Menu' : (isAr ? "القائمة" : "Menu"))}
                 </span>
               </div>
             </div>

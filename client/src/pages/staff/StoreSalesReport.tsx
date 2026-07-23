@@ -34,15 +34,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "قيد الانتظار",
-  paid: "مدفوع",
-  processing: "قيد التجهيز",
-  ready: "جاهز",
-  completed: "مكتمل",
-  cancelled: "ملغي",
-  refunded: "مسترد",
-};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
@@ -54,14 +45,25 @@ const STATUS_COLORS: Record<string, string> = {
   refunded: "#6b7280",
 };
 
-const chartConfig: ChartConfig = {
-  revenue: { label: "الإيرادات", color: "#10b981" },
-  orders: { label: "الطلبات", color: "#3b82f6" },
-};
 
 export default function StoreSalesReport() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const STATUS_LABELS: Record<string, string> = {
+  pending: isAr ? "قيد الانتظار" : "Pending",
+  paid: isAr ? "مدفوع" : "Paid",
+  processing: isAr ? "قيد التجهيز" : "Preparing",
+  ready: isAr ? "جاهز" : "Ready",
+  completed: isAr ? "مكتمل" : "Completed",
+  cancelled: isAr ? "ملغي" : "Cancelled",
+  refunded: isAr ? "مسترد" : "Refunded",
+  };
+
+  const chartConfig: ChartConfig = {
+  revenue: { label: isAr ? "الإيرادات" : "Revenue", color: "#10b981" },
+  orders: { label: isAr ? "الطلبات" : "Orders", color: "#3b82f6" },
+  };
+
   const [, navigate] = useLocation();
   const [period, setPeriod] = useState<"week" | "month" | "year">("month");
 
@@ -91,9 +93,9 @@ export default function StoreSalesReport() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-primary" />
-            تقرير المبيعات
+            {isAr ? "تقرير المبيعات" : "Sales Report"}
           </h1>
-          <p className="text-muted-foreground">إحصائيات وتحليلات مبيعات المتجر</p>
+          <p className="text-muted-foreground">{isAr ? "إحصائيات وتحليلات مبيعات المتجر" : "Store Sales Statistics & Analytics"}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -101,21 +103,21 @@ export default function StoreSalesReport() {
             variant={period === "week" ? "default" : "outline"}
             onClick={() => setPeriod("week")}
           >
-            أسبوع
+            {isAr ? "أسبوع" : "Week"}
           </Button>
           <Button
             size="sm"
             variant={period === "month" ? "default" : "outline"}
             onClick={() => setPeriod("month")}
           >
-            شهر
+            {isAr ? "شهر" : "Month"}
           </Button>
           <Button
             size="sm"
             variant={period === "year" ? "default" : "outline"}
             onClick={() => setPeriod("year")}
           >
-            سنة
+            {isAr ? "سنة" : "Year"}
           </Button>
         </div>
       </div>
@@ -129,7 +131,7 @@ export default function StoreSalesReport() {
                 <ShoppingBag className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي الطلبات" : "Total Orders"}</p>
                 <p className="text-2xl font-bold">{summary?.totalOrders || 0}</p>
               </div>
             </div>
@@ -143,8 +145,8 @@ export default function StoreSalesReport() {
                 <DollarSign className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                <p className="text-2xl font-bold">{Number(summary?.totalRevenue || 0).toFixed(0)} <span className="text-sm font-normal">ر.س</span></p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+                <p className="text-2xl font-bold">{Number(summary?.totalRevenue || 0).toFixed(0)} <span className="text-sm font-normal">{isAr ? "ر.س" : "SAR"}</span></p>
               </div>
             </div>
           </CardContent>
@@ -157,8 +159,8 @@ export default function StoreSalesReport() {
                 <TrendingUp className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">صافي الإيرادات</p>
-                <p className="text-2xl font-bold">{Number(summary?.netRevenue || 0).toFixed(0)} <span className="text-sm font-normal">ر.س</span></p>
+                <p className="text-sm text-muted-foreground">{isAr ? "صافي الإيرادات" : "Net Revenue"}</p>
+                <p className="text-2xl font-bold">{Number(summary?.netRevenue || 0).toFixed(0)} <span className="text-sm font-normal">{isAr ? "ر.س" : "SAR"}</span></p>
               </div>
             </div>
           </CardContent>
@@ -171,8 +173,8 @@ export default function StoreSalesReport() {
                 <Package className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">العمولة (10%)</p>
-                <p className="text-2xl font-bold">{Number(summary?.totalCommission || 0).toFixed(0)} <span className="text-sm font-normal">ر.س</span></p>
+                <p className="text-sm text-muted-foreground">{isAr ? "العمولة (10%)" : "Commission (10%)"}</p>
+                <p className="text-2xl font-bold">{Number(summary?.totalCommission || 0).toFixed(0)} <span className="text-sm font-normal">{isAr ? "ر.س" : "SAR"}</span></p>
               </div>
             </div>
           </CardContent>
@@ -184,12 +186,12 @@ export default function StoreSalesReport() {
         {/* Revenue Line Chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">الإيرادات اليومية</CardTitle>
+            <CardTitle className="text-lg">{isAr ? "الإيرادات اليومية" : "Daily Revenue"}</CardTitle>
           </CardHeader>
           <CardContent>
             {dailySales.length === 0 ? (
               <div className="h-48 flex items-center justify-center text-muted-foreground">
-                لا توجد بيانات مبيعات في هذه الفترة
+                {isAr ? "لا توجد بيانات مبيعات في هذه الفترة" : "No sales data in this period"}
               </div>
             ) : (
               <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -220,7 +222,7 @@ export default function StoreSalesReport() {
                     stroke="#10b981"
                     strokeWidth={2}
                     dot={{ fill: "#10b981", r: 3 }}
-                    name="الإيرادات (ر.س)"
+                    name={isAr ? "الإيرادات (ر.س)" : "Revenue (SAR)"}
                   />
                 </LineChart>
               </ChartContainer>
@@ -231,12 +233,12 @@ export default function StoreSalesReport() {
         {/* Orders by Status Pie Chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">حالة الطلبات</CardTitle>
+            <CardTitle className="text-lg">{isAr ? "حالة الطلبات" : "Order Status"}</CardTitle>
           </CardHeader>
           <CardContent>
             {ordersByStatus.length === 0 ? (
               <div className="h-48 flex items-center justify-center text-muted-foreground">
-                لا توجد طلبات في هذه الفترة
+                {isAr ? "لا توجد طلبات في هذه الفترة" : "No requests in this period"}
               </div>
             ) : (
               <div className="flex items-center gap-4">
@@ -264,7 +266,7 @@ export default function StoreSalesReport() {
                           return (
                             <div className="bg-background border rounded-lg p-2 shadow-sm text-sm">
                               <p className="font-medium">{STATUS_LABELS[data.status] || data.status}</p>
-                              <p className="text-muted-foreground">{data.count} طلب</p>
+                              <p className="text-muted-foreground">{data.count} {isAr ? "طلب" : "Request"}</p>
                             </div>
                           );
                         }}
@@ -293,12 +295,12 @@ export default function StoreSalesReport() {
       {/* Top Products Bar Chart */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">المنتجات الأكثر مبيعاً</CardTitle>
+          <CardTitle className="text-lg">{isAr ? "المنتجات الأكثر مبيعاً" : "Best-selling Products"}</CardTitle>
         </CardHeader>
         <CardContent>
           {topProducts.length === 0 ? (
             <div className="h-48 flex items-center justify-center text-muted-foreground">
-              لا توجد مبيعات في هذه الفترة
+              {isAr ? "لا توجد مبيعات في هذه الفترة" : "No sales in this period"}
             </div>
           ) : (
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -320,14 +322,14 @@ export default function StoreSalesReport() {
                   content={
                     <ChartTooltipContent
                       formatter={(value, name) => {
-                        if (name === "totalQuantity") return [`${value} وحدة`, "الكمية المباعة"];
-                        if (name === "totalRevenue") return [`${Number(value).toFixed(0)} ر.س`, "الإيرادات"];
+                        if (name === "totalQuantity") return [`${value} ${isAr ? "وحدة" : "Unit"}`, "الكمية المباعة"];
+                        if (name === "totalRevenue") return [`${Number(value).toFixed(0)} ${isAr ? "ر.س" : "SAR"}`, "الإيرادات"];
                         return [value, name];
                       }}
                     />
                   }
                 />
-                <Bar dataKey="totalQuantity" fill="#3b82f6" radius={[0, 4, 4, 0]} name="الكمية المباعة" />
+                <Bar dataKey="totalQuantity" fill="#3b82f6" radius={[0, 4, 4, 0]} name={isAr ? "الكمية المباعة" : "Quantity Sold"} />
               </BarChart>
             </ChartContainer>
           )}
@@ -338,11 +340,11 @@ export default function StoreSalesReport() {
       <div className="flex gap-3 flex-wrap">
         <Button variant="outline" onClick={() => navigate("/staff/store")}>
           <Package className="h-4 w-4 ml-1" />
-          إدارة المنتجات
+          {isAr ? "إدارة المنتجات" : "Product Management"}
         </Button>
         <Button variant="outline" onClick={() => navigate("/staff/store/orders")}>
           <ShoppingBag className="h-4 w-4 ml-1" />
-          إدارة الطلبات
+          {isAr ? "إدارة الطلبات" : "Order Management"}
         </Button>
       </div>
     </div>

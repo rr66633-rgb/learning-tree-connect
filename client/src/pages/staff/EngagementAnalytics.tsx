@@ -40,17 +40,17 @@ export default function EngagementAnalytics() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">تحليلات مشاركة الأسر</h1>
-          <p className="text-muted-foreground">متابعة تفاعل أولياء الأمور مع أنشطة التعلم المنزلي</p>
+          <h1 className="text-2xl font-bold text-foreground">{isAr ? "تحليلات مشاركة الأسر" : "Family Engagement Analytics"}</h1>
+          <p className="text-muted-foreground">{isAr ? "متابعة تفاعل أولياء الأمور مع أنشطة التعلم المنزلي" : "Track Parent Engagement with Home Learning Activities"}</p>
         </div>
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="week">هذا الأسبوع</SelectItem>
-            <SelectItem value="month">هذا الشهر</SelectItem>
-            <SelectItem value="term">هذا الفصل</SelectItem>
+            <SelectItem value="week">{isAr ? "هذا الأسبوع" : "This Week"}</SelectItem>
+            <SelectItem value="month">{isAr ? "هذا الشهر" : "This Month"}</SelectItem>
+            <SelectItem value="term">{isAr ? "هذا الفصل" : "This Semester"}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -60,7 +60,7 @@ export default function EngagementAnalytics() {
         <Link href="/staff/engagement/reviews">
           <Button variant="outline" size="sm">
             <Eye className="h-4 w-4 ml-1" />
-            مراجعة المشاركات
+            {isAr ? "مراجعة المشاركات" : "Review Posts"}
             {stats?.pendingJournalReviews || stats?.pendingObservationReviews ? (
               <Badge className="bg-amber-500 mr-2 text-[10px]">{(stats?.pendingJournalReviews || 0) + (stats?.pendingObservationReviews || 0)}</Badge>
             ) : null}
@@ -69,7 +69,7 @@ export default function EngagementAnalytics() {
         <Link href="/staff/engagement/reports">
           <Button variant="outline" size="sm">
             <Calendar className="h-4 w-4 ml-1" />
-            إنشاء تقارير
+            {isAr ? "إنشاء تقارير" : "Generate Reports"}
           </Button>
         </Link>
       </div>
@@ -80,37 +80,37 @@ export default function EngagementAnalytics() {
           <CardContent className="p-4 text-center">
             <Users className="h-8 w-8 mx-auto text-emerald-600 mb-2" />
             <p className="text-2xl font-bold text-emerald-700">{stats?.totalActivities || 0}</p>
-            <p className="text-xs text-emerald-600">إجمالي الأنشطة</p>
+            <p className="text-xs text-emerald-600">{isAr ? "إجمالي الأنشطة" : "Total Activities"}</p>
           </CardContent>
         </Card>
         <Card className="border-blue-200 bg-blue-50/50">
           <CardContent className="p-4 text-center">
             <BookOpen className="h-8 w-8 mx-auto text-blue-600 mb-2" />
             <p className="text-2xl font-bold text-blue-700">{stats?.completedActivities || 0}</p>
-            <p className="text-xs text-blue-600">أنشطة مكتملة</p>
+            <p className="text-xs text-blue-600">{isAr ? "أنشطة مكتملة" : "Completed Activities"}</p>
           </CardContent>
         </Card>
         <Card className="border-purple-200 bg-purple-50/50">
           <CardContent className="p-4 text-center">
             <Trophy className="h-8 w-8 mx-auto text-purple-600 mb-2" />
             <p className="text-2xl font-bold text-purple-700">{stats?.pendingJournalReviews || 0}</p>
-            <p className="text-xs text-purple-600">مشاركات بانتظار المراجعة</p>
+            <p className="text-xs text-purple-600">{isAr ? "مشاركات بانتظار المراجعة" : "Posts Awaiting Review"}</p>
           </CardContent>
         </Card>
         <Card className="border-amber-200 bg-amber-50/50">
           <CardContent className="p-4 text-center">
             <TrendingUp className="h-8 w-8 mx-auto text-amber-600 mb-2" />
             <p className="text-2xl font-bold text-amber-700">{stats?.completionRate || 0}%</p>
-            <p className="text-xs text-amber-600">نسبة الإكمال</p>
+            <p className="text-xs text-amber-600">{isAr ? "نسبة الإكمال" : "Completion Rate"}</p>
           </CardContent>
         </Card>
       </div>
 
       <Tabs defaultValue="submissions" className="space-y-4">
         <TabsList className="grid grid-cols-3 w-full max-w-md">
-          <TabsTrigger value="submissions">المشاركات الأخيرة</TabsTrigger>
-          <TabsTrigger value="leaderboard">لوحة المتصدرين</TabsTrigger>
-          <TabsTrigger value="alerts">تنبيهات</TabsTrigger>
+          <TabsTrigger value="submissions">{isAr ? "المشاركات الأخيرة" : "Recent Posts"}</TabsTrigger>
+          <TabsTrigger value="leaderboard">{isAr ? "لوحة المتصدرين" : "Leaderboard"}</TabsTrigger>
+          <TabsTrigger value="alerts">{isAr ? "تنبيهات" : "Alerts"}</TabsTrigger>
         </TabsList>
 
         {/* Recent Submissions */}
@@ -119,14 +119,14 @@ export default function EngagementAnalytics() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Eye className="h-5 w-5 text-primary" />
-                آخر مشاركات أولياء الأمور
+                {isAr ? "آخر مشاركات أولياء الأمور" : "Latest Parent Posts"}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!recentSubmissions?.length ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Heart className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>لا توجد مشاركات حتى الآن</p>
+                  <p>{isAr ? "لا توجد مشاركات حتى الآن" : "No posts yet"}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -141,12 +141,12 @@ export default function EngagementAnalytics() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm truncate">{entry.title || "مشاركة جديدة"}</span>
+                          <span className="font-medium text-sm truncate">{entry.title || isAr ? "مشاركة جديدة" : "New Post"}</span>
                           <Badge variant="outline" className="text-xs">
-                            {entry.entryType === "milestone" ? "إنجاز" :
-                             entry.entryType === "achievement" ? "تحقيق" :
-                             entry.entryType === "photo" ? "صورة" :
-                             entry.entryType === "video" ? "فيديو" : "ملاحظة"}
+                            {entry.entryType === "milestone" ? (isAr ? "إنجاز" : "Milestone") :
+                             entry.entryType === "achievement" ? isAr ? "تحقيق" : "Achievement" :
+                             entry.entryType === "photo" ? (isAr ? "صورة" : "Photo") :
+                             entry.entryType === "video" ? "فيديو" : (isAr ? "ملاحظة" : "Note")}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">{entry.description}</p>
@@ -169,14 +169,14 @@ export default function EngagementAnalytics() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-amber-500" />
-                أكثر الأسر تفاعلاً
+                {isAr ? "أكثر الأسر تفاعلاً" : "Most Engaged Families"}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!(leaderboard as any[])?.length ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>لا توجد بيانات كافية حتى الآن</p>
+                  <p>{isAr ? "لا توجد بيانات كافية حتى الآن" : "Not enough data yet"}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -192,11 +192,11 @@ export default function EngagementAnalytics() {
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-sm">ولي أمر #{family.parentId}</p>
-                        <p className="text-xs text-muted-foreground">المستوى: {family.level}</p>
+                        <p className="text-xs text-muted-foreground">{isAr ? "المستوى:" : "Level:"} {family.level}</p>
                       </div>
                       <div className="text-left">
                         <p className="font-bold text-primary">{family.score}</p>
-                        <p className="text-xs text-muted-foreground">نقطة</p>
+                        <p className="text-xs text-muted-foreground">{isAr ? "نقطة" : "Point"}</p>
                       </div>
                     </div>
                   ))}
@@ -212,22 +212,22 @@ export default function EngagementAnalytics() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                أسر تحتاج متابعة
+                {isAr ? "أسر تحتاج متابعة" : "Families needing follow-up"}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {stats?.pendingObservationReviews === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-400" />
-                  <p className="font-medium text-green-700">جميع المشاركات تمت مراجعتها</p>
-                  <p className="text-sm">لا توجد ملاحظات بانتظار المراجعة</p>
+                  <p className="font-medium text-green-700">{isAr ? "جميع المشاركات تمت مراجعتها" : "All Posts Reviewed"}</p>
+                  <p className="text-sm">{isAr ? "لا توجد ملاحظات بانتظار المراجعة" : "No notes pending review"}</p>
                 </div>
               ) : (
                 <div className="p-4 rounded-lg border border-amber-200 bg-amber-50/50">
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="font-medium text-sm">ملاحظات بانتظار المراجعة</p>
+                      <p className="font-medium text-sm">{isAr ? "ملاحظات بانتظار المراجعة" : "Notes Awaiting Review"}</p>
                       <p className="text-xs text-muted-foreground">
                         {stats?.pendingObservationReviews} ملاحظة من أولياء الأمور تحتاج مراجعة
                       </p>
@@ -246,10 +246,10 @@ export default function EngagementAnalytics() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Trophy className="h-5 w-5 text-purple-500" />
-              التحديات النشطة
+              {isAr ? "التحديات النشطة" : "Active Challenges"}
             </CardTitle>
             <Button size="sm" variant="outline" asChild>
-              <Link href="/staff/engagement/challenges/new">تحدي جديد</Link>
+              <Link href="/staff/engagement/challenges/new">{isAr ? "تحدي جديد" : "New Challenge"}</Link>
             </Button>
           </div>
         </CardHeader>
@@ -257,7 +257,7 @@ export default function EngagementAnalytics() {
           {!challenges?.length ? (
             <div className="text-center py-6 text-muted-foreground">
               <Trophy className="h-10 w-10 mx-auto mb-2 opacity-30" />
-              <p>لا توجد تحديات نشطة</p>
+              <p>{isAr ? "لا توجد تحديات نشطة" : "No active challenges"}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -266,13 +266,13 @@ export default function EngagementAnalytics() {
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-medium text-sm">{challenge.titleAr || challenge.titleEn}</h3>
                     <Badge variant={challenge.difficulty === "easy" ? "default" : challenge.difficulty === "medium" ? "secondary" : "destructive"} className="text-xs">
-                      {challenge.difficulty === "easy" ? "سهل" : challenge.difficulty === "medium" ? "متوسط" : "صعب"}
+                      {challenge.difficulty === "easy" ? isAr ? "سهل" : "Easy" : challenge.difficulty === "medium" ? isAr ? "متوسط" : "Average" : isAr ? "صعب" : "Difficult"}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{challenge.descriptionAr || challenge.descriptionEn}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{challenge.participantsCount || 0} مشارك</span>
-                    <span>{challenge.points} نقطة</span>
+                    <span>{challenge.participantsCount || 0} {isAr ? "مشارك" : "Participant"}</span>
+                    <span>{challenge.points} {isAr ? "نقطة" : "Point"}</span>
                   </div>
                 </div>
               ))}

@@ -48,12 +48,12 @@ const areaColors: Record<string, string> = {
   "EAD": "from-rose-500 to-rose-600",
 };
 
-const levelLabels: Record<string, string> = {
-  emerging: "ناشئ",
-  developing: "يتطور",
-  secure: "مستقر",
-  exceeding: "متفوق",
-};
+const getLevelLabels = (isAr: boolean): Record<string, string>  => ({
+  emerging: (isAr ? "ناشئ" : "Emerging"),
+  developing: (isAr ? "يتطور" : "Developing"),
+  secure: (isAr ? "مستقر" : "Stable"),
+  exceeding: (isAr ? "متفوق" : "Superior"),
+});
 
 const levelToPercent: Record<string, number> = {
   emerging: 25,
@@ -65,6 +65,7 @@ const levelToPercent: Record<string, number> = {
 export default function ParentDevelopment() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const isAr = i18n.language === "ar";
   const { data: childrenData } = trpc.children.list.useQuery({});
   const children = useMemo(() => {
     if (!childrenData) return [];
@@ -114,14 +115,14 @@ export default function ParentDevelopment() {
             <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">نمو وتطور طفلي</h1>
-            <p className="text-sm text-muted-foreground">تتبع التقدم عبر مجالات التطور الأساسية</p>
+            <h1 className="text-2xl font-bold text-foreground">{isAr ? "نمو وتطور طفلي" : "My Child's Growth and Development"}</h1>
+            <p className="text-sm text-muted-foreground">{isAr ? "تتبع التقدم عبر مجالات التطور الأساسية" : "Track progress across key development areas"}</p>
           </div>
         </div>
         {children.length > 1 && (
           <Select value={selectedChildId || String(children[0]?.id)} onValueChange={setSelectedChildId}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="اختر الطفل" />
+              <SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} />
             </SelectTrigger>
             <SelectContent>
               {children.map((child: any) => (
@@ -142,22 +143,22 @@ export default function ParentDevelopment() {
               <div>
                 <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-emerald-600" />
-                  الجاهزية المدرسية
+                  {isAr ? "الجاهزية المدرسية" : "School Readiness"}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">آخر تقييم: {new Date(latestReadiness.assessedAt).toLocaleDateString(locale)}</p>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-emerald-600">{latestReadiness.overallReadiness}%</div>
-                  <p className="text-xs text-muted-foreground">الدرجة الإجمالية</p>
+                  <p className="text-xs text-muted-foreground">{isAr ? "الدرجة الإجمالية" : "Overall Score"}</p>
                 </div>
                 <div className="grid grid-cols-5 gap-3">
                   {[
-                    { label: "لغوي", value: latestReadiness.languageReadiness },
-                    { label: "اجتماعي", value: latestReadiness.socialReadiness },
-                    { label: "عاطفي", value: latestReadiness.emotionalReadiness },
-                    { label: "معرفي", value: latestReadiness.cognitiveReadiness },
-                    { label: "بدني", value: latestReadiness.physicalReadiness },
+                    { label: (isAr ? "لغوي" : "Linguistic"), value: latestReadiness.languageReadiness },
+                    { label: (isAr ? "اجتماعي" : "Social"), value: latestReadiness.socialReadiness },
+                    { label: (isAr ? "عاطفي" : "Emotional"), value: latestReadiness.emotionalReadiness },
+                    { label: (isAr ? "معرفي" : "Cognitive"), value: latestReadiness.cognitiveReadiness },
+                    { label: (isAr ? "بدني" : "Physical"), value: latestReadiness.physicalReadiness },
                   ].map(item => (
                     <div key={item.label} className="text-center">
                       <div className="text-sm font-bold text-foreground">{item.value}%</div>
@@ -175,15 +176,15 @@ export default function ParentDevelopment() {
         <TabsList className="bg-muted/50 p-1 rounded-lg">
           <TabsTrigger value="progress" className="rounded-md">
             <TrendingUp className="w-4 h-4 ml-1" />
-            التقدم
+            {isAr ? "التقدم" : "Progress"}
           </TabsTrigger>
           <TabsTrigger value="milestones" className="rounded-md">
             <Star className="w-4 h-4 ml-1" />
-            المعالم التطورية
+            {isAr ? "المعالم التطورية" : "Developmental Milestones"}
           </TabsTrigger>
           <TabsTrigger value="activities" className="rounded-md">
             <Home className="w-4 h-4 ml-1" />
-            أنشطة منزلية
+            {isAr ? "أنشطة منزلية" : "Home Activities"}
           </TabsTrigger>
         </TabsList>
 
@@ -212,21 +213,21 @@ export default function ParentDevelopment() {
                         {item.trend === "improving" && (
                           <Badge className="bg-emerald-100 text-emerald-700 border-0">
                             <TrendingUp className="w-3 h-3 ml-1" />
-                            تحسّن
+                            {isAr ? "تحسّن" : "Improvement"}
                           </Badge>
                         )}
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">المستوى الحالي</span>
-                          <span className="font-medium">{item.latestLevel ? levelLabels[item.latestLevel] : "لم يُقيّم"}</span>
+                          <span className="text-muted-foreground">{isAr ? "المستوى الحالي" : "Current Level"}</span>
+                          <span className="font-medium">{item.latestLevel ? getLevelLabels(isAr)[item.latestLevel] : "لم يُقيّم"}</span>
                         </div>
                         <Progress value={levelToPercent[item.latestLevel] || 0} className="h-2.5" />
                         <div className="flex justify-between text-[10px] text-muted-foreground">
-                          <span>ناشئ</span>
-                          <span>يتطور</span>
-                          <span>مستقر</span>
-                          <span>متفوق</span>
+                          <span>{isAr ? "ناشئ" : "Emerging"}</span>
+                          <span>{isAr ? "يتطور" : "Developing"}</span>
+                          <span>{isAr ? "مستقر" : "Stable"}</span>
+                          <span>{isAr ? "متفوق" : "Superior"}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -259,9 +260,9 @@ export default function ParentDevelopment() {
                         <p className="text-xs text-muted-foreground">{milestone.descriptionAr || milestone.description}</p>
                       </div>
                       {milestone.achieved ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 border-0">تم تحقيقه</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-700 border-0">{isAr ? "تم تحقيقه" : "Achieved"}</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-muted-foreground">قيد التطور</Badge>
+                        <Badge variant="outline" className="text-muted-foreground">{isAr ? "قيد التطور" : "In Development"}</Badge>
                       )}
                     </div>
                   </CardContent>
@@ -271,7 +272,7 @@ export default function ParentDevelopment() {
           ) : (
             <Card className="border-0 shadow-sm">
               <CardContent>
-                <EmptyState variant="development" title="لا توجد معالم تطورية مسجلة بعد" description="ستظهر المعالم التطورية عند تسجيل ملاحظات كافية" />
+                <EmptyState variant="development" title={isAr ? "لا توجد معالم تطورية مسجلة بعد" : "No developmental milestones recorded yet"} description={isAr ? "ستظهر المعالم التطورية عند تسجيل ملاحظات كافية" : "Developmental milestones will appear when sufficient observations are recorded"} />
               </CardContent>
             </Card>
           )}
@@ -285,10 +286,10 @@ export default function ParentDevelopment() {
                 <CardContent className="p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Lightbulb className="w-5 h-5 text-amber-500" />
-                    <h3 className="font-semibold">أنشطة مقترحة للمنزل</h3>
+                    <h3 className="font-semibold">{isAr ? "أنشطة مقترحة للمنزل" : "Suggested Home Activities"}</h3>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    هذه الأنشطة مصممة خصيصاً لدعم تطور طفلك بناءً على ملاحظات المعلم
+                    {isAr ? "هذه الأنشطة مصممة خصيصاً لدعم تطور طفلك بناءً على ملاحظات المعلم" : "These activities are specifically designed to support your child's development based on teacher observations"}
                   </p>
                 </CardContent>
               </Card>
@@ -317,7 +318,7 @@ export default function ParentDevelopment() {
           ) : (
             <Card className="border-0 shadow-sm">
               <CardContent>
-                <EmptyState variant="activities" title="لا توجد أنشطة منزلية مقترحة حالياً" description="ستظهر الأنشطة المقترحة بعد تحليل ملاحظات المعلم" />
+                <EmptyState variant="activities" title={isAr ? "لا توجد أنشطة منزلية مقترحة حالياً" : "No home activities suggested currently"} description={isAr ? "ستظهر الأنشطة المقترحة بعد تحليل ملاحظات المعلم" : "Suggested activities will appear after analyzing teacher feedback"} />
               </CardContent>
             </Card>
           )}

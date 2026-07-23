@@ -29,7 +29,7 @@ export default function ParentDocuments() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">المستندات</h1>
+      <h1 className="text-2xl font-bold">{isAr ? "المستندات" : "Documents"}</h1>
       <div className="space-y-3">
         {documents?.map((d: any) => (
           <Card key={d.id}>
@@ -48,12 +48,12 @@ export default function ParentDocuments() {
                   {d.requiresSignature && (
                     d.signed ? (
                       <Badge className="bg-green-100 text-green-700 gap-1">
-                        <CheckCircle2 className="h-3 w-3" />تم التوقيع
+                        <CheckCircle2 className="h-3 w-3" />{isAr ? "تم التوقيع" : "Signed"}
                       </Badge>
                     ) : (
                       <Button size="sm" variant="outline" className="gap-1" onClick={() => signDoc.mutate({ documentId: d.id })} disabled={signDoc.isPending}>
                         <PenLine className="h-3 w-3" />
-                        {signDoc.isPending ? "جاري..." : "توقيع"}
+                        {signDoc.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "توقيع" : "Signature"}
                       </Button>
                     )
                   )}

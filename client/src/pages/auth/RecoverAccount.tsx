@@ -46,15 +46,15 @@ export default function RecoverAccount() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold text-green-800">تم استعادة حسابك بنجاح</h2>
+            <h2 className="text-xl font-bold text-green-800">{isAr ? "تم استعادة حسابك بنجاح" : "Account restored successfully"}</h2>
             <p className="text-muted-foreground">
-              حسابك نشط الآن ويمكنك تسجيل الدخول واستخدام جميع خدمات المنصة.
+              {isAr ? "حسابك نشط الآن ويمكنك تسجيل الدخول واستخدام جميع خدمات المنصة." : "Your account is now active. You can log in and use all platform services."}
             </p>
             <Button
               onClick={() => setLocation("/login")}
               className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] text-white font-medium h-12 rounded-xl"
             >
-              تسجيل الدخول
+              {isAr ? "تسجيل الدخول" : "Login"}
             </Button>
           </CardContent>
         </Card>
@@ -69,33 +69,33 @@ export default function RecoverAccount() {
           <div className="mx-auto w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mb-3">
             <RefreshCw className="h-7 w-7 text-amber-600" />
           </div>
-          <CardTitle className="text-xl">استعادة الحساب</CardTitle>
+          <CardTitle className="text-xl">{isAr ? "استعادة الحساب" : "Account Recovery"}</CardTitle>
           <CardDescription>
-            إذا قمت بطلب حذف حسابك ولم تنتهِ فترة السماح (30 يوم)، يمكنك استعادة حسابك هنا.
+            {isAr ? "إذا قمت بطلب حذف حسابك ولم تنتهِ فترة السماح (30 يوم)، يمكنك استعادة حسابك هنا." : "If you requested to delete your account and the grace period (30 days) has not ended, you can restore your account here."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRecover} className="space-y-4">
             <div className="space-y-2">
-              <Label>البريد الإلكتروني</Label>
+              <Label>{isAr ? "البريد الإلكتروني" : "Email"}</Label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="أدخل بريدك الإلكتروني"
+                placeholder={isAr ? "أدخل بريدك الإلكتروني" : "Enter Your Email"}
                 dir="ltr"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label>كلمة المرور</Label>
+              <Label>{isAr ? "كلمة المرور" : "Password"}</Label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="أدخل كلمة المرور"
+                  placeholder={isAr ? "أدخل كلمة المرور" : "Enter Password"}
                   dir="ltr"
                   required
                 />
@@ -117,10 +117,10 @@ export default function RecoverAccount() {
               {recoverMutation.isPending ? (
                 <span className="flex items-center gap-2">
                   <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  جاري الاستعادة...
+                  {isAr ? "جاري الاستعادة..." : "Restoring..."}
                 </span>
               ) : (
-                "استعادة الحساب"
+                isAr ? "استعادة الحساب" : "Account Recovery"
               )}
             </Button>
 
@@ -130,7 +130,7 @@ export default function RecoverAccount() {
                 onClick={() => setLocation("/login")}
                 className="text-sm text-primary hover:underline font-medium"
               >
-                العودة لتسجيل الدخول
+                {isAr ? "العودة لتسجيل الدخول" : "Back to Login"}
               </button>
             </div>
           </form>

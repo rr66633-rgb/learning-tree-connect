@@ -107,6 +107,7 @@ function SectionContent({ content, t }: { content: any; t: any }) {
 
 export default function ParentWeeklyPlan() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const SECTION_CONFIG = getSectionConfig(t);
@@ -187,7 +188,7 @@ export default function ParentWeeklyPlan() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">{t("parent.weeklyPlan")}</h1>
-        <p className="text-sm text-gray-500 mt-1">{t("parent.noWeeklyPlans").replace("لا توجد", "").trim() ? t("parent.noWeeklyPlans") : t("weeklyPlan.subtitle")}</p>
+        <p className="text-sm text-gray-500 mt-1">{t("parent.noWeeklyPlans").replace(isAr ? "لا توجد" : "None", "").trim() ? t("parent.noWeeklyPlans") : t("weeklyPlan.subtitle")}</p>
       </div>
 
       {/* Plans List */}

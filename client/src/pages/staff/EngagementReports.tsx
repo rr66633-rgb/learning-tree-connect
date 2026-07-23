@@ -52,10 +52,10 @@ export default function EngagementReports() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <FileText className="h-6 w-6 text-indigo-500" />
-          تقارير مشاركة الأسر
+          {isAr ? "تقارير مشاركة الأسر" : "Family Engagement Reports"}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          أنشئ تقارير مفصلة عن مشاركة الأسر في تعليم أطفالهم
+          {isAr ? "أنشئ تقارير مفصلة عن مشاركة الأسر في تعليم أطفالهم" : "Generate Detailed Reports on Family Engagement in Children\'s Education"}
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export default function EngagementReports() {
               <label className="text-sm font-medium">{isAr ? "الطفل" : "Child"}</label>
               <Select value={selectedChildId} onValueChange={setSelectedChildId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر طفلاً" />
+                  <SelectValue placeholder={isAr ? "اختر طفلاً" : "Select a Child"} />
                 </SelectTrigger>
                 <SelectContent>
                   {childrenList?.map((child: any) => (
@@ -79,26 +79,26 @@ export default function EngagementReports() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">الفترة</label>
+              <label className="text-sm font-medium">{isAr ? "الفترة" : "Period"}</label>
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">أسبوعي</SelectItem>
-                  <SelectItem value="monthly">شهري</SelectItem>
-                  <SelectItem value="term">فصلي</SelectItem>
+                  <SelectItem value="weekly">{isAr ? "أسبوعي" : "Weekly"}</SelectItem>
+                  <SelectItem value="monthly">{isAr ? "شهري" : "Monthly"}</SelectItem>
+                  <SelectItem value="term">{isAr ? "فصلي" : " الفصل"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">اللغة</label>
+              <label className="text-sm font-medium">{isAr ? "اللغة" : "Language"}</label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">العربية</SelectItem>
+                  <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
@@ -111,12 +111,12 @@ export default function EngagementReports() {
               {generateMutation.isPending ? (
                 <>
                   <Sparkles className="h-4 w-4 ml-2 animate-pulse" />
-                  جاري الإنشاء...
+                  {isAr ? "جاري الإنشاء..." : "Creating..."}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 ml-2" />
-                  إنشاء التقرير
+                  {isAr ? "إنشاء التقرير" : "Generate Report"}
                 </>
               )}
             </Button>
@@ -129,8 +129,8 @@ export default function EngagementReports() {
         <Card>
           <CardContent className="p-8 text-center space-y-4">
             <Sparkles className="h-10 w-10 text-indigo-500 mx-auto animate-pulse" />
-            <p className="text-lg font-medium">جاري إنشاء التقرير بالذكاء الاصطناعي...</p>
-            <p className="text-sm text-muted-foreground">قد يستغرق هذا بضع ثوانٍ</p>
+            <p className="text-lg font-medium">{isAr ? "جاري إنشاء التقرير بالذكاء الاصطناعي..." : "Generating AI Report..."}</p>
+            <p className="text-sm text-muted-foreground">{isAr ? "قد يستغرق هذا بضع ثوانٍ" : "This may take a few seconds"}</p>
           </CardContent>
         </Card>
       )}
@@ -144,7 +144,7 @@ export default function EngagementReports() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handlePrint}>
                 <Printer className="h-4 w-4 ml-1" />
-                طباعة
+                {isAr ? "طباعة" : "Print"}
               </Button>
             </div>
           </div>
@@ -162,7 +162,7 @@ export default function EngagementReports() {
               {childInfo && (
                 <div className="text-center pb-4 border-b">
                   <h3 className="text-lg font-bold">{childInfo.name}</h3>
-                  <p className="text-sm text-muted-foreground">العمر: {childInfo.age} شهر</p>
+                  <p className="text-sm text-muted-foreground">{isAr ? "العمر:" : "Age:"} {childInfo.age} {isAr ? "شهر" : "Month"}</p>
                 </div>
               )}
               {report.sections?.map((section: any, idx: number) => (
@@ -184,9 +184,9 @@ export default function EngagementReports() {
         <Card className="border-dashed border-2">
           <CardContent className="p-8 text-center space-y-3">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
-            <h3 className="font-bold text-lg">لم يتم إنشاء تقرير بعد</h3>
+            <h3 className="font-bold text-lg">{isAr ? "لم يتم إنشاء تقرير بعد" : "No report has been generated yet"}</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              اختر طفلاً والفترة الزمنية ثم اضغط على "إنشاء التقرير" لإنشاء تقرير مفصل عن مشاركة الأسرة
+              اختر طفلاً والفترة الزمنية ثم اضغط على (isAr ? "إنشاء التقرير" : "Create Report") لإنشاء تقرير مفصل عن مشاركة الأسرة
             </p>
           </CardContent>
         </Card>

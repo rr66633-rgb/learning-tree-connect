@@ -16,21 +16,21 @@ interface Message {
   timestamp: Date;
 }
 
-const quickActions = [
-  { id: "memorize", label: "ساعدني في الحفظ", icon: BookOpen, color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
-  { id: "test", label: "اختبرني", icon: Brain, color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
-  { id: "review", label: "مراجعة درس اليوم", icon: RotateCcw, color: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" },
-  { id: "challenge", label: "تحدي اليوم", icon: Star, color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
-  { id: "question", label: "اسأل سؤالاً", icon: HelpCircle, color: "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100" },
-];
+const getQuickActions = (isAr: boolean) => ([
+  { id: "memorize", label: (isAr ? "ساعدني في الحفظ" : "Help me save"), icon: BookOpen, color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
+  { id: "test", label: (isAr ? "اختبرني" : "Test Me"), icon: Brain, color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
+  { id: "review", label: (isAr ? "مراجعة درس اليوم" : "Review Today's Lesson"), icon: RotateCcw, color: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" },
+  { id: "challenge", label: (isAr ? "تحدي اليوم" : "Today's Challenge"), icon: Star, color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
+  { id: "question", label: (isAr ? "اسأل سؤالاً" : "Ask a Question"), icon: HelpCircle, color: "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100" },
+]);
 
-const quickActionPrompts: Record<string, string> = {
-  memorize: "أريد أن أحفظ سورة جديدة. ساعدني في اختيار سورة مناسبة لعمري وأعطني خطة حفظ سهلة.",
-  test: "اختبرني في ما حفظته من القرآن الكريم. اسألني أسئلة عن السور القصيرة.",
-  review: "أريد مراجعة ما حفظته اليوم. ساعدني في التثبيت والمراجعة.",
-  challenge: "أعطني تحدي اليوم! سؤال إسلامي ممتع أو تحدي حفظ.",
-  question: "عندي سؤال عن الإسلام. أريد أن أتعلم شيئاً جديداً اليوم.",
-};
+const getQuickActionPrompts = (isAr: boolean): Record<string, string>  => ({
+  memorize: (isAr ? "أريد أن أحفظ سورة جديدة. ساعدني في اختيار سورة مناسبة لعمري وأعطني خطة حفظ سهلة." : "I want to memorize a new Surah. Help me choose a suitable Surah for my age and give me an easy memorization plan."),
+  test: (isAr ? "اختبرني في ما حفظته من القرآن الكريم. اسألني أسئلة عن السور القصيرة." : "Test me on what I've memorized from the Quran. Ask me questions about short surahs."),
+  review: (isAr ? "أريد مراجعة ما حفظته اليوم. ساعدني في التثبيت والمراجعة." : "I want to review what I memorized today. Help me with consolidation and review."),
+  challenge: (isAr ? "أعطني تحدي اليوم! سؤال إسلامي ممتع أو تحدي حفظ." : "Give me today's challenge! A fun Islamic question or memorization challenge."),
+  question: (isAr ? "عندي سؤال عن الإسلام. أريد أن أتعلم شيئاً جديداً اليوم." : "I have a question about Islam. I want to learn something new today."),
+});
 
 export default function AIAssistant() {
   const { t, i18n } = useTranslation();
@@ -89,7 +89,7 @@ export default function AIAssistant() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "عذراً، حدث خطأ. حاول مرة أخرى! 🌟",
+        content: (isAr ? "عذراً، حدث خطأ. حاول مرة أخرى! 🌟" : "Sorry, an error occurred. Please try again!"),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -99,7 +99,7 @@ export default function AIAssistant() {
   };
 
   const handleQuickAction = (actionId: string) => {
-    const prompt = quickActionPrompts[actionId];
+    const prompt = getQuickActionPrompts(isAr)[actionId];
     if (prompt) {
       sendMessage(prompt);
     }
@@ -112,7 +112,7 @@ export default function AIAssistant() {
     }
   };
 
-  const firstName = user?.name?.split(" ")[0] || "صديقي";
+  const firstName = user?.name?.split(" ")[0] || (isAr ? "صديقي" : "My friend");
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] p-4 md:p-6" dir="rtl">
@@ -129,7 +129,7 @@ export default function AIAssistant() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">المساعد الذكي</h1>
-            <p className="text-xs text-muted-foreground">مساعدك في حفظ القرآن والتعلم</p>
+            <p className="text-xs text-muted-foreground">{isAr ? "مساعدك في حفظ القرآن والتعلم" : "Your assistant in memorizing the Quran and learning"}</p>
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function AIAssistant() {
               <Sparkles className="h-10 w-10 text-white" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              مرحباً {firstName}! 🌟
+              {isAr ? "مرحباً" : "Welcome"}{firstName}! 🌟
             </h2>
             <p className="text-muted-foreground mb-6 max-w-md">
               أنا مساعدك الذكي لحفظ القرآن الكريم والتعلم عن الإسلام. كيف أقدر أساعدك اليوم؟
@@ -151,7 +151,7 @@ export default function AIAssistant() {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full max-w-lg">
-              {quickActions.map((action) => (
+              {getQuickActions(isAr).map((action) => (
                 <button
                   key={action.id}
                   onClick={() => handleQuickAction(action.id)}
@@ -167,10 +167,10 @@ export default function AIAssistant() {
             <div className="mt-6 p-3 rounded-lg bg-amber-50 border border-amber-100 max-w-md">
               <div className="flex items-center gap-2 mb-1">
                 <Rocket className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-medium text-amber-800">حكمة اليوم</span>
+                <span className="text-sm font-medium text-amber-800">{isAr ? "حكمة اليوم" : "Wisdom of the Day"}</span>
               </div>
               <p className="text-sm text-amber-700">
-                "خيركم من تعلم القرآن وعلمه" - رسول الله ﷺ
+                (isAr ? "خيركم من تعلم القرآن وعلمه" : "The best among you are those who learn the Quran and teach it") - رسول الله ﷺ
               </p>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function AIAssistant() {
                 <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Spinner className="h-4 w-4" />
-                    <span className="text-sm text-gray-500">يكتب...</span>
+                    <span className="text-sm text-gray-500">{isAr ? "يكتب..." : "Typing..."}</span>
                   </div>
                 </div>
               </div>
@@ -213,7 +213,7 @@ export default function AIAssistant() {
       {/* Quick Actions Bar (when in conversation) */}
       {messages.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-2 flex-shrink-0">
-          {quickActions.map((action) => (
+          {getQuickActions(isAr).map((action) => (
             <button
               key={action.id}
               onClick={() => handleQuickAction(action.id)}
@@ -235,7 +235,7 @@ export default function AIAssistant() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="اكتب رسالتك هنا..."
+            placeholder={isAr ? "اكتب رسالتك هنا..." : "Write your message here..."}
             className="resize-none min-h-[44px] max-h-[120px] rounded-xl pr-4 pl-12 py-3 border-gray-200 focus:border-emerald-400 focus:ring-emerald-400/20"
             rows={1}
             disabled={isLoading}

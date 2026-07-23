@@ -23,16 +23,16 @@ const iconMap: Record<string, any> = {
   observation: StickyNote, activity: Sun, milestone: StickyNote
 };
 
-const labelMap: Record<string, string> = {
-  arrival: "الوصول", breakfast: "الإفطار", morning_snack: "وجبة صباحية",
-  lunch: "الغداء", afternoon_snack: "وجبة مسائية", nap_start: "بداية قيلولة",
-  nap_end: "نهاية قيلولة", diaper: "حفاض", toilet: "دورة مياه",
-  medication: "دواء", mood: "المزاج", learning_activity: "نشاط تعليمي",
-  outdoor_play: "لعب خارجي", departure: "المغادرة", meal: "وجبة",
-  snack: "وجبة خفيفة", water: "ماء", indoor_play: "لعب داخلي",
-  temperature: "حرارة", photo: "صورة", note: "ملاحظة",
-  observation: "ملاحظة", activity: "نشاط", milestone: "إنجاز"
-};
+const getLabelMap = (isAr: boolean): Record<string, string>  => ({
+  arrival: (isAr ? "الوصول" : "Access"), breakfast: (isAr ? "الإفطار" : "Breakfast"), morning_snack: (isAr ? "وجبة صباحية" : "Morning Meal"),
+  lunch: (isAr ? "الغداء" : "Lunch"), afternoon_snack: (isAr ? "وجبة مسائية" : "Evening Meal"), nap_start: (isAr ? "بداية قيلولة" : "Nap Start"),
+  nap_end: (isAr ? "نهاية قيلولة" : "End of Nap"), diaper: (isAr ? "حفاض" : "Diaper"), toilet: (isAr ? "دورة مياه" : "Restroom"),
+  medication: (isAr ? "دواء" : "Medicine"), mood: (isAr ? "المزاج" : "Mood"), learning_activity: (isAr ? "نشاط تعليمي" : "Educational Activity"),
+  outdoor_play: (isAr ? "لعب خارجي" : "Outdoor play"), departure: (isAr ? "المغادرة" : "Departure"), meal: (isAr ? "وجبة" : "Meal"),
+  snack: (isAr ? "وجبة خفيفة" : "Snack"), water: (isAr ? "ماء" : "Water"), indoor_play: (isAr ? "لعب داخلي" : "Indoor play"),
+  temperature: (isAr ? "حرارة" : "Temperature"), photo: (isAr ? "صورة" : "Image"), note: (isAr ? "ملاحظة" : "Note"),
+  observation: (isAr ? "ملاحظة" : "Note"), activity: (isAr ? "نشاط" : "Activity"), milestone: (isAr ? "إنجاز" : "Achievement")
+});
 
 const colorMap: Record<string, string> = {
   arrival: "bg-emerald-100 text-emerald-600", breakfast: "bg-amber-100 text-amber-600",
@@ -49,14 +49,15 @@ const colorMap: Record<string, string> = {
   activity: "bg-green-100 text-green-600", milestone: "bg-amber-100 text-amber-600"
 };
 
-const relationshipLabels: Record<string, string> = {
-  parent: "ولي أمر", driver: "سائق", guardian: "وصي", other: "آخر"
-};
+const getRelationshipLabels = (isAr: boolean): Record<string, string>  => ({
+  parent: (isAr ? "ولي أمر" : "Parent/Guardian"), driver: (isAr ? "سائق" : "Driver"), guardian: (isAr ? "وصي" : "Guardian"), other: (isAr ? "آخر" : "Last")
+});
 
 export default function ParentTimeline() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
-  const labelMap: Record<string, string> = { meal: t("dailyReports.meal"), snack: t("dailyReports.snack"), nap_start: t("dailyReports.napStart"), nap_end: t("dailyReports.napEnd"), diaper: t("dailyReports.diaper"), toilet: t("dailyReports.toilet"), water: t("dailyReports.water"), medication: t("dailyReports.medication"), outdoor_play: t("dailyReports.outdoorPlay"), indoor_play: t("dailyReports.indoorPlay"), mood: t("dailyReports.mood"), temperature: t("dailyReports.temperature"), note: t("dailyReports.note"), arrival: i18n.language === "ar" ? "وصول" : "Arrival", departure: i18n.language === "ar" ? "مغادرة" : "Departure", learning: i18n.language === "ar" ? "تعلم" : "Learning" };
+  const labelMap: Record<string, string> = { meal: t("dailyReports.meal"), snack: t("dailyReports.snack"), nap_start: t("dailyReports.napStart"), nap_end: t("dailyReports.napEnd"), diaper: t("dailyReports.diaper"), toilet: t("dailyReports.toilet"), water: t("dailyReports.water"), medication: t("dailyReports.medication"), outdoor_play: t("dailyReports.outdoorPlay"), indoor_play: t("dailyReports.indoorPlay"), mood: t("dailyReports.mood"), temperature: t("dailyReports.temperature"), note: t("dailyReports.note"), arrival: i18n.language === "ar" ? (isAr ? "وصول" : "Arrival") : "Arrival", departure: i18n.language === "ar" ? (isAr ? "مغادرة" : "Departure") : "Departure", learning: i18n.language === "ar" ? (isAr ? "تعلم" : "Learn") : "Learning" };
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -87,7 +88,7 @@ export default function ParentTimeline() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">الجدول الزمني اليومي</h1>
+      <h1 className="text-2xl font-bold">{isAr ? "الجدول الزمني اليومي" : "Daily Schedule"}</h1>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <Select value={selectedChild} onValueChange={setSelectedChild}>
@@ -123,7 +124,7 @@ export default function ParentTimeline() {
                     <LogOut className="h-5 w-5 text-rose-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-sm">تم تسجيل المغادرة</p>
+                    <p className="font-medium text-sm">{isAr ? "تم تسجيل المغادرة" : "Checked out"}</p>
                     <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -131,7 +132,7 @@ export default function ParentTimeline() {
                       </span>
                       <span className="flex items-center gap-1">
                         <User className="h-3 w-3" />
-                        {todayDeparture.pickedUpBy} ({relationshipLabels[todayDeparture.relationship] || todayDeparture.relationship})
+                        {todayDeparture.pickedUpBy} ({getRelationshipLabels(isAr)[todayDeparture.relationship] || todayDeparture.relationship})
                       </span>
                     </div>
                     {todayDeparture.notes && (
@@ -139,7 +140,7 @@ export default function ParentTimeline() {
                     )}
                   </div>
                   <Badge variant={todayDeparture.status === 'completed' ? 'default' : 'destructive'}>
-                    {todayDeparture.status === 'completed' ? 'مكتمل' : todayDeparture.status === 'late' ? 'متأخر' : 'معلق'}
+                    {todayDeparture.status === 'completed' ? (isAr ? "مكتمل" : "Completed") : todayDeparture.status === 'late' ? (isAr ? "متأخر" : "Late") : (isAr ? "معلق" : "Pending")}
                   </Badge>
                 </div>
               </CardContent>
@@ -148,7 +149,7 @@ export default function ParentTimeline() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">أنشطة اليوم</CardTitle>
+              <CardTitle className="text-lg">{isAr ? "أنشطة اليوم" : "Today's Activities"}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-32 w-full" /> : activities?.length === 0 ? (
@@ -171,7 +172,7 @@ export default function ParentTimeline() {
                           {/* Content */}
                           <div className="flex-1 pb-4">
                             <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="secondary" className="text-xs">{labelMap[act.type] || act.type}</Badge>
+                              <Badge variant="secondary" className="text-xs">{getLabelMap(isAr)[act.type] || act.type}</Badge>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(act.recordedAt || act.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                               </span>
@@ -195,7 +196,7 @@ export default function ParentTimeline() {
       {!selectedChild && (
         <div className="text-center py-12">
           <Baby className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">اختر طفلاً لعرض الجدول الزمني اليومي</p>
+          <p className="text-muted-foreground">{isAr ? "اختر طفلاً لعرض الجدول الزمني اليومي" : "Select a child to view the daily timeline"}</p>
         </div>
       )}
     </div>

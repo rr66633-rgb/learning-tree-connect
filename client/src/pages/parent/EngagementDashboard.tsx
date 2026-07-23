@@ -16,6 +16,7 @@ import {
 
 export default function EngagementDashboard() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { user } = useAuth();
   const [selectedChildId] = useState<number>(0); // Will be set from parent's children
@@ -51,12 +52,12 @@ export default function EngagementDashboard() {
 
   const getLevelInfo = (level: string) => {
     const levels: Record<string, { label: string; color: string; icon: string }> = {
-      inactive: { label: "غير نشط", color: "bg-gray-200 text-gray-600", icon: "😴" },
-      emerging: { label: "بداية", color: "bg-blue-100 text-blue-700", icon: "🌱" },
-      developing: { label: "نامي", color: "bg-green-100 text-green-700", icon: "🌿" },
-      active: { label: "نشط", color: "bg-yellow-100 text-yellow-700", icon: "⭐" },
-      highly_engaged: { label: "متميز", color: "bg-purple-100 text-purple-700", icon: "🌟" },
-      champion: { label: "بطل", color: "bg-amber-100 text-amber-700", icon: "🏆" },
+      inactive: { label: isAr ? "غير نشط" : "Inactive", color: "bg-gray-200 text-gray-600", icon: "😴" },
+      emerging: { label: isAr ? "بداية" : "Start", color: "bg-blue-100 text-blue-700", icon: "🌱" },
+      developing: { label: isAr ? "نامي" : "Developing", color: "bg-green-100 text-green-700", icon: "🌿" },
+      active: { label: isAr ? "نشط" : "Active", color: "bg-yellow-100 text-yellow-700", icon: "⭐" },
+      highly_engaged: { label: isAr ? "متميز" : "Distinguished", color: "bg-purple-100 text-purple-700", icon: "🌟" },
+      champion: { label: isAr ? "بطل" : "Hero", color: "bg-amber-100 text-amber-700", icon: "🏆" },
     };
     return levels[level] || levels.inactive;
   };
@@ -79,8 +80,8 @@ export default function EngagementDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">مركز مشاركة الأسرة</h1>
-          <p className="text-muted-foreground text-sm">تعلّم، شارك، وانمُ مع طفلك</p>
+          <h1 className="text-2xl font-bold text-foreground">{isAr ? "مركز مشاركة الأسرة" : "Family Engagement Center"}</h1>
+          <p className="text-muted-foreground text-sm">{isAr ? "تعلّم، شارك، وانمُ مع طفلك" : "Learn, Share, and Grow with Your Child"}</p>
         </div>
         <div className={`px-3 py-1 rounded-full text-sm font-medium ${levelInfo.color}`}>
           {levelInfo.icon} {levelInfo.label}
@@ -94,13 +95,13 @@ export default function EngagementDashboard() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <span className="font-semibold text-emerald-800 dark:text-emerald-200">نقاط المشاركة</span>
+              <span className="font-semibold text-emerald-800 dark:text-emerald-200">{isAr ? "نقاط المشاركة" : "Engagement Points"}</span>
             </div>
             <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{score?.totalPoints || 0}</span>
           </div>
           <Progress value={score?.score || 0} className="h-3 mb-2" />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>المستوى: {levelInfo.label}</span>
+            <span>{isAr ? "المستوى:" : "Level:"} {levelInfo.label}</span>
             <span>{score?.score || 0}% من الهدف الشهري</span>
           </div>
           {(score?.streak || 0) > 0 && (
@@ -119,28 +120,28 @@ export default function EngagementDashboard() {
           <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
             <BookOpen className="h-5 w-5 mx-auto text-blue-500 mb-1" />
             <p className="text-lg font-bold">{score?.activitiesCompleted || 0}</p>
-            <p className="text-[10px] text-muted-foreground">أنشطة</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "أنشطة" : "Activities"}</p>
           </Card>
         </Link>
         <Link href="/parent/engagement/challenges">
           <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
             <Target className="h-5 w-5 mx-auto text-purple-500 mb-1" />
             <p className="text-lg font-bold">{score?.challengesCompleted || 0}</p>
-            <p className="text-[10px] text-muted-foreground">تحديات</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "تحديات" : "Challenges"}</p>
           </Card>
         </Link>
         <Link href="/parent/engagement/journal">
           <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
             <Camera className="h-5 w-5 mx-auto text-pink-500 mb-1" />
             <p className="text-lg font-bold">{score?.journalEntries || 0}</p>
-            <p className="text-[10px] text-muted-foreground">يوميات</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "يوميات" : "Diaries"}</p>
           </Card>
         </Link>
         <Link href="/parent/engagement/goals">
           <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
             <Star className="h-5 w-5 mx-auto text-amber-500 mb-1" />
             <p className="text-lg font-bold">{score?.goalsCompleted || 0}</p>
-            <p className="text-[10px] text-muted-foreground">أهداف</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "أهداف" : "Goals"}</p>
           </Card>
         </Link>
       </div>
@@ -154,8 +155,8 @@ export default function EngagementDashboard() {
                 <BookOpen className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="font-medium text-sm">أنشطة منزلية</p>
-                <p className="text-xs text-muted-foreground">أنشطة مخصصة بالذكاء الاصطناعي</p>
+                <p className="font-medium text-sm">{isAr ? "أنشطة منزلية" : "Home Activities"}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "أنشطة مخصصة بالذكاء الاصطناعي" : "AI-Powered Custom Activities"}</p>
               </div>
             </div>
           </Card>
@@ -167,8 +168,8 @@ export default function EngagementDashboard() {
                 <Target className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="font-medium text-sm">التحديات الأسرية</p>
-                <p className="text-xs text-muted-foreground">{challenges?.length || 0} تحدي نشط</p>
+                <p className="font-medium text-sm">{isAr ? "التحديات الأسرية" : "Family Challenges"}</p>
+                <p className="text-xs text-muted-foreground">{challenges?.length || 0} {isAr ? "تحدي نشط" : "Active Challenge"}</p>
               </div>
             </div>
           </Card>
@@ -180,8 +181,8 @@ export default function EngagementDashboard() {
                 <Camera className="h-5 w-5 text-pink-600" />
               </div>
               <div>
-                <p className="font-medium text-sm">يوميات الإنجاز</p>
-                <p className="text-xs text-muted-foreground">وثّق لحظات طفلك</p>
+                <p className="font-medium text-sm">{isAr ? "يوميات الإنجاز" : "Achievement Diaries"}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "وثّق لحظات طفلك" : "Document Your Child\'s Moments"}</p>
               </div>
             </div>
           </Card>
@@ -193,8 +194,8 @@ export default function EngagementDashboard() {
                 <MessageCircle className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="font-medium text-sm">مستشار التربية</p>
-                <p className="text-xs text-muted-foreground">اسأل الذكاء الاصطناعي</p>
+                <p className="font-medium text-sm">{isAr ? "مستشار التربية" : "Education Consultant"}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "اسأل الذكاء الاصطناعي" : "Ask AI"}</p>
               </div>
             </div>
           </Card>
@@ -206,8 +207,8 @@ export default function EngagementDashboard() {
                 <Star className="h-5 w-5 text-teal-600" />
               </div>
               <div>
-                <p className="font-medium text-sm">ملاحظاتي</p>
-                <p className="text-xs text-muted-foreground">سجل ملاحظاتك</p>
+                <p className="font-medium text-sm">{isAr ? "ملاحظاتي" : "My Notes"}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "سجل ملاحظاتك" : "Record Your Notes"}</p>
               </div>
             </div>
           </Card>
@@ -219,8 +220,8 @@ export default function EngagementDashboard() {
                 <Target className="h-5 w-5 text-indigo-600" />
               </div>
               <div>
-                <p className="font-medium text-sm">أهداف الشهر</p>
-                <p className="text-xs text-muted-foreground">تتبع أهدافك</p>
+                <p className="font-medium text-sm">{isAr ? "أهداف الشهر" : "Monthly Goals"}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "تتبع أهدافك" : "Track Your Goals"}</p>
               </div>
             </div>
           </Card>
@@ -232,8 +233,8 @@ export default function EngagementDashboard() {
                 <Award className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="font-medium text-sm">شارات الإنجاز</p>
-                <p className="text-xs text-muted-foreground">اعرض إنجازاتك</p>
+                <p className="font-medium text-sm">{isAr ? "شارات الإنجاز" : "Achievement Badges"}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "اعرض إنجازاتك" : "View your achievements"}</p>
               </div>
             </div>
           </Card>
@@ -246,7 +247,7 @@ export default function EngagementDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Award className="h-5 w-5 text-amber-500" />
-              شارات الإنجاز
+              {isAr ? "شارات الإنجاز" : "Achievement Badges"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -258,12 +259,12 @@ export default function EngagementDashboard() {
                 </div>
               ))}
               {badgesData.earned.length === 0 && (
-                <p className="text-sm text-muted-foreground">أكمل الأنشطة لكسب شارات الإنجاز!</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "أكمل الأنشطة لكسب شارات الإنجاز!" : "Complete Activities to Earn Achievement Badges!"}</p>
               )}
             </div>
             {badgesData.available.length > 0 && (
               <div className="mt-3 pt-3 border-t">
-                <p className="text-xs text-muted-foreground mb-2">الشارات المتاحة ({badgesData.available.length})</p>
+                <p className="text-xs text-muted-foreground mb-2">{isAr ? "الشارات المتاحة (" : "Available Badges ("}{badgesData.available.length})</p>
                 <div className="flex flex-wrap gap-2">
                   {badgesData.available.slice(0, 5).map((badge) => (
                     <div key={badge.id} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 opacity-50">
@@ -284,7 +285,7 @@ export default function EngagementDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Target className="h-5 w-5 text-indigo-500" />
-              أهداف الشهر
+              {isAr ? "أهداف الشهر" : "Monthly Goals"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -298,7 +299,7 @@ export default function EngagementDashboard() {
               </div>
             ))}
             <Link href="/parent/engagement/goals">
-              <Button variant="ghost" size="sm" className="w-full mt-2">عرض جميع الأهداف</Button>
+              <Button variant="ghost" size="sm" className="w-full mt-2">{isAr ? "عرض جميع الأهداف" : "View All Goals"}</Button>
             </Link>
           </CardContent>
         </Card>

@@ -149,8 +149,8 @@ export default function StaffChildren() {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('يرجى اختيار صورة'); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error('حجم الصورة يجب أن يكون أقل من 10 ميغابايت'); return; }
+    if (!file.type.startsWith('image/')) { toast.error(isAr ? 'يرجى اختيار صورة' : 'Please choose an image'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error(isAr ? 'حجم الصورة يجب أن يكون أقل من 10 ميغابايت' : 'Image size must be less than 10 MB'); return; }
     setUploadingPhoto(true);
     try {
       const formData = new FormData();
@@ -159,9 +159,9 @@ export default function StaffChildren() {
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       setForm(prev => ({ ...prev, photo: data.url }));
-      toast.success('تم رفع الصورة بنجاح');
+      toast.success(isAr ? 'تم رفع الصورة بنجاح' : 'Image Uploaded Successfully');
     } catch (err) {
-      toast.error('فشل رفع الصورة');
+      toast.error(isAr ? 'فشل رفع الصورة' : 'Failed to Upload Image');
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
@@ -193,8 +193,8 @@ export default function StaffChildren() {
             </div>
           </div>
           <div>
-            <p className="font-medium text-sm">{form.photo ? 'تغيير الصورة' : 'إضافة صورة الطفل'}</p>
-            <p className="text-xs text-muted-foreground">{uploadingPhoto ? 'جارٍ الرفع...' : 'اضغط لرفع صورة أو التقاطها من الكاميرا'}</p>
+            <p className="font-medium text-sm">{form.photo ? isAr ? 'تغيير الصورة' : 'Change Image' : isAr ? 'إضافة صورة الطفل' : 'Add Child Photo'}</p>
+            <p className="text-xs text-muted-foreground">{uploadingPhoto ? isAr ? 'جارٍ الرفع...' : 'Uploading...' : isAr ? 'اضغط لرفع صورة أو التقاطها من الكاميرا' : 'Click to upload or take photo from camera'}</p>
           </div>
           <input
             ref={photoInputRef}

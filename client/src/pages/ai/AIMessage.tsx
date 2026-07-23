@@ -19,12 +19,12 @@ export default function AIMessage() {
 
   const generateMutation = trpc.ai.generateParentMessage.useMutation({
     onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success(isAr ? "تم إنشاء الرسالة بنجاح" : "Message created successfully"); },
-    onError: (err) => { const msg = err.message || "حدث خطأ"; toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
+    onError: (err) => { const msg = err.message || (isAr ? "حدث خطأ" : "An error occurred"); toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
     onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
-    onError: (err) => toast.error(err.message || "فشل الحفظ"),
+    onError: (err) => toast.error(err.message || isAr ? "فشل الحفظ" : "Save Failed"),
   });
 
   const handleSaveToLibrary = () => {
@@ -48,17 +48,17 @@ export default function AIMessage() {
         <Link href="/ai"><Button variant="ghost" size="icon" className="shrink-0"><ArrowRight className="h-5 w-5" /></Button></Link>
         <div className="p-2 rounded-xl bg-pink-100"><MessageSquare className="h-5 w-5 text-pink-600" /></div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">رسائل أولياء الأمور</h1>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "رسائل أولياء الأمور" : "Parent Messages"}</h1>
           <p className="text-sm text-muted-foreground">Parent Message Generator</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="text-base">الفكرة</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{isAr ? "الفكرة" : "Idea"}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>اكتب فكرة الرسالة باختصار</Label>
+              <Label>{isAr ? "اكتب فكرة الرسالة باختصار" : "Write message idea briefly"}</Label>
               <Textarea
                 placeholder="مثال: رحلة ميدانية يوم الخميس القادم&#10;أو: تذكير بدفع الرسوم&#10;أو: إغلاق الحضانة بسبب العيد"
                 value={idea}
@@ -67,10 +67,10 @@ export default function AIMessage() {
               />
             </div>
             <div className="p-3 rounded-lg bg-pink-50 border border-pink-100 text-sm text-pink-700">
-              <p>سيتم إنشاء رسالة مهنية بالعربية والإنجليزية جاهزة للإرسال.</p>
+              <p>{isAr ? "سيتم إنشاء رسالة مهنية بالعربية والإنجليزية جاهزة للإرسال." : "A professional message in Arabic and English will be created, ready for sending."}</p>
             </div>
             <Button onClick={handleGenerate} disabled={generateMutation.isPending} className="w-full bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700">
-              {generateMutation.isPending ? (<><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</>) : (<><Sparkles className="h-4 w-4 ml-2" />إنشاء الرسالة</>)}
+              {generateMutation.isPending ? (<><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Creating..."}</>) : (<><Sparkles className="h-4 w-4 ml-2" />إنشاء الرسالة</>)}
             </Button>
           </CardContent>
         </Card>
@@ -80,7 +80,7 @@ export default function AIMessage() {
           <Card className={result ? "border-pink-200" : "border-dashed"}>
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
-                <span>الرسالة بالعربية</span>
+                <span>{isAr ? "الرسالة بالعربية" : "Message in Arabic"}</span>
                 {result?.messageAr && (
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => copyText(result.messageAr)}><Copy className="h-4 w-4 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
@@ -93,7 +93,7 @@ export default function AIMessage() {
               {!result && !generateMutation.isPending && (
                 <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                   <MessageSquare className="h-10 w-10 mb-3 opacity-20" />
-                  <p className="text-sm">اكتب فكرة بسيطة وسيتم إنشاء رسالة مهنية</p>
+                  <p className="text-sm">{isAr ? "اكتب فكرة بسيطة وسيتم إنشاء رسالة مهنية" : "Write a simple idea and a professional message will be generated"}</p>
                 </div>
               )}
               {generateMutation.isPending && (

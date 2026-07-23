@@ -23,7 +23,7 @@ export default function StaffNotifications() {
           <h1 className="text-2xl font-bold">{isAr ? "الإشعارات" : "Notifications"}</h1>
           {(unreadCount ?? 0) > 0 && <Badge>{unreadCount}</Badge>}
         </div>
-        <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()}>تحديد الكل كمقروء</Button>
+        <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()}>{isAr ? "تحديد الكل كمقروء" : "Mark All as Read"}</Button>
       </div>
       <div className="space-y-2">
         {isLoading ? (
@@ -31,7 +31,7 @@ export default function StaffNotifications() {
             <Card key={i}><CardContent className="p-4 flex items-start gap-3"><Skeleton className="h-5 w-5 rounded shrink-0" /><div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/3" /><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/5" /></div></CardContent></Card>
           ))
         ) : notifications?.length === 0 ? (
-          <Card><CardContent className="p-8 text-center"><Bell className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" /><p className="text-muted-foreground">لا توجد إشعارات</p></CardContent></Card>
+          <Card><CardContent className="p-8 text-center"><Bell className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" /><p className="text-muted-foreground">{isAr ? "لا توجد إشعارات" : "No notifications"}</p></CardContent></Card>
         ) : (
           notifications?.map((n: any) => (
             <Card key={n.id} className={!n.read ? "border-primary/30 bg-primary/5" : ""}>

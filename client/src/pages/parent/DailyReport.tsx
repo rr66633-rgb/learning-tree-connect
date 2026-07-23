@@ -13,6 +13,7 @@ const iconMap: Record<string, any> = { meal: Utensils, snack: Utensils, nap_star
 
 export default function ParentDailyReport() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const labelMap: Record<string, string> = { meal: t("dailyReports.meal"), snack: t("dailyReports.snack"), nap_start: t("dailyReports.napStart"), nap_end: t("dailyReports.napEnd"), diaper: t("dailyReports.diaper"), toilet: t("dailyReports.toilet"), water: t("dailyReports.water"), medication: t("dailyReports.medication"), outdoor_play: t("dailyReports.outdoorPlay"), indoor_play: t("dailyReports.indoorPlay"), mood: t("dailyReports.mood"), temperature: t("dailyReports.temperature"), note: t("dailyReports.note") };
   const { data: children } = trpc.children.list.useQuery();
@@ -24,9 +25,9 @@ export default function ParentDailyReport() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">التقرير اليومي</h1>
+      <h1 className="text-2xl font-bold">{isAr ? "التقرير اليومي" : "Daily Report"}</h1>
       <Select value={selectedChild} onValueChange={setSelectedChild}>
-        <SelectTrigger className="max-w-xs"><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+        <SelectTrigger className="max-w-xs"><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
         <SelectContent>{children?.map((c: any) => (
           <SelectItem key={c.id} value={c.id.toString()}>
             <span className="flex items-center gap-2">
@@ -55,7 +56,7 @@ export default function ParentDailyReport() {
                   </div>
                 );
               })()}
-              <CardTitle>أنشطة اليوم - {new Date().toLocaleDateString('ar-SA')}</CardTitle>
+              <CardTitle>{isAr ? "أنشطة اليوم -" : "Today's Activities -"} {new Date().toLocaleDateString('ar-SA')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>

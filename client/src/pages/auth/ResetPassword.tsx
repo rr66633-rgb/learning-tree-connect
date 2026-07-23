@@ -58,36 +58,36 @@ export default function ResetPassword() {
         <CardHeader className="text-center pb-2">
           <img
             src="/assets/logo.webp"
-            alt="نشأة"
+            alt={isAr ? "نشأة" : "Nasha\'a"}
             className="w-16 h-16 mx-auto mb-2 object-contain"
           />
           <h1 className="text-xl font-bold text-slate-800">
-            {step === "verifying" && "جاري التحقق..."}
-            {step === "form" && "تعيين كلمة مرور جديدة"}
-            {step === "success" && "تم بنجاح"}
-            {step === "invalid" && "رابط غير صالح"}
+            {step === "verifying" && (isAr ? "جاري التحقق..." : "Verifying...")}
+            {step === "form" && isAr ? "تعيين كلمة مرور جديدة" : "Set New Password"}
+            {step === "success" && (isAr ? "تم بنجاح" : "Success")}
+            {step === "invalid" && isAr ? "رابط غير صالح" : "Invalid Link"}
           </h1>
         </CardHeader>
         <CardContent className="space-y-4">
           {step === "verifying" && (
             <div className="flex flex-col items-center gap-4 py-8">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">جاري التحقق من صلاحية الرابط...</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "جاري التحقق من صلاحية الرابط..." : "Checking Link Validity..."}</p>
             </div>
           )}
 
           {step === "form" && (
             <form onSubmit={handleSubmit} className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                أدخل كلمة المرور الجديدة لحسابك
+                {isAr ? "أدخل كلمة المرور الجديدة لحسابك" : "Enter the new password for your account"}
               </p>
 
               <div className="space-y-2">
-                <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+                <Label htmlFor="newPassword">{isAr ? "كلمة المرور الجديدة" : "New Password"}</Label>
                 <Input
                   id="newPassword"
                   type="password"
-                  placeholder="6 أحرف على الأقل"
+                  placeholder={isAr ? "6 أحرف على الأقل" : "At least 6 characters"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   dir="ltr"
@@ -95,11 +95,11 @@ export default function ResetPassword() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+                <Label htmlFor="confirmPassword">{isAr ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="أعد إدخال كلمة المرور"
+                  placeholder={isAr ? "أعد إدخال كلمة المرور" : "Re-enter Password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   dir="ltr"
@@ -129,7 +129,7 @@ export default function ResetPassword() {
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={resetPasswordMutation.isPending}
               >
-                {resetPasswordMutation.isPending ? "جاري التحديث..." : "تعيين كلمة المرور"}
+                {resetPasswordMutation.isPending ? isAr ? "جاري التحديث..." : "Updating..." : isAr ? "تعيين كلمة المرور" : "Set Password"}
               </Button>
             </form>
           )}
@@ -138,16 +138,16 @@ export default function ResetPassword() {
             <div className="text-center space-y-4 py-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
               <h2 className="text-lg font-semibold text-slate-800">
-                تم تغيير كلمة المرور بنجاح
+                {isAr ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة
+                {isAr ? "يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة" : "You can now log in with the new password"}
               </p>
               <Button
                 onClick={() => setLocation("/login")}
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
               >
-                تسجيل الدخول
+                {isAr ? "تسجيل الدخول" : "Login"}
               </Button>
             </div>
           )}
@@ -156,16 +156,16 @@ export default function ResetPassword() {
             <div className="text-center space-y-4 py-4">
               <XCircle className="h-16 w-16 text-red-500 mx-auto" />
               <h2 className="text-lg font-semibold text-slate-800">
-                رابط غير صالح
+                {isAr ? "رابط غير صالح" : "Invalid Link"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                هذا الرابط منتهي الصلاحية أو تم استخدامه مسبقاً. يرجى طلب رابط جديد.
+                {isAr ? "هذا الرابط منتهي الصلاحية أو تم استخدامه مسبقاً. يرجى طلب رابط جديد." : "This link has expired or has been used previously. Please request a new link."}
               </p>
               <Button
                 onClick={() => setLocation("/forgot-password")}
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
               >
-                طلب رابط جديد
+                {isAr ? "طلب رابط جديد" : "Request new link"}
               </Button>
             </div>
           )}

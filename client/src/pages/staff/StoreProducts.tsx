@@ -48,22 +48,22 @@ export default function StoreProducts() {
 
   const createProduct = trpc.store.adminCreateProduct.useMutation({
     onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم إضافة المنتج" : "Product added"); resetForm(); setOpenCreate(false); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   const updateProduct = trpc.store.adminUpdateProduct.useMutation({
     onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم تحديث المنتج" : "Product updated"); setOpenEdit(false); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   const deleteProduct = trpc.store.adminDeleteProduct.useMutation({
     onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم حذف المنتج" : "Product deleted"); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   const createCategory = trpc.store.adminCreateCategory.useMutation({
     onSuccess: () => { utils.store.adminGetCategories.invalidate(); toast.success(isAr ? "تم إضافة التصنيف" : "Category added"); setCatName(""); setCatNameAr(""); setOpenCategory(false); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   function resetForm() {
@@ -76,7 +76,7 @@ export default function StoreProducts() {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error("فشل رفع الصورة");
+      if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
       const { url } = await res.json();
       setImageUrl(url);
       toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");
@@ -130,23 +130,23 @@ export default function StoreProducts() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">المتجر</h1>
-          <p className="text-muted-foreground">إدارة المنتجات والخدمات</p>
+          <h1 className="text-2xl font-bold">{isAr ? "المتجر" : "Store"}</h1>
+          <p className="text-muted-foreground">{isAr ? "إدارة المنتجات والخدمات" : "Product & Service Management"}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setOpenCategory(true)}>
-            <Plus className="h-4 w-4 ml-1" /> تصنيف جديد
+            <Plus className="h-4 w-4 ml-1" /> {isAr ? "تصنيف جديد" : "New Category"}
           </Button>
           <Button onClick={() => { resetForm(); setOpenCreate(true); }}>
-            <Plus className="h-4 w-4 ml-1" /> منتج جديد
+            <Plus className="h-4 w-4 ml-1" /> {isAr ? "منتج جديد" : "New Product"}
           </Button>
         </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="products"><Package className="h-4 w-4 ml-1" /> المنتجات ({products?.length || 0})</TabsTrigger>
-          <TabsTrigger value="orders"><ShoppingBag className="h-4 w-4 ml-1" /> الطلبات</TabsTrigger>
+          <TabsTrigger value="products"><Package className="h-4 w-4 ml-1" /> {isAr ? "المنتجات (" : "Products ("}{products?.length || 0})</TabsTrigger>
+          <TabsTrigger value="orders"><ShoppingBag className="h-4 w-4 ml-1" />{isAr ? " الطلبات" : "Orders"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">
@@ -154,10 +154,10 @@ export default function StoreProducts() {
             <Card>
               <CardContent className="py-12 text-center">
                 <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">لا توجد منتجات</p>
-                <p className="text-muted-foreground mb-4">أضف منتجات أو خدمات لعرضها لأولياء الأمور</p>
+                <p className="text-lg font-medium">{isAr ? "لا توجد منتجات" : "No products"}</p>
+                <p className="text-muted-foreground mb-4">{isAr ? "أضف منتجات أو خدمات لعرضها لأولياء الأمور" : "Add products or services to display to parents"}</p>
                 <Button onClick={() => { resetForm(); setOpenCreate(true); }}>
-                  <Plus className="h-4 w-4 ml-1" /> إضافة منتج
+                  <Plus className="h-4 w-4 ml-1" /> {isAr ? "إضافة منتج" : "Add Product"}
                 </Button>
               </CardContent>
             </Card>
@@ -177,27 +177,27 @@ export default function StoreProducts() {
                         <p className="text-sm text-muted-foreground line-clamp-2">{product.descriptionAr || product.description}</p>
                       </div>
                       <Badge variant={product.isActive ? "default" : "secondary"}>
-                        {product.isActive ? "نشط" : "معطل"}
+                        {product.isActive ? (isAr ? "نشط" : "Active") : (isAr ? "معطل" : "Disabled")}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-primary">{product.price} ر.س</span>
+                        <span className="text-lg font-bold text-primary">{product.price} {isAr ? "ر.س" : "SAR"}</span>
                         {product.compareAtPrice && (
-                          <span className="text-sm text-muted-foreground line-through">{product.compareAtPrice} ر.س</span>
+                          <span className="text-sm text-muted-foreground line-through">{product.compareAtPrice} {isAr ? "ر.س" : "SAR"}</span>
                         )}
                       </div>
-                      <Badge variant="outline">{product.type === "product" ? "منتج" : "خدمة"}</Badge>
+                      <Badge variant="outline">{product.type === "product" ? isAr ? "منتج" : "Product" : isAr ? "خدمة" : "Service"}</Badge>
                     </div>
                     {product.type === "product" && product.stock !== -1 && (
-                      <p className="text-sm text-muted-foreground mt-1">المخزون: {product.stock}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{isAr ? "المخزون:" : "Inventory:"} {product.stock}</p>
                     )}
                     <div className="flex gap-2 mt-3">
                       <Button size="sm" variant="outline" onClick={() => openEditDialog(product)}>
-                        <Pencil className="h-3 w-3 ml-1" /> تعديل
+                        <Pencil className="h-3 w-3 ml-1" /> {isAr ? "تعديل" : "Edit"}
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => { if (confirm("هل أنت متأكد من حذف هذا المنتج؟")) deleteProduct.mutate({ id: product.id }); }}>
-                        <Trash2 className="h-3 w-3 ml-1" /> حذف
+                      <Button size="sm" variant="destructive" onClick={() => { if (confirm(isAr ? "هل أنت متأكد من حذف هذا المنتج؟" : "Are you sure you want to delete this product?")) deleteProduct.mutate({ id: product.id }); }}>
+                        <Trash2 className="h-3 w-3 ml-1" /> {isAr ? "حذف" : "Delete"}
                       </Button>
                     </div>
                   </CardContent>
@@ -215,7 +215,7 @@ export default function StoreProducts() {
       {/* Create Product Dialog */}
       <Dialog open={openCreate} onOpenChange={setOpenCreate}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>إضافة منتج جديد</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "إضافة منتج جديد" : "Add New Product"}</DialogTitle></DialogHeader>
           <ProductForm
             name={name} setName={setName} nameAr={nameAr} setNameAr={setNameAr}
             description={description} setDescription={setDescription}
@@ -229,7 +229,7 @@ export default function StoreProducts() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenCreate(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={handleCreate} disabled={createProduct.isPending}>
-              {createProduct.isPending ? "جاري الإضافة..." : "إضافة"}
+              {createProduct.isPending ? "جاري الإضافة..." : (isAr ? "إضافة" : "Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -238,7 +238,7 @@ export default function StoreProducts() {
       {/* Edit Product Dialog */}
       <Dialog open={openEdit} onOpenChange={setOpenEdit}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>تعديل المنتج</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "تعديل المنتج" : "Edit Product"}</DialogTitle></DialogHeader>
           <ProductForm
             name={name} setName={setName} nameAr={nameAr} setNameAr={setNameAr}
             description={description} setDescription={setDescription}
@@ -252,7 +252,7 @@ export default function StoreProducts() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenEdit(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={handleUpdate} disabled={updateProduct.isPending}>
-              {updateProduct.isPending ? "جاري التحديث..." : "تحديث"}
+              {updateProduct.isPending ? "جاري التحديث..." : (isAr ? "تحديث" : "Update")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -261,15 +261,15 @@ export default function StoreProducts() {
       {/* Create Category Dialog */}
       <Dialog open={openCategory} onOpenChange={setOpenCategory}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>إضافة تصنيف جديد</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "إضافة تصنيف جديد" : "Add New Category"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>اسم التصنيف (إنجليزي)</Label><Input value={catName} onChange={e => setCatName(e.target.value)} placeholder="Category name" /></div>
-            <div><Label>اسم التصنيف (عربي)</Label><Input value={catNameAr} onChange={e => setCatNameAr(e.target.value)} placeholder="مثال: ملابس" /></div>
+            <div><Label>{isAr ? "اسم التصنيف (إنجليزي)" : "Category Name (English)"}</Label><Input value={catName} onChange={e => setCatName(e.target.value)} placeholder="Category name" /></div>
+            <div><Label>{isAr ? "اسم التصنيف (عربي)" : "Category Name (Arabic)"}</Label><Input value={catNameAr} onChange={e => setCatNameAr(e.target.value)} placeholder="مثال: ملابس" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenCategory(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={() => { if (!catName || !catNameAr) { toast.error(isAr ? "أدخل اسم التصنيف" : "Enter category name"); return; } createCategory.mutate({ name: catName, nameAr: catNameAr }); }} disabled={createCategory.isPending}>
-              إضافة
+              {isAr ? "إضافة" : "Add"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -279,31 +279,33 @@ export default function StoreProducts() {
 }
 
 function ProductForm({ name, setName, nameAr, setNameAr, description, setDescription, descriptionAr, setDescriptionAr, price, setPrice, compareAtPrice, setCompareAtPrice, categoryId, setCategoryId, type, setType, imageUrl, setImageUrl, stock, setStock, categories, uploading, onImageUpload }: any) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <div className="space-y-4">
-      <div><Label>اسم المنتج (إنجليزي)</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Product name" /></div>
-      <div><Label>اسم المنتج (عربي) *</Label><Input value={nameAr} onChange={e => setNameAr(e.target.value)} placeholder="اسم المنتج" /></div>
-      <div><Label>الوصف (إنجليزي)</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" rows={2} /></div>
-      <div><Label>الوصف (عربي)</Label><Textarea value={descriptionAr} onChange={e => setDescriptionAr(e.target.value)} placeholder="وصف المنتج" rows={2} /></div>
+      <div><Label>{isAr ? "اسم المنتج (إنجليزي)" : "Product Name (English)"}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Product name" /></div>
+      <div><Label>اسم المنتج (عربي) *</Label><Input value={nameAr} onChange={e => setNameAr(e.target.value)} placeholder={isAr ? "اسم المنتج" : "Product Name"} /></div>
+      <div><Label>{isAr ? "الوصف (إنجليزي)" : "Description (English)"}</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" rows={2} /></div>
+      <div><Label>الوصف (عربي)</Label><Textarea value={descriptionAr} onChange={e => setDescriptionAr(e.target.value)} placeholder={isAr ? "وصف المنتج" : "Product Description"} rows={2} /></div>
       <div className="grid grid-cols-2 gap-3">
         <div><Label>السعر (ر.س) *</Label><Input value={price} onChange={e => setPrice(e.target.value)} placeholder="0.00" /></div>
-        <div><Label>السعر قبل الخصم</Label><Input value={compareAtPrice} onChange={e => setCompareAtPrice(e.target.value)} placeholder="0.00" /></div>
+        <div><Label>{isAr ? "السعر قبل الخصم" : "Price Before Discount"}</Label><Input value={compareAtPrice} onChange={e => setCompareAtPrice(e.target.value)} placeholder="0.00" /></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>النوع</Label>
+          <Label>{isAr ? "النوع" : "Type"}</Label>
           <Select value={type} onValueChange={(v: any) => setType(v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="product">منتج</SelectItem>
-              <SelectItem value="service">خدمة</SelectItem>
+              <SelectItem value="product">{isAr ? "منتج" : "Product"}</SelectItem>
+              <SelectItem value="service">{isAr ? "خدمة" : "Service"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label>التصنيف</Label>
+          <Label>{isAr ? "التصنيف" : "Category"}</Label>
           <Select value={categoryId} onValueChange={setCategoryId}>
-            <SelectTrigger><SelectValue placeholder="اختر تصنيف" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={isAr ? "اختر تصنيف" : "Select Classification"} /></SelectTrigger>
             <SelectContent>
               {categories.map((cat: any) => <SelectItem key={cat.id} value={String(cat.id)}>{cat.nameAr}</SelectItem>)}
             </SelectContent>
@@ -311,13 +313,13 @@ function ProductForm({ name, setName, nameAr, setNameAr, description, setDescrip
         </div>
       </div>
       {type === "product" && (
-        <div><Label>المخزون</Label><Input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder="0 = غير محدود" min="0" /></div>
+        <div><Label>{isAr ? "المخزون" : "Inventory"}</Label><Input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder="0 = غير محدود" min="0" /></div>
       )}
       <div>
-        <Label>صورة المنتج</Label>
+        <Label>{isAr ? "صورة المنتج" : "Product Image"}</Label>
         {imageUrl && <img src={imageUrl} alt="preview" className="w-20 h-20 object-contain rounded border mb-2" />}
         <Input type="file" accept="image/*" disabled={uploading} onChange={e => { const f = e.target.files?.[0]; if (f) onImageUpload(f); }} />
-        {uploading && <p className="text-sm text-muted-foreground">جاري رفع الصورة...</p>}
+        {uploading && <p className="text-sm text-muted-foreground">{isAr ? "جاري رفع الصورة..." : "Uploading image..."}</p>}
       </div>
     </div>
   );
@@ -330,7 +332,7 @@ function StoreOrdersTab() {
   const utils = trpc.useUtils();
   const updateStatus = trpc.store.adminUpdateOrderStatus.useMutation({
     onSuccess: () => { utils.store.adminGetOrders.invalidate(); toast.success(isAr ? "تم تحديث حالة الطلب" : "Order status updated"); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   const { t } = useTranslation();
@@ -341,8 +343,8 @@ function StoreOrdersTab() {
   if (!orders?.length) return (
     <Card><CardContent className="py-12 text-center">
       <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-      <p className="text-lg font-medium">لا توجد طلبات</p>
-      <p className="text-muted-foreground">ستظهر الطلبات هنا عندما يشتري أولياء الأمور من متجرك</p>
+      <p className="text-lg font-medium">{isAr ? "لا توجد طلبات" : "No orders"}</p>
+      <p className="text-muted-foreground">{isAr ? "ستظهر الطلبات هنا عندما يشتري أولياء الأمور من متجرك" : "Orders will appear here when parents purchase from your store"}</p>
     </CardContent></Card>
   );
 
@@ -351,29 +353,29 @@ function StoreOrdersTab() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>رقم الطلب</TableHead>
-            <TableHead>المبلغ</TableHead>
+            <TableHead>{isAr ? "رقم الطلب" : "Order Number"}</TableHead>
+            <TableHead>{isAr ? "المبلغ" : "Amount"}</TableHead>
             <TableHead>{isAr ? "الحالة" : "Status"}</TableHead>
             <TableHead>{isAr ? "التاريخ" : "Date"}</TableHead>
-            <TableHead>الإجراء</TableHead>
+            <TableHead>{isAr ? "الإجراء" : "Action"}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((order: any) => (
             <TableRow key={order.id}>
               <TableCell className="font-mono text-sm">#{order.orderNumber}</TableCell>
-              <TableCell>{order.total} ر.س</TableCell>
+              <TableCell>{order.total} {isAr ? "ر.س" : "SAR"}</TableCell>
               <TableCell><Badge className={statusColors[order.status] || ""}>{statusLabels[order.status] || order.status}</Badge></TableCell>
               <TableCell>{new Date(order.createdAt).toLocaleDateString("ar-SA")}</TableCell>
               <TableCell>
                 {order.status === "paid" && (
-                  <Button size="sm" onClick={() => updateStatus.mutate({ orderId: order.id, status: "processing" })}>تجهيز</Button>
+                  <Button size="sm" onClick={() => updateStatus.mutate({ orderId: order.id, status: "processing" })}>{isAr ? "تجهيز" : "Preparation"}</Button>
                 )}
                 {order.status === "processing" && (
-                  <Button size="sm" onClick={() => updateStatus.mutate({ orderId: order.id, status: "ready" })}>جاهز</Button>
+                  <Button size="sm" onClick={() => updateStatus.mutate({ orderId: order.id, status: "ready" })}>{isAr ? "جاهز" : "Ready"}</Button>
                 )}
                 {order.status === "ready" && (
-                  <Button size="sm" onClick={() => updateStatus.mutate({ orderId: order.id, status: "completed" })}>تم التسليم</Button>
+                  <Button size="sm" onClick={() => updateStatus.mutate({ orderId: order.id, status: "completed" })}>{isAr ? "تم التسليم" : "Delivered"}</Button>
                 )}
               </TableCell>
             </TableRow>

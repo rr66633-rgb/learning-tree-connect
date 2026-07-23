@@ -43,15 +43,15 @@ export default function UsersPage() {
 
   const createUser = trpc.users.create.useMutation({
     onSuccess: () => { utils.users.list.invalidate(); toast.success(isAr ? "تم إنشاء الحساب بنجاح" : "Account created successfully"); setCreateOpen(false); setForm(emptyForm); },
-    onError: (err) => toast.error(err.message || "حدث خطأ أثناء الإنشاء"),
+    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء الإنشاء" : "An error occurred during creation"),
   });
   const updateUser = trpc.users.update.useMutation({
     onSuccess: () => { utils.users.list.invalidate(); toast.success(isAr ? "تم تحديث البيانات بنجاح" : "Data updated successfully"); setEditOpen(false); setSelectedUser(null); },
-    onError: (err) => toast.error(err.message || "حدث خطأ أثناء التحديث"),
+    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء التحديث" : "An error occurred during update"),
   });
   const deleteUser = trpc.users.delete.useMutation({
     onSuccess: () => { utils.users.list.invalidate(); toast.success(isAr ? "تم حذف الحساب بنجاح" : "Account deleted successfully"); setDeleteOpen(false); setSelectedUser(null); },
-    onError: (err) => toast.error(err.message || "حدث خطأ أثناء الحذف"),
+    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء الحذف" : "An error occurred during deletion"),
   });
   const linkChild = trpc.users.linkChild.useMutation({
     onSuccess: () => { utils.users.getChildren.invalidate(); utils.users.getUnlinkedChildren.invalidate(); toast.success(isAr ? "تم ربط الطفل بنجاح" : "Child linked successfully"); },
@@ -65,7 +65,7 @@ export default function UsersPage() {
   const toggleActive = trpc.users.update.useMutation({
     onSuccess: (_, vars) => {
       utils.users.list.invalidate();
-      toast.success(vars.isActive ? "تم تفعيل الحساب" : "تم تعطيل الحساب");
+      toast.success(vars.isActive ? isAr ? "تم تفعيل الحساب" : "Account Activated" : isAr ? "تم تعطيل الحساب" : "Account disabled");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -113,55 +113,55 @@ export default function UsersPage() {
 
     const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'admin': case 'super_admin': return <Badge className="bg-red-100 text-red-800 border-red-200">مدير</Badge>;
-      case 'principal': return <Badge className="bg-purple-100 text-purple-800 border-purple-200">مدير/ة</Badge>;
-      case 'teacher': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">معلم/ة</Badge>;
-      case 'assistant': return <Badge className="bg-cyan-100 text-cyan-800 border-cyan-200">مساعد/ة</Badge>;
-      case 'parent': return <Badge className="bg-green-100 text-green-800 border-green-200">ولي أمر</Badge>;
-      case 'accountant': return <Badge className="bg-amber-100 text-amber-800 border-amber-200">محاسب/ة</Badge>;
-      case 'receptionist': return <Badge className="bg-teal-100 text-teal-800 border-teal-200">استقبال</Badge>;
-      case 'user': return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">بانتظار التعيين</Badge>;
-      default: return <Badge variant="outline">مستخدم</Badge>;
+      case 'admin': case 'super_admin': return <Badge className="bg-red-100 text-red-800 border-red-200">{isAr ? "مدير" : "Manager"}</Badge>;
+      case 'principal': return <Badge className="bg-purple-100 text-purple-800 border-purple-200">{isAr ? "مدير/ة" : "Manager"}</Badge>;
+      case 'teacher': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">{isAr ? "معلم/ة" : "Teacher"}</Badge>;
+      case 'assistant': return <Badge className="bg-cyan-100 text-cyan-800 border-cyan-200">{isAr ? "مساعد/ة" : "Assistant"}</Badge>;
+      case 'parent': return <Badge className="bg-green-100 text-green-800 border-green-200">{isAr ? "ولي أمر" : "Parent"}</Badge>;
+      case 'accountant': return <Badge className="bg-amber-100 text-amber-800 border-amber-200">{isAr ? "محاسب/ة" : "Accountant"}</Badge>;
+      case 'receptionist': return <Badge className="bg-teal-100 text-teal-800 border-teal-200">{isAr ? "استقبال" : "Reception"}</Badge>;
+      case 'user': return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">{isAr ? "بانتظار التعيين" : "Awaiting Assignment"}</Badge>;
+      default: return <Badge variant="outline">{isAr ? "مستخدم" : "User"}</Badge>;
     }
   };
   const getRoleText = (role: string) => {
     switch (role) {
-      case 'admin': case 'super_admin': return 'مدير';
-      case 'principal': return 'مدير/ة';
-      case 'teacher': return 'معلم/ة';
-      case 'assistant': return 'مساعد/ة';
-      case 'parent': return 'ولي أمر';
-      case 'accountant': return 'محاسب/ة';
-      case 'receptionist': return 'استقبال';
-      case 'user': return 'بانتظار التعيين';
-      default: return 'مستخدم';
+      case 'admin': case 'super_admin': return isAr ? 'مدير' : 'Manager';
+      case 'principal': return isAr ? 'مدير/ة' : 'Manager';
+      case 'teacher': return isAr ? 'معلم/ة' : 'Teacher';
+      case 'assistant': return isAr ? 'مساعد/ة' : 'Assistant';
+      case 'parent': return isAr ? 'ولي أمر' : 'Parent/Guardian';
+      case 'accountant': return isAr ? 'محاسب/ة' : 'Accountant';
+      case 'receptionist': return isAr ? 'استقبال' : 'Reception';
+      case 'user': return isAr ? 'بانتظار التعيين' : 'Awaiting Assignment';
+      default: return isAr ? 'مستخدم' : 'User';
     }
   };
 
   const getExportData = useCallback(() => {
     if (!users || users.length === 0) return [];
     return users.map((user: any) => ({
-      'الاسم': user.name || '—',
-      'البريد الإلكتروني': user.email || '—',
-      'رقم الهاتف': user.phone || '—',
-      'الدور': getRoleText(user.role),
-      'تاريخ الإنشاء': new Date(user.createdAt).toLocaleDateString('ar-SA'),
+      [isAr ? 'الاسم' : 'Name']: user.name || '—',
+      [isAr ? 'البريد الإلكتروني' : 'Email']: user.email || '—',
+      [isAr ? 'رقم الهاتف' : 'Phone Number']: user.phone || '—',
+      [isAr ? 'الدور' : 'Role']: getRoleText(user.role),
+      [isAr ? 'تاريخ الإنشاء' : 'Creation Date']: new Date(user.createdAt).toLocaleDateString('ar-SA'),
     }));
   }, [users]);
 
   const exportToExcel = useCallback(() => {
     const data = getExportData();
-    if (data.length === 0) { toast.error('لا توجد بيانات للتصدير'); return; }
+    if (data.length === 0) { toast.error(isAr ? 'لا توجد بيانات للتصدير' : 'No data to export'); return; }
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'المستخدمون');
-    XLSX.writeFile(wb, `قائمة_المستخدمين_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success('تم تصدير الملف بنجاح');
+    XLSX.utils.book_append_sheet(wb, ws, isAr ? 'المستخدمون' : 'Users');
+    XLSX.writeFile(wb, `${isAr ? "قائمة" : "List"}_${isAr ? "المستخدمين" : "Users"}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success(isAr ? 'تم تصدير الملف بنجاح' : 'File exported successfully');
   }, [getExportData]);
 
   const exportToCSV = useCallback(() => {
     const data = getExportData();
-    if (data.length === 0) { toast.error('لا توجد بيانات للتصدير'); return; }
+    if (data.length === 0) { toast.error(isAr ? 'لا توجد بيانات للتصدير' : 'No data to export'); return; }
     const ws = XLSX.utils.json_to_sheet(data);
     const csv = XLSX.utils.sheet_to_csv(ws);
     const bom = '\uFEFF';
@@ -169,22 +169,22 @@ export default function UsersPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `قائمة_المستخدمين_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${isAr ? "قائمة" : "List"}_${isAr ? "المستخدمين" : "Users"}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('تم تصدير الملف بنجاح');
+    toast.success(isAr ? 'تم تصدير الملف بنجاح' : 'File exported successfully');
   }, [getExportData]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">إدارة المستخدمين</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "إدارة المستخدمين" : "User Management"}</h1>
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">
                 <Download className="h-4 w-4" />
-                تصدير
+                {isAr ? "تصدير" : "Export"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -200,7 +200,7 @@ export default function UsersPage() {
           </DropdownMenu>
           <Button onClick={() => { setForm(emptyForm); setCreateOpen(true); }} className="gap-2">
             <UserPlus className="h-4 w-4" />
-            إضافة مستخدم
+            {isAr ? "إضافة مستخدم" : "Add User"}
           </Button>
         </div>
       </div>
@@ -211,7 +211,7 @@ export default function UsersPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي المستخدمين</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي المستخدمين" : "Total Users"}</p>
                 <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stats.total}</p>
               </div>
               <Users className="h-8 w-8 text-muted-foreground" />
@@ -222,7 +222,7 @@ export default function UsersPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">المعلمات</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "المعلمات" : "Teachers"}</p>
                 <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stats.teachers}</p>
               </div>
               <GraduationCap className="h-8 w-8 text-blue-500" />
@@ -233,7 +233,7 @@ export default function UsersPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">أولياء الأمور</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "أولياء الأمور" : "Parents"}</p>
                 <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : stats.parents}</p>
               </div>
               <UserCheck className="h-8 w-8 text-green-500" />
@@ -249,7 +249,7 @@ export default function UsersPage() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="بحث بالاسم أو البريد أو الهاتف..."
+                placeholder={isAr ? "بحث بالاسم أو البريد أو الهاتف..." : "Search by Name, Email, or Phone..."}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pr-10"
@@ -257,18 +257,18 @@ export default function UsersPage() {
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="جميع الأدوار" />
+                <SelectValue placeholder={isAr ? "جميع الأدوار" : "All Roles"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الأدوار</SelectItem>
-                <SelectItem value="admin">المشرفون</SelectItem>
-                <SelectItem value="principal">المديرون</SelectItem>
-                <SelectItem value="teacher">المعلمات</SelectItem>
-                <SelectItem value="assistant">المساعدات</SelectItem>
-                <SelectItem value="parent">أولياء الأمور</SelectItem>
-                <SelectItem value="accountant">المحاسبين</SelectItem>
-                <SelectItem value="receptionist">الاستقبال</SelectItem>
-                <SelectItem value="user">بانتظار التعيين</SelectItem>
+                <SelectItem value="all">{isAr ? "جميع الأدوار" : "All Roles"}</SelectItem>
+                <SelectItem value="admin">{isAr ? "المشرفون" : "Supervisors"}</SelectItem>
+                <SelectItem value="principal">{isAr ? "المديرون" : "Managers"}</SelectItem>
+                <SelectItem value="teacher">{isAr ? "المعلمات" : "Teachers"}</SelectItem>
+                <SelectItem value="assistant">{isAr ? "المساعدات" : "Assistance"}</SelectItem>
+                <SelectItem value="parent">{isAr ? "أولياء الأمور" : "Parents"}</SelectItem>
+                <SelectItem value="accountant">{isAr ? "المحاسبين" : "Accountants"}</SelectItem>
+                <SelectItem value="receptionist">{isAr ? "الاستقبال" : "Reception"}</SelectItem>
+                <SelectItem value="user">{isAr ? "بانتظار التعيين" : "Awaiting Assignment"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -286,12 +286,12 @@ export default function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">الاسم</TableHead>
-                  <TableHead className="text-right">البريد الإلكتروني</TableHead>
-                  <TableHead className="text-right">الهاتف</TableHead>
-                  <TableHead className="text-right">الدور</TableHead>
-                  <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-right">{isAr ? "الاسم" : "Name"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "البريد الإلكتروني" : "Email"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "الهاتف" : "Phone"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "الدور" : "Role"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "تاريخ الإنشاء" : "Creation Date"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "الإجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -304,11 +304,11 @@ export default function UsersPage() {
                     <TableCell>{new Date(user.createdAt).toLocaleDateString('ar-SA')}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="تعديل">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={isAr ? "تعديل" : "Edit"}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {user.role === 'parent' && (
-                          <Button variant="ghost" size="icon" onClick={() => openLink(user)} title="ربط الأطفال">
+                          <Button variant="ghost" size="icon" onClick={() => openLink(user)} title={isAr ? "ربط الأطفال" : "Link Children"}>
                             <Link2 className="h-4 w-4" />
                           </Button>
                         )}
@@ -317,14 +317,14 @@ export default function UsersPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => toggleActive.mutate({ id: user.id, isActive: !user.isActive })}
-                            title={user.isActive !== false ? "تعطيل" : "تفعيل"}
+                            title={user.isActive !== false ? isAr ? "تعطيل" : "Disable" : isAr ? "تفعيل" : "Activate"}
                             className={user.isActive !== false ? "text-orange-500 hover:text-orange-700" : "text-green-500 hover:text-green-700"}
                           >
                             {user.isActive !== false ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                           </Button>
                         )}
                         {user.role !== 'admin' && (
-                          <Button variant="ghost" size="icon" onClick={() => openDelete(user)} title="حذف" className="text-red-500 hover:text-red-700">
+                          <Button variant="ghost" size="icon" onClick={() => openDelete(user)} title={isAr ? "حذف" : "Delete"} className="text-red-500 hover:text-red-700">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
@@ -337,7 +337,7 @@ export default function UsersPage() {
           ) : (
             <div className="p-12 text-center text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>لا يوجد مستخدمون</p>
+              <p>{isAr ? "لا يوجد مستخدمون" : "No users"}</p>
             </div>
           )}
         </CardContent>
@@ -347,47 +347,47 @@ export default function UsersPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>إضافة مستخدم جديد</DialogTitle>
+            <DialogTitle>{isAr ? "إضافة مستخدم جديد" : "Add New User"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
-              <Label>الاسم الكامل</Label>
+              <Label>{isAr ? "الاسم الكامل" : "Full Name"}</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>البريد الإلكتروني</Label>
+              <Label>{isAr ? "البريد الإلكتروني" : "Email"}</Label>
               <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required dir="ltr" />
             </div>
             <div className="space-y-2">
-              <Label>رقم الهاتف</Label>
+              <Label>{isAr ? "رقم الهاتف" : "Phone Number"}</Label>
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} dir="ltr" placeholder="+966xxxxxxxxx" />
             </div>
             <div className="space-y-2">
-              <Label>الدور</Label>
+              <Label>{isAr ? "الدور" : "Role"}</Label>
               <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as UserRole })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">مشرف/ة</SelectItem>
-                  <SelectItem value="principal">مدير/ة</SelectItem>
-                  <SelectItem value="teacher">معلم/ة</SelectItem>
-                  <SelectItem value="assistant">مساعد/ة</SelectItem>
-                  <SelectItem value="parent">ولي أمر</SelectItem>
-                  <SelectItem value="accountant">محاسب/ة</SelectItem>
-                  <SelectItem value="receptionist">موظف/ة استقبال</SelectItem>
+                  <SelectItem value="admin">{isAr ? "مشرف/ة" : "Supervisor"}</SelectItem>
+                  <SelectItem value="principal">{isAr ? "مدير/ة" : "Manager"}</SelectItem>
+                  <SelectItem value="teacher">{isAr ? "معلم/ة" : "Teacher"}</SelectItem>
+                  <SelectItem value="assistant">{isAr ? "مساعد/ة" : "Assistant"}</SelectItem>
+                  <SelectItem value="parent">{isAr ? "ولي أمر" : "Parent"}</SelectItem>
+                  <SelectItem value="accountant">{isAr ? "محاسب/ة" : "Accountant"}</SelectItem>
+                  <SelectItem value="receptionist">{isAr ? "موظف/ة استقبال" : "Receptionist"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>كلمة المرور</Label>
-              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} dir="ltr" placeholder="أدخل كلمة المرور" />
-              <p className="text-xs text-muted-foreground">إذا لم تُدخل كلمة مرور، سيتم إرسال رابط تفعيل بالبريد</p>
+              <Label>{isAr ? "كلمة المرور" : "Password"}</Label>
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} dir="ltr" placeholder={isAr ? "أدخل كلمة المرور" : "Enter Password"} />
+              <p className="text-xs text-muted-foreground">{isAr ? "إذا لم تُدخل كلمة مرور، سيتم إرسال رابط تفعيل بالبريد" : "If no password is entered, an activation link will be sent by email"}</p>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
               <Button type="submit" disabled={createUser.isPending}>
-                {createUser.isPending ? "جاري الإنشاء..." : "إنشاء الحساب"}
+                {createUser.isPending ? (isAr ? "جاري الإنشاء..." : "Creating...") : "إنشاء الحساب"}
               </Button>
             </DialogFooter>
           </form>
@@ -398,44 +398,44 @@ export default function UsersPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
+            <DialogTitle>{isAr ? "تعديل بيانات المستخدم" : "Edit User Data"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="space-y-2">
-              <Label>الاسم الكامل</Label>
+              <Label>{isAr ? "الاسم الكامل" : "Full Name"}</Label>
               <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label>البريد الإلكتروني</Label>
+              <Label>{isAr ? "البريد الإلكتروني" : "Email"}</Label>
               <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} required dir="ltr" />
             </div>
             <div className="space-y-2">
-              <Label>رقم الهاتف</Label>
+              <Label>{isAr ? "رقم الهاتف" : "Phone Number"}</Label>
               <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} dir="ltr" placeholder="+966xxxxxxxxx" />
             </div>
             {selectedUser?.role !== 'super_admin' && (
               <div className="space-y-2">
-                <Label>الدور</Label>
+                <Label>{isAr ? "الدور" : "Role"}</Label>
                 <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as UserRole })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">مشرف/ة</SelectItem>
-                    <SelectItem value="principal">مدير/ة</SelectItem>
-                    <SelectItem value="teacher">معلم/ة</SelectItem>
-                    <SelectItem value="assistant">مساعد/ة</SelectItem>
-                    <SelectItem value="parent">ولي أمر</SelectItem>
-                    <SelectItem value="accountant">محاسب/ة</SelectItem>
-                    <SelectItem value="receptionist">موظف/ة استقبال</SelectItem>
+                    <SelectItem value="admin">{isAr ? "مشرف/ة" : "Supervisor"}</SelectItem>
+                    <SelectItem value="principal">{isAr ? "مدير/ة" : "Manager"}</SelectItem>
+                    <SelectItem value="teacher">{isAr ? "معلم/ة" : "Teacher"}</SelectItem>
+                    <SelectItem value="assistant">{isAr ? "مساعد/ة" : "Assistant"}</SelectItem>
+                    <SelectItem value="parent">{isAr ? "ولي أمر" : "Parent"}</SelectItem>
+                    <SelectItem value="accountant">{isAr ? "محاسب/ة" : "Accountant"}</SelectItem>
+                    <SelectItem value="receptionist">{isAr ? "موظف/ة استقبال" : "Receptionist"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
               <Button type="submit" disabled={updateUser.isPending}>
-                {updateUser.isPending ? "جاري التحديث..." : "حفظ التعديلات"}
+                {updateUser.isPending ? isAr ? "جاري التحديث..." : "Updating..." : isAr ? "حفظ التعديلات" : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>
@@ -446,16 +446,16 @@ export default function UsersPage() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{isAr ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground">
             هل أنت متأكد من حذف حساب <span className="font-bold text-foreground">{selectedUser?.name}</span>؟
-            سيتم إلغاء ربط جميع الأطفال المرتبطين بهذا الحساب.
+            {isAr ? "سيتم إلغاء ربط جميع الأطفال المرتبطين بهذا الحساب." : "All children linked to this account will be unlinked."}
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button variant="destructive" onClick={() => selectedUser && deleteUser.mutate({ id: selectedUser.id })} disabled={deleteUser.isPending}>
-              {deleteUser.isPending ? "جاري الحذف..." : "حذف الحساب"}
+              {deleteUser.isPending ? (isAr ? "جاري الحذف..." : "Deleting...") : (isAr ? "حذف الحساب" : "Delete Account")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -465,13 +465,13 @@ export default function UsersPage() {
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>ربط الأطفال - {selectedUser?.name}</DialogTitle>
+            <DialogTitle>{isAr ? "ربط الأطفال -" : "Link Children -"} {selectedUser?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {/* Currently linked children */}
             {linkedChildren && linkedChildren.length > 0 && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">الأطفال المرتبطون حالياً</Label>
+                <Label className="text-sm font-medium">{isAr ? "الأطفال المرتبطون حالياً" : "Currently Linked Children"}</Label>
                 <div className="space-y-2">
                   {linkedChildren.map((child: any) => (
                     <div key={child.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
@@ -483,7 +483,7 @@ export default function UsersPage() {
                         className="text-red-500 hover:text-red-700 gap-1"
                       >
                         <Unlink className="h-3 w-3" />
-                        إلغاء الربط
+                        {isAr ? "إلغاء الربط" : "Unlink"}
                       </Button>
                     </div>
                   ))}
@@ -494,7 +494,7 @@ export default function UsersPage() {
             {/* Available children to link */}
             {unlinkedChildren && unlinkedChildren.length > 0 ? (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">أطفال غير مرتبطين (اضغط للربط)</Label>
+                <Label className="text-sm font-medium">{isAr ? "أطفال غير مرتبطين (اضغط للربط)" : "Unlinked Children (Click to Link)"}</Label>
                 <div className="space-y-2 max-h-[200px] overflow-y-auto">
                   {unlinkedChildren.map((child: any) => (
                     <div key={child.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
@@ -506,18 +506,18 @@ export default function UsersPage() {
                         className="gap-1"
                       >
                         <Link2 className="h-3 w-3" />
-                        ربط
+                        {isAr ? "ربط" : "Link"}
                       </Button>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">لا يوجد أطفال غير مرتبطين</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{isAr ? "لا يوجد أطفال غير مرتبطين" : "No unlinked children"}</p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLinkOpen(false)}>إغلاق</Button>
+            <Button variant="outline" onClick={() => setLinkOpen(false)}>{isAr ? "إغلاق" : "Close"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

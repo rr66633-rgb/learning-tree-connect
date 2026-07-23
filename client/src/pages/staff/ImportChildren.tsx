@@ -89,7 +89,7 @@ export default function ImportChildren() {
       });
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || "فشل تحليل الملف");
+        toast.error(err.error || isAr ? "فشل تحليل الملف" : "File Analysis Failed");
         return;
       }
       const data = await res.json();
@@ -119,7 +119,7 @@ export default function ImportChildren() {
       setImportProgress(80);
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || "فشل الاستيراد");
+        toast.error(err.error || isAr ? "فشل الاستيراد" : "Import Failed");
         setStep("preview");
         return;
       }
@@ -128,9 +128,9 @@ export default function ImportChildren() {
       setImportResult(result);
       setStep("done");
       if (result.imported > 0) {
-        let msg = `تم استيراد ${result.imported} طفل بنجاح`;
+        let msg = `${isAr ? "تم استيراد" : "Imported"} ${result.imported} طفل بنجاح`;
         if (result.parentsCreated && result.parentsCreated > 0) {
-          msg += ` وإنشاء ${result.parentsCreated} حساب ولي أمر`;
+          msg += ` ${isAr ? "وإنشاء " : "And Create"}${result.parentsCreated} ${isAr ? "حساب ولي أمر" : "Parent Account"}`;
         }
         toast.success(msg);
       }
@@ -157,7 +157,7 @@ export default function ImportChildren() {
         </div>
         <Button variant="outline" onClick={() => navigate("/staff/children")}>
           <ArrowRight className="ml-2 h-4 w-4" />
-          العودة
+          {isAr ? "العودة" : "Back"}
         </Button>
       </div>
 
@@ -183,7 +183,7 @@ export default function ImportChildren() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Baby className="h-5 w-5" />
-                رفع ملف الأطفال
+                {isAr ? "رفع ملف الأطفال" : "Upload Children\'s File"}
               </CardTitle>
               <CardDescription>
                 ارفع ملف Excel (.xlsx) أو CSV يحتوي على بيانات الأطفال. يمكنك تحميل القالب الجاهز أدناه.
@@ -228,13 +228,13 @@ export default function ImportChildren() {
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4 ml-1" />
-                      إزالة
+                      {isAr ? "إزالة" : "Remove"}
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
-                    <p className="font-medium">اسحب الملف هنا أو اضغط للاختيار</p>
+                    <p className="font-medium">{isAr ? "اسحب الملف هنا أو اضغط للاختيار" : "Drag file here or click to select"}</p>
                     <p className="text-sm text-muted-foreground">
                       يدعم: Excel (.xlsx, .xls) و CSV - الحد الأقصى 20 ميجابايت
                     </p>
@@ -246,7 +246,7 @@ export default function ImportChildren() {
                 <div className="flex justify-end">
                   <Button onClick={handlePreview} className="gap-2">
                     <ArrowLeft className="h-4 w-4" />
-                    معاينة البيانات
+                    {isAr ? "معاينة البيانات" : "Data Preview"}
                   </Button>
                 </div>
               )}
@@ -256,24 +256,24 @@ export default function ImportChildren() {
           {/* Instructions */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">تعليمات الاستيراد</CardTitle>
+              <CardTitle className="text-base">{isAr ? "تعليمات الاستيراد" : "Import Instructions"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">1</Badge>
-                <span>حمّل القالب الجاهز واملأه ببيانات الأطفال</span>
+                <span>{isAr ? "حمّل القالب الجاهز واملأه ببيانات الأطفال" : "Download the ready-made template and fill it with children\'s data"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">2</Badge>
-                <span>الحقول المطلوبة: الاسم الأول أو الاسم بالعربية، تاريخ الميلاد، الجنس</span>
+                <span>{isAr ? "الحقول المطلوبة: الاسم الأول أو الاسم بالعربية، تاريخ الميلاد، الجنس" : "Required Fields: First Name or Arabic Name, Date of Birth, Gender"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">3</Badge>
-                <span>الجنس: ذكر أو أنثى</span>
+                <span>{isAr ? "الجنس: ذكر أو أنثى" : "Gender: Male or Female"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">4</Badge>
-                <span>الحالة: نشط، غير نشط، متخرج، قائمة انتظار</span>
+                <span>{isAr ? "الحالة: نشط، غير نشط، متخرج، قائمة انتظار" : "Status: Active, Inactive, Graduated, Waiting List"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">5</Badge>
@@ -281,7 +281,7 @@ export default function ImportChildren() {
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">6</Badge>
-                <span>اسم الفصل يجب أن يطابق أسماء الفصول المسجلة في النظام</span>
+                <span>{isAr ? "اسم الفصل يجب أن يطابق أسماء الفصول المسجلة في النظام" : "Class name must match registered class names in the system"}</span>
               </div>
             </CardContent>
           </Card>
@@ -296,19 +296,19 @@ export default function ImportChildren() {
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-3xl font-bold">{totalRows}</p>
-                <p className="text-sm text-muted-foreground">إجمالي الصفوف</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي الصفوف" : "Total Rows"}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-3xl font-bold text-green-600">{validRows.length}</p>
-                <p className="text-sm text-muted-foreground">صالحة للاستيراد</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "صالحة للاستيراد" : "Valid for import"}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-3xl font-bold text-red-600">{errorRows.length}</p>
-                <p className="text-sm text-muted-foreground">بها أخطاء</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "بها أخطاء" : "Contains Errors"}</p>
               </CardContent>
             </Card>
           </div>
@@ -321,16 +321,16 @@ export default function ImportChildren() {
                   <XCircle className="h-5 w-5" />
                   صفوف بها أخطاء ({errorRows.length})
                 </CardTitle>
-                <CardDescription>هذه الصفوف لن يتم استيرادها - يرجى تصحيحها في الملف</CardDescription>
+                <CardDescription>{isAr ? "هذه الصفوف لن يتم استيرادها - يرجى تصحيحها في الملف" : "These rows will not be imported - please correct them in the file"}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">الصف</TableHead>
+                        <TableHead className="w-16">{isAr ? "الصف" : "Class"}</TableHead>
                         <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
-                        <TableHead>الأخطاء</TableHead>
+                        <TableHead>{isAr ? "الأخطاء" : "Errors"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -368,12 +368,12 @@ export default function ImportChildren() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">الصف</TableHead>
+                        <TableHead className="w-16">{isAr ? "الصف" : "Class"}</TableHead>
                         <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
-                        <TableHead>تاريخ الميلاد</TableHead>
-                        <TableHead>الجنس</TableHead>
+                        <TableHead>{isAr ? "تاريخ الميلاد" : "Date of Birth"}</TableHead>
+                        <TableHead>{isAr ? "الجنس" : "Gender"}</TableHead>
                         <TableHead>{isAr ? "الفصل" : "Class"}</TableHead>
-                        <TableHead>جوال ولي الأمر</TableHead>
+                        <TableHead>{isAr ? "جوال ولي الأمر" : "Guardian\'s Mobile"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -388,7 +388,7 @@ export default function ImportChildren() {
                               ? row.data.dateOfBirth.toLocaleDateString("ar-SA")
                               : row.data.dateOfBirth || "-"}
                           </TableCell>
-                          <TableCell>{row.data.gender === "male" ? "ذكر" : row.data.gender === "female" ? "أنثى" : row.data.gender}</TableCell>
+                          <TableCell>{row.data.gender === "male" ? (isAr ? "ذكر" : "Male") : row.data.gender === "female" ? (isAr ? "أنثى" : "Female") : row.data.gender}</TableCell>
                           <TableCell>{row.data.className || "-"}</TableCell>
                           <TableCell dir="ltr" className="text-left">{row.data.parentMobile || "-"}</TableCell>
                         </TableRow>
@@ -409,13 +409,13 @@ export default function ImportChildren() {
           <div className="flex items-center justify-between">
             <Button variant="outline" onClick={() => { setStep("upload"); setParsedData([]); }}>
               <ArrowRight className="ml-2 h-4 w-4" />
-              رجوع
+              {isAr ? "رجوع" : "Back"}
             </Button>
             <div className="flex gap-2">
               {validRows.length > 0 && (
                 <Button onClick={handleImport} className="gap-2">
                   <Upload className="h-4 w-4" />
-                  استيراد {validRows.length} طفل
+                  {isAr ? "استيراد" : "Import"} {validRows.length} طفل
                 </Button>
               )}
             </div>
@@ -428,9 +428,9 @@ export default function ImportChildren() {
         <Card>
           <CardContent className="py-12 text-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="text-lg font-medium">جاري استيراد البيانات...</p>
+            <p className="text-lg font-medium">{isAr ? "جاري استيراد البيانات..." : "Importing Data..."}</p>
             <Progress value={importProgress} className="max-w-md mx-auto" />
-            <p className="text-sm text-muted-foreground">يرجى الانتظار وعدم إغلاق الصفحة</p>
+            <p className="text-sm text-muted-foreground">{isAr ? "يرجى الانتظار وعدم إغلاق الصفحة" : "Please wait and do not close the page"}</p>
           </CardContent>
         </Card>
       )}
@@ -441,28 +441,28 @@ export default function ImportChildren() {
           <Card className="border-green-200 dark:border-green-900">
             <CardContent className="py-8 text-center space-y-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-              <h2 className="text-xl font-bold">تم الاستيراد بنجاح</h2>
+              <h2 className="text-xl font-bold">{isAr ? "تم الاستيراد بنجاح" : "Imported successfully"}</h2>
               <div className="flex justify-center gap-6 flex-wrap">
                 <div>
                   <p className="text-3xl font-bold text-green-600">{importResult.imported}</p>
-                  <p className="text-sm text-muted-foreground">طفل تم استيرادهم</p>
+                  <p className="text-sm text-muted-foreground">{isAr ? "طفل تم استيرادهم" : "Children imported"}</p>
                 </div>
                 {(importResult.parentsCreated ?? 0) > 0 && (
                   <div>
                     <p className="text-3xl font-bold text-blue-600">{importResult.parentsCreated}</p>
-                    <p className="text-sm text-muted-foreground">حساب ولي أمر جديد</p>
+                    <p className="text-sm text-muted-foreground">{isAr ? "حساب ولي أمر جديد" : "New Parent Account"}</p>
                   </div>
                 )}
                 {(importResult.welcomeEmailsSent ?? 0) > 0 && (
                   <div>
                     <p className="text-3xl font-bold text-teal-600">{importResult.welcomeEmailsSent}</p>
-                    <p className="text-sm text-muted-foreground">إشعار ترحيبي مُرسل</p>
+                    <p className="text-sm text-muted-foreground">{isAr ? "إشعار ترحيبي مُرسل" : "Welcome Notification Sent"}</p>
                   </div>
                 )}
                 {importResult.failed > 0 && (
                   <div>
                     <p className="text-3xl font-bold text-red-600">{importResult.failed}</p>
-                    <p className="text-sm text-muted-foreground">فشل استيرادهم</p>
+                    <p className="text-sm text-muted-foreground">{isAr ? "فشل استيرادهم" : "Failed to Import Them"}</p>
                   </div>
                 )}
               </div>
@@ -474,7 +474,7 @@ export default function ImportChildren() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                  صفوف لم يتم استيرادها
+                  {isAr ? "صفوف لم يتم استيرادها" : "Rows not imported"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -482,8 +482,8 @@ export default function ImportChildren() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">الصف</TableHead>
-                        <TableHead>السبب</TableHead>
+                        <TableHead className="w-16">{isAr ? "الصف" : "Class"}</TableHead>
+                        <TableHead>{isAr ? "السبب" : "Reason"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -502,10 +502,10 @@ export default function ImportChildren() {
 
           <div className="flex items-center justify-between">
             <Button variant="outline" onClick={() => { setStep("upload"); setFile(null); setParsedData([]); setImportResult(null); }}>
-              استيراد ملف آخر
+              {isAr ? "استيراد ملف آخر" : "Import Another File"}
             </Button>
             <Button onClick={() => navigate("/staff/children")}>
-              الذهاب لقائمة الأطفال
+              {isAr ? "الذهاب لقائمة الأطفال" : "Go to Children List"}
               <ArrowLeft className="mr-2 h-4 w-4" />
             </Button>
           </div>

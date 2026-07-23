@@ -11,21 +11,21 @@ import { ArrowRight, Copy, Loader2, Sparkles, Instagram, Music, Ghost, Camera } 
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 
-const platforms = [
-  { value: "instagram_post", label: "بوست انستقرام", icon: Instagram },
-  { value: "instagram_story", label: "ستوري انستقرام", icon: Camera },
-  { value: "instagram_reel", label: "ريلز انستقرام", icon: Instagram },
-  { value: "tiktok", label: "تيك توك", icon: Music },
-  { value: "snapchat", label: "سناب شات", icon: Ghost },
-];
+const getPlatforms = (isAr: boolean) => ([
+  { value: "instagram_post", label: (isAr ? "بوست انستقرام" : "Instagram Post"), icon: Instagram },
+  { value: "instagram_story", label: (isAr ? "ستوري انستقرام" : "Instagram Story"), icon: Camera },
+  { value: "instagram_reel", label: (isAr ? "ريلز انستقرام" : "Instagram Reels"), icon: Instagram },
+  { value: "tiktok", label: (isAr ? "تيك توك" : "TikTok"), icon: Music },
+  { value: "snapchat", label: (isAr ? "سناب شات" : "Snapchat"), icon: Ghost },
+]);
 
-const tones = [
-  { value: "professional", label: "احترافي" },
-  { value: "friendly", label: "ودود" },
-  { value: "exciting", label: "حماسي" },
-  { value: "educational", label: "تعليمي" },
-  { value: "emotional", label: "عاطفي" },
-];
+const getTones = (isAr: boolean) => ([
+  { value: "professional", label: (isAr ? "احترافي" : "Professional") },
+  { value: "friendly", label: (isAr ? "ودود" : "Friendly") },
+  { value: "exciting", label: (isAr ? "حماسي" : "Enthusiastic") },
+  { value: "educational", label: (isAr ? "تعليمي" : "Educational") },
+  { value: "emotional", label: (isAr ? "عاطفي" : "Emotional") },
+]);
 
 export default function AIMarketingSocial() {
   const { t, i18n } = useTranslation();
@@ -45,7 +45,7 @@ export default function AIMarketingSocial() {
       toast.success(isAr ? "تم إنشاء المحتوى بنجاح!" : "Content created successfully!");
     },
     onError: (err) => {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
     },
   });
 
@@ -59,7 +59,7 @@ export default function AIMarketingSocial() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`تم نسخ ${label}`);
+    toast.success(isAr ? `تم نسخ ${label}` : `Copied${label}`);
   };
 
   return (
@@ -69,17 +69,17 @@ export default function AIMarketingSocial() {
           <Button variant="ghost" size="icon"><ArrowRight className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">مكتبة السوشال ميديا</h1>
-          <p className="text-sm text-gray-500">أنشئ محتوى جاهز للنشر بضغطة واحدة</p>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "مكتبة السوشال ميديا" : "Social Media Library"}</h1>
+          <p className="text-sm text-gray-500">{isAr ? "أنشئ محتوى جاهز للنشر بضغطة واحدة" : "Create Ready-to-Publish Content with One Click"}</p>
         </div>
       </div>
 
       <Card className="mb-6">
         <CardContent className="p-5 space-y-4">
           <div className="space-y-2">
-            <Label>المنصة</Label>
+            <Label>{isAr ? "المنصة" : "Platform"}</Label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {platforms.map((p) => (
+              {getPlatforms(isAr).map((p) => (
                 <button key={p.value} onClick={() => setForm({ ...form, platform: p.value as any })}
                   className={`p-3 text-sm rounded-lg border text-center transition-all ${form.platform === p.value ? "border-pink-500 bg-pink-50 text-pink-700" : "border-gray-200 hover:border-gray-300"}`}>
                   <p.icon className="h-5 w-5 mx-auto mb-1" />
@@ -90,15 +90,15 @@ export default function AIMarketingSocial() {
           </div>
           <div className="space-y-2">
             <Label>الموضوع *</Label>
-            <Input placeholder="مثال: أنشطة الأسبوع، تهنئة بالعيد، إعلان تسجيل..." value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} />
+            <Input placeholder={isAr ? "مثال: أنشطة الأسبوع، تهنئة بالعيد، إعلان تسجيل..." : "Example: Weekly activities, Eid greetings, registration announcement..."} value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>النبرة</Label>
+              <Label>{isAr ? "النبرة" : "Tone"}</Label>
               <Select value={form.tone} onValueChange={(v: any) => setForm({ ...form, tone: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {tones.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  {getTones(isAr).map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -107,19 +107,19 @@ export default function AIMarketingSocial() {
               <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">عربي فقط</SelectItem>
-                  <SelectItem value="en">إنجليزي فقط</SelectItem>
-                  <SelectItem value="both">عربي وإنجليزي</SelectItem>
+                  <SelectItem value="ar">{isAr ? "عربي فقط" : "Arabic only"}</SelectItem>
+                  <SelectItem value="en">{isAr ? "إنجليزي فقط" : "English Only"}</SelectItem>
+                  <SelectItem value="both">{isAr ? "عربي وإنجليزي" : "Arabic and English"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-2">
-            <Label>ملاحظات إضافية</Label>
-            <Textarea placeholder="أي تفاصيل إضافية تريد تضمينها..." value={form.additionalNotes} onChange={(e) => setForm({ ...form, additionalNotes: e.target.value })} rows={2} />
+            <Label>{isAr ? "ملاحظات إضافية" : "Additional Notes"}</Label>
+            <Textarea placeholder={isAr ? "أي تفاصيل إضافية تريد تضمينها..." : "Any additional details you want to include..."} value={form.additionalNotes} onChange={(e) => setForm({ ...form, additionalNotes: e.target.value })} rows={2} />
           </div>
           <Button onClick={handleGenerate} disabled={generateMutation.isPending} className="w-full bg-pink-600 hover:bg-pink-700">
-            {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء المحتوى</>}
+            {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Creating..."}</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء المحتوى</>}
           </Button>
         </CardContent>
       </Card>
@@ -130,7 +130,7 @@ export default function AIMarketingSocial() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">الكابشن (عربي)</CardTitle>
+                  <CardTitle className="text-base">{isAr ? "الكابشن (عربي)" : "Caption (Arabic)"}</CardTitle>
                   <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionAr, "الكابشن العربي")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                 </div>
               </CardHeader>
@@ -152,7 +152,7 @@ export default function AIMarketingSocial() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">الهاشتاقات</CardTitle>
+                  <CardTitle className="text-base">{isAr ? "الهاشتاقات" : "Hashtags"}</CardTitle>
                   <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.hashtags.join(" "), "الهاشتاقات")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                 </div>
               </CardHeader>
@@ -176,7 +176,7 @@ export default function AIMarketingSocial() {
               <CardContent><p className="whitespace-pre-wrap">{result.callToAction}</p></CardContent>
             </Card>
           )}
-          <Button onClick={() => copyToClipboard(`${result.captionAr || ""}\n\n${result.captionEn || ""}\n\n${result.hashtags?.join(" ") || ""}`, "كل المحتوى")} variant="outline" className="w-full">
+          <Button onClick={() => copyToClipboard(`${result.captionAr || ""}\n\n${result.captionEn || ""}\n\n${result.hashtags?.join(" ") || ""}`, (isAr ? "كل المحتوى" : "All Content"))} variant="outline" className="w-full">
             <Copy className="h-4 w-4 ml-2" />نسخ كل المحتوى
           </Button>
         </div>

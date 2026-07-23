@@ -68,7 +68,7 @@ export default function NurseriesLanding() {
 
   useEffect(() => {
     document.title = isAr 
-      ? "نشأة - النظام المتكامل لإدارة الحضانات ومراكز التأهيل والرعاية النهارية"
+      ? isAr ? "نشأة - النظام المتكامل لإدارة الحضانات ومراكز التأهيل والرعاية النهارية" : "Nash'ah - Integrated System for Nursery, Rehabilitation, and Daycare Management"
       : "Naashah - The Complete Nursery & Daycare Management System";
   }, [isAr]);
 
@@ -87,14 +87,14 @@ export default function NurseriesLanding() {
   }, []);
 
   const features = isAr ? [
-    { icon: Users, title: "إدارة الأطفال والفصول", desc: "تسجيل بيانات الأطفال الكاملة، إدارة الفصول وتوزيع الأطفال على المعلمات", color: "#00C9B7" },
-    { icon: Calendar, title: "الحضور والانصراف", desc: "تسجيل حضور الأطفال والموظفين بلمسة واحدة مع إشعارات فورية لأولياء الأمور", color: "#7B61FF" },
-    { icon: FileText, title: "التقارير اليومية", desc: "تقرير يومي مفصل لولي الأمر يشمل الوجبات والنوم والأنشطة مع صور وفيديوهات", color: "#FF5CA8" },
-    { icon: MessageCircle, title: "التواصل مع أولياء الأمور", desc: "رسائل مباشرة وإشعارات فورية وإعلانات عامة وتقويم سنوي مشترك", color: "#FFB020" },
-    { icon: CreditCard, title: "المالية والمدفوعات", desc: "فواتير إلكترونية تلقائية، دفع عبر مدى وفيزا وأبل باي، وتقارير مالية", color: "#00C9B7" },
-    { icon: TrendingUp, title: "النمو والتطور", desc: "مقياس الكشف المبكر عن صعوبات التعلم والنمو، تقييمات مخصصة لكل طفل", color: "#7B61FF" },
-    { icon: BookOpen, title: "الخطط والمناهج", desc: "خطط أسبوعية للأنشطة التعليمية، مكتبة مناهج جاهزة ومشاركة مع أولياء الأمور", color: "#FF5CA8" },
-    { icon: Shield, title: "طلب الاستلام والنقل", desc: "نظام طلب استلام الطفل مع تتبع عمليات التسليم لضمان أمان الأطفال", color: "#FFB020" },
+    { icon: Users, title: isAr ? "إدارة الأطفال والفصول" : "Manage Children & Classes", desc: isAr ? "تسجيل بيانات الأطفال الكاملة، إدارة الفصول وتوزيع الأطفال على المعلمات" : "Full child data registration, class management, and child-teacher assignment", color: "#00C9B7" },
+    { icon: Calendar, title: isAr ? "الحضور والانصراف" : "Attendance", desc: isAr ? "تسجيل حضور الأطفال والموظفين بلمسة واحدة مع إشعارات فورية لأولياء الأمور" : "One-touch check-in for children and staff with instant parent notifications", color: "#7B61FF" },
+    { icon: FileText, title: isAr ? "التقارير اليومية" : "Daily Reports", desc: "تقرير يومي مفصل لولي الأمر يشمل الوجبات والنوم والأنشطة مع صور وفيديوهات", color: "#FF5CA8" },
+    { icon: MessageCircle, title: isAr ? "التواصل مع أولياء الأمور" : "Parent Communication", desc: isAr ? "رسائل مباشرة وإشعارات فورية وإعلانات عامة وتقويم سنوي مشترك" : "Direct messages, instant notifications, public announcements, and shared annual calendar", color: "#FFB020" },
+    { icon: CreditCard, title: isAr ? "المالية والمدفوعات" : "Finance & Payments", desc: isAr ? "فواتير إلكترونية تلقائية، دفع عبر مدى وفيزا وأبل باي، وتقارير مالية" : "Automatic e-invoices, payment via Mada, Visa, Apple Pay, and financial reports", color: "#00C9B7" },
+    { icon: TrendingUp, title: isAr ? "النمو والتطور" : "Growth & Development", desc: isAr ? "مقياس الكشف المبكر عن صعوبات التعلم والنمو، تقييمات مخصصة لكل طفل" : "Early Detection Scale for Learning and Development Difficulties, Customized Assessments for Each Child", color: "#7B61FF" },
+    { icon: BookOpen, title: isAr ? "الخطط والمناهج" : "Plans & Curriculum", desc: isAr ? "خطط أسبوعية للأنشطة التعليمية، مكتبة مناهج جاهزة ومشاركة مع أولياء الأمور" : "Weekly plans for educational activities, ready curriculum library, and sharing with parents", color: "#FF5CA8" },
+    { icon: Shield, title: isAr ? "طلب الاستلام والنقل" : "Pick-up and transfer request", desc: isAr ? "نظام طلب استلام الطفل مع تتبع عمليات التسليم لضمان أمان الأطفال" : "Child Pickup Request System with Delivery Tracking to Ensure Child Safety", color: "#FFB020" },
   ] : [
     { icon: Users, title: "Children & Class Management", desc: "Complete child data registration, class management and student-teacher assignment", color: "#00C9B7" },
     { icon: Calendar, title: "Attendance & Departure", desc: "One-tap attendance for children and staff with instant parent notifications", color: "#7B61FF" },
@@ -107,12 +107,12 @@ export default function NurseriesLanding() {
   ];
 
   const comparisonData = isAr ? [
-    { feature: "التقارير اليومية", traditional: "يدوية ورقية", naashah: "تلقائية مع صور" },
-    { feature: "التواصل مع الأسرة", traditional: "بطيء ومحدود", naashah: "فوري ومباشر" },
-    { feature: "المدفوعات", traditional: "تحويل بنكي يدوي", naashah: "إلكترونية متكاملة" },
-    { feature: "متابعة النمو", traditional: "غير متوفرة", naashah: "علمية بمقاييس معتمدة" },
-    { feature: "المتجر", traditional: "غير متوفر", naashah: "إلكتروني مدمج" },
-    { feature: "الحضور والانصراف", traditional: "سجل ورقي", naashah: "إلكتروني مع إشعارات" },
+    { feature: isAr ? "التقارير اليومية" : "Daily Reports", traditional: "يدوية ورقية", naashah: "تلقائية مع صور" },
+    { feature: isAr ? "التواصل مع الأسرة" : "Family Communication", traditional: isAr ? "بطيء ومحدود" : "Slow and Limited", naashah: isAr ? "فوري ومباشر" : "Instant & Direct" },
+    { feature: isAr ? "المدفوعات" : "Payments", traditional: "تحويل بنكي يدوي", naashah: "إلكترونية متكاملة" },
+    { feature: isAr ? "متابعة النمو" : "Growth Tracking", traditional: isAr ? "غير متوفرة" : "Not Available", naashah: isAr ? "علمية بمقاييس معتمدة" : "Scientific with Accredited Standards" },
+    { feature: "المتجر", traditional: isAr ? "غير متوفر" : "Out of Stock", naashah: "إلكتروني مدمج" },
+    { feature: isAr ? "الحضور والانصراف" : "Attendance", traditional: isAr ? "سجل ورقي" : "Paper Record", naashah: isAr ? "إلكتروني مع إشعارات" : "Electronic with Notifications" },
   ] : [
     { feature: "Daily Reports", traditional: "Manual & paper-based", naashah: "Automatic with photos" },
     { feature: "Family Communication", traditional: "Slow & limited", naashah: "Instant & direct" },
@@ -124,21 +124,21 @@ export default function NurseriesLanding() {
 
   const plans = isAr ? [
     { 
-      id: "basic", name: "الأساسية", price: "٦,٩٠٠", period: "سنوياً",
-      children: "حتى ٣٠ طفل", staff: "حتى ١٠ موظفين",
-      features: ["الحضور والتقارير اليومية", "التقويم والإعلانات", "تطبيق ولي الأمر"],
+      id: "basic", name: "الأساسية", price: "٦,٩٠٠", period: isAr ? "سنوياً" : "Yearly",
+      children: isAr ? "حتى ٣٠ طفل" : "Up to 30 Children", staff: isAr ? "حتى ١٠ موظفين" : "Up to 10 Employees",
+      features: [isAr ? "الحضور والتقارير اليومية" : "Attendance & Daily Reports", isAr ? "التقويم والإعلانات" : "Calendar & Announcements", isAr ? "تطبيق ولي الأمر" : "Parent App"],
       popular: false, gradient: "from-slate-50 to-white", borderColor: "border-gray-200"
     },
     { 
-      id: "professional", name: "الاحترافية", price: "١٠,٩٠٠", period: "سنوياً",
-      children: "حتى ١٠٠ طفل", staff: "حتى ٣٠ موظف",
-      features: ["جميع مميزات الأساسية", "الرسائل والمستندات والصور", "الخطط الأسبوعية والفواتير", "المساعد الذكي والتقارير المتقدمة", "الهوية البصرية"],
+      id: "professional", name: "الاحترافية", price: "١٠,٩٠٠", period: isAr ? "سنوياً" : "Yearly",
+      children: isAr ? "حتى ١٠٠ طفل" : "Up to 100 Children", staff: isAr ? "حتى ٣٠ موظف" : "Up to 30 Employees",
+      features: ["جميع مميزات الأساسية", "الرسائل والمستندات والصور", "الخطط الأسبوعية والفواتير", "المساعد الذكي والتقارير المتقدمة", (isAr ? "الهوية البصرية" : "Visual Identity") ],
       popular: true, gradient: "from-[#00C9B7]/5 to-[#7B61FF]/5", borderColor: "border-[#00C9B7]"
     },
     { 
-      id: "enterprise", name: "المؤسسية", price: "١٥,٩٠٠", period: "سنوياً",
-      children: "غير محدود", staff: "غير محدود",
-      features: ["جميع مميزات الاحترافية", "دعم أولوية", "مساحة تخزين ١٠٠ جيجا", "فروع متعددة"],
+      id: "enterprise", name: "المؤسسية", price: "١٥,٩٠٠", period: isAr ? "سنوياً" : "Yearly",
+      children: isAr ? "غير محدود" : "Unlimited", staff: isAr ? "غير محدود" : "Unlimited",
+      features: [isAr ? "جميع مميزات الاحترافية" : "All Professional Features", isAr ? "دعم أولوية" : "Priority Support", isAr ? "مساحة تخزين ١٠٠ جيجا" : "100 GB storage space", isAr ? "فروع متعددة" : "Multiple Branches"],
       popular: false, gradient: "from-[#7B61FF]/5 to-[#FF5CA8]/5", borderColor: "border-[#7B61FF]/30"
     },
   ] : [
@@ -278,7 +278,7 @@ export default function NurseriesLanding() {
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-10 leading-[1.8] px-2">
             {isAr 
-              ? <>وفّر <span className="font-bold text-[#00C9B7]">٧٠٪</span> من وقت الإدارة اليومية واجعل ولي الأمر شريكاً في رحلة طفله</>
+              ? <>وفّر <span className="font-bold text-[#00C9B7]">{isAr ? "٧٠٪" : "70%"}</span>{isAr ? " من وقت الإدارة اليومية واجعل ولي الأمر شريكاً في رحلة طفله" : "From daily management time and make the parent a partner in their child\'s journey"}</>
               : <>Save <span className="font-bold text-[#00C9B7]">70%</span> of daily management time and make parents partners in their child's journey</>
             }
           </p>
@@ -363,10 +363,10 @@ export default function NurseriesLanding() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-14">
             {(isAr ? [
-              { value: "٧٠٪", label: "توفير في وقت الإدارة", color: "#00C9B7" },
-              { value: "٩٨٪", label: "رضا أولياء الأمور", color: "#7B61FF" },
-              { value: "+٢٠", label: "أداة متكاملة", color: "#FF5CA8" },
-              { value: "٢٤/٧", label: "دعم فني", color: "#FFB020" },
+              { value: isAr ? "٧٠٪" : "70%", label: isAr ? "توفير في وقت الإدارة" : "Save Admin Time", color: "#00C9B7" },
+              { value: isAr ? "٩٨٪" : "98%", label: isAr ? "رضا أولياء الأمور" : "Parent Satisfaction", color: "#7B61FF" },
+              { value: "+٢٠", label: isAr ? "أداة متكاملة" : "Integrated Tool", color: "#FF5CA8" },
+              { value: "٢٤/٧", label: isAr ? "دعم فني" : "Technical Support", color: "#FFB020" },
             ] : [
               { value: "70%", label: "Management time saved", color: "#00C9B7" },
               { value: "98%", label: "Parent satisfaction", color: "#7B61FF" },
@@ -475,10 +475,10 @@ export default function NurseriesLanding() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {(isAr ? [
-              { title: "الحضانات ورياض الأطفال", Icon: Users, color: "#00C9B7" },
-              { title: "مراكز التأهيل والتدخل المبكر", Icon: Heart, color: "#7B61FF" },
-              { title: "مراكز الرعاية النهارية", Icon: Shield, color: "#FF5CA8" },
-              { title: "المدارس التمهيدية", Icon: BookOpen, color: "#FFB020" },
+              { title: isAr ? "الحضانات ورياض الأطفال" : "Nurseries & Kindergartens", Icon: Users, color: "#00C9B7" },
+              { title: isAr ? "مراكز التأهيل والتدخل المبكر" : "Rehabilitation and Early Intervention Centers", Icon: Heart, color: "#7B61FF" },
+              { title: isAr ? "مراكز الرعاية النهارية" : "Daycare Centers", Icon: Shield, color: "#FF5CA8" },
+              { title: isAr ? "المدارس التمهيدية" : "Preschools", Icon: BookOpen, color: "#FFB020" },
             ] : [
               { title: "Nurseries & Kindergartens", Icon: Users, color: "#00C9B7" },
               { title: "Rehabilitation & Early Intervention Centers", Icon: Heart, color: "#7B61FF" },
@@ -664,7 +664,7 @@ export default function NurseriesLanding() {
                   <Label className="text-sm font-medium text-[#1A1F36]">{isAr ? "نوع المركز" : "Center Type"}</Label>
                   <div className="flex flex-wrap gap-2">
                     {(isAr 
-                      ? ["حضانة", "روضة أطفال", "مركز تأهيل", "رعاية نهارية", "مدرسة تمهيدية"]
+                      ? [(isAr ? "حضانة" : "Nursery"), (isAr ? "روضة أطفال" : "Kindergarten"), "مركز تأهيل", "رعاية نهارية", "مدرسة تمهيدية"]
                       : ["Nursery", "Kindergarten", "Rehabilitation Center", "Daycare", "Pre-School"]
                     ).map((type) => (
                       <button
@@ -752,7 +752,7 @@ export default function NurseriesLanding() {
               </div>
               <p className="text-sm text-white/60 leading-[1.8] max-w-sm">
                 {isAr 
-                  ? "النظام المتكامل لإدارة الحضانات ومراكز التأهيل والرعاية النهارية. مصمم خصيصاً لتلبية احتياجات المؤسسات التعليمية في المملكة العربية السعودية."
+                  ? isAr ? "النظام المتكامل لإدارة الحضانات ومراكز التأهيل والرعاية النهارية. مصمم خصيصاً لتلبية احتياجات المؤسسات التعليمية في المملكة العربية السعودية." : "Integrated system for managing nurseries, rehabilitation centers, and daycare. Specifically designed to meet the needs of educational institutions in Saudi Arabia."
                   : "The complete management system for nurseries, rehabilitation centers, and daycare facilities. Designed specifically for educational institutions in Saudi Arabia."
                 }
               </p>

@@ -48,12 +48,12 @@ export default function PaymentsReport() {
       return;
     }
 
-    const headers = ["رقم العملية", "رقم الفاتورة", "اسم ولي الأمر", t("superadmin.amount"), t("superadmin.paymentMethod"), t("common.status"), "تاريخ الإنشاء", "تاريخ الدفع"];
+    const headers = ["رقم العملية", (isAr ? "رقم الفاتورة" : "Invoice Number"), "اسم ولي الأمر", t("superadmin.amount"), t("superadmin.paymentMethod"), t("common.status"), "تاريخ الإنشاء", "تاريخ الدفع"];
     const rows = data.payments.map((p: any) => [
       p.moyasarPaymentId || p.id,
       p.invoiceNumber || "-",
       p.parentName || "-",
-      `${Number(p.amount).toFixed(2)} ر.س`,
+      `${Number(p.amount).toFixed(2)} ${isAr ? "ر.س" : "SAR"}`,
       methodLabels[p.method] || p.method,
       statusLabels[p.status] || p.status,
       p.createdAt ? new Date(p.createdAt).toLocaleDateString(locale) : "-",
@@ -78,8 +78,8 @@ export default function PaymentsReport() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">تقرير المدفوعات</h1>
-          <p className="text-muted-foreground text-sm mt-1">جميع عمليات الدفع عبر بوابة ميسر</p>
+          <h1 className="text-2xl font-bold">{isAr ? "تقرير المدفوعات" : "Payments Report"}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{isAr ? "جميع عمليات الدفع عبر بوابة ميسر" : "All Payments via Maysar Gateway"}</p>
         </div>
         <Button onClick={handleExportCSV} variant="outline" className="gap-2">
           <Download className="h-4 w-4" />
@@ -96,9 +96,9 @@ export default function PaymentsReport() {
                 <TrendingUp className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي المدفوع</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي المدفوع" : "Total Paid"}</p>
                 <p className="text-xl font-bold text-green-600">
-                  {isLoading ? <Skeleton className="h-6 w-24" /> : `${Number(data?.stats?.totalPaid || 0).toLocaleString("ar-SA")} ر.س`}
+                  {isLoading ? <Skeleton className="h-6 w-24" /> : `${Number(data?.stats?.totalPaid || 0).toLocaleString("ar-SA")} ${isAr ? "ر.س" : "SAR"}`}
                 </p>
               </div>
             </div>
@@ -112,9 +112,9 @@ export default function PaymentsReport() {
                 <Clock className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">قيد المعالجة</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "قيد المعالجة" : "Processing"}</p>
                 <p className="text-xl font-bold text-yellow-600">
-                  {isLoading ? <Skeleton className="h-6 w-24" /> : `${Number(data?.stats?.totalInitiated || 0).toLocaleString("ar-SA")} ر.س`}
+                  {isLoading ? <Skeleton className="h-6 w-24" /> : `${Number(data?.stats?.totalInitiated || 0).toLocaleString("ar-SA")} ${isAr ? "ر.س" : "SAR"}`}
                 </p>
               </div>
             </div>
@@ -128,9 +128,9 @@ export default function PaymentsReport() {
                 <AlertCircle className="h-5 w-5 text-red-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">فاشلة</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "فاشلة" : "Failed"}</p>
                 <p className="text-xl font-bold text-red-600">
-                  {isLoading ? <Skeleton className="h-6 w-24" /> : `${Number(data?.stats?.totalFailed || 0).toLocaleString("ar-SA")} ر.س`}
+                  {isLoading ? <Skeleton className="h-6 w-24" /> : `${Number(data?.stats?.totalFailed || 0).toLocaleString("ar-SA")} ${isAr ? "ر.س" : "SAR"}`}
                 </p>
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function PaymentsReport() {
                 <CreditCard className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي العمليات</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي العمليات" : "Total Operations"}</p>
                 <p className="text-xl font-bold">
                   {isLoading ? <Skeleton className="h-6 w-16" /> : (data?.stats?.countTotal || 0)}
                 </p>
@@ -159,44 +159,44 @@ export default function PaymentsReport() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-4">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">فلاتر البحث</span>
+            <span className="text-sm font-medium">{isAr ? "فلاتر البحث" : "Search Filters"}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">من تاريخ</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{isAr ? "من تاريخ" : "From Date"}</label>
               <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">إلى تاريخ</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{isAr ? "إلى تاريخ" : "To Date"}</label>
               <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">حالة الدفع</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{isAr ? "حالة الدفع" : "Payment Status"}</label>
               <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="paid">مدفوعة</SelectItem>
-                  <SelectItem value="initiated">قيد المعالجة</SelectItem>
-                  <SelectItem value="failed">فاشلة</SelectItem>
-                  <SelectItem value="expired">منتهية</SelectItem>
-                  <SelectItem value="refunded">مستردة</SelectItem>
+                  <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
+                  <SelectItem value="paid">{isAr ? "مدفوعة" : "Paid"}</SelectItem>
+                  <SelectItem value="initiated">{isAr ? "قيد المعالجة" : "Processing"}</SelectItem>
+                  <SelectItem value="failed">{isAr ? "فاشلة" : "Failed"}</SelectItem>
+                  <SelectItem value="expired">{isAr ? "منتهية" : "Expired"}</SelectItem>
+                  <SelectItem value="refunded">{isAr ? "مستردة" : "Refunded"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">طريقة الدفع</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{isAr ? "طريقة الدفع" : "Payment Method"}</label>
               <Select value={method} onValueChange={(v) => { setMethod(v); setPage(1); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="mada">مدى</SelectItem>
-                  <SelectItem value="visa">فيزا</SelectItem>
-                  <SelectItem value="mastercard">ماستركارد</SelectItem>
+                  <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
+                  <SelectItem value="mada">{isAr ? "مدى" : "Mada"}</SelectItem>
+                  <SelectItem value="visa">{isAr ? "فيزا" : "Visa"}</SelectItem>
+                  <SelectItem value="mastercard">{isAr ? "ماستركارد" : "Mastercard"}</SelectItem>
                   <SelectItem value="apple_pay">Apple Pay</SelectItem>
                   <SelectItem value="stc_pay">STC Pay</SelectItem>
-                  <SelectItem value="cash">نقدي</SelectItem>
-                  <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                  <SelectItem value="cash">{isAr ? "نقدي" : "Cash"}</SelectItem>
+                  <SelectItem value="bank_transfer">{isAr ? "تحويل بنكي" : "Bank Transfer"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -207,7 +207,7 @@ export default function PaymentsReport() {
       {/* Payments Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">سجل المدفوعات ({data?.total || 0} عملية)</CardTitle>
+          <CardTitle className="text-lg">{isAr ? "سجل المدفوعات (" : "Payments Log ("}{data?.total || 0} {isAr ? "عملية)" : "Process"}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -217,7 +217,7 @@ export default function PaymentsReport() {
           ) : !data?.payments?.length ? (
             <div className="text-center py-12 text-muted-foreground">
               <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>لا توجد عمليات دفع مطابقة</p>
+              <p>{isAr ? "لا توجد عمليات دفع مطابقة" : "No matching payment transactions"}</p>
             </div>
           ) : (
             <>
@@ -226,13 +226,13 @@ export default function PaymentsReport() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">#</TableHead>
-                      <TableHead className="text-right">رقم الفاتورة</TableHead>
-                      <TableHead className="text-right">ولي الأمر</TableHead>
-                      <TableHead className="text-right">المبلغ</TableHead>
-                      <TableHead className="text-right">طريقة الدفع</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">رقم ميسر</TableHead>
+                      <TableHead className="text-right">{isAr ? "رقم الفاتورة" : "Invoice Number"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "ولي الأمر" : "Parent"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "المبلغ" : "Amount"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "طريقة الدفع" : "Payment Method"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "التاريخ" : "Date"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "رقم ميسر" : "Easy Number"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -246,7 +246,7 @@ export default function PaymentsReport() {
                             <p className="text-xs text-muted-foreground">{payment.parentEmail || ""}</p>
                           </div>
                         </TableCell>
-                        <TableCell className="font-bold">{Number(payment.amount).toLocaleString("ar-SA")} ر.س</TableCell>
+                        <TableCell className="font-bold">{Number(payment.amount).toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {methodLabels[payment.method] || payment.method}
@@ -276,7 +276,7 @@ export default function PaymentsReport() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
-                    صفحة {page} من {totalPages}
+                    صفحة {page} {isAr ? "من" : "From"} {totalPages}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -286,7 +286,7 @@ export default function PaymentsReport() {
                       onClick={() => setPage(p => p - 1)}
                     >
                       <ChevronRight className="h-4 w-4" />
-                      السابق
+                      {isAr ? "السابق" : "Previous"}
                     </Button>
                     <Button
                       variant="outline"
@@ -294,7 +294,7 @@ export default function PaymentsReport() {
                       disabled={page >= totalPages}
                       onClick={() => setPage(p => p + 1)}
                     >
-                      التالي
+                      {isAr ? "التالي" : "Next"}
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                   </div>

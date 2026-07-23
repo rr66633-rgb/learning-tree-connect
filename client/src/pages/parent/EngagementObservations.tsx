@@ -13,20 +13,21 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-const contextOptions = [
-  { value: "home_play", label: "اللعب في المنزل" },
-  { value: "outdoor", label: "الأنشطة الخارجية" },
-  { value: "social", label: "التفاعل الاجتماعي" },
-  { value: "mealtime", label: "وقت الطعام" },
-  { value: "bedtime", label: "وقت النوم" },
-  { value: "learning", label: "التعلم" },
-  { value: "creative", label: "الأنشطة الإبداعية" },
-  { value: "other", label: "أخرى" },
-];
 
 export default function EngagementObservations() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const contextOptions = [
+  { value: "home_play", label: isAr ? "اللعب في المنزل" : "Play at Home" },
+  { value: "outdoor", label: isAr ? "الأنشطة الخارجية" : "Outdoor Activities" },
+  { value: "social", label: isAr ? "التفاعل الاجتماعي" : "Social Interaction" },
+  { value: "mealtime", label: isAr ? "وقت الطعام" : "Meal Time" },
+  { value: "bedtime", label: isAr ? "وقت النوم" : "Nap Time" },
+  { value: "learning", label: isAr ? "التعلم" : "Learning" },
+  { value: "creative", label: isAr ? "الأنشطة الإبداعية" : "Creative Activities" },
+  { value: "other", label: isAr ? "أخرى" : "Other" },
+  ];
+
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -73,19 +74,19 @@ export default function EngagementObservations() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending": return <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[10px]"><Clock className="h-3 w-3 ml-1" />قيد المراجعة</Badge>;
-      case "reviewed": return <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 text-[10px]"><CheckCircle className="h-3 w-3 ml-1" />تمت المراجعة</Badge>;
-      case "flagged": return <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-[10px]"><AlertTriangle className="h-3 w-3 ml-1" />مميزة</Badge>;
-      case "linked_to_assessment": return <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-[10px]"><Sparkles className="h-3 w-3 ml-1" />مرتبطة بتقييم</Badge>;
+      case "pending": return <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[10px]"><Clock className="h-3 w-3 ml-1" />{isAr ? "قيد المراجعة" : "Under Review"}</Badge>;
+      case "reviewed": return <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 text-[10px]"><CheckCircle className="h-3 w-3 ml-1" />{isAr ? "تمت المراجعة" : "Reviewed"}</Badge>;
+      case "flagged": return <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-[10px]"><AlertTriangle className="h-3 w-3 ml-1" />{isAr ? "مميزة" : "Featured"}</Badge>;
+      case "linked_to_assessment": return <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-[10px]"><Sparkles className="h-3 w-3 ml-1" />{isAr ? "مرتبطة بتقييم" : "Linked to evaluation"}</Badge>;
       default: return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
     }
   };
 
   const getSignificanceBadge = (significance: string) => {
     switch (significance) {
-      case "milestone": return <Badge className="bg-purple-600 text-[10px]">إنجاز مهم</Badge>;
-      case "concern": return <Badge className="bg-red-600 text-[10px]">يحتاج متابعة</Badge>;
-      case "progress": return <Badge className="bg-blue-600 text-[10px]">تقدم ملحوظ</Badge>;
+      case "milestone": return <Badge className="bg-purple-600 text-[10px]">{isAr ? "إنجاز مهم" : "Important Achievement"}</Badge>;
+      case "concern": return <Badge className="bg-red-600 text-[10px]">{isAr ? "يحتاج متابعة" : "Needs Follow-up"}</Badge>;
+      case "progress": return <Badge className="bg-blue-600 text-[10px]">{isAr ? "تقدم ملحوظ" : "Significant Progress"}</Badge>;
       default: return null;
     }
   };
@@ -113,10 +114,10 @@ export default function EngagementObservations() {
         <div className="flex-1">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Eye className="h-5 w-5 text-teal-500" />
-            ملاحظاتي عن طفلي
+            {isAr ? "ملاحظاتي عن طفلي" : "My Notes About My Child"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            شارك ملاحظاتك وسيحللها الذكاء الاصطناعي
+            {isAr ? "شارك ملاحظاتك وسيحللها الذكاء الاصطناعي" : "Share your notes and AI will analyze them"}
           </p>
         </div>
         <Button
@@ -125,7 +126,7 @@ export default function EngagementObservations() {
           className="bg-teal-600 hover:bg-teal-700"
         >
           <Plus className="h-4 w-4 ml-1" />
-          ملاحظة جديدة
+          {isAr ? "ملاحظة جديدة" : "New Note"}
         </Button>
       </div>
 
@@ -133,7 +134,7 @@ export default function EngagementObservations() {
       {childrenData && childrenData.length > 1 && (
         <Select value={String(activeChildId)} onValueChange={(v) => setSelectedChildId(Number(v))}>
           <SelectTrigger>
-            <SelectValue placeholder="اختر طفلك" />
+            <SelectValue placeholder={isAr ? "اختر طفلك" : "Select Your Child"} />
           </SelectTrigger>
           <SelectContent>
             {childrenData.map((child) => (
@@ -155,7 +156,7 @@ export default function EngagementObservations() {
               onClick={() => setCreateDialogOpen(true)}
             >
               <Plus className="h-4 w-4 ml-1" />
-              أضف أول ملاحظة
+              {isAr ? "أضف أول ملاحظة" : "Add First Note"}
             </Button>
           </CardContent>
         </Card>
@@ -183,10 +184,10 @@ export default function EngagementObservations() {
                   <div className="bg-muted/50 rounded-lg p-3 mt-2">
                     <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 mb-1">
                       <Sparkles className="h-3 w-3" />
-                      تحليل الذكاء الاصطناعي
+                      {isAr ? "تحليل الذكاء الاصطناعي" : "AI Analysis"}
                     </p>
                     <p className="text-xs">
-                      {typeof obs.aiAnalysis === "string" ? obs.aiAnalysis : obs.aiAnalysis?.summary || "تم التحليل"}
+                      {typeof obs.aiAnalysis === "string" ? obs.aiAnalysis : obs.aiAnalysis?.summary || isAr ? "تم التحليل" : "Analyzed"}
                     </p>
                     {obs.aiAnalysis?.suggestedAreas && obs.aiAnalysis.suggestedAreas.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
@@ -199,7 +200,7 @@ export default function EngagementObservations() {
                 )}
                 {obs.teacherNotes && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mt-2">
-                    <p className="text-[10px] font-bold text-blue-700 mb-1">ملاحظات المعلمة:</p>
+                    <p className="text-[10px] font-bold text-blue-700 mb-1">{isAr ? "ملاحظات المعلمة:" : "Teacher\'s Notes:"}</p>
                     <p className="text-xs text-blue-800">{obs.teacherNotes}</p>
                   </div>
                 )}
@@ -215,12 +216,12 @@ export default function EngagementObservations() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-teal-500" />
-              إضافة ملاحظة جديدة
+              {isAr ? "إضافة ملاحظة جديدة" : "Add New Note"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">سياق الملاحظة</label>
+              <label className="text-sm font-medium">{isAr ? "سياق الملاحظة" : "Note Context"}</label>
               <Select value={context} onValueChange={setContext}>
                 <SelectTrigger>
                   <SelectValue />
@@ -233,27 +234,27 @@ export default function EngagementObservations() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">ملاحظتك</label>
+              <label className="text-sm font-medium">{isAr ? "ملاحظتك" : "Your Note"}</label>
               <Textarea
                 value={observationText}
                 onChange={(e) => setObservationText(e.target.value)}
-                placeholder="صف ما لاحظته عن طفلك... مثال: لاحظت أن طفلي بدأ يستخدم جمل أطول عند التحدث مع أصدقائه في الحديقة"
+                placeholder={isAr ? "صف ما لاحظته عن طفلك... مثال: لاحظت أن طفلي بدأ يستخدم جمل أطول عند التحدث مع أصدقائه في الحديقة" : "Describe what you observed about your child... Example: I noticed my child started using longer sentences when talking to friends at the park"}
                 rows={5}
                 className="resize-none"
               />
               <p className="text-[10px] text-muted-foreground">
-                {observationText.length < 10 ? `أدخل ${10 - observationText.length} أحرف إضافية على الأقل` : "سيتم تحليل ملاحظتك بالذكاء الاصطناعي وربطها بمجالات التطور"}
+                {observationText.length < 10 ? `أدخل ${10 - observationText.length} أحرف إضافية على الأقل` : isAr ? "سيتم تحليل ملاحظتك بالذكاء الاصطناعي وربطها بمجالات التطور" : "Your note will be analyzed by AI and linked to developmental areas"}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={handleSubmit}
               disabled={createMutation.isPending || observationText.length < 10}
               className="bg-teal-600 hover:bg-teal-700"
             >
-              {createMutation.isPending ? "جاري الإرسال..." : "إرسال الملاحظة"}
+              {createMutation.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : "إرسال الملاحظة"}
             </Button>
           </DialogFooter>
         </DialogContent>

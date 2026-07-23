@@ -62,8 +62,8 @@ export default function EngagementJournal() {
 
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      milestone: "إنجاز", funny_moment: "لحظة مضحكة", learning: "تعلم جديد",
-      creativity: "إبداع", social: "تفاعل اجتماعي", physical: "نشاط بدني", emotional: "نمو عاطفي",
+      milestone: isAr ? "إنجاز" : "Milestone", funny_moment: "لحظة مضحكة", learning: "تعلم جديد",
+      creativity: isAr ? "إبداع" : "Creativity", social: isAr ? "تفاعل اجتماعي" : "Social Interaction", physical: isAr ? "نشاط بدني" : "Physical Activity", emotional: isAr ? "نمو عاطفي" : "Emotional Development",
     };
     return labels[type] || type;
   };
@@ -87,15 +87,15 @@ export default function EngagementJournal() {
           <Link href="/parent/engagement">
             <Button variant="ghost" size="sm" className="mb-1 -mr-2">
               <ChevronRight className="h-4 w-4 ml-1" />
-              العودة
+              {isAr ? "العودة" : "Back"}
             </Button>
           </Link>
-          <h1 className="text-xl font-bold">يوميات الإنجاز</h1>
-          <p className="text-sm text-muted-foreground">وثّق لحظات طفلك المميزة</p>
+          <h1 className="text-xl font-bold">{isAr ? "يوميات الإنجاز" : "Achievement Diaries"}</h1>
+          <p className="text-sm text-muted-foreground">{isAr ? "وثّق لحظات طفلك المميزة" : "Document Your Child\'s Special Moments"}</p>
         </div>
         <Button size="sm" onClick={() => setShowNewEntry(true)} className="gap-1">
           <Plus className="h-4 w-4" />
-          لحظة جديدة
+          {isAr ? "لحظة جديدة" : "New moment"}
         </Button>
       </div>
 
@@ -123,44 +123,44 @@ export default function EngagementJournal() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">نوع اللحظة</label>
+              <label className="text-sm font-medium mb-1 block">{isAr ? "نوع اللحظة" : "Moment Type"}</label>
               <Select value={entryType} onValueChange={setEntryType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="milestone">🏆 إنجاز</SelectItem>
-                  <SelectItem value="funny_moment">😂 لحظة مضحكة</SelectItem>
-                  <SelectItem value="learning">📚 تعلم جديد</SelectItem>
-                  <SelectItem value="creativity">🎨 إبداع</SelectItem>
-                  <SelectItem value="social">🤝 تفاعل اجتماعي</SelectItem>
-                  <SelectItem value="physical">🏃 نشاط بدني</SelectItem>
-                  <SelectItem value="emotional">💝 نمو عاطفي</SelectItem>
+                  <SelectItem value="milestone">{isAr ? "🏆 إنجاز" : "Achievement"}</SelectItem>
+                  <SelectItem value="funny_moment">{isAr ? "😂 لحظة مضحكة" : "Funny moment"}</SelectItem>
+                  <SelectItem value="learning">{isAr ? "📚 تعلم جديد" : "New Learning"}</SelectItem>
+                  <SelectItem value="creativity">{isAr ? "🎨 إبداع" : "Creativity"}</SelectItem>
+                  <SelectItem value="social">{isAr ? "🤝 تفاعل اجتماعي" : "Social Interaction"}</SelectItem>
+                  <SelectItem value="physical">{isAr ? "🏃 نشاط بدني" : "Physical Activity"}</SelectItem>
+                  <SelectItem value="emotional">{isAr ? "💝 نمو عاطفي" : "Emotional Development"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-1 block">العنوان</label>
+              <label className="text-sm font-medium mb-1 block">{isAr ? "العنوان" : "Address"}</label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="مثال: أول كلمة جديدة تعلمها اليوم"
+                placeholder={isAr ? "مثال: أول كلمة جديدة تعلمها اليوم" : "Example: First new word learned today"}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-1 block">التفاصيل</label>
+              <label className="text-sm font-medium mb-1 block">{isAr ? "التفاصيل" : "Details"}</label>
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="صف اللحظة بالتفصيل..."
+                placeholder={isAr ? "صف اللحظة بالتفصيل..." : "Describe the moment in detail..."}
                 rows={4}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-1 block">مزاج الطفل</label>
+              <label className="text-sm font-medium mb-1 block">{isAr ? "مزاج الطفل" : "Child\'s Mood"}</label>
               <div className="flex flex-wrap gap-2">
                 {["happy", "excited", "proud", "calm", "curious", "creative", "energetic", "loving"].map((m) => (
                   <Button
@@ -186,7 +186,7 @@ export default function EngagementJournal() {
               })}
               disabled={!title || !content || createMutation.isPending}
             >
-              {createMutation.isPending ? "جاري الحفظ..." : "حفظ اللحظة"}
+              {createMutation.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : "حفظ اللحظة"}
             </Button>
           </div>
         </DialogContent>
@@ -197,11 +197,11 @@ export default function EngagementJournal() {
         <Card className="text-center py-8">
           <CardContent>
             <Camera className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-muted-foreground">لم تسجل أي لحظات بعد</p>
-            <p className="text-xs text-muted-foreground mt-1">ابدأ بتوثيق لحظات طفلك المميزة</p>
+            <p className="text-muted-foreground">{isAr ? "لم تسجل أي لحظات بعد" : "No moments recorded yet"}</p>
+            <p className="text-xs text-muted-foreground mt-1">{isAr ? "ابدأ بتوثيق لحظات طفلك المميزة" : "Start documenting your child\'s special moments"}</p>
             <Button className="mt-4" onClick={() => setShowNewEntry(true)}>
               <Plus className="h-4 w-4 ml-2" />
-              أضف أول لحظة
+              {isAr ? "أضف أول لحظة" : "Add First Moment"}
             </Button>
           </CardContent>
         </Card>
@@ -225,7 +225,7 @@ export default function EngagementJournal() {
                     </div>
                     {entry.teacherComment && (
                       <div className="mt-2 p-2 rounded bg-blue-50 dark:bg-blue-900/20 text-xs">
-                        <span className="font-medium text-blue-700 dark:text-blue-300">تعليق المعلمة: </span>
+                        <span className="font-medium text-blue-700 dark:text-blue-300">{isAr ? "تعليق المعلمة: " : "Teacher\'s Comment:"}</span>
                         {entry.teacherComment}
                       </div>
                     )}

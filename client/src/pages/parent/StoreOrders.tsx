@@ -7,15 +7,6 @@ import { ShoppingBag, ArrowLeft, Package } from "lucide-react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 
-const statusLabels: Record<string, string> = {
-  pending: "بانتظار الدفع",
-  paid: "مدفوع",
-  processing: "قيد التجهيز",
-  ready: "جاهز للاستلام",
-  completed: "مكتمل",
-  cancelled: "ملغي",
-  refunded: "مسترجع",
-};
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
@@ -29,6 +20,17 @@ const statusColors: Record<string, string> = {
 
 export default function ParentStoreOrders() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const statusLabels: Record<string, string> = {
+  pending: isAr ? "بانتظار الدفع" : "Awaiting Payment",
+  paid: isAr ? "مدفوع" : "Paid",
+  processing: isAr ? "قيد التجهيز" : "Preparing",
+  ready: isAr ? "جاهز للاستلام" : "Ready for Pickup",
+  completed: isAr ? "مكتمل" : "Completed",
+  cancelled: isAr ? "ملغي" : "Cancelled",
+  refunded: isAr ? "مسترجع" : "Refunded",
+  };
+
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const { data: orders, isLoading } = trpc.store.getMyOrders.useQuery();
@@ -40,12 +42,12 @@ export default function ParentStoreOrders() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">طلباتي</h1>
-          <p className="text-muted-foreground">سجل مشترياتك من المتجر</p>
+          <h1 className="text-2xl font-bold">{isAr ? "طلباتي" : "My requests"}</h1>
+          <p className="text-muted-foreground">{isAr ? "سجل مشترياتك من المتجر" : "Your Store Purchases Log"}</p>
         </div>
         <Button variant="ghost" onClick={() => navigate("/parent/store")}>
           <ArrowLeft className="h-4 w-4 ml-1" />
-          العودة للمتجر
+          {isAr ? "العودة للمتجر" : "Back to Store"}
         </Button>
       </div>
 
@@ -53,9 +55,9 @@ export default function ParentStoreOrders() {
         <Card>
           <CardContent className="py-12 text-center">
             <ShoppingBag className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">لا توجد طلبات</p>
-            <p className="text-muted-foreground mb-4">لم تقم بأي طلب بعد</p>
-            <Button onClick={() => navigate("/parent/store")}>تصفح المتجر</Button>
+            <p className="text-lg font-medium">{isAr ? "لا توجد طلبات" : "No orders"}</p>
+            <p className="text-muted-foreground mb-4">{isAr ? "لم تقم بأي طلب بعد" : "You haven\'t made any requests yet"}</p>
+            <Button onClick={() => navigate("/parent/store")}>{isAr ? "تصفح المتجر" : "Browse Store"}</Button>
           </CardContent>
         </Card>
       ) : (
@@ -78,12 +80,12 @@ export default function ParentStoreOrders() {
                   </Badge>
                 </div>
                 <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">الإجمالي</span>
-                  <span className="font-bold text-primary">{order.total} ر.س</span>
+                  <span className="text-sm text-muted-foreground">{isAr ? "الإجمالي" : "Total"}</span>
+                  <span className="font-bold text-primary">{order.total} {isAr ? "ر.س" : "SAR"}</span>
                 </div>
                 {order.status === "ready" && (
                   <div className="mt-3 p-3 bg-green-50 rounded-lg text-center">
-                    <p className="text-sm text-green-700 font-medium">طلبك جاهز للاستلام من الحضانة</p>
+                    <p className="text-sm text-green-700 font-medium">{isAr ? "طلبك جاهز للاستلام من الحضانة" : "Your order is ready for pick-up from the nursery"}</p>
                   </div>
                 )}
               </CardContent>

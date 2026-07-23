@@ -10,22 +10,22 @@ import { generateAssessmentPDF } from "@/lib/assessmentPdf";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-const AGE_GROUP_LABELS: Record<string, string> = {
-  "24-36": "٢٤ - ٣٦ شهر",
-  "36-48": "٣٦ - ٤٨ شهر",
-  "48-60": "٤٨ - ٦٠ شهر",
-  "60-72": "٦٠ - ٧٢ شهر",
-};
+const getAGE_GROUP_LABELS = (isAr: boolean): Record<string, string>  => ({
+  "24-36": (isAr ? "٢٤ - ٣٦ شهر" : "24 - 36 months"),
+  "36-48": (isAr ? "٣٦ - ٤٨ شهر" : "36 - 48 months"),
+  "48-60": (isAr ? "٤٨ - ٦٠ شهر" : "48 - 60 months"),
+  "60-72": (isAr ? "٦٠ - ٧٢ شهر" : "60 - 72 months"),
+});
 
-const DOMAIN_LABELS: Record<string, string> = {
-  communication: "التواصل واللغة",
-  gross_motor: "المهارات الحركية الكبرى",
-  fine_motor: "المهارات الحركية الدقيقة",
-  cognitive: "المهارات الإدراكية والمعرفية",
-  social_emotional: "المهارات الاجتماعية والعاطفية",
-  problem_solving: "حل المشكلات والإدراك",
-  personal_social: "المهارات الشخصية والاجتماعية",
-};
+const getDOMAIN_LABELS = (isAr: boolean): Record<string, string>  => ({
+  communication: (isAr ? "التواصل واللغة" : "Communication & Language"),
+  gross_motor: (isAr ? "المهارات الحركية الكبرى" : "Gross Motor Skills"),
+  fine_motor: (isAr ? "المهارات الحركية الدقيقة" : "Fine Motor Skills"),
+  cognitive: (isAr ? "المهارات الإدراكية والمعرفية" : "Cognitive Skills"),
+  social_emotional: (isAr ? "المهارات الاجتماعية والعاطفية" : "Social & Emotional Skills"),
+  problem_solving: (isAr ? "حل المشكلات والإدراك" : "Problem Solving and Cognition"),
+  personal_social: (isAr ? "المهارات الشخصية والاجتماعية" : "Personal & Social Skills"),
+});
 
 function getInterpretationConfig(interpretation: string) {
   switch (interpretation) {
@@ -83,7 +83,7 @@ export default function ParentDevelopmentalAssessment() {
 
       const childName = selectedChild
         ? `${selectedChild.firstName} ${selectedChild.lastName}`
-        : "الطفل";
+        : (isAr ? "الطفل" : "Child");
 
       await generateAssessmentPDF({
         id: assessment.id,
@@ -113,9 +113,9 @@ export default function ParentDevelopmentalAssessment() {
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">
           <TreePine className="w-8 h-8 text-emerald-600" />
-          <h1 className="text-2xl font-bold text-gray-900">مقياس الكشف المبكر</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{isAr ? "مقياس الكشف المبكر" : "Early Detection Scale"}</h1>
         </div>
-        <p className="text-gray-500 text-sm">للكشف المبكر عن التأخر النمائي</p>
+        <p className="text-gray-500 text-sm">{isAr ? "للكشف المبكر عن التأخر النمائي" : "For early detection of developmental delay"}</p>
       </div>
 
       {/* Child Selector */}
@@ -125,7 +125,7 @@ export default function ParentDevelopmentalAssessment() {
             <User className="w-5 h-5 text-gray-400" />
             <Select value={selectedChildId} onValueChange={setSelectedChildId}>
               <SelectTrigger className="flex-1">
-                <SelectValue placeholder="اختر الطفل..." />
+                <SelectValue placeholder={isAr ? "اختر الطفل..." : "Select Child"} />
               </SelectTrigger>
               <SelectContent>
                 {children.map((child: any) => (
@@ -142,7 +142,7 @@ export default function ParentDevelopmentalAssessment() {
       {!selectedChildId && (
         <div className="text-center py-12 text-gray-400">
           <TreePine className="w-16 h-16 mx-auto mb-4 opacity-30" />
-          <p>اختر طفلك لعرض نتائج التقييم النمائي</p>
+          <p>{isAr ? "اختر طفلك لعرض نتائج التقييم النمائي" : "Select your child to view developmental assessment results"}</p>
         </div>
       )}
 
@@ -155,8 +155,8 @@ export default function ParentDevelopmentalAssessment() {
       {selectedChildId && !isLoading && (!assessments || assessments.length === 0) && (
         <div className="text-center py-12 text-gray-400">
           <TreePine className="w-16 h-16 mx-auto mb-4 opacity-30" />
-          <p className="text-lg font-medium">لا توجد تقييمات بعد</p>
-          <p className="text-sm mt-2">سيتم إجراء التقييم النمائي من قبل المعلمة</p>
+          <p className="text-lg font-medium">{isAr ? "لا توجد تقييمات بعد" : "No evaluations yet"}</p>
+          <p className="text-sm mt-2">{isAr ? "سيتم إجراء التقييم النمائي من قبل المعلمة" : "Developmental assessment will be conducted by the teacher"}</p>
         </div>
       )}
 
@@ -168,7 +168,7 @@ export default function ParentDevelopmentalAssessment() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-600" />
-                  آخر تقييم
+                  {isAr ? "آخر تقييم" : "Last Assessment"}
                 </CardTitle>
                 <Button
                   variant="outline"
@@ -182,7 +182,7 @@ export default function ParentDevelopmentalAssessment() {
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
-                  تحميل التقرير
+                  {isAr ? "تحميل التقرير" : "Download Report"}
                 </Button>
               </div>
             </CardHeader>
@@ -193,7 +193,7 @@ export default function ParentDevelopmentalAssessment() {
                   {new Date(latestAssessment.assessmentDate).toLocaleDateString(locale)}
                 </div>
                 <Badge variant="outline">
-                  {AGE_GROUP_LABELS[latestAssessment.ageGroup] || latestAssessment.ageGroup}
+                  {getAGE_GROUP_LABELS(isAr)[latestAssessment.ageGroup] || latestAssessment.ageGroup}
                 </Badge>
               </div>
 
@@ -225,10 +225,10 @@ export default function ParentDevelopmentalAssessment() {
 
               {/* Overall Score Bar */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm text-gray-700">النتيجة الإجمالية</h3>
+                <h3 className="font-semibold text-sm text-gray-700">{isAr ? "النتيجة الإجمالية" : "Overall Result"}</h3>
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">الدرجة الكلية</span>
+                    <span className="text-gray-600">{isAr ? "الدرجة الكلية" : "Total Score"}</span>
                     <span className="font-medium">{latestAssessment.totalScore}/{latestAssessment.maxScore}</span>
                   </div>
                   <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -249,7 +249,7 @@ export default function ParentDevelopmentalAssessment() {
           {assessments && assessments.length > 1 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">سجل التقييمات السابقة</CardTitle>
+                <CardTitle className="text-lg">{isAr ? "سجل التقييمات السابقة" : "Previous Assessments Log"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {assessments.slice(1).map((assessment: any) => {
@@ -261,7 +261,7 @@ export default function ParentDevelopmentalAssessment() {
                         <Icon className={`w-5 h-5 ${config.iconColor}`} />
                         <div>
                           <div className="text-sm font-medium">
-                            {AGE_GROUP_LABELS[assessment.ageGroup] || assessment.ageGroup}
+                            {getAGE_GROUP_LABELS(isAr)[assessment.ageGroup] || assessment.ageGroup}
                           </div>
                           <div className="text-xs text-gray-500">
                             {new Date(assessment.assessmentDate).toLocaleDateString(locale)}
@@ -284,7 +284,7 @@ export default function ParentDevelopmentalAssessment() {
                           onClick={() => handleDownloadPDF(assessment)}
                           disabled={downloadingId === assessment.id}
                           className="h-8 w-8 text-gray-500 hover:text-emerald-600"
-                          title="تحميل التقرير"
+                          title={isAr ? "تحميل التقرير" : "Download Report"}
                         >
                           {downloadingId === assessment.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -303,20 +303,20 @@ export default function ParentDevelopmentalAssessment() {
           {/* Interpretation Guide */}
           <Card className="bg-gray-50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600">دليل تفسير النتائج</CardTitle>
+              <CardTitle className="text-sm text-gray-600">{isAr ? "دليل تفسير النتائج" : "Results Interpretation Guide"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span><strong>80% فأكثر:</strong> نمو ضمن المتوقع للعمر</span>
+                <span><strong>80% فأكثر:</strong>{isAr ? "نمو ضمن المتوقع للعمر" : "Age-Appropriate Growth"}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                <span><strong>60%-79%:</strong> يحتاج متابعة ودعم إضافي</span>
+                <span><strong>60%-79%:</strong>{isAr ? "يحتاج متابعة ودعم إضافي" : "Needs Additional Follow-up and Support"}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <XCircle className="w-4 h-4 text-red-600" />
-                <span><strong>أقل من 60%:</strong> يوصى بإعادة التقييم والإحالة لمختص</span>
+                <span><strong>{isAr ? "أقل من 60%:" : "Less than 60%:"}</strong>{isAr ? "يوصى بإعادة التقييم والإحالة لمختص" : "Re-evaluation and referral to specialist recommended"}</span>
               </div>
             </CardContent>
           </Card>

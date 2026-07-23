@@ -4,10 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation, useSearch } from "wouter";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 type PaymentStatus = "loading" | "success" | "failed" | "error";
 
 export default function StorePaymentCallback() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const params = useMemo(() => new URLSearchParams(searchString), [searchString]);
@@ -17,17 +20,17 @@ export default function StorePaymentCallback() {
   const orderId = params.get("orderId");
 
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("loading");
-  const [message, setMessage] = useState("جاري التحقق من الدفع...");
+  const [message, setMessage] = useState(isAr ? "جاري التحقق من الدفع..." : "Verifying Payment...");
   const processedRef = useRef(false);
 
   const verifyPayment = trpc.store.verifyPayment.useMutation({
     onSuccess: (data) => {
       if (data.status === "paid") {
         setPaymentStatus("success");
-        setMessage("تم الدفع بنجاح! سيتم إعداد طلبك.");
+        setMessage(isAr ? "تم الدفع بنجاح! سيتم إعداد طلبك." : "Payment successful! Your order will be prepared.");
       } else if (data.status === "failed") {
         setPaymentStatus("failed");
-        setMessage("فشلت عملية الدفع. يرجى المحاولة مرة أخرى.");
+        setMessage(isAr ? "فشلت عملية الدفع. يرجى المحاولة مرة أخرى." : "Payment failed. Please try again.");
       } else {
         // Still pending - retry
         setTimeout(() => {
@@ -39,7 +42,7 @@ export default function StorePaymentCallback() {
     },
     onError: () => {
       setPaymentStatus("error");
-      setMessage("حدث خطأ أثناء التحقق من الدفع.");
+      setMessage(isAr ? "حدث خطأ أثناء التحقق من الدفع." : "An error occurred while verifying payment.");
     },
   });
 
@@ -49,7 +52,7 @@ export default function StorePaymentCallback() {
 
     if (!paymentId || !orderId) {
       setPaymentStatus("error");
-      setMessage("معلومات الدفع غير مكتملة");
+      setMessage(isAr ? "معلومات الدفع غير مكتملة" : "Incomplete Payment Information");
       return;
     }
 
@@ -57,7 +60,7 @@ export default function StorePaymentCallback() {
       verifyPayment.mutate({ orderId: Number(orderId), moyasarPaymentId: paymentId });
     } else if (status === "failed") {
       setPaymentStatus("failed");
-      setMessage("فشلت عملية الدفع. يرجى المحاولة مرة أخرى.");
+      setMessage(isAr ? "فشلت عملية الدفع. يرجى المحاولة مرة أخرى." : "Payment failed. Please try again.");
     } else {
       // Try to verify anyway
       verifyPayment.mutate({ orderId: Number(orderId), moyasarPaymentId: paymentId });
@@ -75,7 +78,7 @@ export default function StorePaymentCallback() {
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold">جاري التحقق من الدفع</h2>
+                <h2 className="text-xl font-semibold">{isAr ? "جاري التحقق من الدفع" : "Verifying Payment"}</h2>
                 <p className="text-muted-foreground text-sm">{message}</p>
               </div>
             </>
@@ -87,15 +90,15 @@ export default function StorePaymentCallback() {
                 <CheckCircle2 className="w-8 h-8 text-green-600" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold">تم الدفع بنجاح!</h2>
+                <h2 className="text-xl font-semibold">{isAr ? "تم الدفع بنجاح!" : "Payment successful!"}</h2>
                 <p className="text-muted-foreground text-sm">{message}</p>
               </div>
               <div className="space-y-3 w-full">
                 <Button className="w-full" onClick={() => navigate("/parent/store/orders")}>
-                  عرض طلباتي
+                  {isAr ? "عرض طلباتي" : "View My Orders"}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={() => navigate("/parent/store")}>
-                  متابعة التسوق
+                  {isAr ? "متابعة التسوق" : "Continue Shopping"}
                 </Button>
               </div>
             </>
@@ -108,13 +111,13 @@ export default function StorePaymentCallback() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">
-                  {paymentStatus === "failed" ? "فشلت عملية الدفع" : "حدث خطأ"}
+                  {paymentStatus === "failed" ? isAr ? "فشلت عملية الدفع" : "Payment Failed" : isAr ? "حدث خطأ" : "An error occurred"}
                 </h2>
                 <p className="text-muted-foreground text-sm">{message}</p>
               </div>
               <div className="space-y-3 w-full">
                 <Button className="w-full" onClick={() => navigate("/parent/store")}>
-                  العودة للمتجر
+                  {isAr ? "العودة للمتجر" : "Back to Store"}
                 </Button>
               </div>
             </>

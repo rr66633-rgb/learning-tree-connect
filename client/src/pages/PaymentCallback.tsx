@@ -4,10 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation, useSearch } from "wouter";
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 type PaymentStatus = "loading" | "success" | "failed" | "error";
 
 export default function PaymentCallback() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const params = useMemo(() => new URLSearchParams(searchString), [searchString]);
@@ -38,13 +41,13 @@ export default function PaymentCallback() {
     onSuccess: (data) => {
       if (data.status === 'paid') {
         setPaymentStatus("success");
-        setMessage("تم دفع الفاتورة بنجاح!");
+        setMessage(isAr ? "تم دفع الفاتورة بنجاح!" : "Invoice Paid Successfully!");
       } else if (data.status === 'failed') {
         setPaymentStatus("failed");
-        setMessage("فشلت عملية الدفع. يرجى المحاولة مرة أخرى.");
+        setMessage(isAr ? "فشلت عملية الدفع. يرجى المحاولة مرة أخرى." : "Payment failed. Please try again.");
       } else if (data.status === 'not_configured') {
         setPaymentStatus("success");
-        setMessage("تم تسجيل الدفع بنجاح.");
+        setMessage(isAr ? "تم تسجيل الدفع بنجاح." : "Payment recorded successfully.");
       } else {
         // Still processing - retry after delay
         setTimeout(() => {
@@ -68,7 +71,7 @@ export default function PaymentCallback() {
         });
       } else {
         setPaymentStatus("error");
-        setMessage("حدث خطأ أثناء التحقق من الدفع. يرجى التواصل مع الإدارة.");
+        setMessage(isAr ? "حدث خطأ أثناء التحقق من الدفع. يرجى التواصل مع الإدارة." : "An error occurred while verifying payment. Please contact administration.");
       }
     },
   });
@@ -94,7 +97,7 @@ export default function PaymentCallback() {
 
     if (!paymentId) {
       setPaymentStatus("error");
-      setMessage("لم يتم العثور على معرف الدفع");
+      setMessage(isAr ? "لم يتم العثور على معرف الدفع" : "Payment ID not found");
       return;
     }
 
@@ -104,7 +107,7 @@ export default function PaymentCallback() {
     if (status === "paid") {
       if (isSubscription) {
         setPaymentStatus("success");
-        setMessage("تم الدفع بنجاح! تم تفعيل اشتراكك.");
+        setMessage(isAr ? "تم الدفع بنجاح! تم تفعيل اشتراكك." : "Payment successful! Your subscription has been activated.");
         activateSubscription.mutate({
           moyasarPaymentId: paymentId,
           organizationId: Number(orgId),
@@ -112,21 +115,21 @@ export default function PaymentCallback() {
           billingCycle: billingCycle as "monthly" | "yearly",
         });
       } else if (isInvoicePayment) {
-        setMessage("جاري التحقق من الدفع...");
+        setMessage(isAr ? "جاري التحقق من الدفع..." : "Verifying Payment...");
         verifyPayment.mutate({ moyasarPaymentId: paymentId });
       } else {
         setPaymentStatus("success");
-        setMessage("تم الدفع بنجاح!");
+        setMessage(isAr ? "تم الدفع بنجاح!" : "Payment successful!");
       }
     } else if (status === "failed") {
       setPaymentStatus("failed");
-      setMessage("فشلت عملية الدفع. يرجى المحاولة مرة أخرى.");
+      setMessage(isAr ? "فشلت عملية الدفع. يرجى المحاولة مرة أخرى." : "Payment failed. Please try again.");
     } else if (isInvoicePayment && paymentId) {
-      setMessage("جاري التحقق من حالة الدفع...");
+      setMessage(isAr ? "جاري التحقق من حالة الدفع..." : "Checking Payment Status...");
       verifyPayment.mutate({ moyasarPaymentId: paymentId });
     } else {
       setPaymentStatus("error");
-      setMessage("حالة الدفع غير معروفة. يرجى التواصل مع الدعم الفني.");
+      setMessage(isAr ? "حالة الدفع غير معروفة. يرجى التواصل مع الدعم الفني." : "Payment status unknown. Please contact technical support.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentId, status]);
@@ -141,8 +144,8 @@ export default function PaymentCallback() {
                 <Loader2 className="w-8 h-8 animate-spin text-[#00C9B7]" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-foreground">جاري التحقق من الدفع</h2>
-                <p className="text-muted-foreground text-sm">{message || "يرجى الانتظار..."}</p>
+                <h2 className="text-xl font-semibold text-foreground">{isAr ? "جاري التحقق من الدفع" : "Verifying Payment"}</h2>
+                <p className="text-muted-foreground text-sm">{message || isAr ? "يرجى الانتظار..." : "Please wait..."}</p>
               </div>
             </>
           )}
@@ -153,7 +156,7 @@ export default function PaymentCallback() {
                 <CheckCircle2 className="w-8 h-8 text-[#00C9B7]" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-foreground">تم الدفع بنجاح!</h2>
+                <h2 className="text-xl font-semibold text-foreground">{isAr ? "تم الدفع بنجاح!" : "Payment successful!"}</h2>
                 <p className="text-muted-foreground text-sm">{message}</p>
               </div>
               <div className="space-y-3 w-full">
@@ -162,7 +165,7 @@ export default function PaymentCallback() {
                     className="w-full bg-[#00C9B7] hover:bg-[#00C9B7]/90"
                     onClick={() => navigate("/parent/finance")}
                   >
-                    العودة للفواتير
+                    {isAr ? "العودة للفواتير" : "Back to Invoices"}
                   </Button>
                 ) : (
                   <>
@@ -170,14 +173,14 @@ export default function PaymentCallback() {
                       className="w-full bg-[#00C9B7] hover:bg-[#00C9B7]/90"
                       onClick={() => navigate("/staff")}
                     >
-                      الذهاب للوحة التحكم
+                      {isAr ? "الذهاب للوحة التحكم" : "Go to Dashboard"}
                     </Button>
                     <Button
                       variant="outline"
                       className="w-full"
                       onClick={() => navigate("/onboarding")}
                     >
-                      إعداد الحضانة
+                      {isAr ? "إعداد الحضانة" : "Nursery Setup"}
                     </Button>
                   </>
                 )}
@@ -192,7 +195,7 @@ export default function PaymentCallback() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {paymentStatus === "failed" ? "فشلت عملية الدفع" : "حدث خطأ"}
+                  {paymentStatus === "failed" ? isAr ? "فشلت عملية الدفع" : "Payment Failed" : isAr ? "حدث خطأ" : "An error occurred"}
                 </h2>
                 <p className="text-muted-foreground text-sm">{message}</p>
               </div>
@@ -202,19 +205,19 @@ export default function PaymentCallback() {
                     className="w-full"
                     onClick={() => navigate("/parent/finance")}
                   >
-                    العودة للفواتير والمحاولة مرة أخرى
+                    {isAr ? "العودة للفواتير والمحاولة مرة أخرى" : "Back to Invoices & Try Again"}
                   </Button>
                 ) : (
                   <Button
                     className="w-full"
                     onClick={() => navigate(`/checkout?plan=${planId}&cycle=${billingCycle}&org=${orgId || ""}`)}
                   >
-                    إعادة المحاولة
+                    {isAr ? "إعادة المحاولة" : "Retry"}
                   </Button>
                 )}
                 <Button variant="ghost" onClick={() => navigate("/")} className="w-full text-muted-foreground">
                   <ArrowRight className="w-4 h-4 ml-1" />
-                  العودة للرئيسية
+                  {isAr ? "العودة للرئيسية" : "Back to Home"}
                 </Button>
               </div>
             </>

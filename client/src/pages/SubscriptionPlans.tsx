@@ -7,8 +7,11 @@ import { useLocation } from "wouter";
 import { Check, Star, Zap, Crown } from "lucide-react";
 import { useEffect } from "react";
 import { trackViewContent } from "@/lib/metaPixel";
+import { useTranslation } from "react-i18next";
 
 export default function SubscriptionPlans() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const { data: plans, isLoading } = trpc.onboarding.getPlans.useQuery();
 
@@ -59,8 +62,8 @@ export default function SubscriptionPlans() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-foreground">خطط الاشتراك</h1>
-        <p className="text-muted-foreground mt-2">اختر الخطة المناسبة لحضانتك</p>
+        <h1 className="text-3xl font-bold text-foreground">{isAr ? "خطط الاشتراك" : "Subscription Plans"}</h1>
+        <p className="text-muted-foreground mt-2">{isAr ? "اختر الخطة المناسبة لحضانتك" : "Choose the right plan for your nursery"}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -91,27 +94,27 @@ export default function SubscriptionPlans() {
                 <div className="text-center py-4">
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-3xl font-bold text-foreground">{plan.priceYearly}</span>
-                    <span className="text-muted-foreground text-sm">ر.س/سنة</span>
+                    <span className="text-muted-foreground text-sm">{isAr ? "ر.س/سنة" : "SAR/year"}</span>
                   </div>
                 </div>
 
                 {/* Limits */}
                 <div className="space-y-2 border-t border-border/50 pt-4">
-                  <LimitRow label="الأطفال" value={plan.maxChildren >= 999 ? "غير محدود" : `حتى ${plan.maxChildren}`} />
-                  <LimitRow label="الموظفون" value={plan.maxStaff >= 999 ? "غير محدود" : `حتى ${plan.maxStaff}`} />
-                  <LimitRow label="الفصول" value={plan.maxClasses >= 999 ? "غير محدود" : `حتى ${plan.maxClasses}`} />
-                  <LimitRow label="التخزين" value={`${plan.storageGb} جيجابايت`} />
+                  <LimitRow label="الأطفال" value={plan.maxChildren >= 999 ? (isAr ? "غير محدود" : "Unlimited") : `حتى ${plan.maxChildren}`} />
+                  <LimitRow label={isAr ? "الموظفون" : "Staff"} value={plan.maxStaff >= 999 ? "غير محدود" : `حتى ${plan.maxStaff}`} />
+                  <LimitRow label="الفصول" value={plan.maxClasses >= 999 ? (isAr ? "غير محدود" : "Unlimited") : `حتى ${plan.maxClasses}`} />
+                  <LimitRow label={isAr ? "التخزين" : "Storage"} value={`${plan.storageGb} جيجابايت`} />
                 </div>
 
                 {/* Features */}
                 <div className="space-y-2 border-t border-border/50 pt-4">
-                  {plan.hasAiTools && <FeatureRow label="أدوات الذكاء الاصطناعي" color={colors.accent} />}
-                  {plan.hasCustomBranding && <FeatureRow label="هوية بصرية مخصصة" color={colors.accent} />}
-                  {plan.hasAdvancedReports && <FeatureRow label="تقارير متقدمة" color={colors.accent} />}
-                  {plan.hasParentApp && <FeatureRow label="تطبيق أولياء الأمور" color={colors.accent} />}
-                  {plan.hasPushNotifications && <FeatureRow label="إشعارات فورية" color={colors.accent} />}
+                  {plan.hasAiTools && <FeatureRow label={isAr ? "أدوات الذكاء الاصطناعي" : "AI Tools"} color={colors.accent} />}
+                  {plan.hasCustomBranding && <FeatureRow label={isAr ? "هوية بصرية مخصصة" : "Custom Visual Identity"} color={colors.accent} />}
+                  {plan.hasAdvancedReports && <FeatureRow label={isAr ? "تقارير متقدمة" : "Advanced Reports"} color={colors.accent} />}
+                  {plan.hasParentApp && <FeatureRow label={isAr ? "تطبيق أولياء الأمور" : "Parent App"} color={colors.accent} />}
+                  {plan.hasPushNotifications && <FeatureRow label={isAr ? "إشعارات فورية" : "Push Notifications"} color={colors.accent} />}
                   {plan.hasApiAccess && <FeatureRow label="وصول API" color={colors.accent} />}
-                  {plan.prioritySupport && <FeatureRow label="دعم أولوية" color={colors.accent} />}
+                  {plan.prioritySupport && <FeatureRow label={isAr ? "دعم أولوية" : "Priority Support"} color={colors.accent} />}
                 </div>
 
                 <Button
@@ -119,7 +122,7 @@ export default function SubscriptionPlans() {
                   variant={plan.tier === "professional" ? "default" : "outline"}
                   onClick={() => navigate(`/checkout?plan=${plan.id}&cycle=yearly`)}
                 >
-                  {plan.tier === "professional" ? "الأكثر شعبية - اشترك الآن" : "اختر هذه الخطة"}
+                  {plan.tier === "professional" ? "الأكثر شعبية - اشترك الآن" : isAr ? "اختر هذه الخطة" : "Choose This Plan"}
                 </Button>
               </CardContent>
             </Card>
@@ -128,7 +131,7 @@ export default function SubscriptionPlans() {
       </div>
 
       <p className="text-center text-sm text-muted-foreground">
-        جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني.
+        {isAr ? "جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني." : "All plans include qualification, training, updates, and technical support."}
       </p>
     </div>
   );

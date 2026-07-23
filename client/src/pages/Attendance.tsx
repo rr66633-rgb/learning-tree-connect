@@ -110,7 +110,7 @@ export default function Attendance() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">الحضور والانصراف</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "الحضور والانصراف" : "Attendance"}</h1>
         <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-48" />
       </div>
 
@@ -119,7 +119,7 @@ export default function Attendance() {
           <CardContent className="p-4 flex items-center gap-3">
             <CalendarCheck className="h-8 w-8 text-primary" />
             <div>
-              <p className="text-sm text-muted-foreground">الإجمالي</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "الإجمالي" : "Total"}</p>
               <p className="text-xl font-bold">{isLoading ? <span className="bg-accent animate-pulse rounded-md h-6 w-8 inline-block" /> : stats.total}</p>
             </div>
           </CardContent>
@@ -128,7 +128,7 @@ export default function Attendance() {
           <CardContent className="p-4 flex items-center gap-3">
             <UserCheck className="h-8 w-8 text-green-600" />
             <div>
-              <p className="text-sm text-muted-foreground">حاضر</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "حاضر" : "Present"}</p>
               <p className="text-xl font-bold text-green-600">{isLoading ? <span className="bg-accent animate-pulse rounded-md h-6 w-8 inline-block" /> : stats.present}</p>
             </div>
           </CardContent>
@@ -137,7 +137,7 @@ export default function Attendance() {
           <CardContent className="p-4 flex items-center gap-3">
             <UserX className="h-8 w-8 text-red-600" />
             <div>
-              <p className="text-sm text-muted-foreground">غائب</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "غائب" : "Absent"}</p>
               <p className="text-xl font-bold text-red-600">{isLoading ? <span className="bg-accent animate-pulse rounded-md h-6 w-8 inline-block" /> : stats.absent}</p>
             </div>
           </CardContent>
@@ -146,7 +146,7 @@ export default function Attendance() {
           <CardContent className="p-4 flex items-center gap-3">
             <Clock className="h-8 w-8 text-amber-600" />
             <div>
-              <p className="text-sm text-muted-foreground">لم يُسجل</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "لم يُسجل" : "Not recorded"}</p>
               <p className="text-xl font-bold text-amber-600">{isLoading ? <span className="bg-accent animate-pulse rounded-md h-6 w-8 inline-block" /> : stats.notMarked}</p>
             </div>
           </CardContent>
@@ -155,7 +155,7 @@ export default function Attendance() {
           <CardContent className="p-4 flex items-center gap-3">
             <LogIn className="h-8 w-8 text-emerald-600" />
             <div>
-              <p className="text-sm text-emerald-700">في المركز الآن</p>
+              <p className="text-sm text-emerald-700">{isAr ? "في المركز الآن" : "Currently at center"}</p>
               <p className="text-xl font-bold text-emerald-700">{isLoading ? <span className="bg-accent animate-pulse rounded-md h-6 w-8 inline-block" /> : currentlyInCenter.length}</p>
             </div>
           </CardContent>
@@ -166,7 +166,7 @@ export default function Attendance() {
       {currentlyInCenter.length > 0 && (
         <Card className="border-emerald-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base text-emerald-700">الأطفال المتواجدون حالياً في المركز ({currentlyInCenter.length})</CardTitle>
+            <CardTitle className="text-base text-emerald-700">{isAr ? "الأطفال المتواجدون حالياً في المركز (" : "Children currently in the center ("}{currentlyInCenter.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -183,7 +183,7 @@ export default function Attendance() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            سجل الحضور - {new Date(selectedDate).toLocaleDateString('ar-SA')}
+            {isAr ? "سجل الحضور -" : "Attendance Record -"}{new Date(selectedDate).toLocaleDateString('ar-SA')}
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
           </CardTitle>
         </CardHeader>
@@ -200,12 +200,12 @@ export default function Attendance() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">الطفل</TableHead>
-                  <TableHead className="text-right">الفصل</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">وقت الوصول</TableHead>
-                  <TableHead className="text-right">وقت المغادرة</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
+                  <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "الفصل" : "Class"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "وقت الوصول" : "Arrival Time"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "وقت المغادرة" : "Departure Time"}</TableHead>
+                  <TableHead className="text-right">{isAr ? "إجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -214,13 +214,13 @@ export default function Attendance() {
                   return (
                     <TableRow key={child.id}>
                       <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
-                      <TableCell>{child.classId ? `فصل ${child.classId}` : "-"}</TableCell>
+                      <TableCell>{child.classId ? `${isAr ? "فصل " : " الفصل"}${child.classId}` : "-"}</TableCell>
                       <TableCell>
                         {record ? (
                           <Badge variant={record.status === 'present' || record.status === 'late' ? 'default' : 'destructive'}>
-                            {record.status === 'present' ? 'حاضر' : record.status === 'late' ? 'متأخر' : record.status === 'excused' ? 'معذور' : 'غائب'}
+                            {record.status === 'present' ? isAr ? 'حاضر' : 'Present' : record.status === 'late' ? isAr ? 'متأخر' : 'Late' : record.status === 'excused' ? isAr ? 'معذور' : 'Excused' : isAr ? 'غائب' : 'Absent'}
                           </Badge>
-                        ) : <Badge variant="secondary">لم يُسجل</Badge>}
+                        ) : <Badge variant="secondary">{isAr ? "لم يُسجل" : "Not recorded"}</Badge>}
                       </TableCell>
                       <TableCell>{record?.checkInTime ? new Date(record.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}</TableCell>
                       <TableCell>{record?.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : "-"}</TableCell>
@@ -229,18 +229,18 @@ export default function Attendance() {
                           {!record && (
                             <>
                               <Button size="sm" variant="default" className="gap-1" onClick={() => setCheckInDialog({ childId: child.id, childName: `${child.firstName} ${child.lastName}` })}>
-                                <LogIn className="h-3 w-3" /> تسجيل وصول
+                                <LogIn className="h-3 w-3" /> {isAr ? "تسجيل وصول" : "Check-in"}
                               </Button>
-                              <Button size="sm" variant="destructive" onClick={() => markAbsent.mutate({ childId: child.id, date: selectedDate, status: "absent" })} disabled={markAbsent.isPending}>غياب</Button>
+                              <Button size="sm" variant="destructive" onClick={() => markAbsent.mutate({ childId: child.id, date: selectedDate, status: "absent" })} disabled={markAbsent.isPending}>{isAr ? "غياب" : "Absent"}</Button>
                             </>
                           )}
                           {record && (record.status === 'present' || record.status === 'late') && !record.checkOutTime && (
                             <Button size="sm" variant="outline" className="gap-1" onClick={() => setCheckOutDialog({ id: record.id, childId: child.id, childName: `${child.firstName} ${child.lastName}` })}>
-                              <LogOut className="h-3 w-3" /> تسجيل مغادرة
+                              <LogOut className="h-3 w-3" /> {isAr ? "تسجيل مغادرة" : "Check-out"}
                             </Button>
                           )}
                           {record?.checkOutTime && (
-                            <Badge variant="outline" className="text-muted-foreground">مكتمل</Badge>
+                            <Badge variant="outline" className="text-muted-foreground">{isAr ? "مكتمل" : "Completed"}</Badge>
                           )}
                         </div>
                       </TableCell>
@@ -248,7 +248,7 @@ export default function Attendance() {
                   );
                 })}
                 {(!children || children.length === 0) && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا يوجد أطفال مسجلين</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{isAr ? "لا يوجد أطفال مسجلين" : "No children registered"}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -260,36 +260,36 @@ export default function Attendance() {
       <Dialog open={!!checkInDialog} onOpenChange={(open) => { if (!open) { setCheckInDialog(null); resetCheckInForm(); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تسجيل وصول - {checkInDialog?.childName}</DialogTitle>
+            <DialogTitle>{isAr ? "تسجيل وصول -" : "Check-in -"} {checkInDialog?.childName}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>من أحضر الطفل</Label>
-              <Input value={droppedOffBy} onChange={e => setDroppedOffBy(e.target.value)} placeholder="اسم الشخص" />
+              <Label>{isAr ? "من أحضر الطفل" : "Who Brought the Child"}</Label>
+              <Input value={droppedOffBy} onChange={e => setDroppedOffBy(e.target.value)} placeholder={isAr ? "اسم الشخص" : "Person Name"} />
             </div>
             <div>
-              <Label>صلة القرابة</Label>
+              <Label>{isAr ? "صلة القرابة" : "Relationship"}</Label>
               <Select value={droppedOffRelationship} onValueChange={setDroppedOffRelationship}>
-                <SelectTrigger><SelectValue placeholder="اختر صلة القرابة" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={isAr ? "اختر صلة القرابة" : "Select Relationship"} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="mother">الأم</SelectItem>
-                  <SelectItem value="father">الأب</SelectItem>
-                  <SelectItem value="driver">السائق</SelectItem>
-                  <SelectItem value="grandparent">الجد/الجدة</SelectItem>
-                  <SelectItem value="other">أخرى</SelectItem>
+                  <SelectItem value="mother">{isAr ? "الأم" : "Mother"}</SelectItem>
+                  <SelectItem value="father">{isAr ? "الأب" : "Father"}</SelectItem>
+                  <SelectItem value="driver">{isAr ? "السائق" : "Driver"}</SelectItem>
+                  <SelectItem value="grandparent">{isAr ? "الجد/الجدة" : "Grandparent"}</SelectItem>
+                  <SelectItem value="other">{isAr ? "أخرى" : "Other"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>ملاحظات (اختياري)</Label>
-              <Textarea value={checkInNotes} onChange={e => setCheckInNotes(e.target.value)} placeholder="أي ملاحظات عن حالة الطفل..." />
+              <Label>{isAr ? "ملاحظات (اختياري)" : "Notes (Optional)"}</Label>
+              <Textarea value={checkInNotes} onChange={e => setCheckInNotes(e.target.value)} placeholder={isAr ? "أي ملاحظات عن حالة الطفل..." : "Any notes about the child\'s condition..."} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCheckInDialog(null); resetCheckInForm(); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setCheckInDialog(null); resetCheckInForm(); }}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={handleCheckInSubmit} disabled={checkIn.isPending}>
               {checkIn.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تسجيل الوصول
+              {isAr ? "تسجيل الوصول" : "Check-in"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -299,41 +299,41 @@ export default function Attendance() {
       <Dialog open={!!checkOutDialog} onOpenChange={(open) => { if (!open) { setCheckOutDialog(null); resetCheckOutForm(); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تسجيل مغادرة - {checkOutDialog?.childName}</DialogTitle>
+            <DialogTitle>{isAr ? "تسجيل مغادرة -" : "Check-out -"} {checkOutDialog?.childName}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>من استلم الطفل <span className="text-red-500">*</span></Label>
-              <Input value={pickedUpBy} onChange={e => setPickedUpBy(e.target.value)} placeholder="اسم المستلم" />
+              <Label>{isAr ? "من استلم الطفل" : "Who Picked Up the Child"} <span className="text-red-500">*</span></Label>
+              <Input value={pickedUpBy} onChange={e => setPickedUpBy(e.target.value)} placeholder={isAr ? "اسم المستلم" : "Pickup Person Name"} />
             </div>
             <div>
-              <Label>صلة القرابة <span className="text-red-500">*</span></Label>
+              <Label>{isAr ? "صلة القرابة" : "Relationship"} <span className="text-red-500">*</span></Label>
               <Select value={pickupRelationship} onValueChange={setPickupRelationship}>
-                <SelectTrigger><SelectValue placeholder="اختر صلة القرابة" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={isAr ? "اختر صلة القرابة" : "Select Relationship"} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="mother">الأم</SelectItem>
-                  <SelectItem value="father">الأب</SelectItem>
-                  <SelectItem value="driver">السائق</SelectItem>
-                  <SelectItem value="grandparent">الجد/الجدة</SelectItem>
-                  <SelectItem value="guardian">ولي الأمر</SelectItem>
-                  <SelectItem value="other">أخرى</SelectItem>
+                  <SelectItem value="mother">{isAr ? "الأم" : "Mother"}</SelectItem>
+                  <SelectItem value="father">{isAr ? "الأب" : "Father"}</SelectItem>
+                  <SelectItem value="driver">{isAr ? "السائق" : "Driver"}</SelectItem>
+                  <SelectItem value="grandparent">{isAr ? "الجد/الجدة" : "Grandparent"}</SelectItem>
+                  <SelectItem value="guardian">{isAr ? "ولي الأمر" : "Parent"}</SelectItem>
+                  <SelectItem value="other">{isAr ? "أخرى" : "Other"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>ملاحظات (اختياري)</Label>
-              <Textarea value={checkOutNotes} onChange={e => setCheckOutNotes(e.target.value)} placeholder="أي ملاحظات..." />
+              <Label>{isAr ? "ملاحظات (اختياري)" : "Notes (Optional)"}</Label>
+              <Textarea value={checkOutNotes} onChange={e => setCheckOutNotes(e.target.value)} placeholder={isAr ? "أي ملاحظات..." : "Any notes..."} />
             </div>
             <div>
-              <Label>التوقيع الرقمي (اختياري)</Label>
+              <Label>{isAr ? "التوقيع الرقمي (اختياري)" : "Digital Signature (Optional)"}</Label>
               <SignaturePad value={signatureData} onChange={setSignatureData} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCheckOutDialog(null); resetCheckOutForm(); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setCheckOutDialog(null); resetCheckOutForm(); }}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={handleCheckOutSubmit} disabled={checkOut.isPending || !pickedUpBy || !pickupRelationship}>
               {checkOut.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تسجيل المغادرة
+              {isAr ? "تسجيل المغادرة" : "Checkout"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -345,6 +345,8 @@ export default function Attendance() {
 // Signature Pad Component
 function SignaturePad({ value, onChange }: { value: string; onChange: (data: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
@@ -417,8 +419,8 @@ function SignaturePad({ value, onChange }: { value: string; onChange: (data: str
         onTouchEnd={endDraw}
       />
       <div className="flex justify-between">
-        <Button type="button" variant="ghost" size="sm" onClick={clear}>مسح التوقيع</Button>
-        {value && <span className="text-xs text-green-600">✓ تم التوقيع</span>}
+        <Button type="button" variant="ghost" size="sm" onClick={clear}>{isAr ? "مسح التوقيع" : "Clear Signature"}</Button>
+        {value && <span className="text-xs text-green-600">{isAr ? "✓ تم التوقيع" : "✓ Signed"}</span>}
       </div>
     </div>
   );

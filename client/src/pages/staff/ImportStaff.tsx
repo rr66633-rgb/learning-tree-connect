@@ -87,7 +87,7 @@ export default function ImportStaff() {
       });
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || "فشل تحليل الملف");
+        toast.error(err.error || isAr ? "فشل تحليل الملف" : "File Analysis Failed");
         return;
       }
       const data = await res.json();
@@ -117,7 +117,7 @@ export default function ImportStaff() {
       setImportProgress(80);
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || "فشل الاستيراد");
+        toast.error(err.error || isAr ? "فشل الاستيراد" : "Import Failed");
         setStep("preview");
         return;
       }
@@ -126,7 +126,7 @@ export default function ImportStaff() {
       setImportResult(result);
       setStep("done");
       if (result.imported > 0) {
-        toast.success(`تم استيراد ${result.imported} موظف بنجاح`);
+        toast.success(`${isAr ? "تم استيراد" : "Imported"} ${result.imported} موظف بنجاح`);
       }
     } catch (e) {
       toast.error(isAr ? "فشل الاتصال بالخادم" : "Server connection failed");
@@ -151,7 +151,7 @@ export default function ImportStaff() {
         </div>
         <Button variant="outline" onClick={() => navigate("/staff/staff-management")}>
           <ArrowRight className="ml-2 h-4 w-4" />
-          العودة
+          {isAr ? "العودة" : "Back"}
         </Button>
       </div>
 
@@ -177,7 +177,7 @@ export default function ImportStaff() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileSpreadsheet className="h-5 w-5" />
-                رفع ملف الموظفين
+                {isAr ? "رفع ملف الموظفين" : "Upload Staff File"}
               </CardTitle>
               <CardDescription>
                 ارفع ملف Excel (.xlsx) أو CSV يحتوي على بيانات الموظفين. يمكنك تحميل القالب الجاهز أدناه.
@@ -222,13 +222,13 @@ export default function ImportStaff() {
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4 ml-1" />
-                      إزالة
+                      {isAr ? "إزالة" : "Remove"}
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
-                    <p className="font-medium">اسحب الملف هنا أو اضغط للاختيار</p>
+                    <p className="font-medium">{isAr ? "اسحب الملف هنا أو اضغط للاختيار" : "Drag file here or click to select"}</p>
                     <p className="text-sm text-muted-foreground">
                       يدعم: Excel (.xlsx, .xls) و CSV - الحد الأقصى 20 ميجابايت
                     </p>
@@ -240,7 +240,7 @@ export default function ImportStaff() {
                 <div className="flex justify-end">
                   <Button onClick={handlePreview} className="gap-2">
                     <ArrowLeft className="h-4 w-4" />
-                    معاينة البيانات
+                    {isAr ? "معاينة البيانات" : "Data Preview"}
                   </Button>
                 </div>
               )}
@@ -250,24 +250,24 @@ export default function ImportStaff() {
           {/* Instructions */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">تعليمات الاستيراد</CardTitle>
+              <CardTitle className="text-base">{isAr ? "تعليمات الاستيراد" : "Import Instructions"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">1</Badge>
-                <span>حمّل القالب الجاهز واملأه ببيانات الموظفين</span>
+                <span>{isAr ? "حمّل القالب الجاهز واملأه ببيانات الموظفين" : "Download the ready-made template and fill it with staff data"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">2</Badge>
-                <span>الحقول المطلوبة: الاسم الكامل، رقم الجوال، المسمى الوظيفي</span>
+                <span>{isAr ? "الحقول المطلوبة: الاسم الكامل، رقم الجوال، المسمى الوظيفي" : "Required Fields: Full Name, Mobile Number, Job Title"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">3</Badge>
-                <span>المسميات الوظيفية المدعومة: معلمة، مشرفة، مديرة، مساعدة، إدارية، أخصائية، محاسبة، استقبال، سائق</span>
+                <span>{isAr ? "المسميات الوظيفية المدعومة: معلمة، مشرفة، مديرة، مساعدة، إدارية، أخصائية، محاسبة، استقبال، سائق" : "Supported Job Titles: Teacher, Supervisor, Manager, Assistant, Administrator, Specialist, Accountant, Receptionist, Driver"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">4</Badge>
-                <span>أنواع العقود: دوام كامل، دوام جزئي، عقد، مؤقت</span>
+                <span>{isAr ? "أنواع العقود: دوام كامل، دوام جزئي، عقد، مؤقت" : "Contract Types: Full-time, Part-time, Contract, Temporary"}</span>
               </div>
               <div className="flex gap-2">
                 <Badge variant="outline" className="shrink-0">5</Badge>
@@ -286,19 +286,19 @@ export default function ImportStaff() {
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-3xl font-bold">{totalRows}</p>
-                <p className="text-sm text-muted-foreground">إجمالي الصفوف</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي الصفوف" : "Total Rows"}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-3xl font-bold text-green-600">{validRows.length}</p>
-                <p className="text-sm text-muted-foreground">صالحة للاستيراد</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "صالحة للاستيراد" : "Valid for import"}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-3xl font-bold text-red-600">{errorRows.length}</p>
-                <p className="text-sm text-muted-foreground">بها أخطاء</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "بها أخطاء" : "Contains Errors"}</p>
               </CardContent>
             </Card>
           </div>
@@ -311,16 +311,16 @@ export default function ImportStaff() {
                   <XCircle className="h-5 w-5" />
                   صفوف بها أخطاء ({errorRows.length})
                 </CardTitle>
-                <CardDescription>هذه الصفوف لن يتم استيرادها - يرجى تصحيحها في الملف</CardDescription>
+                <CardDescription>{isAr ? "هذه الصفوف لن يتم استيرادها - يرجى تصحيحها في الملف" : "These rows will not be imported - please correct them in the file"}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">الصف</TableHead>
+                        <TableHead className="w-16">{isAr ? "الصف" : "Class"}</TableHead>
                         <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
-                        <TableHead>الأخطاء</TableHead>
+                        <TableHead>{isAr ? "الأخطاء" : "Errors"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -358,11 +358,11 @@ export default function ImportStaff() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">الصف</TableHead>
+                        <TableHead className="w-16">{isAr ? "الصف" : "Class"}</TableHead>
                         <TableHead>{isAr ? "الاسم" : "Name"}</TableHead>
-                        <TableHead>الجوال</TableHead>
-                        <TableHead>الوظيفة</TableHead>
-                        <TableHead>القسم</TableHead>
+                        <TableHead>{isAr ? "الجوال" : "Phone"}</TableHead>
+                        <TableHead>{isAr ? "الوظيفة" : "Job Title"}</TableHead>
+                        <TableHead>{isAr ? "القسم" : "Section"}</TableHead>
                         <TableHead>{isAr ? "الحالة" : "Status"}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -375,7 +375,7 @@ export default function ImportStaff() {
                           <TableCell>{row.data.jobTitle}</TableCell>
                           <TableCell>{row.data.department || "-"}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{row.data.status || "نشط"}</Badge>
+                            <Badge variant="outline">{row.data.status || (isAr ? "نشط" : "Active")}</Badge>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -395,13 +395,13 @@ export default function ImportStaff() {
           <div className="flex items-center justify-between">
             <Button variant="outline" onClick={() => { setStep("upload"); setParsedData([]); }}>
               <ArrowRight className="ml-2 h-4 w-4" />
-              رجوع
+              {isAr ? "رجوع" : "Back"}
             </Button>
             <div className="flex gap-2">
               {validRows.length > 0 && (
                 <Button onClick={handleImport} className="gap-2">
                   <Upload className="h-4 w-4" />
-                  استيراد {validRows.length} موظف
+                  {isAr ? "استيراد" : "Import"} {validRows.length} موظف
                 </Button>
               )}
             </div>
@@ -414,9 +414,9 @@ export default function ImportStaff() {
         <Card>
           <CardContent className="py-12 text-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="text-lg font-medium">جاري استيراد البيانات...</p>
+            <p className="text-lg font-medium">{isAr ? "جاري استيراد البيانات..." : "Importing Data..."}</p>
             <Progress value={importProgress} className="max-w-md mx-auto" />
-            <p className="text-sm text-muted-foreground">يرجى الانتظار وعدم إغلاق الصفحة</p>
+            <p className="text-sm text-muted-foreground">{isAr ? "يرجى الانتظار وعدم إغلاق الصفحة" : "Please wait and do not close the page"}</p>
           </CardContent>
         </Card>
       )}
@@ -427,16 +427,16 @@ export default function ImportStaff() {
           <Card className="border-green-200 dark:border-green-900">
             <CardContent className="py-8 text-center space-y-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-              <h2 className="text-xl font-bold">تم الاستيراد بنجاح</h2>
+              <h2 className="text-xl font-bold">{isAr ? "تم الاستيراد بنجاح" : "Imported successfully"}</h2>
               <div className="flex justify-center gap-6">
                 <div>
                   <p className="text-3xl font-bold text-green-600">{importResult.imported}</p>
-                  <p className="text-sm text-muted-foreground">تم استيرادهم</p>
+                  <p className="text-sm text-muted-foreground">{isAr ? "تم استيرادهم" : "They were imported"}</p>
                 </div>
                 {importResult.failed > 0 && (
                   <div>
                     <p className="text-3xl font-bold text-red-600">{importResult.failed}</p>
-                    <p className="text-sm text-muted-foreground">فشل استيرادهم</p>
+                    <p className="text-sm text-muted-foreground">{isAr ? "فشل استيرادهم" : "Failed to Import Them"}</p>
                   </div>
                 )}
               </div>
@@ -448,7 +448,7 @@ export default function ImportStaff() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                  صفوف لم يتم استيرادها
+                  {isAr ? "صفوف لم يتم استيرادها" : "Rows not imported"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -456,8 +456,8 @@ export default function ImportStaff() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">الصف</TableHead>
-                        <TableHead>السبب</TableHead>
+                        <TableHead className="w-16">{isAr ? "الصف" : "Class"}</TableHead>
+                        <TableHead>{isAr ? "السبب" : "Reason"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -476,10 +476,10 @@ export default function ImportStaff() {
 
           <div className="flex items-center justify-between">
             <Button variant="outline" onClick={() => { setStep("upload"); setFile(null); setParsedData([]); setImportResult(null); }}>
-              استيراد ملف آخر
+              {isAr ? "استيراد ملف آخر" : "Import Another File"}
             </Button>
             <Button onClick={() => navigate("/staff/staff-management")}>
-              الذهاب لدليل الموظفين
+              {isAr ? "الذهاب لدليل الموظفين" : "Go to Staff Directory"}
               <ArrowLeft className="mr-2 h-4 w-4" />
             </Button>
           </div>

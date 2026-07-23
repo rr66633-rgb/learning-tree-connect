@@ -8,10 +8,13 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { trackViewContent } from "@/lib/metaPixel";
+import { useTranslation } from "react-i18next";
 
 const LOGO_URL = "/assets/logo.webp";
 
 export default function Landing() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -20,46 +23,46 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
-    document.title = "نشأة - منصة إدارة الحضانات ورياض الأطفال الذكية";
+    document.title = isAr ? "نشأة - منصة إدارة الحضانات ورياض الأطفال الذكية" : "Nash'ah - Smart Nursery and Kindergarten Management Platform";
   }, []);
 
   const features = [
-    { icon: Users, title: "إدارة الأطفال", desc: "ملفات شاملة لكل طفل مع متابعة النمو والتطور", color: "#00C9B7" },
-    { icon: Calendar, title: "الحضور الذكي", desc: "تسجيل حضور بالموقع الجغرافي وإشعارات فورية للأهل", color: "#7B61FF" },
-    { icon: Brain, title: "الذكاء الاصطناعي", desc: "توليد خطط أسبوعية وملاحظات وتقارير بضغطة زر", color: "#FF5CA8" },
-    { icon: MessageCircle, title: "التواصل مع الأهل", desc: "رسائل فورية وتقارير يومية وصور ومقاطع", color: "#FFB020" },
-    { icon: BookOpen, title: "المنهج والتقييم", desc: "تقييمات معتمدة على إطار السنوات المبكرة", color: "#00C9B7" },
-    { icon: CreditCard, title: "الفوترة والمالية", desc: "فواتير آلية ومتابعة المدفوعات والتقارير المالية", color: "#7B61FF" },
-    { icon: BarChart3, title: "التحليلات والتقارير", desc: "لوحات تحكم تفاعلية وتقارير شاملة لاتخاذ القرار", color: "#FF5CA8" },
-    { icon: Shield, title: "الأمان والخصوصية", desc: "تشفير كامل وصلاحيات متعددة المستويات", color: "#FFB020" },
+    { icon: Users, title: isAr ? "إدارة الأطفال" : "Children Management", desc: isAr ? "ملفات شاملة لكل طفل مع متابعة النمو والتطور" : "Comprehensive profiles for each child with growth tracking", color: "#00C9B7" },
+    { icon: Calendar, title: isAr ? "الحضور الذكي" : "Smart Attendance", desc: isAr ? "تسجيل حضور بالموقع الجغرافي وإشعارات فورية للأهل" : "GPS-based attendance with instant parent notifications", color: "#7B61FF" },
+    { icon: Brain, title: isAr ? "الذكاء الاصطناعي" : "Artificial Intelligence", desc: isAr ? "توليد خطط أسبوعية وملاحظات وتقارير بضغطة زر" : "Generate weekly plans, notes, and reports with one click", color: "#FF5CA8" },
+    { icon: MessageCircle, title: isAr ? "التواصل مع الأهل" : "Parent Communication", desc: isAr ? "رسائل فورية وتقارير يومية وصور ومقاطع" : "Instant messages, daily reports, photos and videos", color: "#FFB020" },
+    { icon: BookOpen, title: isAr ? "المنهج والتقييم" : "Curriculum & Assessment", desc: isAr ? "تقييمات معتمدة على إطار السنوات المبكرة" : "Assessments based on early years framework", color: "#00C9B7" },
+    { icon: CreditCard, title: isAr ? "الفوترة والمالية" : "Billing & Finance", desc: isAr ? "فواتير آلية ومتابعة المدفوعات والتقارير المالية" : "Automated invoices, payment tracking, and financial reports", color: "#7B61FF" },
+    { icon: BarChart3, title: isAr ? "التحليلات والتقارير" : "Analytics & Reports", desc: isAr ? "لوحات تحكم تفاعلية وتقارير شاملة لاتخاذ القرار" : "Interactive dashboards and comprehensive reports for decision making", color: "#FF5CA8" },
+    { icon: Shield, title: isAr ? "الأمان والخصوصية" : "Security & Privacy", desc: isAr ? "تشفير كامل وصلاحيات متعددة المستويات" : "Full encryption and multi-level permissions", color: "#FFB020" },
   ];
 
   const plans = [
     { 
       id: "basic",
-      name: "أساسي", 
-      price: "٦,٩٠٠", 
+      name: isAr ? "أساسي" : "Basic", 
+      price: isAr ? "٦,٩٠٠" : "6,900", 
       priceEn: "6,900",
-      period: "سنوياً",
-      features: ["حتى ٥٠ طفل", "حتى ١٠ موظفين", "الحضور وتسجيل الدخول/الخروج", "التقارير اليومية", "التواصل مع الأهالي", "تطبيق الأهل للجوال", "الدعم الفني"],
+      period: isAr ? "سنوياً" : "Yearly",
+      features: ["حتى ٥٠ طفل", "حتى ١٠ موظفين", "الحضور وتسجيل الدخول/الخروج", (isAr ? "التقارير اليومية" : "Daily Reports") , "التواصل مع الأهالي", "تطبيق الأهل للجوال", "الدعم الفني"],
       popular: false 
     },
     { 
       id: "professional",
-      name: "احترافي", 
-      price: "١٠,٩٠٠", 
+      name: isAr ? "احترافي" : "Professional", 
+      price: isAr ? "١٠,٩٠٠" : "10,900", 
       priceEn: "10,900",
-      period: "سنوياً",
-      features: ["حتى ١٠٠ طفل", "حتى ٢٥ موظف", "جميع مزايا الخطة الأساسية", "المساعد الذكي (AI)", "التقييمات ومتابعة التطور", "أدوات التخطيط التعليمي", "التحليلات والتقارير المتقدمة", "تطبيق الأهل للجوال"],
+      period: isAr ? "سنوياً" : "Yearly",
+      features: [isAr ? "حتى ١٠٠ طفل" : "Up to 100 Children", isAr ? "حتى ٢٥ موظف" : "Up to 25 Employees", isAr ? "جميع مزايا الخطة الأساسية" : "All Basic Plan Features", "المساعد الذكي (AI)", isAr ? "التقييمات ومتابعة التطور" : "Assessments & Development Tracking", isAr ? "أدوات التخطيط التعليمي" : "Educational Planning Tools", isAr ? "التحليلات والتقارير المتقدمة" : "Advanced Analytics & Reports", isAr ? "تطبيق الأهل للجوال" : "Mobile Parent App"],
       popular: true 
     },
     { 
       id: "enterprise",
-      name: "مؤسسي", 
-      price: "١٥,٩٠٠", 
+      name: isAr ? "مؤسسي" : "Foundational", 
+      price: isAr ? "١٥,٩٠٠" : "15,900", 
       priceEn: "15,900",
-      period: "سنوياً",
-      features: ["حتى ٢٠٠ طفل", "فروع متعددة", "جميع مزايا الخطة الاحترافية", "صلاحيات وأدوار متقدمة", "مدير حساب مخصص", "أولوية الدعم الفني", "التكامل والوصول عبر API", "خيارات العلامة التجارية المخصصة"],
+      period: isAr ? "سنوياً" : "Yearly",
+      features: [isAr ? "حتى ٢٠٠ طفل" : "Up to 200 Children", isAr ? "فروع متعددة" : "Multiple Branches", isAr ? "جميع مزايا الخطة الاحترافية" : "All Professional Plan Features", isAr ? "صلاحيات وأدوار متقدمة" : "Advanced Permissions & Roles", isAr ? "مدير حساب مخصص" : "Dedicated Account Manager", isAr ? "أولوية الدعم الفني" : "Technical Support Priority", "التكامل والوصول عبر API", isAr ? "خيارات العلامة التجارية المخصصة" : "Custom Branding Options"],
       popular: false 
     },
   ];
@@ -74,17 +77,17 @@ export default function Landing() {
             <div className="flex items-center gap-3 sm:gap-3.5">
               <img 
                 src={LOGO_URL} 
-                alt="نشأة" 
+                alt={isAr ? "نشأة" : "Nasha\'a"} 
                 className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" 
               />
-              <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">نشأة</span>
+              <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nasha\'a"}</span>
             </div>
 
             {/* Desktop nav links - centered */}
             <div className="hidden md:flex items-center gap-6 lg:gap-8">
-              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">المزايا</a>
-              <a href="/pricing" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">الأسعار</a>
-              <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">تواصل معنا</a>
+              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">{isAr ? "المزايا" : "Benefits"}</a>
+              <a href="/pricing" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">{isAr ? "الأسعار" : "Prices"}</a>
+              <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-[#00C9B7] transition-colors duration-200">{isAr ? "تواصل معنا" : "Contact Us"}</a>
             </div>
 
             {/* Desktop buttons - proper spacing */}
@@ -94,13 +97,13 @@ export default function Landing() {
                 onClick={() => setLocation("/login")}
                 className="border-[#00C9B7] text-[#00C9B7] hover:bg-[#e6faf8] h-9 md:h-10 px-3.5 md:px-5 text-xs md:text-sm rounded-lg font-medium"
               >
-                تسجيل الدخول
+                {isAr ? "تسجيل الدخول" : "Login"}
               </Button>
               <Button 
                 onClick={() => setLocation("/register-nursery")}
                 className="bg-[#00C9B7] hover:bg-[#00B5A5] text-white h-9 md:h-10 px-3.5 md:px-5 text-xs md:text-sm rounded-lg font-medium active:scale-[0.97] transition-all duration-150"
               >
-                سجل حضانتك
+                {isAr ? "سجل حضانتك" : "Register Your Nursery"}
               </Button>
             </div>
 
@@ -108,7 +111,7 @@ export default function Landing() {
             <button 
               className="sm:hidden p-2.5 -ml-2 rounded-lg hover:bg-gray-50 transition-colors active:bg-gray-100"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="القائمة"
+              aria-label={isAr ? "القائمة" : "Menu"}
             >
               {mobileMenuOpen ? <X className="w-5 h-5 text-gray-700" /> : <Menu className="w-5 h-5 text-gray-700" />}
             </button>
@@ -119,22 +122,22 @@ export default function Landing() {
         {mobileMenuOpen && (
           <div className="sm:hidden bg-white border-t border-gray-100 shadow-lg animate-in slide-in-from-top-2 duration-200">
             <div className="px-5 py-5 space-y-1">
-              <a href="#features" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>المزايا</a>
-              <a href="/pricing" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>الأسعار</a>
-              <a href="#contact" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>تواصل معنا</a>
+              <a href="#features" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>{isAr ? "المزايا" : "Benefits"}</a>
+              <a href="/pricing" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>{isAr ? "الأسعار" : "Prices"}</a>
+              <a href="#contact" className="block text-sm font-medium text-gray-700 py-2.5 px-3 rounded-lg hover:bg-gray-50" onClick={() => setMobileMenuOpen(false)}>{isAr ? "تواصل معنا" : "Contact Us"}</a>
               <div className="pt-4 mt-2 border-t border-gray-100 flex flex-col gap-2.5">
                 <Button 
                   variant="outline" 
                   onClick={() => { setLocation("/login"); setMobileMenuOpen(false); }}
                   className="w-full border-[#00C9B7] text-[#00C9B7] hover:bg-[#e6faf8] h-11 rounded-lg text-sm font-medium"
                 >
-                  تسجيل الدخول
+                  {isAr ? "تسجيل الدخول" : "Login"}
                 </Button>
                 <Button 
                   onClick={() => { setLocation("/register-nursery"); setMobileMenuOpen(false); }}
                   className="w-full bg-[#00C9B7] hover:bg-[#00B5A5] text-white h-11 rounded-lg text-sm font-medium"
                 >
-                  سجل حضانتك
+                  {isAr ? "سجل حضانتك" : "Register Your Nursery"}
                 </Button>
               </div>
             </div>
@@ -148,18 +151,18 @@ export default function Landing() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#e6faf8] text-[#00C9B7] text-[11px] sm:text-xs md:text-sm font-medium mb-5 sm:mb-7 md:mb-8">
             <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-            <span>منصة متكاملة لإدارة الحضانات ورياض الأطفال</span>
+            <span>{isAr ? "منصة متكاملة لإدارة الحضانات ورياض الأطفال" : "Integrated Nursery and Kindergarten Management Platform"}</span>
           </div>
           
           {/* Headline - proper spacing and sizing */}
           <h1 className="text-[26px] leading-[1.35] sm:text-4xl sm:leading-[1.3] md:text-5xl md:leading-[1.25] lg:text-[56px] lg:leading-[1.2] font-extrabold text-slate-800 mb-4 sm:mb-5 md:mb-6">
-            منصة متكاملة لإدارة الحضانات
-            <span className="block mt-1 sm:mt-2 text-[#00C9B7]">ورياض الأطفال</span>
+            {isAr ? "منصة متكاملة لإدارة الحضانات" : "Integrated Nursery Management Platform"}
+            <span className="block mt-1 sm:mt-2 text-[#00C9B7]">{isAr ? "ورياض الأطفال" : "and Kindergartens"}</span>
           </h1>
           
           {/* Description */}
           <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto mb-7 sm:mb-8 md:mb-10 leading-[1.7] px-1">
-            إدارة الحضور والانصراف، التواصل مع الأهالي، التقييمات، الخطط التعليمية، والذكاء الاصطناعي في منصة واحدة.
+            {isAr ? "إدارة الحضور والانصراف، التواصل مع الأهالي، التقييمات، الخطط التعليمية، والذكاء الاصطناعي في منصة واحدة." : "Attendance, Parent Communication, Assessments, Lesson Plans, and AI in one platform."}
           </p>
           
           {/* CTA Buttons - consistent sizing */}
@@ -169,7 +172,7 @@ export default function Landing() {
               onClick={() => setLocation("/register-nursery")}
               className="w-full sm:w-auto bg-[#00C9B7] hover:bg-[#00B5A5] text-white text-sm sm:text-base md:text-lg px-6 sm:px-8 h-12 sm:h-[52px] md:h-14 rounded-xl shadow-[0_4px_14px_rgba(0,201,183,0.25)] hover:shadow-[0_6px_20px_rgba(0,201,183,0.3)] active:scale-[0.97] transition-all duration-150 font-medium"
             >
-              سجل حضانتك الآن
+              {isAr ? "سجل حضانتك الآن" : "Register Your Nursery Now"}
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
             </Button>
             <Button 
@@ -178,7 +181,7 @@ export default function Landing() {
               onClick={() => setLocation("/login")}
               className="w-full sm:w-auto text-sm sm:text-base md:text-lg px-6 sm:px-8 h-12 sm:h-[52px] md:h-14 rounded-xl border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:scale-[0.97] transition-all duration-150 font-medium text-gray-700"
             >
-              تسجيل الدخول
+              {isAr ? "تسجيل الدخول" : "Login"}
             </Button>
           </div>
 
@@ -186,15 +189,15 @@ export default function Landing() {
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6 md:gap-x-8 mt-7 sm:mt-10 md:mt-12 text-[11px] sm:text-xs md:text-sm text-gray-500">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C9B7] flex-shrink-0" />
-              <span>تجربة مجانية ١٤ يوم</span>
+              <span>{isAr ? "تجربة مجانية ١٤ يوم" : "14-day Free Trial"}</span>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C9B7] flex-shrink-0" />
-              <span>بدون بطاقة ائتمان</span>
+              <span>{isAr ? "بدون بطاقة ائتمان" : "No Credit Card"}</span>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00C9B7] flex-shrink-0" />
-              <span>دعم فني على مدار الساعة</span>
+              <span>{isAr ? "دعم فني على مدار الساعة" : "24/7 Technical Support"}</span>
             </div>
           </div>
         </div>
@@ -205,10 +208,10 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-2.5 sm:mb-3 md:mb-4">
-              كل ما تحتاجه لإدارة حضانتك
+              {isAr ? "كل ما تحتاجه لإدارة حضانتك" : "Everything you need to manage your nursery"}
             </h2>
             <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-2 leading-relaxed">
-              مجموعة متكاملة من الأدوات الذكية المصممة خصيصاً للحضانات ورياض الأطفال في المملكة العربية السعودية
+              {isAr ? "مجموعة متكاملة من الأدوات الذكية المصممة خصيصاً للحضانات ورياض الأطفال في المملكة العربية السعودية" : "Integrated suite of smart tools designed specifically for nurseries and kindergartens in Saudi Arabia"}
             </p>
           </div>
           
@@ -236,10 +239,10 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 text-center">
             {[
-              { value: "+١٥٠", label: "حضانة مشتركة" },
-              { value: "+٥,٠٠٠", label: "طفل مسجل" },
-              { value: "+١,٢٠٠", label: "معلمة نشطة" },
-              { value: "٩٩.٩٪", label: "وقت التشغيل" },
+              { value: "+١٥٠", label: isAr ? "حضانة مشتركة" : "Nurseries Joined" },
+              { value: "+٥,٠٠٠", label: isAr ? "طفل مسجل" : "Registered Children" },
+              { value: "+١,٢٠٠", label: isAr ? "معلمة نشطة" : "Active Teachers" },
+              { value: "٩٩.٩٪", label: isAr ? "وقت التشغيل" : "Uptime" },
             ].map((stat, i) => (
               <div key={i} className="py-3 sm:py-4">
                 <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-[#00C9B7] mb-0.5 sm:mb-1">{stat.value}</div>
@@ -255,10 +258,10 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-2.5 sm:mb-3 md:mb-4">
-              خطط اشتراك سنوية
+              {isAr ? "خطط اشتراك سنوية" : "Annual Subscription Plans"}
             </h2>
             <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-2 leading-relaxed">
-              اختر الخطة المناسبة لحجم حضانتك. جميع الأسعار بالريال السعودي والفوترة سنوية.
+              {isAr ? "اختر الخطة المناسبة لحجم حضانتك. جميع الأسعار بالريال السعودي والفوترة سنوية." : "Choose the right plan for your nursery size. All prices are in SAR and billed annually."}
             </p>
           </div>
           
@@ -274,14 +277,14 @@ export default function Landing() {
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white whitespace-nowrap bg-[#00C9B7] shadow-sm">
-                    الأكثر طلباً
+                    {isAr ? "الأكثر طلباً" : "Most Requested"}
                   </div>
                 )}
                 <CardContent className="p-5 sm:p-6 md:p-7 lg:p-8 flex flex-col flex-1">
                   <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-800 mb-2">{plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-800">{plan.price}</span>
-                    <span className="text-[11px] sm:text-xs md:text-sm text-gray-500">ر.س / {plan.period}</span>
+                    <span className="text-[11px] sm:text-xs md:text-sm text-gray-500">{isAr ? "ر.س /" : "SAR /"} {plan.period}</span>
                   </div>
                   <p className="text-[10px] sm:text-[11px] md:text-xs text-gray-400 mb-4 sm:mb-5 md:mb-6">SAR {plan.priceEn} / Year</p>
                   <ul className="space-y-2 sm:space-y-2.5 md:space-y-3 mb-5 sm:mb-6 md:mb-8 flex-1">
@@ -300,7 +303,7 @@ export default function Landing() {
                     }`}
                     onClick={() => setLocation(`/register-nursery?plan=${plan.id}`)}
                   >
-                    ابدأ الآن
+                    {isAr ? "ابدأ الآن" : "Start Now"}
                   </Button>
                 </CardContent>
               </Card>
@@ -308,7 +311,7 @@ export default function Landing() {
           </div>
           
           <p className="text-center text-[11px] sm:text-xs md:text-sm text-gray-500 mt-6 sm:mt-8 md:mt-10 max-w-2xl mx-auto px-4 leading-relaxed">
-            جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني.
+            {isAr ? "جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني." : "All plans include qualification, training, updates, and technical support."}
           </p>
         </div>
       </section>
@@ -318,13 +321,13 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-[#00C9B7]/10 text-[#00997A] px-4 py-2 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6">
             <Calendar className="w-4 h-4" />
-            <span>عرض تعريفي مجاني</span>
+            <span>{isAr ? "عرض تعريفي مجاني" : "Free Demo"}</span>
           </div>
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mb-3 sm:mb-4 md:mb-6 px-2">
-            احجزي عرضاً تعريفياً مجانياً لمنصة نشأة
+            {isAr ? "احجزي عرضاً تعريفياً مجانياً لمنصة نشأة" : "Book a free demo for Nash\'ah platform"}
           </h2>
           <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4 leading-relaxed">
-            اكتشفي كيف تساعد نشأة حضانتك على إدارة الحضور، التواصل مع أولياء الأمور، والتقارير اليومية بكل سهولة
+            {isAr ? "اكتشفي كيف تساعد نشأة حضانتك على إدارة الحضور، التواصل مع أولياء الأمور، والتقارير اليومية بكل سهولة" : "Discover how Nash\'ah helps your nursery manage attendance, communicate with parents, and daily reports with ease"}
           </p>
           <div className="w-full max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-white">
             <iframe
@@ -332,12 +335,12 @@ export default function Landing() {
               width="100%"
               height="660"
               frameBorder="0"
-              title="احجزي موعدك مع نشأة"
+              title={isAr ? "احجزي موعدك مع نشأة" : "Book your appointment with Nash\'ah"}
               className="w-full min-h-[580px] sm:min-h-[620px] md:min-h-[660px]"
             />
           </div>
           <p className="text-[10px] sm:text-xs text-gray-400 mt-4">
-            مدة العرض ٣٠ دقيقة عبر زوم
+            {isAr ? "مدة العرض ٣٠ دقيقة عبر زوم" : "Presentation duration 30 minutes via Zoom"}
           </p>
         </div>
       </section>
@@ -346,17 +349,17 @@ export default function Landing() {
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 md:mb-6 px-2">
-            جاهز لتحويل حضانتك رقمياً؟
+            {isAr ? "جاهز لتحويل حضانتك رقمياً؟" : "Ready to Digitize Your Nursery?"}
           </h2>
           <p className="text-xs sm:text-sm md:text-base lg:text-lg text-purple-100 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4 leading-relaxed">
-            انضم لأكثر من ١٥٠ حضانة في المملكة تستخدم نشأة لإدارة عملياتها اليومية بكفاءة وذكاء
+            {isAr ? "انضم لأكثر من ١٥٠ حضانة في المملكة تستخدم نشأة لإدارة عملياتها اليومية بكفاءة وذكاء" : "Join over 150 nurseries in the Kingdom using Nash\'ah to manage their daily operations efficiently and smartly"}
           </p>
           <Button 
             size="lg"
             onClick={() => setLocation("/register-nursery")}
             className="w-full sm:w-auto bg-[#00C9B7] hover:bg-[#00B5A5] text-white text-sm sm:text-base md:text-lg px-6 sm:px-8 md:px-10 h-12 sm:h-[52px] md:h-14 rounded-xl shadow-[0_4px_14px_rgba(0,201,183,0.3)] hover:shadow-[0_6px_20px_rgba(0,201,183,0.4)] active:scale-[0.97] transition-all duration-150 font-medium"
           >
-            سجل حضانتك الآن
+            {isAr ? "سجل حضانتك الآن" : "Register Your Nursery Now"}
           </Button>
         </div>
       </section>
@@ -367,29 +370,29 @@ export default function Landing() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             <div className="sm:col-span-2">
               <div className="flex items-center gap-2.5 sm:gap-3 mb-3 sm:mb-4">
-                <img src={LOGO_URL} alt="نشأة" className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" />
-                <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">نشأة</span>
+                <img src={LOGO_URL} alt={isAr ? "نشأة" : "Nasha\'a"} className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain flex-shrink-0" />
+                <span className="text-base sm:text-lg md:text-xl font-bold text-slate-800">{isAr ? "نشأة" : "Nasha\'a"}</span>
               </div>
               <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 leading-[1.7] max-w-sm">
-                منصة متكاملة لإدارة الحضانات ورياض الأطفال. نساعد المراكز التعليمية في المملكة العربية السعودية على إدارة عملياتها اليومية بكفاءة وذكاء.
+                {isAr ? "منصة متكاملة لإدارة الحضانات ورياض الأطفال. نساعد المراكز التعليمية في المملكة العربية السعودية على إدارة عملياتها اليومية بكفاءة وذكاء." : "An integrated platform for managing nurseries and kindergartens. We help educational centers in Saudi Arabia manage their daily operations efficiently and smartly."}
               </p>
             </div>
             <div>
-              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-slate-800">المنصة</h4>
+              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-slate-800">{isAr ? "المنصة" : "Platform"}</h4>
               <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs md:text-sm text-gray-600">
-                <li><a href="#features" className="hover:text-[#00C9B7] transition-colors duration-200">المزايا</a></li>
-                <li><a href="/pricing" className="hover:text-[#00C9B7] transition-colors duration-200">الأسعار</a></li>
-                <li><a href="/privacy" className="hover:text-[#00C9B7] transition-colors duration-200">سياسة الخصوصية</a></li>
-                <li><a href="/terms" className="hover:text-[#00C9B7] transition-colors duration-200">شروط الخدمة</a></li>
+                <li><a href="#features" className="hover:text-[#00C9B7] transition-colors duration-200">{isAr ? "المزايا" : "Benefits"}</a></li>
+                <li><a href="/pricing" className="hover:text-[#00C9B7] transition-colors duration-200">{isAr ? "الأسعار" : "Prices"}</a></li>
+                <li><a href="/privacy" className="hover:text-[#00C9B7] transition-colors duration-200">{isAr ? "سياسة الخصوصية" : "Privacy Policy"}</a></li>
+                <li><a href="/terms" className="hover:text-[#00C9B7] transition-colors duration-200">{isAr ? "شروط الخدمة" : "Terms of Service"}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-slate-800">تواصل معنا</h4>
+              <h4 className="font-bold mb-2.5 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base text-slate-800">{isAr ? "تواصل معنا" : "Contact Us"}</h4>
               <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs md:text-sm text-gray-600">
-                <li>البريد: info@naashah.com</li>
-                <li>الهاتف: +966 53 378 4686</li>
+                <li>{isAr ? "البريد: info@naashah.com" : "Email: info@naashah.com"}</li>
+                <li>{isAr ? "الهاتف: +966 53 378 4686" : "Phone: +966 53 378 4686"}</li>
                 <li><a href="https://naashah.com" className="hover:text-[#00C9B7] transition-colors duration-200">naashah.com</a></li>
-                <li>المملكة العربية السعودية</li>
+                <li>{isAr ? "المملكة العربية السعودية" : "Saudi Arabia"}</li>
               </ul>
             </div>
           </div>

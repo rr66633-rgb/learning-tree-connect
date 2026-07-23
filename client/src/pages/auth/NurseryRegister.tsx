@@ -15,31 +15,31 @@ import {
   Shield, Sparkles, Crown
 } from "lucide-react";
 
-const saudiCities = [
-  "الرياض", "جدة", "مكة المكرمة", "المدينة المنورة", "الدمام",
-  "الخبر", "الظهران", "تبوك", "بريدة", "حائل", "الطائف",
-  "أبها", "خميس مشيط", "نجران", "جازان", "ينبع", "الجبيل",
-  "القطيف", "الأحساء", "عنيزة", "سكاكا", "الباحة", "عرعر",
-  "حفر الباطن", "الخرج", "المجمعة"
-];
+const getSaudiCities = (isAr: boolean) => ([
+  (isAr ? "الرياض" : "Riyadh"), (isAr ? "جدة" : "Jeddah"), (isAr ? "مكة المكرمة" : "Makkah Al-Mukarramah"), (isAr ? "المدينة المنورة" : "Madinah"), (isAr ? "الدمام" : "Dammam"),
+  (isAr ? "الخبر" : "Khobar"), (isAr ? "الظهران" : "Dhahran"), (isAr ? "تبوك" : "Tabuk"), (isAr ? "بريدة" : "Buraidah"), (isAr ? "حائل" : "Hail"), (isAr ? "الطائف" : "Taif"),
+  (isAr ? "أبها" : "Abha"), (isAr ? "خميس مشيط" : "Khamis Mushait"), (isAr ? "نجران" : "Najran"), (isAr ? "جازان" : "Jazan"), (isAr ? "ينبع" : "Yanbu"), (isAr ? "الجبيل" : "Jubail"),
+  (isAr ? "القطيف" : "Qatif"), (isAr ? "الأحساء" : "Al-Ahsa"), (isAr ? "عنيزة" : "Unaizah"), (isAr ? "سكاكا" : "Sakaka"), (isAr ? "الباحة" : "Al Baha"), (isAr ? "عرعر" : "Arar"),
+  (isAr ? "حفر الباطن" : "Hafar Al-Batin"), (isAr ? "الخرج" : "Kharj"), (isAr ? "المجمعة" : "Aggregated")
+]);
 
-const plans = [
+const getPlans = (isAr: boolean) => ([
   {
     id: "basic" as const,
-    name: "أساسي",
-    price: "٦,٩٠٠",
+    name: (isAr ? "أساسي" : "Basic"),
+    price: (isAr ? "٦,٩٠٠" : "6,900"),
     priceNum: 6900,
     period: "سنوياً",
     maxChildren: 50,
     maxStaff: 10,
     icon: Shield,
     color: "#7B61FF",
-    features: ["حتى ٥٠ طفل", "حتى ١٠ موظفين", "الحضور والتقارير اليومية", "التواصل مع الأهالي", "الدعم الفني"],
+    features: [(isAr ? "حتى ٥٠ طفل" : "Up to 50 Children"), (isAr ? "حتى ١٠ موظفين" : "Up to 10 Employees"), (isAr ? "الحضور والتقارير اليومية" : "Attendance & Daily Reports"), (isAr ? "التواصل مع الأهالي" : "Parent Communication"), (isAr ? "الدعم الفني" : "Technical Support")],
   },
   {
     id: "professional" as const,
-    name: "احترافي",
-    price: "١٠,٩٠٠",
+    name: (isAr ? "احترافي" : "Professional"),
+    price: (isAr ? "١٠,٩٠٠" : "10,900"),
     priceNum: 10900,
     period: "سنوياً",
     maxChildren: 100,
@@ -47,21 +47,21 @@ const plans = [
     icon: Sparkles,
     color: "#00C9B7",
     popular: true,
-    features: ["حتى ١٠٠ طفل", "حتى ٢٥ موظف", "المساعد الذكي (AI)", "التقييمات ومتابعة التطور", "التحليلات المتقدمة"],
+    features: [(isAr ? "حتى ١٠٠ طفل" : "Up to 100 Children"), (isAr ? "حتى ٢٥ موظف" : "Up to 25 Employees"), "المساعد الذكي (AI)", (isAr ? "التقييمات ومتابعة التطور" : "Assessments & Development Tracking"), (isAr ? "التحليلات المتقدمة" : "Advanced Analytics")],
   },
   {
     id: "enterprise" as const,
-    name: "مؤسسي",
-    price: "١٥,٩٠٠",
+    name: (isAr ? "مؤسسي" : "Foundational"),
+    price: (isAr ? "١٥,٩٠٠" : "15,900"),
     priceNum: 15900,
     period: "سنوياً",
     maxChildren: 200,
     maxStaff: 50,
     icon: Crown,
     color: "#FF5CA8",
-    features: ["حتى ٢٠٠ طفل", "فروع متعددة", "مدير حساب مخصص", "أولوية الدعم", "العلامة التجارية المخصصة"],
+    features: [(isAr ? "حتى ٢٠٠ طفل" : "Up to 200 Children"), (isAr ? "فروع متعددة" : "Multiple Branches"), (isAr ? "مدير حساب مخصص" : "Dedicated Account Manager"), (isAr ? "أولوية الدعم" : "Support Priority"), (isAr ? "العلامة التجارية المخصصة" : "Custom Branding")],
   },
-];
+]);
 
 type PlanId = "basic" | "professional" | "enterprise";
 
@@ -138,7 +138,7 @@ export default function NurseryRegister() {
     });
   };
 
-  const currentPlan = plans.find(p => p.id === selectedPlan)!;
+  const currentPlan = getPlans(isAr).find(p => p.id === selectedPlan)!;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" dir="rtl">
@@ -146,14 +146,14 @@ export default function NurseryRegister() {
       <header className="py-4 px-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button onClick={() => setLocation("/")} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <span className="text-2xl font-bold" style={{ color: '#00C9B7' }}>نشأة</span>
+            <span className="text-2xl font-bold" style={{ color: '#00C9B7' }}>{isAr ? "نشأة" : "Nasha'a"}</span>
             <span className="text-sm text-gray-500 font-medium">Naashah</span>
           </button>
           <button 
             onClick={() => setLocation("/login")}
             className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
-            لديك حساب؟ <span className="font-semibold" style={{ color: '#00C9B7' }}>تسجيل الدخول</span>
+            لديك حساب؟ <span className="font-semibold" style={{ color: '#00C9B7' }}>{isAr ? "تسجيل الدخول" : "Login"}</span>
           </button>
         </div>
       </header>
@@ -163,9 +163,9 @@ export default function NurseryRegister() {
         <div className="flex items-center justify-center mb-10">
           <div className="flex items-center gap-2">
             {[
-              { num: 1, label: "الخطة" },
-              { num: 2, label: "الحضانة" },
-              { num: 3, label: "المالك" },
+              { num: 1, label: (isAr ? "الخطة" : "Plan") },
+              { num: 2, label: (isAr ? "الحضانة" : "Nursery") },
+              { num: 3, label: (isAr ? "المالك" : "Owner") },
               { num: 4, label: "تأكيد" },
             ].map((s, i) => (
               <div key={s.num} className="flex items-center gap-2">
@@ -194,11 +194,11 @@ export default function NurseryRegister() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>اختر خطة الاشتراك</h1>
-              <p className="text-gray-600">اختر الخطة المناسبة لحجم حضانتك. يمكنك الترقية لاحقاً.</p>
+              <p className="text-gray-600">{isAr ? "اختر الخطة المناسبة لحجم حضانتك. يمكنك الترقية لاحقاً." : "Choose the right plan for your nursery size. You can upgrade later."}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {plans.map((plan) => {
+              {getPlans(isAr).map((plan) => {
                 const Icon = plan.icon;
                 const isSelected = selectedPlan === plan.id;
                 return (
@@ -214,7 +214,7 @@ export default function NurseryRegister() {
                   >
                     {plan.popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: plan.color }}>
-                        الأكثر طلباً
+                        {isAr ? "الأكثر طلباً" : "Most Requested"}
                       </div>
                     )}
                     <CardContent className="p-6">
@@ -238,7 +238,7 @@ export default function NurseryRegister() {
                       </ul>
                       {isSelected && (
                         <div className="mt-4 pt-4 border-t text-center">
-                          <span className="text-sm font-semibold" style={{ color: plan.color }}>تم الاختيار</span>
+                          <span className="text-sm font-semibold" style={{ color: plan.color }}>{isAr ? "تم الاختيار" : "Selected"}</span>
                         </div>
                       )}
                     </CardContent>
@@ -248,13 +248,13 @@ export default function NurseryRegister() {
             </div>
 
             <div className="text-center mt-8">
-              <p className="text-sm text-gray-500 mb-6">جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني</p>
+              <p className="text-sm text-gray-500 mb-6">{isAr ? "جميع الخطط تشمل التأهيل والتدريب والتحديثات والدعم الفني" : "All plans include qualification, training, updates, and technical support"}</p>
               <Button 
                 size="lg"
                 className="px-10 bg-[#00C9B7] hover:bg-[#00B5A5] text-white"
                 onClick={() => setStep(2)}
               >
-                التالي
+                {isAr ? "التالي" : "Next"}
                 <ArrowLeft className="w-4 h-4 mr-2" />
               </Button>
             </div>
@@ -265,27 +265,27 @@ export default function NurseryRegister() {
         {step === 2 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>بيانات الحضانة</h1>
-              <p className="text-gray-600">أدخل المعلومات الأساسية عن حضانتك</p>
+              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>{isAr ? "بيانات الحضانة" : "Nursery Data"}</h1>
+              <p className="text-gray-600">{isAr ? "أدخل المعلومات الأساسية عن حضانتك" : "Enter basic information about your nursery"}</p>
             </div>
 
             <Card>
               <CardContent className="p-6 space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">اسم الحضانة بالعربية <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">{isAr ? "اسم الحضانة بالعربية" : "Nursery Name in Arabic"}<span className="text-red-500">*</span></Label>
                   <div className="relative">
                     <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input 
                       value={nurseryNameAr} 
                       onChange={(e) => setNurseryNameAr(e.target.value)}
-                      placeholder="مثال: حضانة براعم المستقبل"
+                      placeholder={isAr ? "مثال: حضانة براعم المستقبل" : "Example: Future Buds Nursery"}
                       className="pr-10"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">اسم الحضانة بالإنجليزية (اختياري)</Label>
+                  <Label className="text-sm font-medium">{isAr ? "اسم الحضانة بالإنجليزية (اختياري)" : "Nursery Name in English (Optional)"}</Label>
                   <Input 
                     value={nurseryName} 
                     onChange={(e) => setNurseryName(e.target.value)}
@@ -297,13 +297,13 @@ export default function NurseryRegister() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">المدينة <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm font-medium">{isAr ? "المدينة" : "City"}<span className="text-red-500">*</span></Label>
                     <Select value={city} onValueChange={setCity}>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر المدينة" />
+                        <SelectValue placeholder={isAr ? "اختر المدينة" : "Select City"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {saudiCities.map((c) => (
+                        {getSaudiCities(isAr).map((c) => (
                           <SelectItem key={c} value={c}>{c}</SelectItem>
                         ))}
                       </SelectContent>
@@ -311,13 +311,13 @@ export default function NurseryRegister() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">الحي (اختياري)</Label>
+                    <Label className="text-sm font-medium">{isAr ? "الحي (اختياري)" : "District (Optional)"}</Label>
                     <div className="relative">
                       <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input 
                         value={district} 
                         onChange={(e) => setDistrict(e.target.value)}
-                        placeholder="مثال: حي النرجس"
+                        placeholder={isAr ? "مثال: حي النرجس" : "Example: Al-Narjis District"}
                         className="pr-10"
                       />
                     </div>
@@ -326,14 +326,14 @@ export default function NurseryRegister() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">عدد الأطفال المتوقع <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm font-medium">{isAr ? "عدد الأطفال المتوقع" : "Expected number of children"}<span className="text-red-500">*</span></Label>
                     <div className="relative">
                       <Baby className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input 
                         type="number"
                         value={childrenCount} 
                         onChange={(e) => setChildrenCount(e.target.value)}
-                        placeholder="مثال: 30"
+                        placeholder={isAr ? "مثال: 30" : "Example: 30"}
                         className="pr-10"
                         min="1"
                         max="500"
@@ -342,14 +342,14 @@ export default function NurseryRegister() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">عدد الموظفين <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm font-medium">{isAr ? "عدد الموظفين" : "Number of employees"}<span className="text-red-500">*</span></Label>
                     <div className="relative">
                       <Users className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input 
                         type="number"
                         value={staffCount} 
                         onChange={(e) => setStaffCount(e.target.value)}
-                        placeholder="مثال: 8"
+                        placeholder={isAr ? "مثال: 8" : "Example: 8"}
                         className="pr-10"
                         min="1"
                         max="200"
@@ -359,11 +359,11 @@ export default function NurseryRegister() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">رقم الترخيص (اختياري)</Label>
+                  <Label className="text-sm font-medium">{isAr ? "رقم الترخيص (اختياري)" : "License Number (Optional)"}</Label>
                   <Input 
                     value={licenseNumber} 
                     onChange={(e) => setLicenseNumber(e.target.value)}
-                    placeholder="رقم ترخيص وزارة التعليم أو الشؤون الاجتماعية"
+                    placeholder={isAr ? "رقم ترخيص وزارة التعليم أو الشؤون الاجتماعية" : "Ministry of Education or Social Affairs License Number"}
                   />
                 </div>
               </CardContent>
@@ -376,13 +376,13 @@ export default function NurseryRegister() {
                 className="gap-2"
               >
                 <ArrowRight className="w-4 h-4" />
-                السابق
+                {isAr ? "السابق" : "Previous"}
               </Button>
               <Button 
                 className="px-8 bg-[#00C9B7] hover:bg-[#00B5A5] text-white gap-2"
                 onClick={() => { if (validateStep2()) setStep(3); }}
               >
-                التالي
+                {isAr ? "التالي" : "Next"}
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </div>
@@ -393,27 +393,27 @@ export default function NurseryRegister() {
         {step === 3 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>بيانات المالك</h1>
-              <p className="text-gray-600">أدخل بياناتك الشخصية لإنشاء حساب المدير</p>
+              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>{isAr ? "بيانات المالك" : "Owner Data"}</h1>
+              <p className="text-gray-600">{isAr ? "أدخل بياناتك الشخصية لإنشاء حساب المدير" : "Enter your personal data to create an admin account"}</p>
             </div>
 
             <Card>
               <CardContent className="p-6 space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">الاسم الكامل <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">{isAr ? "الاسم الكامل" : "Full Name"}<span className="text-red-500">*</span></Label>
                   <div className="relative">
                     <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input 
                       value={ownerName} 
                       onChange={(e) => setOwnerName(e.target.value)}
-                      placeholder="الاسم الثلاثي"
+                      placeholder={isAr ? "الاسم الثلاثي" : "Full Name (Triple)"}
                       className="pr-10"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">البريد الإلكتروني <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">{isAr ? "البريد الإلكتروني" : "Email"}<span className="text-red-500">*</span></Label>
                   <div className="relative">
                     <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input 
@@ -428,7 +428,7 @@ export default function NurseryRegister() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">رقم الجوال <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">{isAr ? "رقم الجوال" : "Mobile Number"}<span className="text-red-500">*</span></Label>
                   <div className="relative">
                     <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input 
@@ -443,14 +443,14 @@ export default function NurseryRegister() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">كلمة المرور <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">{isAr ? "كلمة المرور" : "Password"}<span className="text-red-500">*</span></Label>
                   <div className="relative">
                     <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input 
                       type={showPassword ? "text" : "password"}
                       value={ownerPassword} 
                       onChange={(e) => setOwnerPassword(e.target.value)}
-                      placeholder="8 أحرف على الأقل"
+                      placeholder={isAr ? "8 أحرف على الأقل" : "At least 8 characters"}
                       className="pr-10 pl-10"
                       dir="ltr"
                     />
@@ -465,14 +465,14 @@ export default function NurseryRegister() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">تأكيد كلمة المرور <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">{isAr ? "تأكيد كلمة المرور" : "Confirm Password"}<span className="text-red-500">*</span></Label>
                   <div className="relative">
                     <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input 
                       type={showPassword ? "text" : "password"}
                       value={confirmPassword} 
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="أعد إدخال كلمة المرور"
+                      placeholder={isAr ? "أعد إدخال كلمة المرور" : "Re-enter Password"}
                       className="pr-10"
                       dir="ltr"
                     />
@@ -488,13 +488,13 @@ export default function NurseryRegister() {
                 className="gap-2"
               >
                 <ArrowRight className="w-4 h-4" />
-                السابق
+                {isAr ? "السابق" : "Previous"}
               </Button>
               <Button 
                 className="px-8 bg-[#00C9B7] hover:bg-[#00B5A5] text-white gap-2"
                 onClick={() => { if (validateStep3()) setStep(4); }}
               >
-                التالي
+                {isAr ? "التالي" : "Next"}
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </div>
@@ -505,8 +505,8 @@ export default function NurseryRegister() {
         {step === 4 && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>مراجعة وتأكيد</h1>
-              <p className="text-gray-600">راجع بياناتك قبل إرسال الطلب</p>
+              <h1 className="text-3xl font-bold mb-3" style={{ color: '#1e293b' }}>{isAr ? "مراجعة وتأكيد" : "Review and Confirm"}</h1>
+              <p className="text-gray-600">{isAr ? "راجع بياناتك قبل إرسال الطلب" : "Review your data before submitting the request"}</p>
             </div>
 
             {/* Plan Summary */}
@@ -519,12 +519,12 @@ export default function NurseryRegister() {
                     </div>
                     <div>
                       <h3 className="font-bold" style={{ color: '#1e293b' }}>خطة {currentPlan.name}</h3>
-                      <p className="text-sm text-gray-500">اشتراك سنوي</p>
+                      <p className="text-sm text-gray-500">{isAr ? "اشتراك سنوي" : "Annual Subscription"}</p>
                     </div>
                   </div>
                   <div className="text-left">
                     <span className="text-xl font-bold" style={{ color: '#1e293b' }}>{currentPlan.price}</span>
-                    <span className="text-sm text-gray-500 mr-1">ر.س/سنة</span>
+                    <span className="text-sm text-gray-500 mr-1">{isAr ? "ر.س/سنة" : "SAR/year"}</span>
                   </div>
                 </div>
               </CardContent>
@@ -535,15 +535,15 @@ export default function NurseryRegister() {
               <CardContent className="p-5">
                 <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1e293b' }}>
                   <Building2 className="w-4 h-4" style={{ color: '#7B61FF' }} />
-                  بيانات الحضانة
+                  {isAr ? "بيانات الحضانة" : "Nursery Data"}
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-gray-500">الاسم:</span>
+                    <span className="text-gray-500">{isAr ? "الاسم:" : "Name:"}</span>
                     <span className="font-medium mr-2">{nurseryNameAr}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">المدينة:</span>
+                    <span className="text-gray-500">{isAr ? "المدينة:" : "City:"}</span>
                     <span className="font-medium mr-2">{city}</span>
                   </div>
                   {district && (
@@ -557,12 +557,12 @@ export default function NurseryRegister() {
                     <span className="font-medium mr-2">{childrenCount}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">عدد الموظفين:</span>
+                    <span className="text-gray-500">{isAr ? "عدد الموظفين:" : "Number of employees:"}</span>
                     <span className="font-medium mr-2">{staffCount}</span>
                   </div>
                   {licenseNumber && (
                     <div>
-                      <span className="text-gray-500">رقم الترخيص:</span>
+                      <span className="text-gray-500">{isAr ? "رقم الترخيص:" : "License Number:"}</span>
                       <span className="font-medium mr-2">{licenseNumber}</span>
                     </div>
                   )}
@@ -575,15 +575,15 @@ export default function NurseryRegister() {
               <CardContent className="p-5">
                 <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#1e293b' }}>
                   <User className="w-4 h-4" style={{ color: '#FF5CA8' }} />
-                  بيانات المالك
+                  {isAr ? "بيانات المالك" : "Owner Data"}
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-gray-500">الاسم:</span>
+                    <span className="text-gray-500">{isAr ? "الاسم:" : "Name:"}</span>
                     <span className="font-medium mr-2">{ownerName}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">البريد:</span>
+                    <span className="text-gray-500">{isAr ? "البريد:" : "Mail:"}</span>
                     <span className="font-medium mr-2" dir="ltr">{ownerEmail}</span>
                   </div>
                   <div>
@@ -601,7 +601,7 @@ export default function NurseryRegister() {
                 className="gap-2"
               >
                 <ArrowRight className="w-4 h-4" />
-                السابق
+                {isAr ? "السابق" : "Previous"}
               </Button>
               <Button 
                 className="px-10 bg-[#00C9B7] hover:bg-[#00B5A5] text-white gap-2"
@@ -609,10 +609,10 @@ export default function NurseryRegister() {
                 disabled={submitMutation.isPending}
               >
                 {submitMutation.isPending ? (
-                  <>جاري الإرسال...</>
+                  <>{isAr ? "جاري الإرسال..." : "Sending..."}</>
                 ) : (
                   <>
-                    إرسال الطلب
+                    {isAr ? "إرسال الطلب" : "Submit Order"}
                     <CheckCircle2 className="w-4 h-4" />
                   </>
                 )}
@@ -631,29 +631,29 @@ export default function NurseryRegister() {
             <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ background: '#00C9B715' }}>
               <CheckCircle2 className="w-10 h-10" style={{ color: '#00C9B7' }} />
             </div>
-            <h1 className="text-3xl font-bold mb-4" style={{ color: '#1e293b' }}>تم استلام طلبك بنجاح!</h1>
+            <h1 className="text-3xl font-bold mb-4" style={{ color: '#1e293b' }}>{isAr ? "تم استلام طلبك بنجاح!" : "Your order has been received successfully!"}</h1>
             <p className="text-gray-600 mb-3 text-lg">
-              شكراً لاهتمامك بمنصة نشأة
+              {isAr ? "شكراً لاهتمامك بمنصة نشأة" : "Thank you for your interest in Nash'ah platform"}
             </p>
             <p className="text-gray-500 mb-8">
-              سيقوم فريقنا بمراجعة طلبك والتواصل معك عبر البريد الإلكتروني أو الجوال خلال <strong>٢٤ ساعة عمل</strong>.
+              سيقوم فريقنا بمراجعة طلبك والتواصل معك عبر البريد الإلكتروني أو الجوال خلال <strong>{isAr ? "٢٤ ساعة عمل" : "24 working hours"}</strong>.
             </p>
 
             <Card className="bg-gray-50 border-0 mb-8">
               <CardContent className="p-5">
-                <h3 className="font-bold mb-3" style={{ color: '#1e293b' }}>ماذا بعد؟</h3>
+                <h3 className="font-bold mb-3" style={{ color: '#1e293b' }}>{isAr ? "ماذا بعد؟" : "What's next?"}</h3>
                 <ul className="text-sm text-gray-600 space-y-2 text-right">
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs text-white mt-0.5" style={{ background: '#00C9B7' }}>١</span>
-                    <span>مراجعة الطلب من فريق نشأة</span>
+                    <span>{isAr ? "مراجعة الطلب من فريق نشأة" : "Review request by Nash'ah team"}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs text-white mt-0.5" style={{ background: '#7B61FF' }}>٢</span>
-                    <span>التواصل معك لتأكيد البيانات وترتيب الدفع</span>
+                    <span>{isAr ? "التواصل معك لتأكيد البيانات وترتيب الدفع" : "Contact you to confirm data and arrange payment"}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs text-white mt-0.5" style={{ background: '#FF5CA8' }}>٣</span>
-                    <span>تفعيل حسابك وبدء جلسة التأهيل والتدريب</span>
+                    <span>{isAr ? "تفعيل حسابك وبدء جلسة التأهيل والتدريب" : "Activate your account and start onboarding/training session"}</span>
                   </li>
                 </ul>
               </CardContent>
@@ -664,13 +664,13 @@ export default function NurseryRegister() {
                 className="bg-[#00C9B7] hover:bg-[#00B5A5] text-white"
                 onClick={() => setLocation("/")}
               >
-                العودة للصفحة الرئيسية
+                {isAr ? "العودة للصفحة الرئيسية" : "Back to Homepage"}
               </Button>
               <Button 
                 variant="outline"
                 onClick={() => window.open("https://wa.me/966533784686", "_blank")}
               >
-                تواصل عبر واتساب
+                {isAr ? "تواصل عبر واتساب" : "Contact via WhatsApp"}
               </Button>
             </div>
           </div>

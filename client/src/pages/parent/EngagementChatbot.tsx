@@ -18,18 +18,19 @@ interface Message {
   timestamp: Date;
 }
 
-const suggestedQuestions = [
-  { label: "أنشطة تعليمية", icon: BookOpen, prompt: "ما هي أفضل الأنشطة التعليمية المناسبة لعمر طفلي؟" },
-  { label: "تطور اللغة", icon: Brain, prompt: "كيف أساعد طفلي في تطوير مهاراته اللغوية؟" },
-  { label: "التغذية السليمة", icon: Utensils, prompt: "ما هي الأطعمة المفيدة لنمو طفلي في هذا العمر؟" },
-  { label: "النوم الصحي", icon: Moon, prompt: "كم ساعة نوم يحتاجها طفلي وكيف أنظم روتين نومه؟" },
-  { label: "المهارات الاجتماعية", icon: Heart, prompt: "كيف أساعد طفلي على تكوين صداقات والتفاعل مع الآخرين؟" },
-  { label: "التطور الحركي", icon: Baby, prompt: "ما هي الأنشطة التي تساعد في تطوير المهارات الحركية لطفلي؟" },
-];
+const getSuggestedQuestions = (isAr: boolean) => ([
+  { label: (isAr ? "أنشطة تعليمية" : "Educational Activities"), icon: BookOpen, prompt: (isAr ? "ما هي أفضل الأنشطة التعليمية المناسبة لعمر طفلي؟" : "What are the best educational activities for my child's age?") },
+  { label: (isAr ? "تطور اللغة" : "Language Development"), icon: Brain, prompt: (isAr ? "كيف أساعد طفلي في تطوير مهاراته اللغوية؟" : "How do I help my child develop their language skills?") },
+  { label: (isAr ? "التغذية السليمة" : "Proper Nutrition"), icon: Utensils, prompt: (isAr ? "ما هي الأطعمة المفيدة لنمو طفلي في هذا العمر؟" : "What foods are beneficial for my child's growth at this age?") },
+  { label: (isAr ? "النوم الصحي" : "Healthy Sleep"), icon: Moon, prompt: (isAr ? "كم ساعة نوم يحتاجها طفلي وكيف أنظم روتين نومه؟" : "How many hours of sleep does my child need and how do I organize their sleep routine?") },
+  { label: (isAr ? "المهارات الاجتماعية" : "Social Skills"), icon: Heart, prompt: (isAr ? "كيف أساعد طفلي على تكوين صداقات والتفاعل مع الآخرين؟" : "How do I help my child make friends and interact with others?") },
+  { label: (isAr ? "التطور الحركي" : "Motor Development"), icon: Baby, prompt: (isAr ? "ما هي الأنشطة التي تساعد في تطوير المهارات الحركية لطفلي؟" : "What activities help develop my child's motor skills?") },
+]);
 
 export default function EngagementChatbot() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const isAr = i18n.language === "ar";
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -89,7 +90,7 @@ export default function EngagementChatbot() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "عذراً، حدث خطأ أثناء معالجة سؤالك. يرجى المحاولة مرة أخرى.",
+        content: (isAr ? "عذراً، حدث خطأ أثناء معالجة سؤالك. يرجى المحاولة مرة أخرى." : "Sorry, an error occurred while processing your question. Please try again."),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -128,14 +129,14 @@ export default function EngagementChatbot() {
         <div className="flex-1">
           <h1 className="text-lg font-bold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-emerald-500" />
-            مستشار التربية الذكي
+            {isAr ? "مستشار التربية الذكي" : "Smart Education Advisor"}
           </h1>
-          <p className="text-xs text-muted-foreground">مساعدك في تربية وتنمية طفلك</p>
+          <p className="text-xs text-muted-foreground">{isAr ? "مساعدك في تربية وتنمية طفلك" : "Your assistant in raising and developing your child"}</p>
         </div>
         {childrenData && childrenData.length > 1 && (
           <Select value={selectedChildId} onValueChange={setSelectedChildId}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="اختر طفلك" />
+              <SelectValue placeholder={isAr ? "اختر طفلك" : "Select Your Child"} />
             </SelectTrigger>
             <SelectContent>
               {childrenData.map((child) => (
@@ -158,11 +159,11 @@ export default function EngagementChatbot() {
               </div>
               <h2 className="text-lg font-bold">مرحباً {user?.name?.split(" ")[0]}</h2>
               <p className="text-sm text-muted-foreground max-w-sm">
-                أنا مستشارك في تربية وتنمية {selectedChild?.firstName || "طفلك"}. اسألني عن أي شيء يتعلق بنمو طفلك وتطوره.
+                أنا مستشارك في تربية وتنمية {selectedChild?.firstName || (isAr ? "طفلك" : "Your child")}. اسألني عن أي شيء يتعلق بنمو طفلك وتطوره.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 w-full max-w-md">
-              {suggestedQuestions.map((q) => (
+              {getSuggestedQuestions(isAr).map((q) => (
                 <button
                   key={q.label}
                   onClick={() => sendMessage(q.prompt)}
@@ -210,7 +211,7 @@ export default function EngagementChatbot() {
                       <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                       <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
-                    <span className="text-xs text-muted-foreground">يفكر...</span>
+                    <span className="text-xs text-muted-foreground">{isAr ? "يفكر..." : "Thinking..."}</span>
                   </div>
                 </div>
               </div>
@@ -228,7 +229,7 @@ export default function EngagementChatbot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="اكتب سؤالك هنا..."
+            placeholder={isAr ? "اكتب سؤالك هنا..." : "Write your question here..."}
             className="min-h-[44px] max-h-32 resize-none rounded-xl"
             rows={1}
             disabled={isLoading || !selectedChildId}

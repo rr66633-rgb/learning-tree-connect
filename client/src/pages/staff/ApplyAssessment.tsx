@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 
 export default function ApplyAssessment() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const isEn = i18n.language === 'en';
 
   const QUESTION_TYPES: Record<string, string> = {
@@ -195,11 +196,11 @@ export default function ApplyAssessment() {
                     className="flex gap-6"
                   >
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem value="صح" id={`q${q.id}-true`} />
+                      <RadioGroupItem value={isAr ? "صح" : "Correct"} id={`q${q.id}-true`} />
                       <Label htmlFor={`q${q.id}-true`} className="cursor-pointer">{t('applyAssessment.yes')}</Label>
                     </div>
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem value="خطأ" id={`q${q.id}-false`} />
+                      <RadioGroupItem value={isAr ? "خطأ" : "Error"} id={`q${q.id}-false`} />
                       <Label htmlFor={`q${q.id}-false`} className="cursor-pointer">{t('applyAssessment.no')}</Label>
                     </div>
                   </RadioGroup>

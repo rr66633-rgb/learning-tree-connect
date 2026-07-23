@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 
 export default function ParentReports() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: children } = trpc.children.list.useQuery();
   const [selectedChild, setSelectedChild] = useState<string>("");
@@ -29,10 +30,10 @@ export default function ParentReports() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">التقارير</h1>
+      <h1 className="text-2xl font-bold">{isAr ? "التقارير" : "Reports"}</h1>
 
       <Select value={selectedChild} onValueChange={setSelectedChild}>
-        <SelectTrigger className="max-w-xs"><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+        <SelectTrigger className="max-w-xs"><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
         <SelectContent>{children?.map((c: any) => <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>)}</SelectContent>
       </Select>
 
@@ -45,7 +46,7 @@ export default function ParentReports() {
                 <CalendarDays className="h-8 w-8 text-blue-500" />
                 <div>
                   <p className="text-2xl font-bold">{isLoading ? "-" : stats?.total ?? 0}</p>
-                  <p className="text-xs text-muted-foreground">إجمالي الأيام</p>
+                  <p className="text-xs text-muted-foreground">{isAr ? "إجمالي الأيام" : "Total Days"}</p>
                 </div>
               </CardContent>
             </Card>
@@ -54,7 +55,7 @@ export default function ParentReports() {
                 <CheckCircle2 className="h-8 w-8 text-green-500" />
                 <div>
                   <p className="text-2xl font-bold">{isLoading ? "-" : stats?.present ?? 0}</p>
-                  <p className="text-xs text-muted-foreground">أيام الحضور</p>
+                  <p className="text-xs text-muted-foreground">{isAr ? "أيام الحضور" : "Attendance Days"}</p>
                 </div>
               </CardContent>
             </Card>
@@ -63,7 +64,7 @@ export default function ParentReports() {
                 <XCircle className="h-8 w-8 text-red-500" />
                 <div>
                   <p className="text-2xl font-bold">{isLoading ? "-" : stats?.absent ?? 0}</p>
-                  <p className="text-xs text-muted-foreground">أيام الغياب</p>
+                  <p className="text-xs text-muted-foreground">{isAr ? "أيام الغياب" : "Absence Days"}</p>
                 </div>
               </CardContent>
             </Card>
@@ -72,7 +73,7 @@ export default function ParentReports() {
                 <BarChart3 className="h-8 w-8 text-purple-500" />
                 <div>
                   <p className="text-2xl font-bold">{isLoading ? "-" : `${stats?.rate ?? 0}%`}</p>
-                  <p className="text-xs text-muted-foreground">نسبة الحضور</p>
+                  <p className="text-xs text-muted-foreground">{isAr ? "نسبة الحضور" : "Attendance Rate"}</p>
                 </div>
               </CardContent>
             </Card>
@@ -81,12 +82,12 @@ export default function ParentReports() {
           {/* Attendance Progress */}
           {stats && (
             <Card>
-              <CardHeader><CardTitle className="text-lg">ملخص الحضور</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">{isAr ? "ملخص الحضور" : "Attendance Summary"}</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm mb-2">
-                      <span>نسبة الحضور</span>
+                      <span>{isAr ? "نسبة الحضور" : "Attendance Rate"}</span>
                       <span className="font-medium">{stats.rate}%</span>
                     </div>
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -94,11 +95,11 @@ export default function ParentReports() {
                     </div>
                   </div>
                   {stats.rate >= 90 ? (
-                    <p className="text-sm text-green-600 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />ممتاز! نسبة حضور عالية</p>
+                    <p className="text-sm text-green-600 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />{isAr ? "ممتاز! نسبة حضور عالية" : "Excellent! High Attendance Rate"}</p>
                   ) : stats.rate >= 75 ? (
-                    <p className="text-sm text-amber-600">نسبة حضور جيدة، يمكن تحسينها</p>
+                    <p className="text-sm text-amber-600">{isAr ? "نسبة حضور جيدة، يمكن تحسينها" : "Good Attendance Rate, Can Be Improved"}</p>
                   ) : (
-                    <p className="text-sm text-red-600">نسبة الحضور تحتاج لتحسين</p>
+                    <p className="text-sm text-red-600">{isAr ? "نسبة الحضور تحتاج لتحسين" : "Attendance Rate Needs Improvement"}</p>
                   )}
                 </div>
               </CardContent>
@@ -107,7 +108,7 @@ export default function ParentReports() {
 
           {/* Recent Records */}
           <Card>
-            <CardHeader><CardTitle className="text-lg">آخر سجلات الحضور</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">{isAr ? "آخر سجلات الحضور" : "Latest Attendance Records"}</CardTitle></CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-32 w-full" /> : records?.length === 0 ? (
                 <EmptyState variant="attendance" compact />
@@ -127,12 +128,12 @@ export default function ParentReports() {
                         r.status === 'checked_in' ? 'bg-emerald-100 text-emerald-700' :
                         r.status === 'checked_out' ? 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-700'
                       }>
-                        {r.status === 'present' ? 'حاضر' :
-                         r.status === 'absent' ? 'غائب' :
-                         r.status === 'late' ? 'متأخر' :
-                         r.status === 'excused' ? 'غياب بعذر' :
-                         r.status === 'checked_in' ? 'تم التسجيل' :
-                         r.status === 'checked_out' ? 'تم المغادرة' : r.status}
+                        {r.status === 'present' ? isAr ? 'حاضر' : 'Present' :
+                         r.status === 'absent' ? isAr ? 'غائب' : 'Absent' :
+                         r.status === 'late' ? isAr ? 'متأخر' : 'Late' :
+                         r.status === 'excused' ? isAr ? 'غياب بعذر' : 'Excused Absence' :
+                         r.status === 'checked_in' ? isAr ? 'تم التسجيل' : 'Registered' :
+                         r.status === 'checked_out' ? isAr ? 'تم المغادرة' : 'Departed' : r.status}
                       </Badge>
                     </div>
                   ))}
@@ -146,7 +147,7 @@ export default function ParentReports() {
       {!selectedChild && (
         <div className="text-center py-12">
           <Baby className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">اختر طفلاً لعرض التقارير</p>
+          <p className="text-muted-foreground">{isAr ? "اختر طفلاً لعرض التقارير" : "Select a child to view reports"}</p>
         </div>
       )}
     </div>

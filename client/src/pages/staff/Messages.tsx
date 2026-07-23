@@ -98,7 +98,7 @@ export default function StaffMessages() {
     formData.append("file", file);
     try {
       const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error("فشل الرفع");
+      if (!res.ok) throw new Error((isAr ? "فشل الرفع" : "Upload failed"));
       const data = await res.json();
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";
       sendMsg.mutate(
@@ -146,10 +146,10 @@ export default function StaffMessages() {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case "parent": return "ولي أمر";
-      case "teacher": return "معلم/ة";
-      case "assistant": return "مساعد/ة";
-      case "admin": return "إدارة";
+      case "parent": return (isAr ? "ولي أمر" : "Parent");
+      case "teacher": return isAr ? "معلم/ة" : "Teacher";
+      case "assistant": return isAr ? "مساعد/ة" : "Assistant";
+      case "admin": return isAr ? "إدارة" : "Management";
       default: return role;
     }
   };
@@ -162,26 +162,26 @@ export default function StaffMessages() {
             <div className="h-9 w-9 rounded-xl bg-purple-100 flex items-center justify-center">
               <MessageCircle className="h-5 w-5 text-purple-600" />
             </div>
-            الرسائل
+            {isAr ? "الرسائل" : "Messages"}
           </h1>
         </div>
         <Dialog open={showNewConv} onOpenChange={setShowNewConv}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1">
               <Plus className="h-4 w-4" />
-              محادثة جديدة
+              {isAr ? "محادثة جديدة" : "New Chat"}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>محادثة جديدة مع ولي أمر</DialogTitle>
+              <DialogTitle>{isAr ? "محادثة جديدة مع ولي أمر" : "New chat with parent"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">اختر ولي الأمر</label>
+                <label className="text-sm font-medium mb-1 block">{isAr ? "اختر ولي الأمر" : "Select Parent"}</label>
                 <Select value={selectedParent} onValueChange={(v) => { setSelectedParent(v); setSelectedChildForConv(""); }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر ولي الأمر" />
+                    <SelectValue placeholder={isAr ? "اختر ولي الأمر" : "Select Parent"} />
                   </SelectTrigger>
                   <SelectContent>
                     {(contacts as any[])?.map((contact: any) => (
@@ -191,7 +191,7 @@ export default function StaffMessages() {
                           {contact.name}
                           {contact.children && (
                             <span className="text-xs text-muted-foreground">
-                              ({contact.children.map((c: any) => c.name).join("، ")})
+                              ({contact.children.map((c: any) => c.name).join((isAr ? "، " : "and social media captions"))})
                             </span>
                           )}
                         </div>
@@ -202,10 +202,10 @@ export default function StaffMessages() {
               </div>
               {selectedParentData?.children && selectedParentData.children.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium mb-1 block">بخصوص الطفل (اختياري)</label>
+                  <label className="text-sm font-medium mb-1 block">{isAr ? "بخصوص الطفل (اختياري)" : "Regarding the child (optional)"}</label>
                   <Select value={selectedChildForConv} onValueChange={setSelectedChildForConv}>
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر الطفل" />
+                      <SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} />
                     </SelectTrigger>
                     <SelectContent>
                       {selectedParentData.children.map((child: any) => (
@@ -218,7 +218,7 @@ export default function StaffMessages() {
                 </div>
               )}
               <Button onClick={handleCreateConversation} disabled={!selectedParent} className="w-full">
-                بدء المحادثة
+                {isAr ? "بدء المحادثة" : "Start Chat"}
               </Button>
             </div>
           </DialogContent>
@@ -230,7 +230,7 @@ export default function StaffMessages() {
         <Card className="flex flex-col min-h-0">
           <div className="p-3 border-b">
             <Input
-              placeholder="بحث في المحادثات..."
+              placeholder={isAr ? "بحث في المحادثات..." : "Search in Chats..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9"
@@ -249,8 +249,8 @@ export default function StaffMessages() {
             ) : filteredConversations.length === 0 ? (
               <div className="text-center py-8">
                 <MessageCircle className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
-                <p className="text-sm text-muted-foreground">لا توجد محادثات</p>
-                <p className="text-xs text-muted-foreground mt-1">ابدأ محادثة مع ولي أمر</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "لا توجد محادثات" : "No conversations"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{isAr ? "ابدأ محادثة مع ولي أمر" : "Start a conversation with a parent"}</p>
               </div>
             ) : (
               filteredConversations.map((c: any) => (
@@ -277,10 +277,10 @@ export default function StaffMessages() {
                         )}
                       </div>
                       {c.childName && (
-                        <p className="text-[11px] text-primary/70 mt-0.5">بخصوص: {c.childName}</p>
+                        <p className="text-[11px] text-primary/70 mt-0.5">{isAr ? "بخصوص:" : "Regarding:"} {c.childName}</p>
                       )}
                       <p className="text-xs text-muted-foreground truncate mt-1">
-                        {c.lastMessagePreview || "بدء محادثة"}
+                        {c.lastMessagePreview || isAr ? "بدء محادثة" : "Start Chat"}
                       </p>
                     </div>
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -310,7 +310,7 @@ export default function StaffMessages() {
                     </Badge>
                   </div>
                   {selectedConversation?.childName && (
-                    <p className="text-xs text-muted-foreground">بخصوص: {selectedConversation.childName}</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "بخصوص:" : "Regarding:"} {selectedConversation.childName}</p>
                   )}
                 </div>
               </div>
@@ -323,7 +323,7 @@ export default function StaffMessages() {
                   </div>
                 ) : messages?.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                    لا توجد رسائل بعد. ابدأ المحادثة!
+                    {isAr ? "لا توجد رسائل بعد. ابدأ المحادثة!" : "No messages yet. Start the conversation!"}
                   </div>
                 ) : (
                   messages?.map((msg: any) => (
@@ -346,7 +346,7 @@ export default function StaffMessages() {
                             {msg.attachmentType === "image" ? (
                               <img
                                 src={msg.attachmentUrl}
-                                alt={msg.attachmentName || "صورة"}
+                                alt={msg.attachmentName || (isAr ? "صورة" : "Photo")}
                                 className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
                                 onClick={() => window.open(msg.attachmentUrl, "_blank")}
                               />
@@ -358,7 +358,7 @@ export default function StaffMessages() {
                                 className="flex items-center gap-2 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
                               >
                                 <FileText className="h-4 w-4" />
-                                <span className="text-xs truncate">{msg.attachmentName || "ملف مرفق"}</span>
+                                <span className="text-xs truncate">{msg.attachmentName || isAr ? "ملف مرفق" : "Attached File"}</span>
                               </a>
                             )}
                           </div>
@@ -408,7 +408,7 @@ export default function StaffMessages() {
                 <Input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="اكتب رسالتك..."
+                  placeholder={isAr ? "اكتب رسالتك..." : "Type your message..."}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
                   className="flex-1"
                 />
@@ -426,7 +426,7 @@ export default function StaffMessages() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <MessageCircle className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-                <p className="text-muted-foreground">اختر محادثة أو ابدأ محادثة جديدة</p>
+                <p className="text-muted-foreground">{isAr ? "اختر محادثة أو ابدأ محادثة جديدة" : "Choose a conversation or start a new one"}</p>
               </div>
             </div>
           )}

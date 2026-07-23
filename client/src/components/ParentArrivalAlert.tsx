@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Bell, CheckCircle2, X } from "lucide-react";
@@ -20,6 +21,8 @@ interface ArrivalAlert {
  * Plays a gentle, nursery-friendly notification sound and optionally vibrates.
  */
 export function ParentArrivalAlert() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [alerts, setAlerts] = useState<ArrivalAlert[]>([]);
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
   const vibrationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -179,8 +182,8 @@ export function ParentArrivalAlert() {
                 >
                   <CheckCircle2 className="h-6 w-6 ml-2" />
                   {sendToReceptionMutation.isPending
-                    ? "جاري الإرسال..."
-                    : "تم إرسال الطفل للاستقبال"}
+                    ? (isAr ? "جاري الإرسال..." : "Sending...")
+                    : (isAr ? "تم إرسال الطفل للاستقبال" : "Child sent to reception")}
                 </Button>
               </div>
             </div>

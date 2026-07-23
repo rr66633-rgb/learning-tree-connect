@@ -240,10 +240,10 @@ export default function StaffStaffAttendance() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "checked_in": return <Badge className="bg-blue-100 text-blue-700">حاضر</Badge>;
-      case "checked_out": return <Badge className="bg-green-100 text-green-700">انصرف</Badge>;
-      case "late": return <Badge className="bg-amber-100 text-amber-700">متأخر</Badge>;
-      case "absent": return <Badge className="bg-red-100 text-red-700">غائب</Badge>;
+      case "checked_in": return <Badge className="bg-blue-100 text-blue-700">{isAr ? "حاضر" : "Present"}</Badge>;
+      case "checked_out": return <Badge className="bg-green-100 text-green-700">{isAr ? "انصرف" : "Clock Out"}</Badge>;
+      case "late": return <Badge className="bg-amber-100 text-amber-700">{isAr ? "متأخر" : "Late"}</Badge>;
+      case "absent": return <Badge className="bg-red-100 text-red-700">{isAr ? "غائب" : "Absent"}</Badge>;
       default: return <Badge variant="secondary">{status}</Badge>;
     }
   };
@@ -256,8 +256,8 @@ export default function StaffStaffAttendance() {
             <UserCheck className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">سجل حضور الموظفين</h1>
-            <p className="text-sm text-muted-foreground">تسجيل الحضور والانصراف</p>
+            <h1 className="text-2xl font-bold text-foreground">{isAr ? "سجل حضور الموظفين" : "Staff Attendance Log"}</h1>
+            <p className="text-sm text-muted-foreground">{isAr ? "تسجيل الحضور والانصراف" : "Record Attendance"}</p>
           </div>
         </div>
       </div>
@@ -273,7 +273,7 @@ export default function StaffStaffAttendance() {
               ) : todayAttendance?.checkInTime && todayAttendance?.checkOutTime ? (
                 <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-full">
                   <CheckCircle2 className="h-5 w-5" />
-                  <span className="font-semibold">تم تسجيل اليوم بالكامل</span>
+                  <span className="font-semibold">{isAr ? "تم تسجيل اليوم بالكامل" : "Day fully recorded"}</span>
                 </div>
               ) : todayAttendance?.checkInTime ? (
                 <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-full">
@@ -281,14 +281,14 @@ export default function StaffStaffAttendance() {
                   <span className="font-medium">
                     وقت الوصول: {new Date(todayAttendance.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                     {(todayAttendance as any).isLateRecord && (
-                      <Badge className="bg-amber-100 text-amber-700 mr-2 text-[10px]">تسجيل متأخر</Badge>
+                      <Badge className="bg-amber-100 text-amber-700 mr-2 text-[10px]">{isAr ? "تسجيل متأخر" : "Late Check-in"}</Badge>
                     )}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
                   <AlertCircle className="h-5 w-5" />
-                  <span>لم يتم تسجيل الحضور بعد اليوم</span>
+                  <span>{isAr ? "لم يتم تسجيل الحضور بعد اليوم" : "Attendance not recorded for today yet"}</span>
                 </div>
               )}
             </div>
@@ -304,7 +304,7 @@ export default function StaffStaffAttendance() {
                     className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white text-lg px-8 py-6 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.97] gap-3"
                   >
                     <LogIn className="h-6 w-6" />
-                    {quickCheckIn.isPending ? "جاري التسجيل..." : "تسجيل وصول"}
+                    {quickCheckIn.isPending ? (isAr ? "جاري التسجيل..." : "Registering...") : (isAr ? "تسجيل وصول" : "Record Arrival")}
                   </Button>
                   <Button
                     onClick={() => openLateDialog("checkIn")}
@@ -313,7 +313,7 @@ export default function StaffStaffAttendance() {
                     className="w-full sm:w-auto border-amber-300 text-amber-700 hover:bg-amber-50 px-6 py-6 rounded-xl gap-2"
                   >
                     <Timer className="h-5 w-5" />
-                    تسجيل متأخر
+                    {isAr ? "تسجيل متأخر" : "Late Check-in"}
                   </Button>
                 </>
               ) : !todayAttendance?.checkOutTime ? (
@@ -325,7 +325,7 @@ export default function StaffStaffAttendance() {
                     className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white text-lg px-8 py-6 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.97] gap-3"
                   >
                     <LogOut className="h-6 w-6" />
-                    {quickCheckOut.isPending ? "جاري التسجيل..." : "تسجيل انصراف"}
+                    {quickCheckOut.isPending ? (isAr ? "جاري التسجيل..." : "Registering...") : "تسجيل انصراف"}
                   </Button>
                   <Button
                     onClick={() => openLateDialog("checkOut")}
@@ -334,7 +334,7 @@ export default function StaffStaffAttendance() {
                     className="w-full sm:w-auto border-amber-300 text-amber-700 hover:bg-amber-50 px-6 py-6 rounded-xl gap-2"
                   >
                     <Timer className="h-5 w-5" />
-                    تسجيل متأخر
+                    {isAr ? "تسجيل متأخر" : "Late Check-in"}
                   </Button>
                 </>
               ) : null}
@@ -351,7 +351,7 @@ export default function StaffStaffAttendance() {
                   className="text-muted-foreground hover:text-primary gap-1 text-xs"
                 >
                   <MapPin className="h-3 w-3" />
-                  {gpsLoading || checkIn.isPending ? "جاري التحديد..." : "تسجيل بالموقع الجغرافي (GPS)"}
+                  {gpsLoading || checkIn.isPending ? isAr ? "جاري التحديد..." : "Selecting..." : "تسجيل بالموقع الجغرافي (GPS)"}
                 </Button>
               </div>
             )}
@@ -365,7 +365,7 @@ export default function StaffStaffAttendance() {
                   className="text-muted-foreground hover:text-primary gap-1 text-xs"
                 >
                   <MapPin className="h-3 w-3" />
-                  {gpsLoading || checkOut.isPending ? "جاري التحديد..." : "انصراف بالموقع الجغرافي (GPS)"}
+                  {gpsLoading || checkOut.isPending ? isAr ? "جاري التحديد..." : "Selecting..." : "انصراف بالموقع الجغرافي (GPS)"}
                 </Button>
               </div>
             )}
@@ -376,27 +376,27 @@ export default function StaffStaffAttendance() {
       {/* Attendance History Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{isAdmin ? `سجلات اليوم - ${new Date().toLocaleDateString('ar-SA')}` : "سجل حضوري"}</CardTitle>
+          <CardTitle>{isAdmin ? `سجلات اليوم - ${new Date().toLocaleDateString('ar-SA')}` : isAr ? "سجل حضوري" : "My Attendance Log"}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  {isAdmin && <TableHead>الموظف</TableHead>}
+                  {isAdmin && <TableHead>{isAr ? "الموظف" : "Employee"}</TableHead>}
                   <TableHead>{isAr ? "التاريخ" : "Date"}</TableHead>
-                  <TableHead>وقت الحضور</TableHead>
-                  <TableHead>وقت الانصراف</TableHead>
+                  <TableHead>{isAr ? "وقت الحضور" : "Attendance Time"}</TableHead>
+                  <TableHead>{isAr ? "وقت الانصراف" : "Dismissal Time"}</TableHead>
                   <TableHead>{isAr ? "الحالة" : "Status"}</TableHead>
                   <TableHead>{isAr ? "ملاحظات" : "Notes"}</TableHead>
-                  {isAdmin && <TableHead>إجراءات</TableHead>}
+                  {isAdmin && <TableHead>{isAr ? "إجراءات" : "Actions"}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}><TableCell colSpan={isAdmin ? 7 : 6}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                 )) : !records || (records as any[]).length === 0 ? (
-                  <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8 text-muted-foreground">لا توجد سجلات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8 text-muted-foreground">{isAr ? "لا توجد سجلات" : "No records"}</TableCell></TableRow>
                 ) : (records as any[]).map((r: any) => (
                   <TableRow key={r.id} className={r.isLateRecord ? "bg-amber-50/50" : ""}>
                     {isAdmin && <TableCell className="font-medium">{r.userName || "-"}</TableCell>}
@@ -427,7 +427,7 @@ export default function StaffStaffAttendance() {
                         {r.isLateRecord && (
                           <Badge className="bg-amber-100 text-amber-700 text-[10px] gap-0.5">
                             <AlertTriangle className="h-2.5 w-2.5" />
-                            متأخر
+                            {isAr ? "متأخر" : "Late"}
                           </Badge>
                         )}
                       </div>
@@ -449,7 +449,7 @@ export default function StaffStaffAttendance() {
                             onClick={() => handleAdminCheckOut(r)}
                           >
                             <UserX className="h-3 w-3" />
-                            تسجيل خروج
+                            {isAr ? "تسجيل خروج" : "Logout"}
                           </Button>
                         )}
                       </TableCell>
@@ -468,18 +468,18 @@ export default function StaffStaffAttendance() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Timer className="h-5 w-5 text-amber-600" />
-              {lateType === "checkIn" ? "تسجيل وصول متأخر" : "تسجيل انصراف متأخر"}
+              {lateType === "checkIn" ? isAr ? "تسجيل وصول متأخر" : "Late Check-in" : isAr ? "تسجيل انصراف متأخر" : "Late Clock-out"}
             </DialogTitle>
             <DialogDescription>
               {lateType === "checkIn"
-                ? "حدد وقت وصولك الفعلي واكتب سبب التأخر في التسجيل"
-                : "حدد وقت انصرافك الفعلي واكتب سبب التأخر في التسجيل"}
+                ? isAr ? "حدد وقت وصولك الفعلي واكتب سبب التأخر في التسجيل" : "Specify your actual arrival time and state the reason for late registration"
+                : isAr ? "حدد وقت انصرافك الفعلي واكتب سبب التأخر في التسجيل" : "Specify your actual departure time and state the reason for late registration"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="late-time">
-                {lateType === "checkIn" ? "وقت الوصول الفعلي" : "وقت الانصراف الفعلي"}
+                {lateType === "checkIn" ? isAr ? "وقت الوصول الفعلي" : "Actual Arrival Time" : isAr ? "وقت الانصراف الفعلي" : "Actual Dismissal Time"}
               </Label>
               <Input
                 id="late-time"
@@ -490,21 +490,21 @@ export default function StaffStaffAttendance() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="late-reason">سبب التسجيل المتأخر <span className="text-red-500">*</span></Label>
+              <Label htmlFor="late-reason">{isAr ? "سبب التسجيل المتأخر" : "Reason for Late Registration"} <span className="text-red-500">*</span></Label>
               <Textarea
                 id="late-reason"
-                placeholder="مثال: وصلت ونسيت أسجل..."
+                placeholder={isAr ? "مثال: وصلت ونسيت أسجل..." : "Example: Arrived and forgot to check in..."}
                 value={lateReason}
                 onChange={(e) => setLateReason(e.target.value)}
                 className="text-right"
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground">هذا السبب سيظهر للإدارة</p>
+              <p className="text-xs text-muted-foreground">{isAr ? "هذا السبب سيظهر للإدارة" : "This reason will be shown to management"}</p>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setLateDialog(false)}>
-              إلغاء
+              {isAr ? "إلغاء" : "Cancel"}
             </Button>
             <Button
               onClick={submitLateRecord}
@@ -512,7 +512,7 @@ export default function StaffStaffAttendance() {
               className="bg-amber-600 hover:bg-amber-700 gap-2"
             >
               <Timer className="h-4 w-4" />
-              {(lateCheckIn.isPending || lateCheckOut.isPending) ? "جاري التسجيل..." : "تأكيد التسجيل"}
+              {(lateCheckIn.isPending || lateCheckOut.isPending) ? (isAr ? "جاري التسجيل..." : "Registering...") : "تأكيد التسجيل"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -522,14 +522,14 @@ export default function StaffStaffAttendance() {
       <Dialog open={adminCheckOutDialog} onOpenChange={setAdminCheckOutDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>تسجيل خروج يدوي</DialogTitle>
+            <DialogTitle>{isAr ? "تسجيل خروج يدوي" : "Manual Logout"}</DialogTitle>
             <DialogDescription>
-              تسجيل انصراف الموظف {selectedRecord?.userName || ""} الذي نسي تسجيل خروجه
+              {isAr ? "تسجيل انصراف الموظف" : "Employee Clock-out"} {selectedRecord?.userName || ""} الذي نسي تسجيل خروجه
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="checkout-time">وقت الانصراف</Label>
+              <Label htmlFor="checkout-time">{isAr ? "وقت الانصراف" : "Dismissal Time"}</Label>
               <Input
                 id="checkout-time"
                 type="time"
@@ -537,13 +537,13 @@ export default function StaffStaffAttendance() {
                 onChange={(e) => setAdminCheckOutTime(e.target.value)}
                 className="text-right"
               />
-              <p className="text-xs text-muted-foreground">اترك الوقت الافتراضي أو عدّله لوقت الانصراف الفعلي</p>
+              <p className="text-xs text-muted-foreground">{isAr ? "اترك الوقت الافتراضي أو عدّله لوقت الانصراف الفعلي" : "Leave default time or adjust for actual departure time"}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="checkout-notes">ملاحظات (اختياري)</Label>
+              <Label htmlFor="checkout-notes">{isAr ? "ملاحظات (اختياري)" : "Notes (Optional)"}</Label>
               <Textarea
                 id="checkout-notes"
-                placeholder="مثال: نسي الموظف تسجيل الخروج"
+                placeholder={isAr ? "مثال: نسي الموظف تسجيل الخروج" : "Example: Employee forgot to check out"}
                 value={adminCheckOutNotes}
                 onChange={(e) => setAdminCheckOutNotes(e.target.value)}
                 className="text-right"
@@ -553,7 +553,7 @@ export default function StaffStaffAttendance() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setAdminCheckOutDialog(false)}>
-              إلغاء
+              {isAr ? "إلغاء" : "Cancel"}
             </Button>
             <Button
               onClick={confirmAdminCheckOut}
@@ -561,7 +561,7 @@ export default function StaffStaffAttendance() {
               className="bg-orange-600 hover:bg-orange-700 gap-2"
             >
               <LogOut className="h-4 w-4" />
-              {adminCheckOut.isPending ? "جاري التسجيل..." : "تأكيد الخروج"}
+              {adminCheckOut.isPending ? (isAr ? "جاري التسجيل..." : "Registering...") : "تأكيد الخروج"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -18,24 +18,24 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-const activityTypes = [
-  { value: "arrival", label: "الوصول", icon: LogIn, options: [] },
-  { value: "breakfast", label: "الإفطار", icon: Coffee, options: ["كاملة", "جزئية", "رفض"] },
-  { value: "morning_snack", label: "وجبة صباحية", icon: Apple, options: ["كاملة", "جزئية", "رفض"] },
-  { value: "lunch", label: "الغداء", icon: Sandwich, options: ["كاملة", "جزئية", "رفض"] },
-  { value: "afternoon_snack", label: "وجبة مسائية", icon: Cookie, options: ["كاملة", "جزئية", "رفض"] },
-  { value: "nap_start", label: "بداية قيلولة", icon: Moon, options: [] },
-  { value: "nap_end", label: "نهاية قيلولة", icon: Moon, options: [] },
-  { value: "diaper", label: "تغيير حفاض", icon: Baby, options: ["نظيف", "مبلل", "متسخ"] },
-  { value: "toilet", label: "دورة مياه", icon: Droplets, options: ["نجح", "محاولة"] },
-  { value: "medication", label: "دواء", icon: ThermometerSun, options: [] },
-  { value: "mood", label: "المزاج", icon: Smile, options: ["سعيد", "هادئ", "متعب", "منزعج", "متحمس"] },
-  { value: "learning_activity", label: "نشاط تعليمي", icon: BookOpen, options: [] },
-  { value: "outdoor_play", label: "لعب خارجي", icon: TreePine, options: [] },
-  { value: "departure", label: "المغادرة", icon: LogOut, options: [] },
-];
+const getActivityTypes = (isAr: boolean) => ([
+  { value: "arrival", label: (isAr ? "الوصول" : "Access"), icon: LogIn, options: [] },
+  { value: "breakfast", label: (isAr ? "الإفطار" : "Breakfast"), icon: Coffee, options: [(isAr ? "كاملة" : "Complete"), (isAr ? "جزئية" : "Partial"), (isAr ? "رفض" : "Reject")] },
+  { value: "morning_snack", label: (isAr ? "وجبة صباحية" : "Morning Meal"), icon: Apple, options: [(isAr ? "كاملة" : "Complete"), (isAr ? "جزئية" : "Partial"), (isAr ? "رفض" : "Reject")] },
+  { value: "lunch", label: (isAr ? "الغداء" : "Lunch"), icon: Sandwich, options: [(isAr ? "كاملة" : "Complete"), (isAr ? "جزئية" : "Partial"), (isAr ? "رفض" : "Reject")] },
+  { value: "afternoon_snack", label: (isAr ? "وجبة مسائية" : "Evening Meal"), icon: Cookie, options: [(isAr ? "كاملة" : "Complete"), (isAr ? "جزئية" : "Partial"), (isAr ? "رفض" : "Reject")] },
+  { value: "nap_start", label: (isAr ? "بداية قيلولة" : "Nap Start"), icon: Moon, options: [] },
+  { value: "nap_end", label: (isAr ? "نهاية قيلولة" : "End of Nap"), icon: Moon, options: [] },
+  { value: "diaper", label: (isAr ? "تغيير حفاض" : "Diaper Change"), icon: Baby, options: [(isAr ? "نظيف" : "Clean"), (isAr ? "مبلل" : "Wet"), (isAr ? "متسخ" : "Dirty")] },
+  { value: "toilet", label: (isAr ? "دورة مياه" : "Restroom"), icon: Droplets, options: [(isAr ? "نجح" : "Succeeded"), (isAr ? "محاولة" : "Attempt")] },
+  { value: "medication", label: (isAr ? "دواء" : "Medicine"), icon: ThermometerSun, options: [] },
+  { value: "mood", label: (isAr ? "المزاج" : "Mood"), icon: Smile, options: [(isAr ? "سعيد" : "Happy"), (isAr ? "هادئ" : "Calm"), (isAr ? "متعب" : "Tired"), (isAr ? "منزعج" : "Upset"), (isAr ? "متحمس" : "Excited")] },
+  { value: "learning_activity", label: (isAr ? "نشاط تعليمي" : "Educational Activity"), icon: BookOpen, options: [] },
+  { value: "outdoor_play", label: (isAr ? "لعب خارجي" : "Outdoor play"), icon: TreePine, options: [] },
+  { value: "departure", label: (isAr ? "المغادرة" : "Departure"), icon: LogOut, options: [] },
+]);
 
-type ActivityType = typeof activityTypes[number]["value"];
+type ActivityType = "arrival" | "breakfast" | "morning_snack" | "lunch" | "afternoon_snack" | "nap_start" | "nap_end" | "diaper" | "toilet" | "medication" | "mood" | "learning_activity" | "outdoor_play" | "departure";
 
 export default function StaffDailyLog() {
   const { t, i18n } = useTranslation();
@@ -178,15 +178,15 @@ export default function StaffDailyLog() {
     });
   };
 
-  const selectedTypeInfo = activityTypes.find(t => t.value === selectedType);
+  const selectedTypeInfo = getActivityTypes(isAr).find(t => t.value === selectedType);
 
   const getActivityIcon = (type: string) => {
-    const found = activityTypes.find(t => t.value === type);
+    const found = getActivityTypes(isAr).find(t => t.value === type);
     return found ? found.icon : StickyNote;
   };
 
   const getActivityLabel = (type: string) => {
-    const found = activityTypes.find(t => t.value === type);
+    const found = getActivityTypes(isAr).find(t => t.value === type);
     return found ? found.label : type;
   };
 
@@ -217,9 +217,9 @@ export default function StaffDailyLog() {
 
   const getRelationshipLabel = (rel: string) => {
     const labels: Record<string, string> = {
-      mother: "الأم", father: "الأب", driver: "السائق",
-      grandparent: "الجد/الجدة", grandfather: "الجد", grandmother: "الجدة",
-      guardian: "ولي الأمر", parent: "ولي أمر", relative: "قريب", other: "آخر"
+      mother: (isAr ? "الأم" : "Mother"), father: (isAr ? "الأب" : "Father"), driver: (isAr ? "السائق" : "Driver"),
+      grandparent: (isAr ? "الجد/الجدة" : "Grandparent"), grandfather: (isAr ? "الجد" : "Grandfather"), grandmother: (isAr ? "الجدة" : "Grandmother"),
+      guardian: "ولي الأمر", parent: (isAr ? "ولي أمر" : "Parent/Guardian"), relative: "قريب", other: (isAr ? "آخر" : "Last")
     };
     return labels[rel] || rel;
   };
@@ -227,26 +227,26 @@ export default function StaffDailyLog() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">سجل الرعاية اليومية</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "سجل الرعاية اليومية" : "Daily Care Log"}</h1>
         <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-SA')}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="activities">الأنشطة</TabsTrigger>
-          <TabsTrigger value="departure">المغادرة</TabsTrigger>
-          <TabsTrigger value="history">السجل</TabsTrigger>
+          <TabsTrigger value="departure">{isAr ? "المغادرة" : "Departure"}</TabsTrigger>
+          <TabsTrigger value="history">{isAr ? "السجل" : "Record"}</TabsTrigger>
         </TabsList>
 
         {/* Activities Tab */}
         <TabsContent value="activities" className="space-y-4">
           <div className="flex gap-2">
-            <Button variant={mode === "individual" ? "default" : "outline"} size="sm" onClick={() => setMode("individual")}>فردي</Button>
-            <Button variant={mode === "bulk" ? "default" : "outline"} size="sm" onClick={() => setMode("bulk")}>جماعي</Button>
+            <Button variant={mode === "individual" ? "default" : "outline"} size="sm" onClick={() => setMode("individual")}>{isAr ? "فردي" : "Individual"}</Button>
+            <Button variant={mode === "bulk" ? "default" : "outline"} size="sm" onClick={() => setMode("bulk")}>{isAr ? "جماعي" : "Group"}</Button>
           </div>
 
           <Card>
-            <CardHeader><CardTitle>تسجيل نشاط جديد</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{isAr ? "تسجيل نشاط جديد" : "Log New Activity"}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {mode === "individual" && (
@@ -254,19 +254,19 @@ export default function StaffDailyLog() {
                     <div className="relative">
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="بحث بالاسم..."
+                        placeholder={isAr ? "بحث بالاسم..." : "Search by Name..."}
                         value={childSearch}
                         onChange={(e) => setChildSearch(e.target.value)}
                         className="pr-9 mb-2"
                       />
                     </div>
                     <Select value={selectedChild} onValueChange={setSelectedChild}>
-                      <SelectTrigger><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
                       <SelectContent>
                         {childrenLoading ? (
                           <SelectItem value="loading" disabled>جاري التحميل...</SelectItem>
                         ) : filteredChildren.length === 0 ? (
-                          <SelectItem value="empty" disabled>لا يوجد نتائج</SelectItem>
+                          <SelectItem value="empty" disabled>{isAr ? "لا يوجد نتائج" : "No results"}</SelectItem>
                         ) : (
                           filteredChildren.map((c: any) => (
                             <SelectItem key={c.id} value={c.id.toString()}>
@@ -286,9 +286,9 @@ export default function StaffDailyLog() {
                   </div>
                 )}
                 <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger><SelectValue placeholder="نوع النشاط" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={isAr ? "نوع النشاط" : "Activity Type"} /></SelectTrigger>
                   <SelectContent>
-                    {activityTypes.map(t => (
+                    {getActivityTypes(isAr).map(t => (
                       <SelectItem key={t.value} value={t.value}>
                         <span className="flex items-center gap-2">
                           <t.icon className="h-4 w-4" />
@@ -308,21 +308,21 @@ export default function StaffDailyLog() {
                 </div>
               )}
 
-              <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="ملاحظات إضافية (اختياري)" rows={2} />
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={isAr ? "ملاحظات إضافية (اختياري)" : "Additional Notes (Optional)"} rows={2} />
 
               <Button
                 onClick={mode === "individual" ? handleLog : handleBulkLog}
                 disabled={logActivity.isPending}
                 className="w-full md:w-auto"
               >
-                {logActivity.isPending ? "جاري التسجيل..." : mode === "individual" ? "تسجيل النشاط" : "تسجيل للجميع"}
+                {logActivity.isPending ? (isAr ? "جاري التسجيل..." : "Registering...") : mode === "individual" ? (isAr ? "تسجيل النشاط" : "Record Activity") : (isAr ? "تسجيل للجميع" : "Register for All")}
               </Button>
             </CardContent>
           </Card>
 
           {/* Activity type quick buttons */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {activityTypes.map(type => (
+            {getActivityTypes(isAr).map(type => (
               <Card
                 key={type.value}
                 className={`cursor-pointer hover:shadow-md transition-all ${selectedType === type.value ? 'ring-2 ring-primary bg-primary/5' : ''}`}
@@ -367,7 +367,7 @@ export default function StaffDailyLog() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <LogOut className="h-5 w-5" />
-                تسجيل مغادرة طفل
+                {isAr ? "تسجيل مغادرة طفل" : "Child Check-out"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -376,14 +376,14 @@ export default function StaffDailyLog() {
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="بحث بالاسم..."
+                    placeholder={isAr ? "بحث بالاسم..." : "Search by Name..."}
                     value={departureSearch}
                     onChange={(e) => setDepartureSearch(e.target.value)}
                     className="pr-9 mb-2"
                   />
                 </div>
                 <Select value={departureChild} onValueChange={setDepartureChild}>
-                  <SelectTrigger><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
                   <SelectContent>
                     {filteredDepartureChildren.map((c: any) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
@@ -407,16 +407,16 @@ export default function StaffDailyLog() {
                   <ChildAvatar childId={parseInt(departureChild)} size="lg" />
                   <div>
                     <p className="font-bold text-lg">{getChildName(parseInt(departureChild))}</p>
-                    <p className="text-sm text-muted-foreground">تأكد من هوية الطفل قبل التسليم</p>
+                    <p className="text-sm text-muted-foreground">{isAr ? "تأكد من هوية الطفل قبل التسليم" : "Confirm child's identity before handover"}</p>
                   </div>
                 </div>
               )}
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>المستلم</Label>
+                  <Label>{isAr ? "المستلم" : "Recipient"}</Label>
                   <Select value={selectedPickupPerson} onValueChange={handlePickupPersonChange}>
-                    <SelectTrigger><SelectValue placeholder="اختر المستلم" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={isAr ? "اختر المستلم" : "Select Recipient"} /></SelectTrigger>
                     <SelectContent>
                       {authorizedPersons && authorizedPersons.length > 0 ? (
                         authorizedPersons.map((person: any) => (
@@ -432,7 +432,7 @@ export default function StaffDailyLog() {
                       <SelectItem value="other">
                         <span className="flex items-center gap-2">
                           <User className="h-4 w-4" />
-                          شخص آخر
+                          {isAr ? "شخص آخر" : "Another Person"}
                         </span>
                       </SelectItem>
                     </SelectContent>
@@ -444,22 +444,22 @@ export default function StaffDailyLog() {
                     <div className="space-y-2">
                       <Label>اسم المستلم</Label>
                       <Input
-                        placeholder="أدخل اسم المستلم"
+                        placeholder={isAr ? "أدخل اسم المستلم" : "Enter Recipient Name"}
                         value={customPickupName}
                         onChange={(e) => setCustomPickupName(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>صلة القرابة</Label>
+                      <Label>{isAr ? "صلة القرابة" : "Relationship"}</Label>
                       <Select value={relationship} onValueChange={setRelationship}>
-                        <SelectTrigger><SelectValue placeholder="اختر صلة القرابة" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={isAr ? "اختر صلة القرابة" : "Select Relationship"} /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="mother">الأم</SelectItem>
-                          <SelectItem value="father">الأب</SelectItem>
-                          <SelectItem value="driver">السائق</SelectItem>
-                          <SelectItem value="grandparent">الجد/الجدة</SelectItem>
+                          <SelectItem value="mother">{isAr ? "الأم" : "Mother"}</SelectItem>
+                          <SelectItem value="father">{isAr ? "الأب" : "Father"}</SelectItem>
+                          <SelectItem value="driver">{isAr ? "السائق" : "Driver"}</SelectItem>
+                          <SelectItem value="grandparent">{isAr ? "الجد/الجدة" : "Grandparent"}</SelectItem>
                           <SelectItem value="guardian">{isAr ? "ولي الأمر" : "Parent"}</SelectItem>
-                          <SelectItem value="other">أخرى</SelectItem>
+                          <SelectItem value="other">{isAr ? "أخرى" : "Other"}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -478,11 +478,11 @@ export default function StaffDailyLog() {
               </div>
 
               <div className="space-y-2">
-                <Label>ملاحظات المغادرة (اختياري)</Label>
+                <Label>{isAr ? "ملاحظات المغادرة (اختياري)" : "Departure Notes (Optional)"}</Label>
                 <Textarea
                   value={departureNotes}
                   onChange={(e) => setDepartureNotes(e.target.value)}
-                  placeholder="أي ملاحظات عن المغادرة..."
+                  placeholder={isAr ? "أي ملاحظات عن المغادرة..." : "Any notes about departure..."}
                   rows={2}
                 />
               </div>
@@ -498,7 +498,7 @@ export default function StaffDailyLog() {
                 className="w-full"
                 variant="default"
               >
-                {createDeparture.isPending ? "جاري التسجيل..." : "تسجيل المغادرة"}
+                {createDeparture.isPending ? "جاري التسجيل..." : (isAr ? "تسجيل المغادرة" : "Checkout")}
               </Button>
             </CardContent>
           </Card>
@@ -506,15 +506,15 @@ export default function StaffDailyLog() {
           {/* Today's departures */}
           {todayDepartures && todayDepartures.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-base">مغادرات اليوم</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{isAr ? "مغادرات اليوم" : "Today's Departures"}</CardTitle></CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
-                      <TableHead className="text-right">الوقت</TableHead>
-                      <TableHead className="text-right">المستلم</TableHead>
-                      <TableHead className="text-right">صلة القرابة</TableHead>
+                      <TableHead className="text-right">{isAr ? "الوقت" : "Time"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "المستلم" : "Recipient"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "صلة القرابة" : "Relationship"}</TableHead>
                       <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -532,7 +532,7 @@ export default function StaffDailyLog() {
                         <TableCell>{getRelationshipLabel(dep.relationship)}</TableCell>
                         <TableCell>
                           <Badge variant={dep.status === 'completed' ? 'default' : dep.status === 'late' ? 'destructive' : 'secondary'}>
-                            {dep.status === 'completed' ? 'مكتمل' : dep.status === 'late' ? 'متأخر' : 'معلق'}
+                            {dep.status === 'completed' ? (isAr ? "مكتمل" : "Completed") : dep.status === 'late' ? (isAr ? "متأخر" : "Late") : (isAr ? "معلق" : "Pending")}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -547,11 +547,11 @@ export default function StaffDailyLog() {
         {/* History Tab */}
         <TabsContent value="history" className="space-y-4">
           <Card>
-            <CardHeader><CardTitle className="text-base">سجل الأنشطة</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{isAr ? "سجل الأنشطة" : "Activity Log"}</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2 mb-4">
                 <Select value={selectedChild} onValueChange={setSelectedChild}>
-                  <SelectTrigger><SelectValue placeholder="اختر طفل لعرض سجله" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={isAr ? "اختر طفل لعرض سجله" : "Select a child to view their record"} /></SelectTrigger>
                   <SelectContent>
                     {children?.map((c: any) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
@@ -565,9 +565,9 @@ export default function StaffDailyLog() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">الوقت</TableHead>
-                      <TableHead className="text-right">النشاط</TableHead>
-                      <TableHead className="text-right">التفاصيل</TableHead>
+                      <TableHead className="text-right">{isAr ? "الوقت" : "Time"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "النشاط" : "Activity"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "التفاصيل" : "Details"}</TableHead>
                       <TableHead className="text-right">{isAr ? "ملاحظات" : "Notes"}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -589,7 +589,7 @@ export default function StaffDailyLog() {
                 </Table>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  {selectedChild ? "لا توجد أنشطة مسجلة لهذا اليوم" : "اختر طفل لعرض سجله"}
+                  {selectedChild ? "لا توجد أنشطة مسجلة لهذا اليوم" : (isAr ? "اختر طفل لعرض سجله" : "Select a child to view their record")}
                 </p>
               )}
             </CardContent>

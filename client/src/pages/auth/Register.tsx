@@ -120,17 +120,17 @@ export default function Register() {
         <CardHeader className="text-center pb-2">
           <img
             src="/assets/logo.webp"
-            alt="نشأة"
+            alt={isAr ? "نشأة" : "Nasha\'a"}
             className="w-16 h-16 mx-auto mb-2 object-contain"
           />
           <h1 className="text-xl font-bold text-slate-800">
-            {step === "form" && "إنشاء حساب ولي أمر"}
-            {step === "otp" && "تحقق من رقم الجوال"}
-            {step === "success" && "تم التسجيل بنجاح"}
+            {step === "form" && isAr ? "إنشاء حساب ولي أمر" : "Create Parent Account"}
+            {step === "otp" && isAr ? "تحقق من رقم الجوال" : "Verify Mobile Number"}
+            {step === "success" && isAr ? "تم التسجيل بنجاح" : "Registered successfully"}
           </h1>
           {step === "form" && (
             <p className="text-sm text-muted-foreground mt-1">
-              أنشئ حسابك للوصول إلى بوابة ولي الأمر
+              {isAr ? "أنشئ حسابك للوصول إلى بوابة ولي الأمر" : "Create Your Account to Access the Parent Portal"}
             </p>
           )}
         </CardHeader>
@@ -139,12 +139,12 @@ export default function Register() {
           {step === "form" && (
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">الاسم الكامل</Label>
+                <Label htmlFor="name">{isAr ? "الاسم الكامل" : "Full Name"}</Label>
                 <div className="relative">
                   <Input
                     id="name"
                     type="text"
-                    placeholder="أدخل اسمك الكامل"
+                    placeholder={isAr ? "أدخل اسمك الكامل" : "Enter Your Full Name"}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="pr-10"
@@ -154,7 +154,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الجوال</Label>
+                <Label htmlFor="phone">{isAr ? "رقم الجوال" : "Phone Number"}</Label>
                 <div className="relative">
                   <Input
                     id="phone"
@@ -170,7 +170,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="email">{isAr ? "البريد الإلكتروني" : "Email"}</Label>
                 <div className="relative">
                   <Input
                     id="email"
@@ -186,12 +186,12 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
+                <Label htmlFor="password">{isAr ? "كلمة المرور" : "Password"}</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="6 أحرف على الأقل"
+                    placeholder={isAr ? "6 أحرف على الأقل" : "At least 6 characters"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pr-10 pl-10"
@@ -209,11 +209,11 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+                <Label htmlFor="confirmPassword">{isAr ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="أعد إدخال كلمة المرور"
+                  placeholder={isAr ? "أعد إدخال كلمة المرور" : "Re-enter Password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   dir="ltr"
@@ -243,18 +243,18 @@ export default function Register() {
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={registerMutation.isPending}
               >
-                {registerMutation.isPending ? "جاري التسجيل..." : "إنشاء الحساب"}
+                {registerMutation.isPending ? (isAr ? "جاري التسجيل..." : "Registering...") : "إنشاء الحساب"}
               </Button>
 
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
-                  لديك حساب بالفعل؟{" "}
+                  {isAr ? "لديك حساب بالفعل؟" : "Already have an account?"}{" "}
                   <button
                     type="button"
                     onClick={() => setLocation("/login")}
                     className="text-primary hover:underline font-medium"
                   >
-                    تسجيل الدخول
+                    {isAr ? "تسجيل الدخول" : "Login"}
                   </button>
                 </p>
               </div>
@@ -265,7 +265,7 @@ export default function Register() {
           {step === "otp" && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                تم إرسال رمز التحقق إلى{" "}
+                {isAr ? "تم إرسال رمز التحقق إلى" : "Verification code sent to"}{" "}
                 <span className="font-medium text-foreground" dir="ltr">{phone}</span>
               </p>
 
@@ -276,15 +276,15 @@ export default function Register() {
                   otpExpiryCountdown > 0 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
                 }`}>
                   {otpExpiryCountdown > 0 ? (
-                    <>صالح لمدة {formatTime(otpExpiryCountdown)}</>
+                    <>{isAr ? "صالح لمدة" : "Valid for"} {formatTime(otpExpiryCountdown)}</>
                   ) : (
-                    <>انتهت صلاحية الرمز</>
+                    <>{isAr ? "انتهت صلاحية الرمز" : "Code Expired"}</>
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="otp">رمز التحقق</Label>
+                <Label htmlFor="otp">{isAr ? "رمز التحقق" : "Verification Code"}</Label>
                 <Input
                   id="otp"
                   type="text"
@@ -303,7 +303,7 @@ export default function Register() {
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={verifyMutation.isPending || otpExpiryCountdown === 0}
               >
-                {verifyMutation.isPending ? "جاري التحقق..." : "تأكيد الرمز"}
+                {verifyMutation.isPending ? (isAr ? "جاري التحقق..." : "Verifying...") : "تأكيد الرمز"}
               </Button>
 
               {/* Resend OTP */}
@@ -315,11 +315,11 @@ export default function Register() {
                     className="text-sm text-primary hover:underline font-medium"
                     disabled={resendOtpMutation.isPending}
                   >
-                    {resendOtpMutation.isPending ? "جاري الإرسال..." : "إعادة إرسال الرمز"}
+                    {resendOtpMutation.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : "إعادة إرسال الرمز"}
                   </button>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    إعادة الإرسال بعد {countdown} ثانية
+                    {isAr ? "إعادة الإرسال بعد" : "Resend After"} {countdown} ثانية
                   </p>
                 )}
               </div>
@@ -331,16 +331,16 @@ export default function Register() {
             <div className="text-center space-y-4 py-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
               <h2 className="text-lg font-semibold text-slate-800">
-                تم إنشاء حسابك بنجاح
+                {isAr ? "تم إنشاء حسابك بنجاح" : "Account created successfully"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                حسابك قيد المراجعة من قبل الإدارة. ستتمكن من الوصول إلى البوابة بعد الموافقة.
+                {isAr ? "حسابك قيد المراجعة من قبل الإدارة. ستتمكن من الوصول إلى البوابة بعد الموافقة." : "Your account is under review by administration. You will be able to access the portal after approval."}
               </p>
               <Button
                 onClick={() => setLocation("/login")}
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
               >
-                تسجيل الدخول
+                {isAr ? "تسجيل الدخول" : "Login"}
               </Button>
             </div>
           )}

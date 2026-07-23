@@ -23,12 +23,12 @@ export default function AIReport() {
 
   const generateMutation = trpc.ai.generateProgressReport.useMutation({
     onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success(isAr ? "تم إنشاء التقرير بنجاح" : "Report created successfully"); },
-    onError: (err) => { const msg = err.message || "حدث خطأ"; toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
+    onError: (err) => { const msg = err.message || (isAr ? "حدث خطأ" : "An error occurred"); toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
     onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
-    onError: (err) => toast.error(err.message || "فشل الحفظ"),
+    onError: (err) => toast.error(err.message || isAr ? "فشل الحفظ" : "Save Failed"),
   });
 
   const handleSaveToLibrary = () => {
@@ -47,14 +47,14 @@ export default function AIReport() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`
-      <html dir="rtl"><head><meta charset="utf-8"><title>تقرير التقدم</title>
+      <html dir="rtl"><head><meta charset="utf-8"><title>{isAr ? "تقرير التقدم" : "Progress Report"}</title>
       <style>body{font-family:Arial,sans-serif;padding:40px;line-height:1.8;direction:rtl}
       h1{color:#7C3AED;border-bottom:2px solid #7C3AED;padding-bottom:10px}
       h2{color:#2c5f7c;margin-top:20px}
       .section{margin:15px 0;padding:15px;background:#f8f9fa;border-radius:8px}
       </style></head><body>
-      <h1>${result.title || 'تقرير التقدم'}</h1>
-      ${result.summary ? `<div class="section"><h2>الملخص</h2><p>${result.summary}</p></div>` : ''}
+      <h1>${result.title || isAr ? 'تقرير التقدم' : 'Progress Report'}</h1>
+      ${result.summary ? `<div class="section"><h2>{isAr ? "الملخص" : "Summary"}</h2><p>${result.summary}</p></div>` : ''}
       ${result.strengths ? `<div class="section"><h2>نقاط القوة</h2><ul>${(Array.isArray(result.strengths) ? result.strengths : [result.strengths]).map((s: string) => `<li>${s}</li>`).join('')}</ul></div>` : ''}
       ${result.areasForDevelopment ? `<div class="section"><h2>مجالات التطوير</h2><ul>${(Array.isArray(result.areasForDevelopment) ? result.areasForDevelopment : [result.areasForDevelopment]).map((s: string) => `<li>${s}</li>`).join('')}</ul></div>` : ''}
       ${result.nextSteps ? `<div class="section"><h2>الخطوات التالية</h2><ul>${(Array.isArray(result.nextSteps) ? result.nextSteps : [result.nextSteps]).map((s: string) => `<li>${s}</li>`).join('')}</ul></div>` : ''}
@@ -70,19 +70,19 @@ export default function AIReport() {
         <Link href="/ai"><Button variant="ghost" size="icon" className="shrink-0"><ArrowRight className="h-5 w-5" /></Button></Link>
         <div className="p-2 rounded-xl bg-emerald-100"><BarChart3 className="h-5 w-5 text-emerald-600" /></div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">تقرير التقدم</h1>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "تقرير التقدم" : "Progress Report"}</h1>
           <p className="text-sm text-muted-foreground">Progress Report</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="text-base">المدخلات</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{isAr ? "المدخلات" : "Inputs"}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>اختر الطفل</Label>
+              <Label>{isAr ? "اختر الطفل" : "Select Child"}</Label>
               <Select value={childId} onValueChange={setChildId}>
-                <SelectTrigger><SelectValue placeholder="اختر طفلاً" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={isAr ? "اختر طفلاً" : "Select a Child"} /></SelectTrigger>
                 <SelectContent>
                   {(children as any[]).map((child: any) => (
                     <SelectItem key={child.id} value={child.id}>
@@ -93,20 +93,20 @@ export default function AIReport() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>اللغة</Label>
+              <Label>{isAr ? "اللغة" : "Language"}</Label>
               <Select value={language} onValueChange={(v) => setLanguage(v as "ar" | "en")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">العربية</SelectItem>
+                  <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-sm text-emerald-700">
-              <p>سيقوم النظام بقراءة سجلات الحضور والملاحظات والتقييمات والتقارير اليومية لإنشاء تقرير شامل.</p>
+              <p>{isAr ? "سيقوم النظام بقراءة سجلات الحضور والملاحظات والتقييمات والتقارير اليومية لإنشاء تقرير شامل." : "The system will read attendance records, notes, assessments, and daily reports to create a comprehensive report."}</p>
             </div>
             <Button onClick={handleGenerate} disabled={generateMutation.isPending} className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700">
-              {generateMutation.isPending ? (<><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري التحليل...</>) : (<><Sparkles className="h-4 w-4 ml-2" />إنشاء التقرير</>)}
+              {generateMutation.isPending ? (<><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري التحليل...</>) : (<><Sparkles className="h-4 w-4 ml-2" />{isAr ? "إنشاء التقرير" : "Create Report"}</>)}
             </Button>
           </CardContent>
         </Card>
@@ -114,12 +114,12 @@ export default function AIReport() {
         <Card className={result ? "border-emerald-200" : "border-dashed"}>
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
-              <span>التقرير</span>
+              <span>{isAr ? "التقرير" : "Report"}</span>
               {result && (
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(result, null, 2)); toast.success(isAr ? "تم النسخ" : "Copied"); }}><Copy className="h-4 w-4 ml-1" />نسخ</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(result, null, 2)); toast.success(isAr ? "تم النسخ" : "Copied"); }}><Copy className="h-4 w-4 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                   <Button variant="ghost" size="sm" onClick={handleExportPDF}><Download className="h-4 w-4 ml-1" />PDF</Button>
-                  <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />حفظ</Button>
+                  <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />{isAr ? "حفظ" : "Save"}</Button>
                 </div>
               )}
             </CardTitle>
@@ -128,13 +128,13 @@ export default function AIReport() {
             {!result && !generateMutation.isPending && (
               <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                 <BarChart3 className="h-12 w-12 mb-3 opacity-20" />
-                <p>اختر طفلاً لإنشاء تقرير تقدم شامل لولي الأمر</p>
+                <p>{isAr ? "اختر طفلاً لإنشاء تقرير تقدم شامل لولي الأمر" : "Select a child to create a comprehensive progress report for the parent"}</p>
               </div>
             )}
             {generateMutation.isPending && (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mb-3" />
-                <p className="text-sm text-muted-foreground">جاري تحليل البيانات وكتابة التقرير...</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "جاري تحليل البيانات وكتابة التقرير..." : "Analyzing Data & Writing Report..."}</p>
               </div>
             )}
             {result && (
@@ -143,7 +143,7 @@ export default function AIReport() {
                 {result.summary && <p className="text-gray-600 text-sm leading-relaxed">{result.summary}</p>}
                 {result.strengths && (
                   <div className="p-3 rounded-lg bg-green-50 border border-green-100">
-                    <Label className="text-xs text-green-600">نقاط القوة</Label>
+                    <Label className="text-xs text-green-600">{isAr ? "نقاط القوة" : "Strengths"}</Label>
                     <ul className="list-disc list-inside text-sm text-gray-700 mt-1 space-y-1">
                       {(Array.isArray(result.strengths) ? result.strengths : [result.strengths]).map((s: string, i: number) => <li key={i}>{s}</li>)}
                     </ul>
@@ -151,7 +151,7 @@ export default function AIReport() {
                 )}
                 {result.areasForDevelopment && (
                   <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
-                    <Label className="text-xs text-amber-600">مجالات التطوير</Label>
+                    <Label className="text-xs text-amber-600">{isAr ? "مجالات التطوير" : "Development Areas"}</Label>
                     <ul className="list-disc list-inside text-sm text-gray-700 mt-1 space-y-1">
                       {(Array.isArray(result.areasForDevelopment) ? result.areasForDevelopment : [result.areasForDevelopment]).map((s: string, i: number) => <li key={i}>{s}</li>)}
                     </ul>
@@ -159,7 +159,7 @@ export default function AIReport() {
                 )}
                 {result.nextSteps && (
                   <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-                    <Label className="text-xs text-blue-600">الخطوات التالية للتعلم</Label>
+                    <Label className="text-xs text-blue-600">{isAr ? "الخطوات التالية للتعلم" : "Next Steps for Learning"}</Label>
                     <ul className="list-disc list-inside text-sm text-gray-700 mt-1 space-y-1">
                       {(Array.isArray(result.nextSteps) ? result.nextSteps : [result.nextSteps]).map((s: string, i: number) => <li key={i}>{s}</li>)}
                     </ul>
@@ -167,7 +167,7 @@ export default function AIReport() {
                 )}
                 {result.attendanceSummary && (
                   <div className="p-3 rounded-lg bg-gray-50 border">
-                    <Label className="text-xs text-muted-foreground">ملخص الحضور</Label>
+                    <Label className="text-xs text-muted-foreground">{isAr ? "ملخص الحضور" : "Attendance Summary"}</Label>
                     <p className="text-sm text-gray-700">{result.attendanceSummary}</p>
                   </div>
                 )}

@@ -103,13 +103,13 @@ export default function StaffAnnouncements() {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error("فشل رفع الصورة");
+      if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
       const data = await res.json();
       if (isEdit) setEditImageUrl(data.url);
       else setCreateImageUrl(data.url);
       toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");
     } catch (err: any) {
-      toast.error(err.message || "فشل رفع الصورة");
+      toast.error(err.message || (isAr ? "فشل رفع الصورة" : "Image upload failed"));
     } finally {
       if (isEdit) setEditUploading(false);
       else setUploading(false);
@@ -135,7 +135,7 @@ export default function StaffAnnouncements() {
     return new Date(expiresAt) < new Date();
   };
 
-  const audienceLabels: Record<string, string> = { all: "الجميع", parents: "أولياء الأمور", staff: "الموظفون" };
+  const audienceLabels: Record<string, string> = { all: "الجميع", parents: "أولياء الأمور", staff: isAr ? "الموظفون" : "Staff" };
 
   return (
     <div className="space-y-6">
@@ -144,32 +144,32 @@ export default function StaffAnnouncements() {
         {isAdmin && (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 ml-2" />إعلان جديد</Button>
+              <Button><Plus className="h-4 w-4 ml-2" />{isAr ? "إعلان جديد" : "New Announcement"}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>نشر إعلان</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{isAr ? "نشر إعلان" : "Post Announcement"}</DialogTitle></DialogHeader>
               <div className="space-y-4">
-                <div><Label>العنوان</Label><Input value={createTitle} onChange={e => setCreateTitle(e.target.value)} /></div>
+                <div><Label>{isAr ? "العنوان" : "Address"}</Label><Input value={createTitle} onChange={e => setCreateTitle(e.target.value)} /></div>
                 <div>
-                  <Label>الجمهور</Label>
+                  <Label>{isAr ? "الجمهور" : "Audience"}</Label>
                   <Select value={createAudience} onValueChange={setCreateAudience}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">الجميع</SelectItem>
-                      <SelectItem value="parents">أولياء الأمور</SelectItem>
-                      <SelectItem value="staff">الموظفون</SelectItem>
+                      <SelectItem value="all">{isAr ? "الجميع" : "All"}</SelectItem>
+                      <SelectItem value="parents">{isAr ? "أولياء الأمور" : "Parents"}</SelectItem>
+                      <SelectItem value="staff">{isAr ? "الموظفون" : "Staff"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>المحتوى</Label><Textarea value={createContent} onChange={e => setCreateContent(e.target.value)} rows={3} /></div>
+                <div><Label>{isAr ? "المحتوى" : "Content"}</Label><Textarea value={createContent} onChange={e => setCreateContent(e.target.value)} rows={3} /></div>
                 
                 {/* Image upload */}
                 <div>
-                  <Label>صورة مرفقة (اختياري)</Label>
+                  <Label>{isAr ? "صورة مرفقة (اختياري)" : "Attached image (optional)"}</Label>
                   <div className="mt-1">
                     {createImageUrl ? (
                       <div className="relative inline-block">
-                        <img src={createImageUrl} alt="مرفق" className="h-24 w-auto rounded-lg border object-cover" />
+                        <img src={createImageUrl} alt={isAr ? "مرفق" : "Attachment"} className="h-24 w-auto rounded-lg border object-cover" />
                         <button
                           onClick={() => setCreateImageUrl(null)}
                           className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
@@ -186,7 +186,7 @@ export default function StaffAnnouncements() {
                         disabled={uploading}
                       >
                         <ImagePlus className="h-4 w-4 ml-2" />
-                        {uploading ? "جاري الرفع..." : "إرفاق صورة"}
+                        {uploading ? (isAr ? "جاري الرفع..." : "Uploading...") : "إرفاق صورة"}
                       </Button>
                     )}
                     <input
@@ -205,7 +205,7 @@ export default function StaffAnnouncements() {
 
                 {/* Expiry date */}
                 <div>
-                  <Label className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />تاريخ انتهاء الصلاحية (اختياري)</Label>
+                  <Label className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{isAr ? "تاريخ انتهاء الصلاحية (اختياري)" : "Expiry Date (Optional)"}</Label>
                   <Input
                     type="datetime-local"
                     value={createExpiresAt}
@@ -214,7 +214,7 @@ export default function StaffAnnouncements() {
                     min={new Date().toISOString().slice(0, 16)}
                   />
                   {createExpiresAt && (
-                    <p className="text-xs text-muted-foreground mt-1">سيختفي الإعلان تلقائياً بعد هذا التاريخ</p>
+                    <p className="text-xs text-muted-foreground mt-1">{isAr ? "سيختفي الإعلان تلقائياً بعد هذا التاريخ" : "The ad will automatically disappear after this date"}</p>
                   )}
                 </div>
               </div>
@@ -229,7 +229,7 @@ export default function StaffAnnouncements() {
                   })}
                   disabled={!createTitle || !createContent || create.isPending || uploading}
                 >
-                  {create.isPending ? "جاري..." : "نشر"}
+                  {create.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "نشر" : "Publish"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -244,7 +244,7 @@ export default function StaffAnnouncements() {
           ))}
         </div>
       ) : announcements?.length === 0 ? (
-        <Card><CardContent className="p-8 text-center"><Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" /><p className="text-muted-foreground">لا توجد إعلانات حالياً</p></CardContent></Card>
+        <Card><CardContent className="p-8 text-center"><Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" /><p className="text-muted-foreground">{isAr ? "لا توجد إعلانات حالياً" : "No announcements currently"}</p></CardContent></Card>
       ) : (
         <div className="space-y-3">
           {announcements?.map((a: any) => (
@@ -264,16 +264,16 @@ export default function StaffAnnouncements() {
                       <Badge variant="secondary">{audienceLabels[a.audience] || a.audience}</Badge>
                       {a.isPinned && (
                         <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs">
-                          <Pin className="h-3 w-3 ml-1" />مثبت
+                          <Pin className="h-3 w-3 ml-1" />{isAr ? "مثبت" : "Pinned"}
                         </Badge>
                       )}
                       {isExpired(a.expiresAt) && (
-                        <Badge variant="destructive" className="text-xs">منتهي</Badge>
+                        <Badge variant="destructive" className="text-xs">{isAr ? "منتهي" : "Expired"}</Badge>
                       )}
                       {a.expiresAt && !isExpired(a.expiresAt) && (
                         <Badge variant="outline" className="text-xs text-muted-foreground">
                           <Clock className="h-3 w-3 ml-1" />
-                          ينتهي {new Date(a.expiresAt).toLocaleDateString('ar-SA')}
+                          {isAr ? "ينتهي" : "Ends"} {new Date(a.expiresAt).toLocaleDateString('ar-SA')}
                         </Badge>
                       )}
                     </div>
@@ -281,7 +281,7 @@ export default function StaffAnnouncements() {
                     {a.imageUrl && (
                       <img
                         src={a.imageUrl}
-                        alt="مرفق"
+                        alt={isAr ? "مرفق" : "Attachment"}
                         className="mt-2 rounded-lg border max-h-48 w-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setPreviewImage(a.imageUrl)}
                       />
@@ -295,7 +295,7 @@ export default function StaffAnnouncements() {
                         size="icon"
                         className={`h-8 w-8 ${a.isPinned ? "text-amber-600 hover:text-amber-800" : "text-gray-500 hover:text-amber-600"}`}
                         onClick={() => handleTogglePin(a)}
-                        title={a.isPinned ? "إلغاء التثبيت" : "تثبيت"}
+                        title={a.isPinned ? isAr ? "إلغاء التثبيت" : "Uninstall" : isAr ? "تثبيت" : "Install"}
                         disabled={togglePin.isPending}
                       >
                         {a.isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
@@ -305,7 +305,7 @@ export default function StaffAnnouncements() {
                         size="icon"
                         className="h-8 w-8 text-gray-500 hover:text-green-600"
                         onClick={() => setReadersAnnouncementId(a.id)}
-                        title="من قرأ الإعلان"
+                        title={isAr ? "من قرأ الإعلان" : "Who Read the Announcement"}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -340,7 +340,7 @@ export default function StaffAnnouncements() {
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
         <DialogContent className="max-w-3xl p-2">
           {previewImage && (
-            <img src={previewImage} alt="معاينة" className="w-full h-auto rounded-lg" />
+            <img src={previewImage} alt={isAr ? "معاينة" : "Preview"} className="w-full h-auto rounded-lg" />
           )}
         </DialogContent>
       </Dialog>
@@ -348,29 +348,29 @@ export default function StaffAnnouncements() {
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>تعديل الإعلان</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "تعديل الإعلان" : "Edit Announcement"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>العنوان</Label><Input value={editTitle} onChange={e => setEditTitle(e.target.value)} /></div>
+            <div><Label>{isAr ? "العنوان" : "Address"}</Label><Input value={editTitle} onChange={e => setEditTitle(e.target.value)} /></div>
             <div>
-              <Label>الجمهور</Label>
+              <Label>{isAr ? "الجمهور" : "Audience"}</Label>
               <Select value={editAudience} onValueChange={setEditAudience}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الجميع</SelectItem>
-                  <SelectItem value="parents">أولياء الأمور</SelectItem>
-                  <SelectItem value="staff">الموظفون</SelectItem>
+                  <SelectItem value="all">{isAr ? "الجميع" : "All"}</SelectItem>
+                  <SelectItem value="parents">{isAr ? "أولياء الأمور" : "Parents"}</SelectItem>
+                  <SelectItem value="staff">{isAr ? "الموظفون" : "Staff"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>المحتوى</Label><Textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={3} /></div>
+            <div><Label>{isAr ? "المحتوى" : "Content"}</Label><Textarea value={editContent} onChange={e => setEditContent(e.target.value)} rows={3} /></div>
             
             {/* Image upload for edit */}
             <div>
-              <Label>صورة مرفقة</Label>
+              <Label>{isAr ? "صورة مرفقة" : "Attached image"}</Label>
               <div className="mt-1">
                 {editImageUrl ? (
                   <div className="relative inline-block">
-                    <img src={editImageUrl} alt="مرفق" className="h-24 w-auto rounded-lg border object-cover" />
+                    <img src={editImageUrl} alt={isAr ? "مرفق" : "Attachment"} className="h-24 w-auto rounded-lg border object-cover" />
                     <button
                       onClick={() => setEditImageUrl(null)}
                       className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
@@ -387,7 +387,7 @@ export default function StaffAnnouncements() {
                     disabled={editUploading}
                   >
                     <ImagePlus className="h-4 w-4 ml-2" />
-                    {editUploading ? "جاري الرفع..." : "إرفاق صورة"}
+                    {editUploading ? (isAr ? "جاري الرفع..." : "Uploading...") : "إرفاق صورة"}
                   </Button>
                 )}
                 <input
@@ -406,7 +406,7 @@ export default function StaffAnnouncements() {
 
             {/* Expiry date for edit */}
             <div>
-              <Label className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />تاريخ انتهاء الصلاحية</Label>
+              <Label className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{isAr ? "تاريخ انتهاء الصلاحية" : "Expiry Date"}</Label>
               <Input
                 type="datetime-local"
                 value={editExpiresAt}
@@ -415,7 +415,7 @@ export default function StaffAnnouncements() {
               />
               {editExpiresAt && (
                 <Button variant="link" size="sm" className="text-xs p-0 h-auto mt-1" onClick={() => setEditExpiresAt("")}>
-                  إزالة تاريخ الانتهاء
+                  {isAr ? "إزالة تاريخ الانتهاء" : "Remove Expiration Date"}
                 </Button>
               )}
             </div>
@@ -437,7 +437,7 @@ export default function StaffAnnouncements() {
               }}
               disabled={!editTitle || !editContent || update.isPending || editUploading}
             >
-              {update.isPending ? "جاري..." : "حفظ التعديلات"}
+              {update.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "حفظ التعديلات" : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -446,7 +446,7 @@ export default function StaffAnnouncements() {
       {/* Readers Dialog */}
       <Dialog open={!!readersAnnouncementId} onOpenChange={(open) => !open && setReadersAnnouncementId(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Users className="h-5 w-5" />من قرأ هذا الإعلان</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Users className="h-5 w-5" />{isAr ? "من قرأ هذا الإعلان" : "Who Read This Announcement"}</DialogTitle></DialogHeader>
           {readersAnnouncementId && <ReadersListContent announcementId={readersAnnouncementId} />}
         </DialogContent>
       </Dialog>
@@ -454,8 +454,8 @@ export default function StaffAnnouncements() {
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>تأكيد الحذف</DialogTitle></DialogHeader>
-          <p className="text-muted-foreground">هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء.</p>
+          <DialogHeader><DialogTitle>{isAr ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle></DialogHeader>
+          <p className="text-muted-foreground">{isAr ? "هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن هذا الإجراء." : "Are you sure you want to delete this announcement? This action cannot be undone."}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
@@ -463,7 +463,7 @@ export default function StaffAnnouncements() {
               onClick={() => { if (deleteId) deleteMutation.mutate({ id: deleteId }); }}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "جاري..." : "حذف"}
+              {deleteMutation.isPending ? "جاري..." : (isAr ? "حذف" : "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -474,6 +474,8 @@ export default function StaffAnnouncements() {
 
 // Readers list sub-component
 function ReadersListContent({ announcementId }: { announcementId: number }) {
+  const { i18n: subI18n } = useTranslation();
+  const isAr = subI18n.language === 'ar';
   const { data: readers, isLoading } = trpc.announcements.readers.useQuery({ announcementId });
 
   if (isLoading) {
@@ -493,14 +495,14 @@ function ReadersListContent({ announcementId }: { announcementId: number }) {
     return (
       <div className="py-8 text-center">
         <Eye className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-        <p className="text-sm text-muted-foreground">لم يقم أحد بتأكيد قراءة هذا الإعلان بعد</p>
+        <p className="text-sm text-muted-foreground">{isAr ? "لم يقم أحد بتأكيد قراءة هذا الإعلان بعد" : "No one has confirmed reading this announcement yet"}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-1 max-h-80 overflow-y-auto">
-      <p className="text-sm text-muted-foreground mb-3">عدد من قرأ: <span className="font-bold text-foreground">{readers.length}</span></p>
+      <p className="text-sm text-muted-foreground mb-3">{isAr ? "عدد من قرأ:" : "Number of readers:"} <span className="font-bold text-foreground">{readers.length}</span></p>
       {readers.map((reader: any) => (
         <div key={reader.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
           <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">

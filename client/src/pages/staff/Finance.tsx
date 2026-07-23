@@ -20,6 +20,7 @@ import { useTranslation } from "react-i18next";
 
 export default function StaffFinance() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const isEn = i18n.language === 'en';
   const locale = isEn ? 'en-SA' : 'ar-SA';
 
@@ -297,7 +298,7 @@ export default function StaffFinance() {
                     <TableHead className={isEn ? 'text-left' : 'text-right'}>{t('finance.paid')}</TableHead>
                     <TableHead className={isEn ? 'text-left' : 'text-right'}>{t('finance.status')}</TableHead>
                     <TableHead className={isEn ? 'text-left' : 'text-right'}>{t('finance.dueDate')}</TableHead>
-                    <TableHead className={isEn ? 'text-left' : 'text-right'}>{t('common.actions') || (isEn ? 'Actions' : 'إجراءات')}</TableHead>
+                    <TableHead className={isEn ? 'text-left' : 'text-right'}>{t('common.actions') || (isEn ? 'Actions' : isAr ? 'إجراءات' : 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

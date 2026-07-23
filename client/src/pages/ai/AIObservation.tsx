@@ -26,8 +26,8 @@ export default function AIObservation() {
       toast.success(isAr ? "تم إنشاء الملاحظة بنجاح" : "Observation created successfully");
     },
     onError: (err) => {
-      const msg = err.message || "حدث خطأ";
-      toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg);
+      const msg = err.message || (isAr ? "حدث خطأ" : "An error occurred");
+      toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? isAr ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : "An error occurred during processing. Please try again." : msg);
     },
   });
 
@@ -35,7 +35,7 @@ export default function AIObservation() {
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
     onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
-    onError: (err) => toast.error(err.message || "فشل الحفظ"),
+    onError: (err) => toast.error(err.message || isAr ? "فشل الحفظ" : "Save Failed"),
   });
 
   const handleGenerate = () => {
@@ -81,7 +81,7 @@ export default function AIObservation() {
         </style>
       </head>
       <body>
-        <h1>${result.title || 'ملاحظة تعليمية'}</h1>
+        <h1>${result.title || isAr ? 'ملاحظة تعليمية' : 'Educational Note'}</h1>
         <p><strong>${isAr ? 'الطفل' : 'Child'}:</strong> ${childName}</p>
         <p><strong>${isAr ? 'التاريخ' : 'Date'}:</strong> ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
         
@@ -134,8 +134,8 @@ export default function AIObservation() {
           <Eye className="h-5 w-5 text-violet-600" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">كاتب الملاحظات</h1>
-          <p className="text-sm text-muted-foreground">إنشاء ملاحظات مهنية بنقرة واحدة</p>
+          <h1 className="text-xl font-bold text-foreground">{isAr ? "كاتب الملاحظات" : "Note Taker"}</h1>
+          <p className="text-sm text-muted-foreground">{isAr ? "إنشاء ملاحظات مهنية بنقرة واحدة" : "Create Professional Notes with One Click"}</p>
         </div>
       </div>
 
@@ -143,34 +143,34 @@ export default function AIObservation() {
         {/* Input Section */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">المدخلات</CardTitle>
+            <CardTitle className="text-base">{isAr ? "المدخلات" : "Inputs"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>اسم الطفل</Label>
+              <Label>{isAr ? "اسم الطفل" : "Child's Name"}</Label>
               <Input
-                placeholder="مثال: سارة"
+                placeholder={isAr ? "مثال: سارة" : "Example: Sarah"}
                 value={childName}
                 onChange={(e) => setChildName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>ملاحظة قصيرة</Label>
+              <Label>{isAr ? "ملاحظة قصيرة" : "Short Note"}</Label>
               <Textarea
-                placeholder="مثال: سارة بنت برج باستخدام المكعبات وتعاونت مع طفل آخر"
+                placeholder={isAr ? "مثال: سارة بنت برج باستخدام المكعبات وتعاونت مع طفل آخر" : "Example: Sarah built a tower using blocks and collaborated with another child"}
                 value={shortNote}
                 onChange={(e) => setShortNote(e.target.value)}
                 rows={4}
               />
             </div>
             <div className="space-y-2">
-              <Label>اللغة</Label>
+              <Label>{isAr ? "اللغة" : "Language"}</Label>
               <Select value={language} onValueChange={(v) => setLanguage(v as "ar" | "en")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">العربية</SelectItem>
+                  <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
@@ -183,12 +183,12 @@ export default function AIObservation() {
               {generateMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  جاري الإنشاء...
+                  {isAr ? "جاري الإنشاء..." : "Creating..."}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 ml-2" />
-                  إنشاء الملاحظة
+                  {isAr ? "إنشاء الملاحظة" : "Create Note"}
                 </>
               )}
             </Button>
@@ -199,17 +199,17 @@ export default function AIObservation() {
         <Card className={`border-0 shadow-sm ${result ? "ring-1 ring-violet-200" : ""}`}>
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
-              <span>النتيجة</span>
+              <span>{isAr ? "النتيجة" : "Score"}</span>
               {result && (
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" onClick={() => copyToClipboard(JSON.stringify(result, null, 2))}>
-                    <Copy className="h-4 w-4 ml-1" />نسخ
+                    <Copy className="h-4 w-4 ml-1" />{isAr ? "نسخ" : "Copy"}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleExportPDF}>
                     <Download className="h-4 w-4 ml-1" />PDF
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}>
-                    <Save className="h-4 w-4 ml-1" />حفظ
+                    <Save className="h-4 w-4 ml-1" />{isAr ? "حفظ" : "Save"}
                   </Button>
                 </div>
               )}
@@ -219,26 +219,26 @@ export default function AIObservation() {
             {!result && !generateMutation.isPending && (
               <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                 <Eye className="h-12 w-12 mb-3 opacity-20" />
-                <p>أدخل ملاحظة قصيرة واضغط "إنشاء" لتوليد ملاحظة مهنية</p>
+                <p>أدخل ملاحظة قصيرة واضغط isAr ? "إنشاء" : "Create" لتوليد ملاحظة مهنية</p>
               </div>
             )}
             {generateMutation.isPending && (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-violet-500 mb-3" />
-                <p className="text-sm text-muted-foreground">جاري التحليل والكتابة...</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "جاري التحليل والكتابة..." : "Analyzing & Writing..."}</p>
               </div>
             )}
             {result && (
               <div className="space-y-4">
                 {result.title && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">العنوان</Label>
+                    <Label className="text-xs text-muted-foreground">{isAr ? "العنوان" : "Address"}</Label>
                     <p className="font-semibold text-gray-900">{result.title}</p>
                   </div>
                 )}
                 {result.observation && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">الملاحظة المهنية</Label>
+                    <Label className="text-xs text-muted-foreground">{isAr ? "الملاحظة المهنية" : "Professional Note"}</Label>
                     <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{result.observation}</p>
                   </div>
                 )}
@@ -253,13 +253,13 @@ export default function AIObservation() {
                 )}
                 {result.analysis && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">التحليل</Label>
+                    <Label className="text-xs text-muted-foreground">{isAr ? "التحليل" : "Analysis"}</Label>
                     <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{result.analysis}</p>
                   </div>
                 )}
                 {result.nextSteps && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">الخطوات التالية</Label>
+                    <Label className="text-xs text-muted-foreground">{isAr ? "الخطوات التالية" : "Next Steps"}</Label>
                     <ul className="list-disc list-inside text-gray-700 space-y-1">
                       {(Array.isArray(result.nextSteps) ? result.nextSteps : [result.nextSteps]).map((step: string, i: number) => (
                         <li key={i}>{step}</li>

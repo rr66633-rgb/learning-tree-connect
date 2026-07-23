@@ -32,7 +32,7 @@ function ProfileSection() {
         document.documentElement.lang = language;
         document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
       });
-      toast.success(language === 'ar' ? "تم تحديث البيانات بنجاح" : "Profile updated successfully");
+      toast.success(language === 'ar' ? isAr ? "تم تحديث البيانات بنجاح" : "Data updated successfully" : "Profile updated successfully");
       setIsEditing(false);
       utils.auth.me.invalidate();
     },
@@ -72,15 +72,15 @@ function ProfileSection() {
   };
 
   const roleLabels: Record<string, string> = {
-    super_admin: "مدير عام",
-    admin: "مدير",
-    principal: "مديرة الحضانة",
-    teacher: "معلمة",
-    assistant: "مساعدة",
-    accountant: "محاسب",
-    receptionist: "استقبال",
-    parent: "ولي أمر",
-    user: "مستخدم",
+    super_admin: isAr ? "مدير عام" : "General Manager",
+    admin: isAr ? "مدير" : "Manager",
+    principal: isAr ? "مديرة الحضانة" : "Nursery Director",
+    teacher: isAr ? "معلمة" : "Teacher (female)",
+    assistant: isAr ? "مساعدة" : "Help",
+    accountant: isAr ? "محاسب" : "Accountant",
+    receptionist: isAr ? "استقبال" : "Reception",
+    parent: isAr ? "ولي أمر" : "Parent",
+    user: isAr ? "مستخدم" : "User",
   };
 
   return (
@@ -90,13 +90,13 @@ function ProfileSection() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              البيانات الشخصية
+              {isAr ? "البيانات الشخصية" : "Personal Data"}
             </CardTitle>
-            <CardDescription>معلومات حسابك الأساسية</CardDescription>
+            <CardDescription>{isAr ? "معلومات حسابك الأساسية" : "Your Basic Account Information"}</CardDescription>
           </div>
           {!isEditing && (
             <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              تعديل
+              {isAr ? "تعديل" : "Edit"}
             </Button>
           )}
         </div>
@@ -120,7 +120,7 @@ function ProfileSection() {
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">
               <User className="h-3.5 w-3.5" />
-              الاسم الكامل
+              {isAr ? "الاسم الكامل" : "Full Name"}
             </Label>
             {isEditing ? (
               <Input value={name} onChange={(e) => setName(e.target.value)} />
@@ -132,7 +132,7 @@ function ProfileSection() {
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">
               <Mail className="h-3.5 w-3.5" />
-              البريد الإلكتروني
+              {isAr ? "البريد الإلكتروني" : "Email"}
             </Label>
             {isEditing ? (
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
@@ -144,7 +144,7 @@ function ProfileSection() {
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">
               <Phone className="h-3.5 w-3.5" />
-              رقم الجوال
+              {isAr ? "رقم الجوال" : "Mobile Number"}
             </Label>
             {isEditing ? (
               <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
@@ -156,7 +156,7 @@ function ProfileSection() {
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">
               <Globe className="h-3.5 w-3.5" />
-              اللغة
+              {isAr ? "اللغة" : "Language"}
             </Label>
             {isEditing ? (
               <Select value={language} onValueChange={(v) => setLanguage(v as "ar" | "en")}>
@@ -164,13 +164,13 @@ function ProfileSection() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">العربية</SelectItem>
+                  <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
               <p className="text-sm text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">
-                {language === "ar" ? "العربية" : "English"}
+                {language === "ar" ? isAr ? "العربية" : "Arabic" : "English"}
               </p>
             )}
           </div>
@@ -183,10 +183,10 @@ function ProfileSection() {
               disabled={updateProfileMutation.isPending}
               className="bg-[#00C9B7] hover:bg-[#00B5A5] text-white"
             >
-              {updateProfileMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+              {updateProfileMutation.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}
             </Button>
             <Button variant="outline" onClick={handleCancel}>
-              إلغاء
+              {isAr ? "إلغاء" : "Cancel"}
             </Button>
           </div>
         )}
@@ -243,9 +243,9 @@ function ChangePasswordSection() {
     if (/[A-Z]/.test(pass)) score++;
     if (/[0-9]/.test(pass)) score++;
     if (/[^A-Za-z0-9]/.test(pass)) score++;
-    if (score <= 2) return { level: score, label: "ضعيفة", color: "bg-red-500" };
-    if (score <= 3) return { level: score, label: "متوسطة", color: "bg-yellow-500" };
-    return { level: score, label: "قوية", color: "bg-green-500" };
+    if (score <= 2) return { level: score, label: isAr ? "ضعيفة" : "Weak", color: "bg-red-500" };
+    if (score <= 3) return { level: score, label: isAr ? "متوسطة" : "Medium", color: "bg-yellow-500" };
+    return { level: score, label: isAr ? "قوية" : "Strong", color: "bg-green-500" };
   };
 
   const strength = getPasswordStrength(newPassword);
@@ -255,26 +255,26 @@ function ChangePasswordSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lock className="h-5 w-5" />
-          تغيير كلمة المرور
+          {isAr ? "تغيير كلمة المرور" : "Change Password"}
         </CardTitle>
-        <CardDescription>قم بتحديث كلمة المرور الخاصة بك لتعزيز أمان حسابك</CardDescription>
+        <CardDescription>{isAr ? "قم بتحديث كلمة المرور الخاصة بك لتعزيز أمان حسابك" : "Update your password to enhance your account security"}</CardDescription>
       </CardHeader>
       <CardContent>
         {success && (
           <div className="flex items-center gap-2 p-3 mb-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
             <CheckCircle2 className="h-5 w-5" />
-            <span className="text-sm font-medium">تم تغيير كلمة المرور بنجاح</span>
+            <span className="text-sm font-medium">{isAr ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully"}</span>
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
           <div className="space-y-2">
-            <Label>كلمة المرور الحالية</Label>
+            <Label>{isAr ? "كلمة المرور الحالية" : "Current Password"}</Label>
             <div className="relative">
               <Input
                 type={showCurrent ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور الحالية"
+                placeholder={isAr ? "أدخل كلمة المرور الحالية" : "Enter Current Password"}
                 dir="ltr"
               />
               <button
@@ -288,13 +288,13 @@ function ChangePasswordSection() {
           </div>
 
           <div className="space-y-2">
-            <Label>كلمة المرور الجديدة</Label>
+            <Label>{isAr ? "كلمة المرور الجديدة" : "New Password"}</Label>
             <div className="relative">
               <Input
                 type={showNew ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور الجديدة"
+                placeholder={isAr ? "أدخل كلمة المرور الجديدة" : "Enter New Password"}
                 dir="ltr"
               />
               <button
@@ -317,22 +317,22 @@ function ChangePasswordSection() {
                     />
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">قوة كلمة المرور: {strength.label}</p>
+                <p className="text-xs text-muted-foreground">{isAr ? "قوة كلمة المرور:" : "Password strength:"} {strength.label}</p>
               </div>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label>تأكيد كلمة المرور الجديدة</Label>
+            <Label>{isAr ? "تأكيد كلمة المرور الجديدة" : "Confirm New Password"}</Label>
             <Input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="أعد إدخال كلمة المرور الجديدة"
+              placeholder={isAr ? "أعد إدخال كلمة المرور الجديدة" : "Re-enter New Password"}
               dir="ltr"
             />
             {confirmPassword && newPassword !== confirmPassword && (
-              <p className="text-xs text-red-500">كلمتا المرور غير متطابقتين</p>
+              <p className="text-xs text-red-500">{isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match"}</p>
             )}
           </div>
 
@@ -341,7 +341,7 @@ function ChangePasswordSection() {
             disabled={changePasswordMutation.isPending}
             className="bg-[#00C9B7] hover:bg-[#00B5A5] text-white"
           >
-            {changePasswordMutation.isPending ? "جاري التغيير..." : "تغيير كلمة المرور"}
+            {changePasswordMutation.isPending ? "جاري التغيير..." : (isAr ? "تغيير كلمة المرور" : "Change Password")}
           </Button>
         </form>
       </CardContent>
@@ -350,6 +350,8 @@ function ChangePasswordSection() {
 }
 
 function LoginSessionsSection() {
+  const { i18n: _i18n } = useTranslation();
+  const isAr = _i18n.language === 'ar';
   const { data: sessions, isLoading } = trpc.auth.getLoginSessions.useQuery();
 
   const formatDate = (date: string | Date) => {
@@ -368,9 +370,9 @@ function LoginSessionsSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
-          سجل تسجيلات الدخول
+          {isAr ? "سجل تسجيلات الدخول" : "Login Log"}
         </CardTitle>
-        <CardDescription>آخر عمليات تسجيل الدخول الناجحة لحسابك</CardDescription>
+        <CardDescription>{isAr ? "آخر عمليات تسجيل الدخول الناجحة لحسابك" : "Last successful logins to your account"}</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -388,9 +390,9 @@ function LoginSessionsSection() {
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">تسجيل دخول ناجح</p>
+                    <p className="text-sm font-medium">{isAr ? "تسجيل دخول ناجح" : "Login Successful"}</p>
                     <p className="text-xs text-muted-foreground" dir="ltr">
-                      {session.ip || "غير معروف"}
+                      {session.ip || isAr ? "غير معروف" : "Unknown"}
                     </p>
                   </div>
                 </div>
@@ -402,7 +404,7 @@ function LoginSessionsSection() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">لا توجد سجلات حتى الآن</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{isAr ? "لا توجد سجلات حتى الآن" : "No records yet"}</p>
         )}
       </CardContent>
     </Card>
@@ -438,64 +440,64 @@ function DeleteAccountSection() {
     deleteAccountMutation.mutate({ password });
   };
 
-  const canDelete = password.length > 0 && confirmText === "حذف";
+  const canDelete = password.length > 0 && confirmText === (isAr ? "حذف" : "Delete");
 
   return (
     <Card className="border-red-200 bg-red-50/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-red-700">
           <Trash2 className="h-5 w-5" />
-          حذف الحساب
+          {isAr ? "حذف الحساب" : "Delete Account"}
         </CardTitle>
         <CardDescription className="text-red-600/80">
-          طلب حذف حسابك. سيتم منحك فترة سماح 30 يوم قبل الحذف النهائي.
+          {isAr ? "طلب حذف حسابك. سيتم منحك فترة سماح 30 يوم قبل الحذف النهائي." : "Request to delete your account. You will be granted a 30-day grace period before final deletion."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <p className="text-sm font-medium text-amber-800">تنبيه مهم</p>
+            <p className="text-sm font-medium text-amber-800">{isAr ? "تنبيه مهم" : "Important Alert"}</p>
             <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
-              <li>سيتم تعطيل حسابك فوراً وحذفه نهائياً بعد 30 يوم</li>
-              <li>يمكنك استعادة حسابك خلال فترة السماح من صفحة تسجيل الدخول</li>
-              <li>بيانات طفلك التعليمية (الحضور، التقارير، التقييمات) ستبقى محفوظة لدى الحضانة</li>
-              <li>سيتم إرسال بريد إلكتروني تأكيدي بتفاصيل الحذف</li>
+              <li>{isAr ? "سيتم تعطيل حسابك فوراً وحذفه نهائياً بعد 30 يوم" : "Your account will be immediately deactivated and permanently deleted after 30 days"}</li>
+              <li>{isAr ? "يمكنك استعادة حسابك خلال فترة السماح من صفحة تسجيل الدخول" : "You can recover your account during the grace period from the login page"}</li>
+              <li>{isAr ? "بيانات طفلك التعليمية (الحضور، التقارير، التقييمات) ستبقى محفوظة لدى الحضانة" : "Your child\'s educational data (attendance, reports, assessments) will remain with the nursery"}</li>
+              <li>{isAr ? "سيتم إرسال بريد إلكتروني تأكيدي بتفاصيل الحذف" : "A confirmation email with deletion details will be sent"}</li>
             </ul>
           </div>
         </div>
 
         <div className="text-xs text-muted-foreground">
-          لمزيد من التفاصيل حول بياناتك، اطلع على{" "}
-          <a href="/privacy" className="text-primary underline">سياسة الخصوصية</a>
+          {isAr ? "لمزيد من التفاصيل حول بياناتك، اطلع على" : "For more details about your data, see"}{" "}
+          <a href="/privacy" className="text-primary underline">{isAr ? "سياسة الخصوصية" : "Privacy Policy"}</a>
         </div>
 
         <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" className="w-full sm:w-auto">
               <Trash2 className="h-4 w-4 ml-2" />
-              طلب حذف الحساب
+              {isAr ? "طلب حذف الحساب" : "Account deletion request"}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent dir="rtl">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-red-700">
                 <AlertTriangle className="h-5 w-5" />
-                تأكيد طلب حذف الحساب
+                {isAr ? "تأكيد طلب حذف الحساب" : "Confirm Account Deletion Request"}
               </AlertDialogTitle>
               <AlertDialogDescription className="text-right">
-                سيتم تعطيل حسابك فوراً وحذفه نهائياً بعد 30 يوم. يمكنك استعادة حسابك خلال هذه الفترة.
+                {isAr ? "سيتم تعطيل حسابك فوراً وحذفه نهائياً بعد 30 يوم. يمكنك استعادة حسابك خلال هذه الفترة." : "Your account will be immediately deactivated and permanently deleted after 30 days. You can restore your account during this period."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label>كلمة المرور للتأكيد</Label>
+                <Label>{isAr ? "كلمة المرور للتأكيد" : "Confirm Password"}</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="أدخل كلمة المرور"
+                    placeholder={isAr ? "أدخل كلمة المرور" : "Enter Password"}
                     dir="ltr"
                   />
                   <button
@@ -508,25 +510,25 @@ function DeleteAccountSection() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>اكتب "حذف" للتأكيد</Label>
+                <Label>اكتب (isAr ? "حذف" : "Delete") للتأكيد</Label>
                 <Input
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder="حذف"
+                  placeholder={isAr ? "حذف" : "Delete"}
                   dir="rtl"
                 />
               </div>
             </div>
             <AlertDialogFooter className="flex-row-reverse gap-2 sm:flex-row-reverse">
               <AlertDialogCancel onClick={() => { setPassword(""); setConfirmText(""); }}>
-                إلغاء
+                {isAr ? "إلغاء" : "Cancel"}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
                 disabled={!canDelete || deleteAccountMutation.isPending}
                 className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
               >
-                {deleteAccountMutation.isPending ? "جاري تقديم الطلب..." : "تأكيد حذف الحساب"}
+                {deleteAccountMutation.isPending ? isAr ? "جاري تقديم الطلب..." : "Submitting Request..." : isAr ? "تأكيد حذف الحساب" : "Confirm Account Deletion"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -542,8 +544,8 @@ export default function AccountSettings() {
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6" dir="rtl">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold">إعدادات الحساب</h1>
-        <p className="text-muted-foreground">إدارة بياناتك الشخصية وأمان حسابك</p>
+        <h1 className="text-2xl font-bold">{isAr ? "إعدادات الحساب" : "Account Settings"}</h1>
+        <p className="text-muted-foreground">{isAr ? "إدارة بياناتك الشخصية وأمان حسابك" : "Manage Your Personal Data & Account Security"}</p>
       </div>
 
       <ProfileSection />

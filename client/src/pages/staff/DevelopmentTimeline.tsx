@@ -41,12 +41,12 @@ const areaColors: Record<string, string> = {
   "EAD": "bg-rose-500",
 };
 
-const levelLabels: Record<string, string> = {
-  emerging: "ناشئ",
-  developing: "يتطور",
-  secure: "مستقر",
-  exceeding: "متفوق",
-};
+const getLevelLabels = (isAr: boolean): Record<string, string>  => ({
+  emerging: (isAr ? "ناشئ" : "Emerging"),
+  developing: (isAr ? "يتطور" : "Developing"),
+  secure: (isAr ? "مستقر" : "Stable"),
+  exceeding: (isAr ? "متفوق" : "Superior"),
+});
 
 const levelColors: Record<string, string> = {
   emerging: "bg-red-100 text-red-700 border-red-200",
@@ -55,15 +55,15 @@ const levelColors: Record<string, string> = {
   exceeding: "bg-blue-100 text-blue-700 border-blue-200",
 };
 
-const contextLabels: Record<string, string> = {
-  free_play: "لعب حر",
-  guided_activity: "نشاط موجه",
-  group_work: "عمل جماعي",
-  outdoor: "خارجي",
-  routine: "روتين يومي",
-  assessment: "تقييم رسمي",
-  other: "أخرى",
-};
+const getContextLabels = (isAr: boolean): Record<string, string>  => ({
+  free_play: (isAr ? "لعب حر" : "Free play"),
+  guided_activity: (isAr ? "نشاط موجه" : "Guided Activity"),
+  group_work: (isAr ? "عمل جماعي" : "Teamwork"),
+  outdoor: (isAr ? "خارجي" : "External"),
+  routine: (isAr ? "روتين يومي" : "Daily Routine"),
+  assessment: (isAr ? "تقييم رسمي" : "Official Evaluation"),
+  other: (isAr ? "أخرى" : "Other"),
+});
 
 interface Props {
   childId: number;
@@ -116,10 +116,10 @@ export default function DevelopmentTimeline({ childId, childName }: Props) {
         </div>
         <Select value={selectedArea} onValueChange={setSelectedArea}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="جميع المجالات" />
+            <SelectValue placeholder={isAr ? "جميع المجالات" : "All Fields"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع المجالات</SelectItem>
+            <SelectItem value="all">{isAr ? "جميع المجالات" : "All Fields"}</SelectItem>
             {areas?.map((area: any) => (
               <SelectItem key={area.id} value={String(area.id)}>
                 {area.nameAr || area.nameEn}
@@ -166,11 +166,11 @@ export default function DevelopmentTimeline({ childId, childName }: Props) {
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               <span className="font-medium text-sm">{obs.area?.nameAr || obs.area?.nameEn}</span>
                               <Badge className={`text-[10px] ${levelColors[obs.level] || ""}`}>
-                                {levelLabels[obs.level] || obs.level}
+                                {getLevelLabels(isAr)[obs.level] || obs.level}
                               </Badge>
                               {obs.context && (
                                 <Badge variant="outline" className="text-[10px]">
-                                  {contextLabels[obs.context] || obs.context}
+                                  {getContextLabels(isAr)[obs.context] || obs.context}
                                 </Badge>
                               )}
                             </div>
@@ -201,8 +201,8 @@ export default function DevelopmentTimeline({ childId, childName }: Props) {
         <Card className="border-0 shadow-sm">
           <CardContent className="py-12 text-center text-muted-foreground">
             <Eye className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">لا توجد ملاحظات مسجلة بعد</p>
-            <p className="text-sm mt-1">ابدأ بتسجيل ملاحظات لبناء الخط الزمني للتطور</p>
+            <p className="font-medium">{isAr ? "لا توجد ملاحظات مسجلة بعد" : "No notes recorded yet"}</p>
+            <p className="text-sm mt-1">{isAr ? "ابدأ بتسجيل ملاحظات لبناء الخط الزمني للتطور" : "Start recording notes to build the development timeline"}</p>
           </CardContent>
         </Card>
       )}

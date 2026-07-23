@@ -10,7 +10,8 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 
 export default function EngagementBadges() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: badgesData, isLoading } = trpc.engagement.engagement.myBadges.useQuery();
 
@@ -40,10 +41,10 @@ export default function EngagementBadges() {
         <div className="flex-1">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Award className="h-5 w-5 text-amber-500" />
-            شارات الإنجاز
+            {isAr ? "شارات الإنجاز" : "Achievement Badges"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            اكسب شارات من خلال مشاركتك في تعليم طفلك
+            {isAr ? "اكسب شارات من خلال مشاركتك في تعليم طفلك" : "Earn badges by participating in your child's education"}
           </p>
         </div>
       </div>
@@ -54,21 +55,21 @@ export default function EngagementBadges() {
           <CardContent className="p-3 text-center">
             <Trophy className="h-5 w-5 text-amber-500 mx-auto mb-1" />
             <p className="text-xl font-bold">{earned.length}</p>
-            <p className="text-[10px] text-muted-foreground">مكتسبة</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "مكتسبة" : "Acquired"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
             <Star className="h-5 w-5 text-blue-500 mx-auto mb-1" />
             <p className="text-xl font-bold">{available.length}</p>
-            <p className="text-[10px] text-muted-foreground">متاحة</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "متاحة" : "Available"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
             <Flame className="h-5 w-5 text-orange-500 mx-auto mb-1" />
             <p className="text-xl font-bold">{earned.length + available.length}</p>
-            <p className="text-[10px] text-muted-foreground">الإجمالي</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "الإجمالي" : "Total"}</p>
           </CardContent>
         </Card>
       </div>
@@ -88,7 +89,7 @@ export default function EngagementBadges() {
                   <h3 className="font-bold text-sm">{item.badge?.nameAr || item.badge?.nameEn}</h3>
                   <p className="text-[10px] text-muted-foreground">{item.badge?.descriptionAr || item.badge?.descriptionEn}</p>
                   <p className="text-[10px] text-amber-600">
-                    حصلت عليها {new Date(item.earnedAt).toLocaleDateString(locale)}
+                    {isAr ? "حصلت عليها" : "Got it"} {new Date(item.earnedAt).toLocaleDateString(locale)}
                   </p>
                 </CardContent>
               </Card>
@@ -115,7 +116,7 @@ export default function EngagementBadges() {
                   <h3 className="font-bold text-sm">{badge.nameAr || badge.nameEn}</h3>
                   <p className="text-[10px] text-muted-foreground">{badge.descriptionAr || badge.descriptionEn}</p>
                   <Badge variant="outline" className="text-[10px]">
-                    {getCriteriaLabel(badge.criteria)}
+                    {getCriteriaLabel(badge.criteria, isAr)}
                   </Badge>
                 </CardContent>
               </Card>
@@ -128,7 +129,7 @@ export default function EngagementBadges() {
       {earned.length === 0 && available.length === 0 && (
         <Card className="border-dashed border-2">
           <CardContent>
-            <EmptyState variant="badges" actionLabel="ابدأ الآن" actionHref="/parent/engagement/activities" />
+            <EmptyState variant="badges" actionLabel={isAr ? "ابدأ الآن" : "Start Now"} actionHref="/parent/engagement/activities" />
           </CardContent>
         </Card>
       )}
@@ -136,19 +137,19 @@ export default function EngagementBadges() {
   );
 }
 
-function getCriteriaLabel(criteria: any): string {
-  if (!criteria) return "أكمل المهام";
+function getCriteriaLabel(criteria: any, isAr: boolean): string {
+  if (!criteria) return isAr ? "أكمل المهام" : "Complete Tasks";
   try {
     const parsed = typeof criteria === "string" ? JSON.parse(criteria) : criteria;
     switch (parsed.type) {
-      case "activities_completed": return `أكمل ${parsed.count} نشاط`;
-      case "challenges_completed": return `أكمل ${parsed.count} تحدي`;
-      case "journal_entries": return `أضف ${parsed.count} يومية`;
-      case "streak_weeks": return `${parsed.count} أسابيع متتالية`;
-      case "total_points": return `اجمع ${parsed.count} نقطة`;
-      default: return "أكمل المهام";
+      case "activities_completed": return `${isAr ? "أكمل " : "Complete"}${parsed.count} ${isAr ? "نشاط" : "Activity"}`;
+      case "challenges_completed": return `${isAr ? "أكمل " : "Complete"}${parsed.count} ${isAr ? "تحدي" : "Challenge"}`;
+      case "journal_entries": return `${isAr ? "أضف " : "Add"}${parsed.count} ${isAr ? "يومية" : "Daily"}`;
+      case "streak_weeks": return `${parsed.count} ${isAr ? "أسابيع متتالية" : "consecutive weeks"}`;
+      case "total_points": return `${isAr ? "اجمع " : "Collect"}${parsed.count} ${isAr ? "نقطة" : "Point"}`;
+      default: return isAr ? "أكمل المهام" : "Complete Tasks";
     }
   } catch {
-    return "أكمل المهام";
+    return isAr ? "أكمل المهام" : "Complete Tasks";
   }
 }

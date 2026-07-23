@@ -89,7 +89,7 @@ export default function Messages() {
     formData.append("file", file);
     try {
       const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error("فشل الرفع");
+      if (!res.ok) throw new Error((isAr ? "فشل الرفع" : "Upload failed"));
       const data = await res.json();
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";
       sendMsg.mutate(
@@ -153,20 +153,20 @@ export default function Messages() {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case "parent": return "ولي أمر";
-      case "teacher": return "معلم/ة";
-      case "assistant": return "مساعد/ة";
-      case "admin": return "إدارة";
-      case "principal": return "مدير/ة";
+      case "parent": return (isAr ? "ولي أمر" : "Parent");
+      case "teacher": return isAr ? "معلم/ة" : "Teacher";
+      case "assistant": return isAr ? "مساعد/ة" : "Assistant";
+      case "admin": return isAr ? "إدارة" : "Management";
+      case "principal": return isAr ? "مدير/ة" : "Manager";
       default: return role;
     }
   };
 
   const getConversationName = (conv: any) => {
     if (isAdmin) {
-      return `${conv.participantOneName || "مستخدم"} ↔ ${conv.participantTwoName || "مستخدم"}`;
+      return `${conv.participantOneName || isAr ? "مستخدم" : "User"} ↔ ${conv.participantTwoName || isAr ? "مستخدم" : "User"}`;
     }
-    return conv.otherUserName || "مستخدم";
+    return conv.otherUserName || isAr ? "مستخدم" : "User";
   };
 
   const selectedConversation = conversations?.find((c: any) => c.id === selectedConv);
@@ -177,7 +177,7 @@ export default function Messages() {
         <h1 className="text-2xl font-bold flex items-center gap-2">
           {isAdmin && <Shield className="h-5 w-5" />}
           <MessageCircle className="h-6 w-6" />
-          {isAdmin ? "إدارة الرسائل" : "الرسائل"}
+          {isAdmin ? "إدارة الرسائل" : (isAr ? "الرسائل" : "Messages")}
         </h1>
       </div>
 
@@ -188,7 +188,7 @@ export default function Messages() {
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="بحث بالاسم أو الطفل..."
+                placeholder={isAr ? "بحث بالاسم أو الطفل..." : "Search by Name or Child..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-9 pr-9"
@@ -197,8 +197,8 @@ export default function Messages() {
             {isAdmin && (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="w-full grid grid-cols-2 h-8">
-                  <TabsTrigger value="active" className="text-xs">النشطة</TabsTrigger>
-                  <TabsTrigger value="archived" className="text-xs">المؤرشفة</TabsTrigger>
+                  <TabsTrigger value="active" className="text-xs">{isAr ? "النشطة" : "Active"}</TabsTrigger>
+                  <TabsTrigger value="archived" className="text-xs">{isAr ? "المؤرشفة" : "Archived"}</TabsTrigger>
                 </TabsList>
               </Tabs>
             )}
@@ -217,7 +217,7 @@ export default function Messages() {
               <div className="text-center py-8">
                 <MessageCircle className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  {activeTab === "archived" ? "لا توجد محادثات مؤرشفة" : "لا توجد محادثات"}
+                  {activeTab === "archived" ? isAr ? "لا توجد محادثات مؤرشفة" : "No archived conversations" : isAr ? "لا توجد محادثات" : "No conversations"}
                 </p>
               </div>
             ) : (
@@ -253,10 +253,10 @@ export default function Messages() {
                         </div>
                       )}
                       {c.childName && (
-                        <p className="text-[11px] text-primary/70 mt-0.5">بخصوص: {c.childName}</p>
+                        <p className="text-[11px] text-primary/70 mt-0.5">{isAr ? "بخصوص:" : "Regarding:"} {c.childName}</p>
                       )}
                       <p className="text-xs text-muted-foreground truncate mt-1">
-                        {c.lastMessagePreview || "بدء محادثة"}
+                        {c.lastMessagePreview || isAr ? "بدء محادثة" : "Start Chat"}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
@@ -307,7 +307,7 @@ export default function Messages() {
                   <div>
                     <p className="font-medium text-sm">{getConversationName(selectedConversation)}</p>
                     {(selectedConversation as any)?.childName && (
-                      <p className="text-xs text-muted-foreground">بخصوص: {(selectedConversation as any).childName}</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "بخصوص:" : "Regarding:"} {(selectedConversation as any).childName}</p>
                     )}
                   </div>
                 </div>
@@ -319,7 +319,7 @@ export default function Messages() {
                     onClick={() => handleArchive(selectedConv)}
                   >
                     <Archive className="h-3 w-3" />
-                    أرشفة
+                    {isAr ? "أرشفة" : "Archive"}
                   </Button>
                 )}
               </div>
@@ -332,7 +332,7 @@ export default function Messages() {
                   </div>
                 ) : messages?.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                    لا توجد رسائل بعد
+                    {isAr ? "لا توجد رسائل بعد" : "No messages yet"}
                   </div>
                 ) : (
                   messages?.map((msg: any) => (
@@ -359,7 +359,7 @@ export default function Messages() {
                               {msg.attachmentType === "image" ? (
                                 <img
                                   src={msg.attachmentUrl}
-                                  alt={msg.attachmentName || "صورة"}
+                                  alt={msg.attachmentName || (isAr ? "صورة" : "Photo")}
                                   className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer"
                                   onClick={() => window.open(msg.attachmentUrl, "_blank")}
                                 />
@@ -371,7 +371,7 @@ export default function Messages() {
                                   className="flex items-center gap-2 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
                                 >
                                   <FileText className="h-4 w-4" />
-                                  <span className="text-xs truncate">{msg.attachmentName || "ملف مرفق"}</span>
+                                  <span className="text-xs truncate">{msg.attachmentName || isAr ? "ملف مرفق" : "Attached File"}</span>
                                 </a>
                               )}
                             </div>
@@ -405,15 +405,15 @@ export default function Messages() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>حذف الرسالة</AlertDialogTitle>
+                                <AlertDialogTitle>{isAr ? "حذف الرسالة" : "Delete Message"}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  هل أنت متأكد من حذف هذه الرسالة؟ لن يتمكن المستخدمون من رؤيتها بعد الحذف.
+                                  {isAr ? "هل أنت متأكد من حذف هذه الرسالة؟ لن يتمكن المستخدمون من رؤيتها بعد الحذف." : "Are you sure you want to delete this message? Users will not be able to see it after deletion."}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogCancel>{isAr ? "إلغاء" : "Cancel"}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDeleteMessage(msg.id)} className="bg-destructive text-destructive-foreground">
-                                  حذف
+                                  {isAr ? "حذف" : "Delete"}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -446,7 +446,7 @@ export default function Messages() {
                 <Input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="اكتب رسالتك..."
+                  placeholder={isAr ? "اكتب رسالتك..." : "Type your message..."}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
                   className="flex-1"
                 />
@@ -465,7 +465,7 @@ export default function Messages() {
               <div className="text-center">
                 <MessageCircle className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
                 <p className="text-muted-foreground">
-                  {isAdmin ? "اختر محادثة لعرضها والإشراف عليها" : "اختر محادثة للبدء"}
+                  {isAdmin ? isAr ? "اختر محادثة لعرضها والإشراف عليها" : "Select a conversation to view and supervise" : isAr ? "اختر محادثة للبدء" : "Select a conversation to start"}
                 </p>
               </div>
             </div>

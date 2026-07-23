@@ -22,12 +22,12 @@ export default function AIActivity() {
 
   const generateMutation = trpc.ai.generateActivity.useMutation({
     onSuccess: (data: any) => { setResult(data); setContentId(data.id ? Number(data.id) : null); toast.success(isAr ? "تم إنشاء النشاط بنجاح" : "Activity created successfully"); },
-    onError: (err) => { const msg = err.message || "حدث خطأ"; toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
+    onError: (err) => { const msg = err.message || (isAr ? "حدث خطأ" : "An error occurred"); toast.error(msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") ? "حدث خطأ أثناء المعالجة. يرجى المحاولة مرة أخرى." : msg); },
   });
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
     onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
-    onError: (err) => toast.error(err.message || "فشل الحفظ"),
+    onError: (err) => toast.error(err.message || isAr ? "فشل الحفظ" : "Save Failed"),
   });
 
   const handleSaveToLibrary = () => {
@@ -56,45 +56,45 @@ export default function AIActivity() {
         <Link href="/ai"><Button variant="ghost" size="icon" className="shrink-0"><ArrowRight className="h-5 w-5" /></Button></Link>
         <div className="p-2 rounded-xl bg-amber-100"><Lightbulb className="h-5 w-5 text-amber-600" /></div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">مولّد الأنشطة</h1>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "مولّد الأنشطة" : "Activity Generator"}</h1>
           <p className="text-sm text-muted-foreground">Activity Generator</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="text-base">المدخلات</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{isAr ? "المدخلات" : "Inputs"}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>العمر</Label>
+              <Label>{isAr ? "العمر" : "Age"}</Label>
               <Select value={age} onValueChange={setAge}>
-                <SelectTrigger><SelectValue placeholder="اختر الفئة العمرية" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={isAr ? "اختر الفئة العمرية" : "Select Age Group"} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0-1">0-1 سنة</SelectItem>
-                  <SelectItem value="1-2">1-2 سنة</SelectItem>
+                  <SelectItem value="1-2">{isAr ? "1-2 سنة" : "Toddlers (1-2 years)"}</SelectItem>
                   <SelectItem value="2-3">2-3 سنوات</SelectItem>
-                  <SelectItem value="3-4">3-4 سنوات</SelectItem>
+                  <SelectItem value="3-4">{isAr ? "3-4 سنوات" : "Preschool (3-4 years)"}</SelectItem>
                   <SelectItem value="4-5">4-5 سنوات</SelectItem>
                   <SelectItem value="5-6">5-6 سنوات</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>الموضوع</Label>
-              <Input placeholder="مثال: الأشكال الهندسية، الطبيعة، الحواس الخمس" value={topic} onChange={(e) => setTopic(e.target.value)} />
+              <Label>{isAr ? "الموضوع" : "Subject"}</Label>
+              <Input placeholder={isAr ? "مثال: الأشكال الهندسية، الطبيعة، الحواس الخمس" : "Example: Geometric shapes, nature, five senses"} value={topic} onChange={(e) => setTopic(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>اللغة</Label>
+              <Label>{isAr ? "اللغة" : "Language"}</Label>
               <Select value={language} onValueChange={(v) => setLanguage(v as "ar" | "en")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">العربية</SelectItem>
+                  <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <Button onClick={handleGenerate} disabled={generateMutation.isPending} className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
-              {generateMutation.isPending ? (<><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</>) : (<><Sparkles className="h-4 w-4 ml-2" />إنشاء النشاط</>)}
+              {generateMutation.isPending ? (<><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Creating..."}</>) : (<><Sparkles className="h-4 w-4 ml-2" />إنشاء النشاط</>)}
             </Button>
           </CardContent>
         </Card>
@@ -102,12 +102,12 @@ export default function AIActivity() {
         <Card className={result ? "border-amber-200" : "border-dashed"}>
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
-              <span>النشاط</span>
+              <span>{isAr ? "النشاط" : "Activity"}</span>
               {result && (
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(result, null, 2)); toast.success(isAr ? "تم النسخ" : "Copied"); }}><Copy className="h-4 w-4 ml-1" />نسخ</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(result, null, 2)); toast.success(isAr ? "تم النسخ" : "Copied"); }}><Copy className="h-4 w-4 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                   <Button variant="ghost" size="sm" onClick={handleExportPDF}><Download className="h-4 w-4 ml-1" />PDF</Button>
-                  <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />حفظ</Button>
+                  <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />{isAr ? "حفظ" : "Save"}</Button>
                 </div>
               )}
             </CardTitle>
@@ -116,13 +116,13 @@ export default function AIActivity() {
             {!result && !generateMutation.isPending && (
               <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                 <Lightbulb className="h-12 w-12 mb-3 opacity-20" />
-                <p>اختر العمر والموضوع لإنشاء نشاط تعليمي مبتكر</p>
+                <p>{isAr ? "اختر العمر والموضوع لإنشاء نشاط تعليمي مبتكر" : "Choose age and topic to create an innovative educational activity"}</p>
               </div>
             )}
             {generateMutation.isPending && (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-3" />
-                <p className="text-sm text-muted-foreground">جاري تصميم النشاط...</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "جاري تصميم النشاط..." : "Designing Activity..."}</p>
               </div>
             )}
             {result && (
@@ -130,26 +130,26 @@ export default function AIActivity() {
                 {result.title && <h3 className="font-bold text-lg text-gray-900">{result.title}</h3>}
                 {result.learningObjective && (
                   <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
-                    <Label className="text-xs text-amber-600">الهدف التعليمي</Label>
+                    <Label className="text-xs text-amber-600">{isAr ? "الهدف التعليمي" : "Learning Objective"}</Label>
                     <p className="text-sm text-gray-700">{result.learningObjective}</p>
                   </div>
                 )}
                 {result.materials && (
-                  <div><Label className="text-xs text-muted-foreground">المواد المطلوبة</Label>
+                  <div><Label className="text-xs text-muted-foreground">{isAr ? "المواد المطلوبة" : "Required Materials"}</Label>
                     <ul className="list-disc list-inside text-sm text-gray-700">
                       {(Array.isArray(result.materials) ? result.materials : [result.materials]).map((m: string, i: number) => <li key={i}>{m}</li>)}
                     </ul>
                   </div>
                 )}
                 {result.instructions && (
-                  <div><Label className="text-xs text-muted-foreground">خطوات التنفيذ</Label>
+                  <div><Label className="text-xs text-muted-foreground">{isAr ? "خطوات التنفيذ" : "Implementation Steps"}</Label>
                     <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
                       {(Array.isArray(result.instructions) ? result.instructions : [result.instructions]).map((s: string, i: number) => <li key={i}>{s}</li>)}
                     </ol>
                   </div>
                 )}
                 {result.extensionIdeas && (
-                  <div><Label className="text-xs text-muted-foreground">أفكار للتوسع</Label>
+                  <div><Label className="text-xs text-muted-foreground">{isAr ? "أفكار للتوسع" : "Expansion Ideas"}</Label>
                     <ul className="list-disc list-inside text-sm text-gray-700">
                       {(Array.isArray(result.extensionIdeas) ? result.extensionIdeas : [result.extensionIdeas]).map((e: string, i: number) => <li key={i}>{e}</li>)}
                     </ul>
@@ -157,7 +157,7 @@ export default function AIActivity() {
                 )}
                 {result.assessmentMethod && (
                   <div className="p-3 rounded-lg bg-green-50 border border-green-100">
-                    <Label className="text-xs text-green-600">طريقة التقييم</Label>
+                    <Label className="text-xs text-green-600">{isAr ? "طريقة التقييم" : "Evaluation method"}</Label>
                     <p className="text-sm text-gray-700">{result.assessmentMethod}</p>
                   </div>
                 )}

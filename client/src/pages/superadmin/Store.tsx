@@ -6,15 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, ShoppingBag, TrendingUp, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-const statusLabels: Record<string, string> = {
-  pending: "بانتظار الدفع",
-  paid: "مدفوع",
-  processing: "قيد التجهيز",
-  ready: "جاهز للاستلام",
-  completed: "مكتمل",
-  cancelled: "ملغي",
-  refunded: "مسترجع",
-};
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
@@ -28,6 +19,17 @@ const statusColors: Record<string, string> = {
 
 export default function SuperAdminStore() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const statusLabels: Record<string, string> = {
+  pending: isAr ? "بانتظار الدفع" : "Awaiting Payment",
+  paid: isAr ? "مدفوع" : "Paid",
+  processing: isAr ? "قيد التجهيز" : "Preparing",
+  ready: isAr ? "جاهز للاستلام" : "Ready for Pickup",
+  completed: isAr ? "مكتمل" : "Completed",
+  cancelled: isAr ? "ملغي" : "Cancelled",
+  refunded: isAr ? "مسترجع" : "Refunded",
+  };
+
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const { data: report, isLoading: reportLoading } = trpc.store.superAdminGetCommissionReport.useQuery();
   const { data: orders, isLoading: ordersLoading } = trpc.store.superAdminGetAllOrders.useQuery();
@@ -48,8 +50,8 @@ export default function SuperAdminStore() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">إدارة المتجر</h1>
-        <p className="text-muted-foreground">نظرة عامة على المبيعات والعمولات</p>
+        <h1 className="text-2xl font-bold">{isAr ? "إدارة المتجر" : "Store Management"}</h1>
+        <p className="text-muted-foreground">{isAr ? "نظرة عامة على المبيعات والعمولات" : "Sales and Commissions Overview"}</p>
       </div>
 
       {/* Stats Cards */}
@@ -61,7 +63,7 @@ export default function SuperAdminStore() {
                 <ShoppingBag className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي الطلبات" : "Total Orders"}</p>
                 <p className="text-2xl font-bold">{report?.totalOrders || 0}</p>
               </div>
             </div>
@@ -74,7 +76,7 @@ export default function SuperAdminStore() {
                 <Package className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">الطلبات المدفوعة</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "الطلبات المدفوعة" : "Paid Orders"}</p>
                 <p className="text-2xl font-bold">{report?.paidOrders || 0}</p>
               </div>
             </div>
@@ -87,8 +89,8 @@ export default function SuperAdminStore() {
                 <DollarSign className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي المبيعات</p>
-                <p className="text-2xl font-bold">{Number(report?.totalRevenue || 0).toFixed(2)} <span className="text-sm">ر.س</span></p>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي المبيعات" : "Total Sales"}</p>
+                <p className="text-2xl font-bold">{Number(report?.totalRevenue || 0).toFixed(2)} <span className="text-sm">{isAr ? "ر.س" : "SAR"}</span></p>
               </div>
             </div>
           </CardContent>
@@ -100,8 +102,8 @@ export default function SuperAdminStore() {
                 <TrendingUp className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">العمولات (10%)</p>
-                <p className="text-2xl font-bold">{Number(report?.totalCommission || 0).toFixed(2)} <span className="text-sm">ر.س</span></p>
+                <p className="text-sm text-muted-foreground">{isAr ? "العمولات (10%)" : "Commission (10%)"}</p>
+                <p className="text-2xl font-bold">{Number(report?.totalCommission || 0).toFixed(2)} <span className="text-sm">{isAr ? "ر.س" : "SAR"}</span></p>
               </div>
             </div>
           </CardContent>
@@ -111,25 +113,25 @@ export default function SuperAdminStore() {
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">جميع الطلبات</CardTitle>
+          <CardTitle className="text-lg">{isAr ? "جميع الطلبات" : "All Orders"}</CardTitle>
         </CardHeader>
         <CardContent>
           {!orders?.length ? (
             <div className="py-12 text-center">
               <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">لا توجد طلبات</p>
+              <p className="text-lg font-medium">{isAr ? "لا توجد طلبات" : "No orders"}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم الطلب</TableHead>
-                    <TableHead>الحضانة</TableHead>
-                    <TableHead>الإجمالي</TableHead>
-                    <TableHead>العمولة</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>التاريخ</TableHead>
+                    <TableHead>{isAr ? "رقم الطلب" : "Order Number"}</TableHead>
+                    <TableHead>{isAr ? "الحضانة" : "Nursery"}</TableHead>
+                    <TableHead>{isAr ? "الإجمالي" : "Total"}</TableHead>
+                    <TableHead>{isAr ? "العمولة" : "Commission"}</TableHead>
+                    <TableHead>{isAr ? "الحالة" : "Status"}</TableHead>
+                    <TableHead>{isAr ? "التاريخ" : "Date"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -137,8 +139,8 @@ export default function SuperAdminStore() {
                     <TableRow key={order.id}>
                       <TableCell className="font-mono text-sm">#{order.orderNumber}</TableCell>
                       <TableCell>{order.organizationId}</TableCell>
-                      <TableCell className="font-medium">{order.total} ر.س</TableCell>
-                      <TableCell className="text-amber-600">{order.commission} ر.س</TableCell>
+                      <TableCell className="font-medium">{order.total} {isAr ? "ر.س" : "SAR"}</TableCell>
+                      <TableCell className="text-amber-600">{order.commission} {isAr ? "ر.س" : "SAR"}</TableCell>
                       <TableCell>
                         <Badge className={statusColors[order.status] || ""}>
                           {statusLabels[order.status] || order.status}

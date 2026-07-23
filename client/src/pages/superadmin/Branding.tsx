@@ -46,13 +46,13 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'فشل رفع الشعار');
+        throw new Error(err.error || isAr ? 'فشل رفع الشعار' : 'Failed to Upload Logo');
       }
       const { url } = await res.json();
       onUpload(url);
       toast.success(isAr ? "تم رفع الشعار بنجاح" : "Logo uploaded successfully");
     } catch (err: any) {
-      toast.error(err.message || "فشل رفع الشعار");
+      toast.error(err.message || isAr ? "فشل رفع الشعار" : "Failed to Upload Logo");
     } finally {
       setUploading(false);
     }
@@ -99,7 +99,7 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
                 disabled={uploading}
               >
                 <Upload className="w-3.5 h-3.5 ml-1" />
-                تغيير
+                {isAr ? "تغيير" : "Change"}
               </Button>
               <Button
                 variant="ghost"
@@ -128,7 +128,7 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
             {uploading ? (
               <>
                 <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                <p className="text-sm text-muted-foreground">جاري رفع الشعار...</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "جاري رفع الشعار..." : "Uploading Logo..."}</p>
               </>
             ) : (
               <>
@@ -137,7 +137,7 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    اسحب الشعار هنا أو اضغط للاختيار
+                    {isAr ? "اسحب الشعار هنا أو اضغط للاختيار" : "Drag logo here or click to select"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     PNG, JPG, SVG - الحد الأقصى 5 ميجابايت
@@ -259,16 +259,16 @@ export default function Branding() {
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Palette className="w-6 h-6 text-[#EC4899]" />
-            الهوية البصرية
+            {isAr ? "الهوية البصرية" : "Visual Identity"}
           </h1>
-          <p className="text-muted-foreground mt-1">إدارة الهوية البصرية لكل منظمة</p>
+          <p className="text-muted-foreground mt-1">{isAr ? "إدارة الهوية البصرية لكل منظمة" : "Manage Visual Identity for Each Organization"}</p>
         </div>
       </div>
 
       {/* Organization Selector */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">اختر المنظمة</CardTitle>
+          <CardTitle className="text-lg">{isAr ? "اختر المنظمة" : "Select Organization"}</CardTitle>
         </CardHeader>
         <CardContent>
           <Select
@@ -276,7 +276,7 @@ export default function Branding() {
             onValueChange={(v) => setSelectedOrgId(Number(v))}
           >
             <SelectTrigger className="w-full max-w-md">
-              <SelectValue placeholder="اختر منظمة..." />
+              <SelectValue placeholder={isAr ? "اختر منظمة..." : "Select Organization..."} />
             </SelectTrigger>
             <SelectContent>
               {orgs?.organizations?.map((org: any) => (
@@ -300,25 +300,25 @@ export default function Branding() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <ImageIcon className="w-5 h-5 text-[#7C3AED]" />
-                    الشعارات
+                    {isAr ? "الشعارات" : "Logos"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <LogoUpload
-                      label="الشعار الرئيسي (للخلفيات الفاتحة)"
+                      label={isAr ? "الشعار الرئيسي (للخلفيات الفاتحة)" : "Main Logo (for light backgrounds)"}
                       currentUrl={form.logoUrl}
                       onUpload={(url) => setForm({ ...form, logoUrl: url })}
                       onRemove={() => setForm({ ...form, logoUrl: "" })}
                     />
                     <LogoUpload
-                      label="الشعار الفاتح (للخلفيات الداكنة)"
+                      label={isAr ? "الشعار الفاتح (للخلفيات الداكنة)" : "Light Logo (for dark backgrounds)"}
                       currentUrl={form.logoLightUrl}
                       onUpload={(url) => setForm({ ...form, logoLightUrl: url })}
                       onRemove={() => setForm({ ...form, logoLightUrl: "" })}
                     />
                     <LogoUpload
-                      label="أيقونة التطبيق"
+                      label={isAr ? "أيقونة التطبيق" : "App Icon"}
                       currentUrl={form.appIcon}
                       onUpload={(url) => setForm({ ...form, appIcon: url })}
                       onRemove={() => setForm({ ...form, appIcon: "" })}
@@ -330,12 +330,12 @@ export default function Branding() {
               {/* Colors Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">الألوان</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "الألوان" : "Colors"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>اللون الأساسي</Label>
+                      <Label>{isAr ? "اللون الأساسي" : "Primary Color"}</Label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -352,7 +352,7 @@ export default function Branding() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>اللون الثانوي</Label>
+                      <Label>{isAr ? "اللون الثانوي" : "Secondary Color"}</Label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -369,7 +369,7 @@ export default function Branding() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>لون التمييز</Label>
+                      <Label>{isAr ? "لون التمييز" : "Accent color"}</Label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -386,7 +386,7 @@ export default function Branding() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>لون الخلفية</Label>
+                      <Label>{isAr ? "لون الخلفية" : "Background Color"}</Label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -403,7 +403,7 @@ export default function Branding() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>لون النص</Label>
+                      <Label>{isAr ? "لون النص" : "Text Color"}</Label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -426,11 +426,11 @@ export default function Branding() {
               {/* Typography & Style Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">الخطوط والتنسيق</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "الخطوط والتنسيق" : "Fonts & Formatting"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>الخط</Label>
+                    <Label>{isAr ? "الخط" : "Font"}</Label>
                     <Select
                       value={form.fontFamily}
                       onValueChange={(v) => setForm({ ...form, fontFamily: v })}
@@ -449,7 +449,7 @@ export default function Branding() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>حجم الحواف المستديرة</Label>
+                    <Label>{isAr ? "حجم الحواف المستديرة" : "Rounded Corners Size"}</Label>
                     <Select
                       value={form.borderRadius}
                       onValueChange={(v) => setForm({ ...form, borderRadius: v })}
@@ -458,17 +458,17 @@ export default function Branding() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">بدون استدارة</SelectItem>
-                        <SelectItem value="0.25rem">صغير</SelectItem>
-                        <SelectItem value="0.5rem">متوسط</SelectItem>
-                        <SelectItem value="0.75rem">كبير</SelectItem>
-                        <SelectItem value="1rem">كبير جداً</SelectItem>
+                        <SelectItem value="0">{isAr ? "بدون استدارة" : "No Rotation"}</SelectItem>
+                        <SelectItem value="0.25rem">{isAr ? "صغير" : "Small"}</SelectItem>
+                        <SelectItem value="0.5rem">{isAr ? "متوسط" : "Average"}</SelectItem>
+                        <SelectItem value="0.75rem">{isAr ? "كبير" : "Large"}</SelectItem>
+                        <SelectItem value="1rem">{isAr ? "كبير جداً" : "Very Large"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>نمط القائمة الجانبية</Label>
+                    <Label>{isAr ? "نمط القائمة الجانبية" : "Side Menu Style"}</Label>
                     <Select
                       value={form.sidebarStyle}
                       onValueChange={(v) => setForm({ ...form, sidebarStyle: v as "dark" | "light" | "gradient" })}
@@ -477,9 +477,9 @@ export default function Branding() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="dark">داكن</SelectItem>
-                        <SelectItem value="light">فاتح</SelectItem>
-                        <SelectItem value="gradient">متدرج</SelectItem>
+                        <SelectItem value="dark">{isAr ? "داكن" : "Dark"}</SelectItem>
+                        <SelectItem value="light">{isAr ? "فاتح" : "Light"}</SelectItem>
+                        <SelectItem value="gradient">{isAr ? "متدرج" : "Gradual"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -489,7 +489,7 @@ export default function Branding() {
               {/* Preview Card */}
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle className="text-lg">معاينة</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "معاينة" : "Preview"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div
@@ -498,9 +498,9 @@ export default function Branding() {
                   >
                     <div className="flex items-center gap-4 mb-4">
                       {form.logoLightUrl ? (
-                        <img src={form.logoLightUrl} alt="شعار" className="w-12 h-12 rounded-lg object-contain" />
+                        <img src={form.logoLightUrl} alt={isAr ? "شعار" : "Logo"} className="w-12 h-12 rounded-lg object-contain" />
                       ) : form.logoUrl ? (
-                        <img src={form.logoUrl} alt="شعار" className="w-12 h-12 rounded-lg object-contain" />
+                        <img src={form.logoUrl} alt={isAr ? "شعار" : "Logo"} className="w-12 h-12 rounded-lg object-contain" />
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center">
                           <ImageIcon className="w-6 h-6" style={{ color: form.textColor }} />
@@ -508,10 +508,10 @@ export default function Branding() {
                       )}
                       <div>
                         <h3 className="text-lg font-bold" style={{ color: form.textColor, fontFamily: form.fontFamily }}>
-                          معاينة الهوية البصرية
+                          {isAr ? "معاينة الهوية البصرية" : "Visual Identity Preview"}
                         </h3>
                         <p className="text-sm opacity-70" style={{ color: form.textColor }}>
-                          هذه معاينة لكيفية ظهور الألوان والشعار
+                          {isAr ? "هذه معاينة لكيفية ظهور الألوان والشعار" : "This is a preview of how the colors and logo will appear"}
                         </p>
                       </div>
                     </div>
@@ -520,19 +520,19 @@ export default function Branding() {
                         className="px-4 py-2 text-white text-sm font-medium"
                         style={{ backgroundColor: form.primaryColor, borderRadius: form.borderRadius }}
                       >
-                        زر أساسي
+                        {isAr ? "زر أساسي" : "Primary Button"}
                       </div>
                       <div
                         className="px-4 py-2 text-white text-sm font-medium"
                         style={{ backgroundColor: form.secondaryColor, borderRadius: form.borderRadius }}
                       >
-                        زر ثانوي
+                        {isAr ? "زر ثانوي" : "Secondary Button"}
                       </div>
                       <div
                         className="px-4 py-2 text-white text-sm font-medium"
                         style={{ backgroundColor: form.accentColor, borderRadius: form.borderRadius }}
                       >
-                        زر تمييز
+                        {isAr ? "زر تمييز" : "Highlight Button"}
                       </div>
                     </div>
                   </div>
@@ -545,11 +545,11 @@ export default function Branding() {
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t p-3 flex items-center justify-center gap-3 md:relative md:border-t-0 md:p-0 md:mt-6 md:bg-transparent md:backdrop-blur-none">
             <Button onClick={handleSave} disabled={updateBranding.isPending} size="lg" className="flex-1 md:flex-none min-h-[48px]">
               <Save className="w-4 h-4 ml-2" />
-              {updateBranding.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+              {updateBranding.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}
             </Button>
             <Button variant="outline" size="lg" onClick={() => { refetch(); toast.info(isAr ? "تم إعادة تحميل البيانات" : "Data reloaded"); }} className="flex-1 md:flex-none min-h-[48px]">
               <RotateCcw className="w-4 h-4 ml-2" />
-              إعادة تحميل
+              {isAr ? "إعادة تحميل" : "Reload"}
             </Button>
           </div>
           {/* Spacer for fixed bottom bar on mobile */}

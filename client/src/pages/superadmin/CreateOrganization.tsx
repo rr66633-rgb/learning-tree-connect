@@ -69,7 +69,7 @@ export default function CreateOrganization() {
           className="text-muted-foreground hover:text-foreground rounded-lg"
         >
           <ArrowRight className="w-4 h-4 ml-1" />
-          العودة
+          {isAr ? "العودة" : "Back"}
         </Button>
       </div>
 
@@ -78,8 +78,8 @@ export default function CreateOrganization() {
           <Building2 className="w-6 h-6 text-[#7B61FF]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">إضافة منظمة جديدة</h1>
-          <p className="text-muted-foreground text-sm">إنشاء حضانة أو روضة جديدة</p>
+          <h1 className="text-2xl font-bold text-foreground">{isAr ? "إضافة منظمة جديدة" : "Add New Organization"}</h1>
+          <p className="text-muted-foreground text-sm">{isAr ? "إنشاء حضانة أو روضة جديدة" : "Create New Nursery or Kindergarten"}</p>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ export default function CreateOrganization() {
               <div className="h-7 w-7 rounded-lg bg-[#00C9B7]/10 flex items-center justify-center">
                 <Building2 className="w-3.5 h-3.5 text-[#00C9B7]" />
               </div>
-              المعلومات الأساسية
+              {isAr ? "المعلومات الأساسية" : "Basic Information"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -102,7 +102,7 @@ export default function CreateOrganization() {
                   value={form.nameAr}
                   onChange={(e) => setForm((p) => ({ ...p, nameAr: e.target.value }))}
                   className="rounded-lg mt-1.5"
-                  placeholder="حضانة السعادة"
+                  placeholder={isAr ? "حضانة السعادة" : "Happiness Nursery"}
                   dir="rtl"
                 />
               </div>
@@ -128,17 +128,17 @@ export default function CreateOrganization() {
                   placeholder="happy-nursery"
                   dir="ltr"
                 />
-                <p className="text-xs text-muted-foreground mt-1.5">يستخدم في الرابط: {form.slug || "xxx"}.naashah.com</p>
+                <p className="text-xs text-muted-foreground mt-1.5">{isAr ? "يستخدم في الرابط:" : "Used in link:"} {form.slug || "xxx"}.naashah.com</p>
               </div>
               <div>
-                <Label>النسخة</Label>
+                <Label>{isAr ? "النسخة" : "Version"}</Label>
                 <Select value={form.edition} onValueChange={(v) => setForm((p) => ({ ...p, edition: v as any }))}>
                   <SelectTrigger className="rounded-lg mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nashaa">نشأة</SelectItem>
-                    <SelectItem value="learning_tree">شجرة التعلم</SelectItem>
+                    <SelectItem value="nashaa">{isAr ? "نشأة" : "Nasha\'a"}</SelectItem>
+                    <SelectItem value="learning_tree">{isAr ? "شجرة التعلم" : "Learning Tree"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -147,25 +147,25 @@ export default function CreateOrganization() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
               <div>
-                <Label>الحالة</Label>
+                <Label>{isAr ? "الحالة" : "Status"}</Label>
                 <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v as any }))}>
                   <SelectTrigger className="rounded-lg mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="trial">تجريبية (14 يوم)</SelectItem>
-                    <SelectItem value="active">نشطة</SelectItem>
-                    <SelectItem value="pending">قيد المراجعة</SelectItem>
+                    <SelectItem value="trial">{isAr ? "تجريبية (14 يوم)" : "Trial (14 Days)"}</SelectItem>
+                    <SelectItem value="active">{isAr ? "نشطة" : "Active"}</SelectItem>
+                    <SelectItem value="pending">{isAr ? "قيد المراجعة" : "Under Review"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>رقم الترخيص</Label>
+                <Label>{isAr ? "رقم الترخيص" : "License Number"}</Label>
                 <Input
                   value={form.licenseNumber}
                   onChange={(e) => setForm((p) => ({ ...p, licenseNumber: e.target.value }))}
                   className="rounded-lg mt-1.5"
-                  placeholder="اختياري"
+                  placeholder={isAr ? "اختياري" : "Optional"}
                 />
               </div>
             </div>
@@ -179,13 +179,13 @@ export default function CreateOrganization() {
               <div className="h-7 w-7 rounded-lg bg-[#FF5CA8]/10 flex items-center justify-center">
                 <Phone className="w-3.5 h-3.5 text-[#FF5CA8]" />
               </div>
-              معلومات التواصل
+              {isAr ? "معلومات التواصل" : "Contact Information"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>الهاتف</Label>
+                <Label>{isAr ? "الهاتف" : "Phone"}</Label>
                 <Input
                   value={form.phone}
                   onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
@@ -195,7 +195,7 @@ export default function CreateOrganization() {
                 />
               </div>
               <div>
-                <Label>البريد الإلكتروني</Label>
+                <Label>{isAr ? "البريد الإلكتروني" : "Email"}</Label>
                 <Input
                   value={form.email}
                   onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
@@ -208,21 +208,21 @@ export default function CreateOrganization() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>المدينة</Label>
+                <Label>{isAr ? "المدينة" : "City"}</Label>
                 <Input
                   value={form.city}
                   onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
                   className="rounded-lg mt-1.5"
-                  placeholder="الرياض"
+                  placeholder={isAr ? "الرياض" : "Riyadh"}
                 />
               </div>
               <div>
-                <Label>العنوان</Label>
+                <Label>{isAr ? "العنوان" : "Address"}</Label>
                 <Input
                   value={form.address}
                   onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
                   className="rounded-lg mt-1.5"
-                  placeholder="العنوان الكامل"
+                  placeholder={isAr ? "العنوان الكامل" : "Full Address"}
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ export default function CreateOrganization() {
               <div className="h-7 w-7 rounded-lg bg-[#FFB020]/10 flex items-center justify-center">
                 <Users className="w-3.5 h-3.5 text-[#FFB020]" />
               </div>
-              الحدود والسعة
+              {isAr ? "الحدود والسعة" : "Limits & Capacity"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -244,7 +244,7 @@ export default function CreateOrganization() {
               <div>
                 <Label className="flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5 text-[#7B61FF]" />
-                  الحد الأقصى للأطفال
+                  {isAr ? "الحد الأقصى للأطفال" : "Max Children"}
                 </Label>
                 <Input
                   type="number"
@@ -256,7 +256,7 @@ export default function CreateOrganization() {
               <div>
                 <Label className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-[#00C9B7]" />
-                  الحد الأقصى للموظفين
+                  {isAr ? "الحد الأقصى للموظفين" : "Max Employees"}
                 </Label>
                 <Input
                   type="number"
@@ -274,10 +274,10 @@ export default function CreateOrganization() {
           className="w-full h-12 text-base rounded-xl btn-press"
           disabled={createOrg.isPending}
         >
-          {createOrg.isPending ? "جاري الإنشاء..." : (
+          {createOrg.isPending ? (isAr ? "جاري الإنشاء..." : "Creating...") : (
             <>
               <CheckCircle2 className="w-5 h-5 ml-2" />
-              إنشاء المنظمة
+              {isAr ? "إنشاء المنظمة" : "Create Organization"}
             </>
           )}
         </Button>

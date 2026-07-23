@@ -24,15 +24,15 @@ const EYFS_AREA_KEYS = [
 ];
 
 // EYFS area values for backend (Arabic)
-const EYFS_AREA_VALUES = [
-  "التواصل واللغة",
-  "النمو الجسدي",
-  "النمو الشخصي والاجتماعي والعاطفي",
-  "القراءة والكتابة",
-  "الرياضيات",
-  "فهم العالم",
-  "الفنون التعبيرية والتصميم",
-];
+const getEYFS_AREA_VALUES = (isAr: boolean) => ([
+  (isAr ? "التواصل واللغة" : "Communication & Language"),
+  (isAr ? "النمو الجسدي" : "Physical Development"),
+  (isAr ? "النمو الشخصي والاجتماعي والعاطفي" : "Personal, Social & Emotional Development"),
+  (isAr ? "القراءة والكتابة" : "Literacy"),
+  (isAr ? "الرياضيات" : "Mathematics"),
+  (isAr ? "فهم العالم" : "Understanding the World"),
+  (isAr ? "الفنون التعبيرية والتصميم" : "Expressive Arts & Design"),
+]);
 
 const LEVEL_KEYS = ["emerging", "developing", "secure", "exceeding"];
 const LEVEL_COLORS = [
@@ -44,6 +44,7 @@ const LEVEL_COLORS = [
 
 export default function Assessments() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const isEn = i18n.language === 'en';
 
   const [selectedChild, setSelectedChild] = useState<number | null>(null);
@@ -166,7 +167,7 @@ export default function Assessments() {
                       <Select value={assessmentForm.area} onValueChange={(v) => setAssessmentForm(p => ({ ...p, area: v }))}>
                         <SelectTrigger><SelectValue placeholder={t('assessments.selectArea')} /></SelectTrigger>
                         <SelectContent>
-                          {EYFS_AREA_VALUES.map((area, i) => (
+                          {getEYFS_AREA_VALUES(isAr).map((area, i) => (
                             <SelectItem key={area} value={area}>{getAreaLabel(i)}</SelectItem>
                           ))}
                         </SelectContent>
@@ -200,7 +201,7 @@ export default function Assessments() {
             </div>
 
             {/* Assessments by Area */}
-            {EYFS_AREA_VALUES.map((area, areaIndex) => {
+            {getEYFS_AREA_VALUES(isAr).map((area, areaIndex) => {
               const areaAssessments = assessmentsByArea[area] || [];
               const latestLevel = areaAssessments[0]?.level;
               const levelLabel = latestLevel ? getLevelLabel(latestLevel) : null;
@@ -253,7 +254,7 @@ export default function Assessments() {
                       <Select value={observationForm.area} onValueChange={(v) => setObservationForm(p => ({ ...p, area: v }))}>
                         <SelectTrigger><SelectValue placeholder={t('assessments.selectArea')} /></SelectTrigger>
                         <SelectContent>
-                          {EYFS_AREA_VALUES.map((area, i) => (
+                          {getEYFS_AREA_VALUES(isAr).map((area, i) => (
                             <SelectItem key={area} value={area}>{getAreaLabel(i)}</SelectItem>
                           ))}
                         </SelectContent>
@@ -327,7 +328,7 @@ export default function Assessments() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {EYFS_AREA_VALUES.map((area, areaIndex) => {
+                  {getEYFS_AREA_VALUES(isAr).map((area, areaIndex) => {
                     const areaAssessments = assessmentsByArea[area] || [];
                     const latestLevel = areaAssessments[0]?.level || 'none';
                     const levelLabel = LEVEL_KEYS.includes(latestLevel) ? getLevelLabel(latestLevel) : null;

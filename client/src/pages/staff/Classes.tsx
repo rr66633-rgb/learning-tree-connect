@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 
 export default function StaffClasses() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { data: classes, isLoading } = trpc.classes.list.useQuery();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
@@ -22,28 +23,28 @@ export default function StaffClasses() {
   const [capacity, setCapacity] = useState("12");
 
   const create = trpc.classes.create.useMutation({
-    onSuccess: () => { utils.classes.list.invalidate(); setOpen(false); setName(""); setAgeGroup(""); toast.success(i18n.language === "ar" ? "تم إنشاء الفصل" : "Class created"); },
+    onSuccess: () => { utils.classes.list.invalidate(); setOpen(false); setName(""); setAgeGroup(""); toast.success(i18n.language === "ar" ? isAr ? "تم إنشاء الفصل" : "Class created" : "Class created"); },
     onError: (e) => toast.error(e.message),
   });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{i18n.language === "ar" ? "إدارة الفصول" : "Classes Management"}</h1>
+        <h1 className="text-2xl font-bold">{i18n.language === "ar" ? isAr ? "إدارة الفصول" : "Class Management" : "Classes Management"}</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 ml-2" />{i18n.language === "ar" ? "إضافة فصل" : "Add Class"}</Button>
+            <Button><Plus className="h-4 w-4 ml-2" />{i18n.language === "ar" ? isAr ? "إضافة فصل" : "Add Class" : "Add Class"}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{i18n.language === "ar" ? "إضافة فصل جديد" : "Add New Class"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{i18n.language === "ar" ? isAr ? "إضافة فصل جديد" : "Add New Class" : "Add New Class"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>{i18n.language === "ar" ? "اسم الفصل" : "Class Name"}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={i18n.language === "ar" ? "مثال: فصل النجوم" : "e.g. Stars Class"} /></div>
-              <div><Label>{i18n.language === "ar" ? "الفئة العمرية" : "Age Group"}</Label><Input value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder={i18n.language === "ar" ? "مثال: 2-3 سنوات" : "e.g. 2-3 years"} /></div>
-              <div><Label>{i18n.language === "ar" ? "السعة" : "Capacity"}</Label><Input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} /></div>
+              <div><Label>{i18n.language === "ar" ? isAr ? "اسم الفصل" : "Class Name" : "Class Name"}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={i18n.language === "ar" ? isAr ? "مثال: فصل النجوم" : "Example: Stars Class" : "e.g. Stars Class"} /></div>
+              <div><Label>{i18n.language === "ar" ? isAr ? "الفئة العمرية" : "Age Group" : "Age Group"}</Label><Input value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder={i18n.language === "ar" ? "مثال: 2-3 سنوات" : "e.g. 2-3 years"} /></div>
+              <div><Label>{i18n.language === "ar" ? isAr ? "السعة" : "Capacity" : "Capacity"}</Label><Input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} /></div>
             </div>
             <DialogFooter>
               <Button onClick={() => create.mutate({ name, ageGroup, capacity: parseInt(capacity) })} disabled={!name || create.isPending}>
-                {create.isPending ? (i18n.language === "ar" ? "جاري الإنشاء..." : "Creating...") : (i18n.language === "ar" ? "إنشاء" : "Create")}
+                {create.isPending ? (i18n.language === "ar" ? isAr ? "جاري الإنشاء..." : "Creating..." : "Creating...") : (i18n.language === "ar" ? isAr ? "إنشاء" : "Create" : "Create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -60,9 +61,9 @@ export default function StaffClasses() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? "الفئة العمرية" : "Age Group"}</span><span>{cls.ageGroup || "-"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? "السعة" : "Capacity"}</span><span>{cls.capacity || "-"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? "المعلمة" : "Teacher"}</span><span>{cls.teacherName || (i18n.language === "ar" ? "غير محدد" : "Unassigned")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? isAr ? "الفئة العمرية" : "Age Group" : "Age Group"}</span><span>{cls.ageGroup || "-"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? isAr ? "السعة" : "Capacity" : "Capacity"}</span><span>{cls.capacity || "-"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{i18n.language === "ar" ? isAr ? "المعلمة" : "Teacher" : "Teacher"}</span><span>{cls.teacherName || (i18n.language === "ar" ? isAr ? "غير محدد" : "Undefined" : "Unassigned")}</span></div>
               </div>
             </CardContent>
           </Card>

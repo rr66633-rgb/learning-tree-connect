@@ -75,10 +75,10 @@ export default function Notifications() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return "الآن";
-    if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
-    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-    if (diffDays < 7) return `منذ ${diffDays} يوم`;
+    if (diffMins < 1) return isAr ? "الآن" : "Now";
+    if (diffMins < 60) return `${isAr ? "منذ " : "Since"}${diffMins} ${isAr ? "دقيقة" : "Minute"}`;
+    if (diffHours < 24) return `${isAr ? "منذ " : "Since"}${diffHours} ${isAr ? "ساعة" : "Hour"}`;
+    if (diffDays < 7) return `${isAr ? "منذ " : "Since"}${diffDays} ${isAr ? "يوم" : "Day"}`;
     return d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
   };
 
@@ -91,9 +91,9 @@ export default function Notifications() {
             <Bell className="h-5 w-5 text-[#EC4899]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">الإشعارات</h1>
+            <h1 className="text-xl font-bold">{isAr ? "الإشعارات" : "Notifications"}</h1>
             {(unreadCount ?? 0) > 0 && (
-              <p className="text-xs text-muted-foreground">{unreadCount} إشعار غير مقروء</p>
+              <p className="text-xs text-muted-foreground">{unreadCount} {isAr ? "إشعار غير مقروء" : "Unread Notification"}</p>
             )}
           </div>
         </div>
@@ -101,13 +101,13 @@ export default function Notifications() {
           {(unreadCount ?? 0) > 0 && (
             <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending} className="rounded-lg">
               <CheckCheck className="h-4 w-4 ml-1.5" />
-              قراءة الكل
+              {isAr ? "قراءة الكل" : "Read All"}
             </Button>
           )}
           {notifications && notifications.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => deleteAll.mutate()} disabled={deleteAll.isPending} className="rounded-lg text-destructive hover:text-destructive">
               <Trash2 className="h-4 w-4 ml-1.5" />
-              حذف الكل
+              {isAr ? "حذف الكل" : "Delete All"}
             </Button>
           )}
         </div>
@@ -192,8 +192,8 @@ export default function Notifications() {
                 <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
                   <Bell className="h-8 w-8" />
                 </div>
-                <p className="text-lg font-medium">لا توجد إشعارات</p>
-                <p className="text-sm mt-1">ستظهر الإشعارات هنا عند وصولها</p>
+                <p className="text-lg font-medium">{isAr ? "لا توجد إشعارات" : "No notifications"}</p>
+                <p className="text-sm mt-1">{isAr ? "ستظهر الإشعارات هنا عند وصولها" : "Notifications will appear here when they arrive"}</p>
               </div>
             )}
           </ScrollArea>

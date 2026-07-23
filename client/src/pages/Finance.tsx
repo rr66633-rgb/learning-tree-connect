@@ -16,11 +16,11 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-const statusLabels: Record<string, string> = { pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة", partially_paid: "مدفوعة جزئياً" };
+const getStatusLabels = (isAr: boolean): Record<string, string>  => ({ pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة", partially_paid: "مدفوعة جزئياً" });
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = { pending: "secondary", paid: "default", overdue: "destructive", cancelled: "outline", partially_paid: "secondary" };
-const invoiceTypeLabels: Record<string, string> = { tuition: "رسوم دراسية", activity: "نشاط", trip: "رحلة", uniform: "زي مدرسي", registration: "تسجيل", other: "أخرى" };
-const frequencyLabels: Record<string, string> = { monthly: "شهري", quarterly: "ربع سنوي", semi_annual: "نصف سنوي", annual: "سنوي" };
-const paymentMethodLabels: Record<string, string> = { cash: "نقدي", bank_transfer: "تحويل بنكي", card: "بطاقة", apple_pay: "Apple Pay", mada: "مدى", stc_pay: "STC Pay", visa: "فيزا", mastercard: "ماستركارد" };
+const getInvoiceTypeLabels = (isAr: boolean): Record<string, string>  => ({ tuition: (isAr ? "رسوم دراسية" : "Tuition Fees"), activity: (isAr ? "نشاط" : "Activity"), trip: (isAr ? "رحلة" : "Trip"), uniform: (isAr ? "زي مدرسي" : "School Uniform"), registration: (isAr ? "تسجيل" : "Register"), other: (isAr ? "أخرى" : "Other") });
+const getFrequencyLabels = (isAr: boolean): Record<string, string>  => ({ monthly: (isAr ? "شهري" : "Monthly"), quarterly: (isAr ? "ربع سنوي" : "Quarterly"), semi_annual: (isAr ? "نصف سنوي" : "Semi-Annually"), annual: (isAr ? "سنوي" : "Annual") });
+const getPaymentMethodLabels = (isAr: boolean): Record<string, string>  => ({ cash: (isAr ? "نقدي" : "Cash"), bank_transfer: (isAr ? "تحويل بنكي" : "Bank Transfer"), card: (isAr ? "بطاقة" : "Card"), apple_pay: "Apple Pay", mada: (isAr ? "مدى" : "Mada"), stc_pay: "STC Pay", visa: (isAr ? "فيزا" : "Visa"), mastercard: (isAr ? "ماستركارد" : "Mastercard") });
 
 export default function Finance() {
   const { i18n } = useTranslation();
@@ -65,7 +65,7 @@ export default function Finance() {
     onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
   });
   const generateInvoices = trpc.tuitionPlans.generateInvoices.useMutation({
-    onSuccess: (data) => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); utils.tuitionPlans.list.invalidate(); toast.success(`تم إنشاء ${data.generated} فاتورة`); },
+    onSuccess: (data) => { utils.finance.invoices.invalidate(); utils.finance.summary.invalidate(); utils.tuitionPlans.list.invalidate(); toast.success(isAr ? `تم إنشاء ${data.generated} فاتورة` : `Created${data.generated}Invoice`); },
     onError: () => toast.error(isAr ? "حدث خطأ أثناء إنشاء الفواتير" : "Error while creating invoices"),
   });
 
@@ -132,7 +132,7 @@ export default function Finance() {
 
   const handleExportCSV = () => {
     if (!invoices) return;
-    const headers = ["رقم الفاتورة", "الطفل", "ولي الأمر", "الوصف", "المبلغ", "الضريبة", "الإجمالي", "الحالة", "تاريخ الاستحقاق", "تاريخ الدفع"];
+    const headers = ["رقم الفاتورة", (isAr ? "الطفل" : "Child"), "ولي الأمر", "الوصف", "المبلغ", "الضريبة", (isAr ? "الإجمالي" : "Total"), "الحالة", "تاريخ الاستحقاق", (isAr ? "تاريخ الدفع" : "Payment Date")];
     const rows = invoices.map(inv => [
       inv.invoiceNumber,
       inv.childName || "",
@@ -141,7 +141,7 @@ export default function Finance() {
       inv.subtotal,
       inv.vatAmount,
       inv.total,
-      statusLabels[inv.status] || inv.status,
+      getStatusLabels(isAr)[inv.status] || inv.status,
       new Date(inv.dueDate).toLocaleDateString('ar-SA'),
       inv.paidAt ? new Date(inv.paidAt).toLocaleDateString('ar-SA') : "",
     ]);
@@ -162,7 +162,7 @@ export default function Finance() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">المالية والمدفوعات</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "المالية والمدفوعات" : "Finance & Payments"}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV} disabled={!invoices?.length}>
             <Download className="h-4 w-4 ml-2" />تصدير
@@ -170,52 +170,52 @@ export default function Finance() {
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
             <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />فاتورة جديدة</Button></DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>إنشاء فاتورة جديدة</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{isAr ? "إنشاء فاتورة جديدة" : "Create New Invoice"}</DialogTitle></DialogHeader>
               <form onSubmit={handleCreateInvoice} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label>الطفل</Label>
+                    <Label>{isAr ? "الطفل" : "Child"}</Label>
                     <Select value={form.childId ? String(form.childId) : ""} onValueChange={v => {
                       const child = children?.find(c => c.id === Number(v));
                       setForm(f => ({ ...f, childId: Number(v), parentId: child?.parentId || 0 }));
                     }}>
-                      <SelectTrigger><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
                       <SelectContent>{children?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.arabicName || `${c.firstName} ${c.lastName}`}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>نوع الفاتورة</Label>
+                    <Label>{isAr ? "نوع الفاتورة" : "Invoice Type"}</Label>
                     <Select value={form.invoiceType} onValueChange={v => setForm(f => ({ ...f, invoiceType: v }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="tuition">رسوم دراسية</SelectItem>
-                        <SelectItem value="activity">نشاط</SelectItem>
-                        <SelectItem value="trip">رحلة</SelectItem>
-                        <SelectItem value="uniform">زي مدرسي</SelectItem>
-                        <SelectItem value="registration">تسجيل</SelectItem>
-                        <SelectItem value="other">أخرى</SelectItem>
+                        <SelectItem value="tuition">{isAr ? "رسوم دراسية" : "Tuition Fees"}</SelectItem>
+                        <SelectItem value="activity">{isAr ? "نشاط" : "Activity"}</SelectItem>
+                        <SelectItem value="trip">{isAr ? "رحلة" : "Trip"}</SelectItem>
+                        <SelectItem value="uniform">{isAr ? "زي مدرسي" : "School Uniform"}</SelectItem>
+                        <SelectItem value="registration">{isAr ? "تسجيل" : "Register"}</SelectItem>
+                        <SelectItem value="other">{isAr ? "أخرى" : "Other"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div><Label>الوصف</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف الفاتورة" required /></div>
+                <div><Label>الوصف</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={isAr ? "وصف الفاتورة" : "Invoice Description"} required /></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><Label>المبلغ (ر.س)</Label><Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required /></div>
+                  <div><Label>{isAr ? "المبلغ (ر.س)" : "Amount (SAR)"}</Label><Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required /></div>
                   <div><Label>تاريخ الاستحقاق</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required /></div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={form.isRecurring} onCheckedChange={v => setForm(f => ({ ...f, isRecurring: v }))} />
-                  <Label>فاتورة متكررة</Label>
+                  <Label>{isAr ? "فاتورة متكررة" : "Recurring Invoice"}</Label>
                 </div>
                 {form.subtotal && (
                   <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
-                    <div className="flex justify-between"><span>المبلغ الأساسي</span><span>{Number(form.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
-                    <div className="flex justify-between"><span>ضريبة القيمة المضافة (15%)</span><span>{(Number(form.subtotal) * 0.15).toLocaleString('ar-SA')} ر.س</span></div>
-                    <div className="flex justify-between font-bold border-t pt-1"><span>الإجمالي</span><span>{(Number(form.subtotal) * 1.15).toLocaleString('ar-SA')} ر.س</span></div>
+                    <div className="flex justify-between"><span>{isAr ? "المبلغ الأساسي" : "Base Amount"}</span><span>{Number(form.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
+                    <div className="flex justify-between"><span>{isAr ? "ضريبة القيمة المضافة (15%)" : "VAT (15%)"}</span><span>{(Number(form.subtotal) * 0.15).toLocaleString('ar-SA')} ر.س</span></div>
+                    <div className="flex justify-between font-bold border-t pt-1"><span>{isAr ? "الإجمالي" : "Total"}</span><span>{(Number(form.subtotal) * 1.15).toLocaleString('ar-SA')} ر.س</span></div>
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={createInvoice.isPending}>
-                  {createInvoice.isPending ? "جارٍ الإنشاء..." : "إنشاء الفاتورة"}
+                  {createInvoice.isPending ? (isAr ? "جارٍ الإنشاء..." : "Creating...") : (isAr ? "إنشاء الفاتورة" : "Create Invoice")}
                 </Button>
               </form>
             </DialogContent>
@@ -225,21 +225,21 @@ export default function Finance() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card><CardContent className="p-4 flex items-center gap-3"><TrendingUp className="h-8 w-8 text-green-600 shrink-0" /><div><p className="text-xs text-muted-foreground">الإيرادات الكلية</p><p className="text-lg font-bold text-green-600">{(summary?.totalRevenue ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><DollarSign className="h-8 w-8 text-blue-600 shrink-0" /><div><p className="text-xs text-muted-foreground">إيرادات الشهر</p><p className="text-lg font-bold text-blue-600">{(summary?.thisMonthRevenue ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><TrendingUp className="h-8 w-8 text-green-600 shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "الإيرادات الكلية" : "Total Revenue"}</p><p className="text-lg font-bold text-green-600">{(summary?.totalRevenue ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><DollarSign className="h-8 w-8 text-blue-600 shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "إيرادات الشهر" : "Monthly Revenue"}</p><p className="text-lg font-bold text-blue-600">{(summary?.thisMonthRevenue ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3"><Clock className="h-8 w-8 text-amber-600 shrink-0" /><div><p className="text-xs text-muted-foreground">معلقة</p><p className="text-lg font-bold text-amber-600">{(summary?.pendingAmount ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-red-600 shrink-0" /><div><p className="text-xs text-muted-foreground">متأخرة</p><p className="text-lg font-bold text-red-600">{(summary?.overdueAmount ?? 0).toLocaleString('ar-SA')} ر.س</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><CreditCard className="h-8 w-8 text-primary shrink-0" /><div><p className="text-xs text-muted-foreground">إجمالي الفواتير</p><p className="text-lg font-bold">{summary?.totalInvoices ?? 0}</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><CreditCard className="h-8 w-8 text-primary shrink-0" /><div><p className="text-xs text-muted-foreground">{isAr ? "إجمالي الفواتير" : "Total Invoices"}</p><p className="text-lg font-bold">{summary?.totalInvoices ?? 0}</p></div></CardContent></Card>
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="invoices" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="invoices"><FileText className="h-4 w-4 ml-1" />الفواتير</TabsTrigger>
-          <TabsTrigger value="transactions"><Receipt className="h-4 w-4 ml-1" />المعاملات</TabsTrigger>
-          <TabsTrigger value="refunds"><Undo2 className="h-4 w-4 ml-1" />الاستردادات</TabsTrigger>
-          <TabsTrigger value="plans"><CalendarClock className="h-4 w-4 ml-1" />خطط الرسوم</TabsTrigger>
-          <TabsTrigger value="reports"><TrendingUp className="h-4 w-4 ml-1" />التقارير</TabsTrigger>
+          <TabsTrigger value="transactions"><Receipt className="h-4 w-4 ml-1" />{isAr ? "المعاملات" : "Transactions"}</TabsTrigger>
+          <TabsTrigger value="refunds"><Undo2 className="h-4 w-4 ml-1" />{isAr ? "الاستردادات" : "Refunds"}</TabsTrigger>
+          <TabsTrigger value="plans"><CalendarClock className="h-4 w-4 ml-1" />{isAr ? "خطط الرسوم" : "Fee Plans"}</TabsTrigger>
+          <TabsTrigger value="reports"><TrendingUp className="h-4 w-4 ml-1" />{isAr ? "التقارير" : "Reports"}</TabsTrigger>
         </TabsList>
 
         {/* INVOICES TAB */}
@@ -251,7 +251,7 @@ export default function Finance() {
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[140px]"><SelectValue placeholder="الحالة" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">الكل</SelectItem>
+                    <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
                     <SelectItem value="pending">معلقة</SelectItem>
                     <SelectItem value="paid">مدفوعة</SelectItem>
                     <SelectItem value="overdue">متأخرة</SelectItem>
@@ -265,14 +265,14 @@ export default function Finance() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">رقم الفاتورة</TableHead>
-                    <TableHead className="text-right">الطفل</TableHead>
+                    <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
                     <TableHead className="text-right">ولي الأمر</TableHead>
-                    <TableHead className="text-right">النوع</TableHead>
-                    <TableHead className="text-right">الإجمالي</TableHead>
-                    <TableHead className="text-right">المدفوع</TableHead>
+                    <TableHead className="text-right">{isAr ? "النوع" : "Type"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "الإجمالي" : "Total"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "المدفوع" : "Paid"}</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">الاستحقاق</TableHead>
-                    <TableHead className="text-right">إجراءات</TableHead>
+                    <TableHead className="text-right">{isAr ? "الاستحقاق" : "Entitlement"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "إجراءات" : "Actions"}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -284,10 +284,10 @@ export default function Finance() {
                         <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
                         <TableCell>{inv.childName || "-"}</TableCell>
                         <TableCell>{inv.parentName || "-"}</TableCell>
-                        <TableCell><Badge variant="outline">{invoiceTypeLabels[(inv as any).invoiceType] || "رسوم"}</Badge></TableCell>
+                        <TableCell><Badge variant="outline">{getInvoiceTypeLabels(isAr)[(inv as any).invoiceType] || "رسوم"}</Badge></TableCell>
                         <TableCell className="font-bold">{Number(inv.total).toLocaleString('ar-SA')} ر.س</TableCell>
                         <TableCell>{Number((inv as any).paidAmount || 0).toLocaleString('ar-SA')} ر.س</TableCell>
-                        <TableCell><Badge variant={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge></TableCell>
+                        <TableCell><Badge variant={statusColors[inv.status]}>{getStatusLabels(isAr)[inv.status]}</Badge></TableCell>
                         <TableCell>{new Date(inv.dueDate).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>
                           <div className="flex gap-1 flex-wrap">
@@ -307,8 +307,8 @@ export default function Finance() {
                               </Button>
                             )}
                             {inv.status === 'pending' && (
-                              <Button size="sm" variant="destructive" onClick={() => { if (confirm("هل أنت متأكد من حذف هذه الفاتورة؟")) deleteInvoice.mutate({ id: inv.id }); }}>
-                                حذف
+                              <Button size="sm" variant="destructive" onClick={() => { if (confirm((isAr ? "هل أنت متأكد من حذف هذه الفاتورة؟" : "Are you sure you want to delete this invoice?"))) deleteInvoice.mutate({ id: inv.id }); }}>
+                                {isAr ? "حذف" : "Delete"}
                               </Button>
                             )}
                           </div>
@@ -316,7 +316,7 @@ export default function Finance() {
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد فواتير</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">{isAr ? "لا توجد فواتير" : "No invoices"}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -327,18 +327,18 @@ export default function Finance() {
         {/* TRANSACTIONS TAB */}
         <TabsContent value="transactions">
           <Card>
-            <CardHeader><CardTitle>المعاملات المالية</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{isAr ? "المعاملات المالية" : "Financial Transactions"}</CardTitle></CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">{isAr ? "التاريخ" : "Date"}</TableHead>
                     <TableHead className="text-right">رقم الفاتورة</TableHead>
-                    <TableHead className="text-right">الطفل</TableHead>
+                    <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
                     <TableHead className="text-right">ولي الأمر</TableHead>
-                    <TableHead className="text-right">النوع</TableHead>
+                    <TableHead className="text-right">{isAr ? "النوع" : "Type"}</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">الطريقة</TableHead>
+                    <TableHead className="text-right">{isAr ? "الطريقة" : "Method"}</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -354,22 +354,22 @@ export default function Finance() {
                         <TableCell>{tx.parentName || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={tx.type === 'refund' ? 'destructive' : 'default'}>
-                            {tx.type === 'payment' ? 'دفع' : tx.type === 'refund' ? 'استرداد' : 'استرداد جزئي'}
+                            {tx.type === 'payment' ? (isAr ? "دفع" : "Pay") : tx.type === 'refund' ? (isAr ? "استرداد" : "Refund") : (isAr ? "استرداد جزئي" : "Partial Refund")}
                           </Badge>
                         </TableCell>
                         <TableCell className={`font-bold ${tx.type === 'refund' ? 'text-red-600' : 'text-green-600'}`}>
                           {tx.type === 'refund' ? '-' : '+'}{Number(tx.amount).toLocaleString('ar-SA')} ر.س
                         </TableCell>
-                        <TableCell>{paymentMethodLabels[tx.method] || tx.method || "-"}</TableCell>
+                        <TableCell>{getPaymentMethodLabels(isAr)[tx.method] || tx.method || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={tx.status === 'completed' ? 'default' : tx.status === 'failed' ? 'destructive' : 'secondary'}>
-                            {tx.status === 'completed' ? 'مكتمل' : tx.status === 'failed' ? 'فاشل' : 'قيد المعالجة'}
+                            {tx.status === 'completed' ? (isAr ? "مكتمل" : "Completed") : tx.status === 'failed' ? (isAr ? "فاشل" : "Failed") : (isAr ? "قيد المعالجة" : "Processing")}
                           </Badge>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد معاملات</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">{isAr ? "لا توجد معاملات" : "No transactions"}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -380,16 +380,16 @@ export default function Finance() {
         {/* REFUNDS TAB */}
         <TabsContent value="refunds">
           <Card>
-            <CardHeader><CardTitle>الاستردادات</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{isAr ? "الاستردادات" : "Refunds"}</CardTitle></CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">{isAr ? "التاريخ" : "Date"}</TableHead>
                     <TableHead className="text-right">رقم الفاتورة</TableHead>
                     <TableHead className="text-right">ولي الأمر</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">السبب</TableHead>
+                    <TableHead className="text-right">{isAr ? "السبب" : "Reason"}</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -406,13 +406,13 @@ export default function Finance() {
                         <TableCell>{ref.reason || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={ref.status === 'completed' ? 'default' : ref.status === 'failed' ? 'destructive' : 'secondary'}>
-                            {ref.status === 'completed' ? 'مكتمل' : ref.status === 'failed' ? 'فاشل' : 'قيد المعالجة'}
+                            {ref.status === 'completed' ? (isAr ? "مكتمل" : "Completed") : ref.status === 'failed' ? (isAr ? "فاشل" : "Failed") : (isAr ? "قيد المعالجة" : "Processing")}
                           </Badge>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا توجد استردادات</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{isAr ? "لا توجد استردادات" : "No refunds"}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -424,49 +424,49 @@ export default function Finance() {
         <TabsContent value="plans">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>خطط الرسوم الدراسية</CardTitle>
+              <CardTitle>{isAr ? "خطط الرسوم الدراسية" : "Tuition Fee Plans"}</CardTitle>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => generateInvoices.mutate()} disabled={generateInvoices.isPending}>
                   <RefreshCw className={`h-4 w-4 ml-2 ${generateInvoices.isPending ? 'animate-spin' : ''}`} />إنشاء الفواتير المستحقة
                 </Button>
                 <Dialog open={openPlan} onOpenChange={setOpenPlan}>
-                  <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />خطة جديدة</Button></DialogTrigger>
+                  <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{isAr ? "خطة جديدة" : "New Plan"}</Button></DialogTrigger>
                   <DialogContent className="max-w-lg w-[calc(100%-2rem)]">
-                    <DialogHeader><DialogTitle>إنشاء خطة رسوم دراسية</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{isAr ? "إنشاء خطة رسوم دراسية" : "Create Tuition Fee Plan"}</DialogTitle></DialogHeader>
                     <form onSubmit={handleCreatePlan} className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label>الطفل</Label>
+                          <Label>{isAr ? "الطفل" : "Child"}</Label>
                           <Select value={planForm.childId ? String(planForm.childId) : ""} onValueChange={v => {
                             const child = children?.find(c => c.id === Number(v));
                             setPlanForm(f => ({ ...f, childId: Number(v), parentId: child?.parentId || 0 }));
                           }}>
-                            <SelectTrigger><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
                             <SelectContent>{children?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.arabicName || `${c.firstName} ${c.lastName}`}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
                         <div>
-                          <Label>التكرار</Label>
+                          <Label>{isAr ? "التكرار" : "Repetition"}</Label>
                           <Select value={planForm.frequency} onValueChange={v => setPlanForm(f => ({ ...f, frequency: v }))}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="monthly">شهري</SelectItem>
-                              <SelectItem value="quarterly">ربع سنوي</SelectItem>
-                              <SelectItem value="semi_annual">نصف سنوي</SelectItem>
-                              <SelectItem value="annual">سنوي</SelectItem>
+                              <SelectItem value="monthly">{isAr ? "شهري" : "Monthly"}</SelectItem>
+                              <SelectItem value="quarterly">{isAr ? "ربع سنوي" : "Quarterly"}</SelectItem>
+                              <SelectItem value="semi_annual">{isAr ? "نصف سنوي" : "Semi-Annually"}</SelectItem>
+                              <SelectItem value="annual">{isAr ? "سنوي" : "Annual"}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
-                      <div><Label>اسم الخطة</Label><Input value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} placeholder="رسوم الفصل الأول" required /></div>
-                      <div><Label>المبلغ (ر.س)</Label><Input type="number" step="0.01" value={planForm.amount} onChange={e => setPlanForm(f => ({ ...f, amount: e.target.value }))} required /></div>
+                      <div><Label>{isAr ? "اسم الخطة" : "Plan Name"}</Label><Input value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} placeholder="رسوم الفصل الأول" required /></div>
+                      <div><Label>{isAr ? "المبلغ (ر.س)" : "Amount (SAR)"}</Label><Input type="number" step="0.01" value={planForm.amount} onChange={e => setPlanForm(f => ({ ...f, amount: e.target.value }))} required /></div>
                       <div><Label>الوصف</Label><Input value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف اختياري" /></div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div><Label>تاريخ البدء</Label><Input type="date" value={planForm.startDate} onChange={e => setPlanForm(f => ({ ...f, startDate: e.target.value }))} required /></div>
-                        <div><Label>تاريخ الانتهاء (اختياري)</Label><Input type="date" value={planForm.endDate} onChange={e => setPlanForm(f => ({ ...f, endDate: e.target.value }))} /></div>
+                        <div><Label>{isAr ? "تاريخ البدء" : "Start Date"}</Label><Input type="date" value={planForm.startDate} onChange={e => setPlanForm(f => ({ ...f, startDate: e.target.value }))} required /></div>
+                        <div><Label>{isAr ? "تاريخ الانتهاء (اختياري)" : "End Date (Optional)"}</Label><Input type="date" value={planForm.endDate} onChange={e => setPlanForm(f => ({ ...f, endDate: e.target.value }))} /></div>
                       </div>
                       <Button type="submit" className="w-full" disabled={createPlan.isPending}>
-                        {createPlan.isPending ? "جارٍ الإنشاء..." : "إنشاء الخطة"}
+                        {createPlan.isPending ? (isAr ? "جارٍ الإنشاء..." : "Creating...") : (isAr ? "إنشاء الخطة" : "Create Plan")}
                       </Button>
                     </form>
                   </DialogContent>
@@ -477,12 +477,12 @@ export default function Finance() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">الاسم</TableHead>
-                    <TableHead className="text-right">الطفل</TableHead>
+                    <TableHead className="text-right">{isAr ? "الاسم" : "Name"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
                     <TableHead className="text-right">ولي الأمر</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">التكرار</TableHead>
-                    <TableHead className="text-right">الفوترة القادمة</TableHead>
+                    <TableHead className="text-right">{isAr ? "التكرار" : "Repetition"}</TableHead>
+                    <TableHead className="text-right">{isAr ? "الفوترة القادمة" : "Upcoming Billing"}</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -496,17 +496,17 @@ export default function Finance() {
                         <TableCell>{plan.childFirstName ? `${plan.childFirstName} ${plan.childLastName || ''}` : "-"}</TableCell>
                         <TableCell>{plan.parentName || "-"}</TableCell>
                         <TableCell className="font-bold">{Number(plan.amount).toLocaleString('ar-SA')} ر.س</TableCell>
-                        <TableCell>{frequencyLabels[plan.frequency] || plan.frequency}</TableCell>
+                        <TableCell>{getFrequencyLabels(isAr)[plan.frequency] || plan.frequency}</TableCell>
                         <TableCell>{plan.nextBillingDate ? new Date(plan.nextBillingDate).toLocaleDateString('ar-SA') : "-"}</TableCell>
                         <TableCell>
                           <Badge variant={plan.isActive ? 'default' : 'secondary'}>
-                            {plan.isActive ? 'نشطة' : 'متوقفة'}
+                            {plan.isActive ? (isAr ? "نشطة" : "Active") : (isAr ? "متوقفة" : "Stopped")}
                           </Badge>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد خطط رسوم</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{isAr ? "لا توجد خطط رسوم" : "No fee plans"}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -518,47 +518,47 @@ export default function Finance() {
         <TabsContent value="reports">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <CardHeader><CardTitle>ملخص مالي</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{isAr ? "ملخص مالي" : "Financial Summary"}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-muted-foreground">إجمالي الإيرادات</span>
                   <span className="font-bold text-green-600">{(summary?.totalRevenue ?? 0).toLocaleString('ar-SA')} ر.س</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">إيرادات الشهر الحالي</span>
+                  <span className="text-muted-foreground">{isAr ? "إيرادات الشهر الحالي" : "Current Month's Revenue"}</span>
                   <span className="font-bold text-blue-600">{(summary?.thisMonthRevenue ?? 0).toLocaleString('ar-SA')} ر.س</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">المبالغ المعلقة</span>
+                  <span className="text-muted-foreground">{isAr ? "المبالغ المعلقة" : "Pending Amounts"}</span>
                   <span className="font-bold text-amber-600">{(summary?.pendingAmount ?? 0).toLocaleString('ar-SA')} ر.س</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">المبالغ المتأخرة</span>
+                  <span className="text-muted-foreground">{isAr ? "المبالغ المتأخرة" : "Overdue Amounts"}</span>
                   <span className="font-bold text-red-600">{(summary?.overdueAmount ?? 0).toLocaleString('ar-SA')} ر.س</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">المدفوعة جزئياً</span>
+                  <span className="text-muted-foreground">{isAr ? "المدفوعة جزئياً" : "Partially Paid"}</span>
                   <span className="font-bold">{(summary?.partiallyPaidAmount ?? 0).toLocaleString('ar-SA')} ر.س</span>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle>إحصائيات الفواتير</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{isAr ? "إحصائيات الفواتير" : "Invoice Statistics"}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">إجمالي الفواتير</span>
+                  <span className="text-muted-foreground">{isAr ? "إجمالي الفواتير" : "Total Invoices"}</span>
                   <span className="font-bold">{summary?.totalInvoices ?? 0}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">فواتير مدفوعة</span>
+                  <span className="text-muted-foreground">{isAr ? "فواتير مدفوعة" : "Paid Invoices"}</span>
                   <span className="font-bold text-green-600">{summary?.paidInvoices ?? 0}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">فواتير معلقة</span>
+                  <span className="text-muted-foreground">{isAr ? "فواتير معلقة" : "Pending Invoices"}</span>
                   <span className="font-bold text-amber-600">{summary?.pendingInvoices ?? 0}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">فواتير متأخرة</span>
+                  <span className="text-muted-foreground">{isAr ? "فواتير متأخرة" : "Overdue Invoices"}</span>
                   <span className="font-bold text-red-600">{summary?.overdueInvoices ?? 0}</span>
                 </div>
                 <div className="pt-4">
@@ -575,12 +575,12 @@ export default function Finance() {
       {/* Mark as Paid Dialog */}
       <Dialog open={openMarkPaid} onOpenChange={setOpenMarkPaid}>
         <DialogContent>
-          <DialogHeader><DialogTitle>تأكيد الدفع</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "تأكيد الدفع" : "Confirm Payment"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {selectedInvoice && (
               <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
-                <p><strong>الفاتورة:</strong> {selectedInvoice.invoiceNumber}</p>
-                <p><strong>المبلغ:</strong> {Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</p>
+                <p><strong>{isAr ? "الفاتورة:" : "Invoice:"}</strong> {selectedInvoice.invoiceNumber}</p>
+                <p><strong>{isAr ? "المبلغ:" : "Amount:"}</strong> {Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</p>
               </div>
             )}
             <div>
@@ -588,10 +588,10 @@ export default function Finance() {
               <Select value={markPaidForm.paymentMethod} onValueChange={v => setMarkPaidForm({ paymentMethod: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">نقدي</SelectItem>
-                  <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                  <SelectItem value="card">بطاقة</SelectItem>
-                  <SelectItem value="mada">مدى</SelectItem>
+                  <SelectItem value="cash">{isAr ? "نقدي" : "Cash"}</SelectItem>
+                  <SelectItem value="bank_transfer">{isAr ? "تحويل بنكي" : "Bank Transfer"}</SelectItem>
+                  <SelectItem value="card">{isAr ? "بطاقة" : "Card"}</SelectItem>
+                  <SelectItem value="mada">{isAr ? "مدى" : "Mada"}</SelectItem>
                   <SelectItem value="apple_pay">Apple Pay</SelectItem>
                   <SelectItem value="stc_pay">STC Pay</SelectItem>
                 </SelectContent>
@@ -599,9 +599,9 @@ export default function Finance() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenMarkPaid(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpenMarkPaid(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={handleMarkPaid} disabled={markPaid.isPending}>
-              {markPaid.isPending ? "جارٍ التأكيد..." : "تأكيد الدفع"}
+              {markPaid.isPending ? (isAr ? "جارٍ التأكيد..." : "Confirming...") : (isAr ? "تأكيد الدفع" : "Confirm Payment")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -610,20 +610,20 @@ export default function Finance() {
       {/* Refund Dialog */}
       <Dialog open={openRefund} onOpenChange={setOpenRefund}>
         <DialogContent>
-          <DialogHeader><DialogTitle>استرداد المبلغ</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "استرداد المبلغ" : "Refund Amount"}</DialogTitle></DialogHeader>
           <form onSubmit={handleRefund} className="space-y-4">
             {selectedInvoice && (
               <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
-                <p><strong>الفاتورة:</strong> {selectedInvoice.invoiceNumber}</p>
-                <p><strong>المبلغ الأصلي:</strong> {Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</p>
+                <p><strong>{isAr ? "الفاتورة:" : "Invoice:"}</strong> {selectedInvoice.invoiceNumber}</p>
+                <p><strong>{isAr ? "المبلغ الأصلي:" : "Original Amount:"}</strong> {Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</p>
               </div>
             )}
-            <div><Label>مبلغ الاسترداد (ر.س)</Label><Input type="number" step="0.01" value={refundForm.amount} onChange={e => setRefundForm(f => ({ ...f, amount: e.target.value }))} required /></div>
-            <div><Label>سبب الاسترداد</Label><Textarea value={refundForm.reason} onChange={e => setRefundForm(f => ({ ...f, reason: e.target.value }))} placeholder="أدخل سبب الاسترداد" required /></div>
+            <div><Label>{isAr ? "مبلغ الاسترداد (ر.س)" : "Refund Amount (SAR)"}</Label><Input type="number" step="0.01" value={refundForm.amount} onChange={e => setRefundForm(f => ({ ...f, amount: e.target.value }))} required /></div>
+            <div><Label>{isAr ? "سبب الاسترداد" : "Reason for Refund"}</Label><Textarea value={refundForm.reason} onChange={e => setRefundForm(f => ({ ...f, reason: e.target.value }))} placeholder="أدخل سبب الاسترداد" required /></div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpenRefund(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setOpenRefund(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
               <Button type="submit" variant="destructive" disabled={createRefund.isPending}>
-                {createRefund.isPending ? "جارٍ الاسترداد..." : "تأكيد الاسترداد"}
+                {createRefund.isPending ? (isAr ? "جارٍ الاسترداد..." : "Processing refund...") : (isAr ? "تأكيد الاسترداد" : "Confirm Refund")}
               </Button>
             </DialogFooter>
           </form>

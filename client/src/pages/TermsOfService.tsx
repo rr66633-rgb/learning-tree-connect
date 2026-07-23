@@ -1,11 +1,14 @@
+import { useTranslation } from 'react-i18next';
 export default function TermsOfService() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-8 flex items-center gap-3">
           <img
             src="/assets/logo.webp"
-            alt="نشأة"
+            alt={isAr ? "نشأة" : "Nasha'a"}
             className="w-12 h-12 object-contain"
           />
           <h1 className="text-2xl font-bold text-slate-800">Naashah</h1>

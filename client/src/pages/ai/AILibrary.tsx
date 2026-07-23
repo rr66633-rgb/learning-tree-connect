@@ -25,7 +25,7 @@ const typeColors: Record<string, string> = {
 export default function AILibrary() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
-  const typeLabels: Record<string, string> = { activity: t("aiLibrary.activity"), story: t("aiLibrary.story"), song: t("aiLibrary.song"), game: t("aiLibrary.game"), experiment: t("aiLibrary.experiment"), craft: t("aiLibrary.craft"), observation: i18n.language === "ar" ? "ملاحظة" : "Observation", weekly_plan: i18n.language === "ar" ? "خطة أسبوعية" : "Weekly Plan", progress_report: i18n.language === "ar" ? "تقرير تقدم" : "Progress Report", parent_message: i18n.language === "ar" ? "رسالة لولي الأمر" : "Parent Message", newsletter: i18n.language === "ar" ? "نشرة" : "Newsletter" };
+  const typeLabels: Record<string, string> = { activity: t("aiLibrary.activity"), story: t("aiLibrary.story"), song: t("aiLibrary.song"), game: t("aiLibrary.game"), experiment: t("aiLibrary.experiment"), craft: t("aiLibrary.craft"), observation: i18n.language === "ar" ? (isAr ? "ملاحظة" : "Note") : "Observation", weekly_plan: i18n.language === "ar" ? "خطة أسبوعية" : "Weekly Plan", progress_report: i18n.language === "ar" ? "تقرير تقدم" : "Progress Report", parent_message: i18n.language === "ar" ? "رسالة لولي الأمر" : "Parent Message", newsletter: i18n.language === "ar" ? "نشرة" : "Newsletter" };
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -49,7 +49,7 @@ export default function AILibrary() {
         <Link href="/ai"><Button variant="ghost" size="icon" className="shrink-0"><ArrowRight className="h-5 w-5" /></Button></Link>
         <div className="p-2 rounded-xl bg-muted"><Library className="h-5 w-5 text-muted-foreground" /></div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">المكتبة</h1>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "المكتبة" : "Library"}</h1>
           <p className="text-sm text-muted-foreground">AI Library</p>
         </div>
       </div>
@@ -59,7 +59,7 @@ export default function AILibrary() {
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="بحث في المكتبة..."
+            placeholder={isAr ? "بحث في المكتبة..." : "Search in Library..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pr-10"
@@ -68,14 +68,14 @@ export default function AILibrary() {
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="observation">ملاحظات</SelectItem>
-            <SelectItem value="weekly_plan">خطط أسبوعية</SelectItem>
-            <SelectItem value="activity">أنشطة</SelectItem>
-            <SelectItem value="progress_report">تقارير تقدم</SelectItem>
-            <SelectItem value="parent_message">رسائل</SelectItem>
-            <SelectItem value="newsletter">نشرات</SelectItem>
-            <SelectItem value="story">قصص</SelectItem>
+            <SelectItem value="all">{isAr ? "الكل" : "All"}</SelectItem>
+            <SelectItem value="observation">{isAr ? "ملاحظات" : "Notes"}</SelectItem>
+            <SelectItem value="weekly_plan">{isAr ? "خطط أسبوعية" : "Weekly Plans"}</SelectItem>
+            <SelectItem value="activity">{isAr ? "أنشطة" : "Activities"}</SelectItem>
+            <SelectItem value="progress_report">{isAr ? "تقارير تقدم" : "Progress Reports"}</SelectItem>
+            <SelectItem value="parent_message">{isAr ? "رسائل" : "Messages"}</SelectItem>
+            <SelectItem value="newsletter">{isAr ? "نشرات" : "Bulletins"}</SelectItem>
+            <SelectItem value="story">{isAr ? "قصص" : "Stories"}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -88,8 +88,8 @@ export default function AILibrary() {
       ) : (filteredItems as any[]).length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
           <Library className="h-16 w-16 mb-4 opacity-20" />
-          <p className="text-lg font-medium">المكتبة فارغة</p>
-          <p className="text-sm mt-1">المحتوى المُنشأ بالذكاء الاصطناعي سيظهر هنا تلقائياً</p>
+          <p className="text-lg font-medium">{isAr ? "المكتبة فارغة" : "Library is empty"}</p>
+          <p className="text-sm mt-1">{isAr ? "المحتوى المُنشأ بالذكاء الاصطناعي سيظهر هنا تلقائياً" : "AI-generated content will appear here automatically"}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -136,7 +136,7 @@ export default function AILibrary() {
             </pre>
             <div className="flex gap-2 mt-4">
               <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(selectedItem?.content, null, 2)); toast.success(isAr ? "تم النسخ" : "Copied"); }}>
-                <Copy className="h-4 w-4 ml-1" />نسخ المحتوى
+                <Copy className="h-4 w-4 ml-1" />{isAr ? "نسخ المحتوى" : "Copy Content"}
               </Button>
             </div>
           </div>

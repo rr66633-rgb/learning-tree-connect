@@ -24,6 +24,7 @@ import {
 
 export default function OrganizationsList() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
@@ -67,8 +68,8 @@ export default function OrganizationsList() {
   };
 
   const editionLabels: Record<string, string> = {
-    learning_tree: i18n.language === "ar" ? "شجرة التعلم" : "Learning Tree",
-    nashaa: i18n.language === "ar" ? "نشأة" : "Naashah",
+    learning_tree: i18n.language === "ar" ? isAr ? "شجرة التعلم" : "Learning Tree" : "Learning Tree",
+    nashaa: i18n.language === "ar" ? isAr ? "نشأة" : "Nasha'a" : "Naashah",
   };
 
   function openEditDialog(org: any) {
@@ -110,7 +111,7 @@ export default function OrganizationsList() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t("superadmin.manageOrganizations")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {i18n.language === "ar" ? "عرض وإدارة جميع الحضانات والمنظمات المسجلة على المنصة" : "View and manage all registered nurseries and organizations"}
+            {i18n.language === "ar" ? isAr ? "عرض وإدارة جميع الحضانات والمنظمات المسجلة على المنصة" : "View & Manage All Nurseries & Organizations Registered on the Platform" : "View and manage all registered nurseries and organizations"}
           </p>
         </div>
         <Button onClick={() => navigate("/super-admin/organizations/new")} className="rounded-xl shadow-sm">
@@ -140,7 +141,7 @@ export default function OrganizationsList() {
                 <SelectItem value="all">{t("superadmin.allStatuses")}</SelectItem>
                 <SelectItem value="active">{t("superadmin.active")}</SelectItem>
                 <SelectItem value="trial">{t("superadmin.trial")}</SelectItem>
-                <SelectItem value="pending">{i18n.language === "ar" ? "قيد المراجعة" : "Pending"}</SelectItem>
+                <SelectItem value="pending">{i18n.language === "ar" ? isAr ? "قيد المراجعة" : "Under Review" : "Pending"}</SelectItem>
                 <SelectItem value="suspended">{t("superadmin.suspended")}</SelectItem>
               </SelectContent>
             </Select>
@@ -176,11 +177,11 @@ export default function OrganizationsList() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">{t("superadmin.organization")}</TableHead>
-                      <TableHead className="text-right">{i18n.language === "ar" ? "النوع" : "Type"}</TableHead>
+                      <TableHead className="text-right">{i18n.language === "ar" ? isAr ? "النوع" : "Type" : "Type"}</TableHead>
                       <TableHead className="text-right">{t("superadmin.edition")}</TableHead>
-                      <TableHead className="text-right">{i18n.language === "ar" ? "المدينة" : "City"}</TableHead>
+                      <TableHead className="text-right">{i18n.language === "ar" ? isAr ? "المدينة" : "City" : "City"}</TableHead>
                       <TableHead className="text-right">{t("superadmin.status")}</TableHead>
-                      <TableHead className="text-right">{i18n.language === "ar" ? "الحد الأقصى" : "Capacity"}</TableHead>
+                      <TableHead className="text-right">{i18n.language === "ar" ? isAr ? "الحد الأقصى" : "Maximum" : "Capacity"}</TableHead>
                       <TableHead className="text-right">{t("superadmin.created")}</TableHead>
                       <TableHead className="text-right">{t("common.actions")}</TableHead>
                     </TableRow>
@@ -204,7 +205,7 @@ export default function OrganizationsList() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs rounded-lg">
-                              {i18n.language === "ar" ? "حضانة / روضة" : "Nursery"}
+                              {i18n.language === "ar" ? isAr ? "حضانة / روضة" : "Nursery / Kindergarten" : "Nursery"}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -330,15 +331,15 @@ export default function OrganizationsList() {
               {/* Pagination info */}
               {orgsData.totalPages > 1 && (
                 <div className="text-center text-sm text-muted-foreground mt-4">
-                  {i18n.language === "ar" ? `صفحة ${orgsData.page} من ${orgsData.totalPages} (${orgsData.total} منظمة)` : `Page ${orgsData.page} of ${orgsData.totalPages} (${orgsData.total} organizations)`}
+                  {i18n.language === "ar" ? `${isAr ? "صفحة " : "Page"}${orgsData.page} ${isAr ? "من " : "From"}${orgsData.totalPages} (${orgsData.total} منظمة)` : `Page ${orgsData.page} of ${orgsData.totalPages} (${orgsData.total} organizations)`}
                 </div>
               )}
             </>
           ) : (
             <div className="text-center py-16 text-muted-foreground">
               <Building2 className="w-14 h-14 mx-auto mb-4 opacity-20" />
-              <p className="text-lg font-medium mb-1">{i18n.language === "ar" ? "لا توجد منظمات" : "No organizations"}</p>
-              <p className="text-sm">{i18n.language === "ar" ? "لم يتم العثور على منظمات تطابق معايير البحث" : "No organizations match the search criteria"}</p>
+              <p className="text-lg font-medium mb-1">{i18n.language === "ar" ? isAr ? "لا توجد منظمات" : "No organizations" : "No organizations"}</p>
+              <p className="text-sm">{i18n.language === "ar" ? isAr ? "لم يتم العثور على منظمات تطابق معايير البحث" : "No organizations matching search criteria found" : "No organizations match the search criteria"}</p>
               <Button className="mt-4 rounded-xl" onClick={() => navigate("/super-admin/organizations/new")}>
                 <Plus className="w-4 h-4 ml-2" />
                 {t("superadmin.createOrganization")}
@@ -352,8 +353,8 @@ export default function OrganizationsList() {
       <Dialog open={editDialog} onOpenChange={setEditDialog}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{i18n.language === "ar" ? "تعديل المنظمة" : "Edit Organization"}</DialogTitle>
-            <DialogDescription>{i18n.language === "ar" ? "تعديل بيانات المنظمة الأساسية" : "Edit basic organization data"}</DialogDescription>
+            <DialogTitle>{i18n.language === "ar" ? isAr ? "تعديل المنظمة" : "Edit Organization" : "Edit Organization"}</DialogTitle>
+            <DialogDescription>{i18n.language === "ar" ? isAr ? "تعديل بيانات المنظمة الأساسية" : "Edit Basic Organization Data" : "Edit basic organization data"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -378,25 +379,25 @@ export default function OrganizationsList() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{i18n.language === "ar" ? "المدينة" : "City"}</Label>
+                <Label>{i18n.language === "ar" ? isAr ? "المدينة" : "City" : "City"}</Label>
                 <Input value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} className="rounded-lg" />
               </div>
               <div className="space-y-2">
-                <Label>{i18n.language === "ar" ? "رقم الترخيص" : "License Number"}</Label>
+                <Label>{i18n.language === "ar" ? isAr ? "رقم الترخيص" : "License Number" : "License Number"}</Label>
                 <Input value={editForm.licenseNumber} onChange={(e) => setEditForm({ ...editForm, licenseNumber: e.target.value })} className="rounded-lg" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>{i18n.language === "ar" ? "العنوان" : "Address"}</Label>
+              <Label>{i18n.language === "ar" ? isAr ? "العنوان" : "Address" : "Address"}</Label>
               <Input value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} className="rounded-lg" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{i18n.language === "ar" ? "الحد الأقصى للأطفال" : "Max Children"}</Label>
+                <Label>{i18n.language === "ar" ? isAr ? "الحد الأقصى للأطفال" : "Max Children" : "Max Children"}</Label>
                 <Input value={editForm.maxChildren} onChange={(e) => setEditForm({ ...editForm, maxChildren: parseInt(e.target.value) || 0 })} className="rounded-lg" type="number" />
               </div>
               <div className="space-y-2">
-                <Label>{i18n.language === "ar" ? "الحد الأقصى للموظفين" : "Max Staff"}</Label>
+                <Label>{i18n.language === "ar" ? isAr ? "الحد الأقصى للموظفين" : "Max Employees" : "Max Staff"}</Label>
                 <Input value={editForm.maxStaff} onChange={(e) => setEditForm({ ...editForm, maxStaff: parseInt(e.target.value) || 0 })} className="rounded-lg" type="number" />
               </div>
             </div>
@@ -419,8 +420,8 @@ export default function OrganizationsList() {
             </DialogTitle>
             <DialogDescription>
               {statusTarget?.newStatus === "active"
-                ? (i18n.language === "ar" ? `هل أنت متأكد من تفعيل "${statusTarget?.name}"؟` : `Are you sure you want to activate "${statusTarget?.name}"?`)
-                : (i18n.language === "ar" ? `هل أنت متأكد من تعليق "${statusTarget?.name}"؟` : `Are you sure you want to suspend "${statusTarget?.name}"?`)
+                ? (i18n.language === "ar" ? `${isAr ? "هل أنت متأكد من تفعيل " : "Are you sure you want to activate"}"${statusTarget?.name}"؟` : `Are you sure you want to activate "${statusTarget?.name}"?`)
+                : (i18n.language === "ar" ? `${isAr ? "هل أنت متأكد من تعليق " : "Are you sure you want to suspend"}"${statusTarget?.name}"؟` : `Are you sure you want to suspend "${statusTarget?.name}"?`)
               }
             </DialogDescription>
           </DialogHeader>

@@ -33,6 +33,7 @@ import {
 export default function OrganizationDetail() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const isAr = i18n.language === "ar";
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const orgId = parseInt(params.id || "0");
@@ -77,9 +78,9 @@ export default function OrganizationDetail() {
     return (
       <div className="text-center py-20">
         <Building2 className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-        <p className="text-lg font-medium text-foreground">المنظمة غير موجودة</p>
+        <p className="text-lg font-medium text-foreground">{isAr ? "المنظمة غير موجودة" : "Organization not found"}</p>
         <Button variant="outline" className="mt-4 rounded-xl" onClick={() => navigate("/super-admin/organizations")}>
-          العودة للقائمة
+          {isAr ? "العودة للقائمة" : "Back to Menu"}
         </Button>
       </div>
     );
@@ -95,7 +96,7 @@ export default function OrganizationDetail() {
   const statusLabels: Record<string, string> = {
     active: t("superadmin.active"),
     trial: t("superadmin.trial"),
-    pending: "قيد المراجعة",
+    pending: (isAr ? "قيد المراجعة" : "Under Review"),
     suspended: t("superadmin.suspended"),
   };
 
@@ -110,7 +111,7 @@ export default function OrganizationDetail() {
           className="text-muted-foreground hover:text-foreground rounded-lg"
         >
           <ArrowRight className="w-4 h-4 ml-1" />
-          العودة
+          {isAr ? "العودة" : "Back"}
         </Button>
       </div>
 
@@ -141,23 +142,23 @@ export default function OrganizationDetail() {
                       className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl"
                     >
                       <Ban className="w-4 h-4 ml-1" />
-                      تعليق
+                      {isAr ? "تعليق" : "Comment"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>تأكيد تعليق المنظمة</AlertDialogTitle>
+                      <AlertDialogTitle>{isAr ? "تأكيد تعليق المنظمة" : "Confirm Organization Suspension"}</AlertDialogTitle>
                       <AlertDialogDescription>
                         هل أنت متأكد من تعليق هذه المنظمة؟ سيتم منع جميع المستخدمين من الوصول للنظام.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel className="rounded-lg">إلغاء</AlertDialogCancel>
+                      <AlertDialogCancel className="rounded-lg">{isAr ? "إلغاء" : "Cancel"}</AlertDialogCancel>
                       <AlertDialogAction
                         className="bg-red-600 hover:bg-red-700 rounded-lg"
                         onClick={() => toggleStatus.mutate({ id: orgId, status: "suspended" })}
                       >
-                        تعليق المنظمة
+                        {isAr ? "تعليق المنظمة" : "Organization Comment"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -170,7 +171,7 @@ export default function OrganizationDetail() {
                   onClick={() => toggleStatus.mutate({ id: orgId, status: "active" })}
                 >
                   <CheckCircle2 className="w-4 h-4 ml-1" />
-                  تفعيل
+                  {isAr ? "تفعيل" : "Activate"}
                 </Button>
               )}
             </div>
@@ -186,7 +187,7 @@ export default function OrganizationDetail() {
               <GraduationCap className="w-6 h-6 text-[#7B61FF]" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">الأطفال</p>
+              <p className="text-xs text-muted-foreground">{isAr ? "الأطفال" : "Children"}</p>
               <p className="text-2xl font-bold text-foreground">{org.stats.children}</p>
             </div>
             <p className="text-xs text-muted-foreground mr-auto bg-muted/50 px-2 py-1 rounded-lg">الحد: {org.maxChildren}</p>
@@ -212,7 +213,7 @@ export default function OrganizationDetail() {
               <School className="w-6 h-6 text-[#FF5CA8]" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">الفصول</p>
+              <p className="text-xs text-muted-foreground">{isAr ? "الفصول" : "Semesters"}</p>
               <p className="text-2xl font-bold text-foreground">{org.stats.classes}</p>
             </div>
           </CardContent>
@@ -228,18 +229,18 @@ export default function OrganizationDetail() {
               <div className="h-8 w-8 rounded-lg bg-[#00C9B7]/10 flex items-center justify-center">
                 <Building2 className="w-4 h-4 text-[#00C9B7]" />
               </div>
-              معلومات المنظمة
+              {isAr ? "معلومات المنظمة" : "Organization Information"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-0">
-            <InfoRow label="الاسم بالعربية" value={org.nameAr} />
-            <InfoRow label="الاسم بالإنجليزية" value={org.name} />
-            <InfoRow label="المعرف" value={org.slug} />
-            <InfoRow label={t("superadmin.edition")} value={org.edition === "learning_tree" ? "شجرة التعلم" : "نشأة"} />
-            <InfoRow label={t("common.phone")} value={org.phone || "غير محدد"} icon={<Phone className="w-3.5 h-3.5" />} />
-            <InfoRow label="البريد" value={org.email || "غير محدد"} icon={<Mail className="w-3.5 h-3.5" />} />
-            <InfoRow label="المدينة" value={org.city || "غير محدد"} icon={<MapPin className="w-3.5 h-3.5" />} />
-            <InfoRow label="رقم الترخيص" value={org.licenseNumber || "غير محدد"} icon={<FileText className="w-3.5 h-3.5" />} />
+            <InfoRow label={isAr ? "الاسم بالعربية" : "Name (Arabic)"} value={org.nameAr} />
+            <InfoRow label={isAr ? "الاسم بالإنجليزية" : "Name (English)"} value={org.name} />
+            <InfoRow label={isAr ? "المعرف" : "Identifier"} value={org.slug} />
+            <InfoRow label={t("superadmin.edition")} value={org.edition === "learning_tree" ? (isAr ? "شجرة التعلم" : "Learning Tree") : (isAr ? "نشأة" : "Nasha'a")} />
+            <InfoRow label={t("common.phone")} value={org.phone || (isAr ? "غير محدد" : "Undefined")} icon={<Phone className="w-3.5 h-3.5" />} />
+            <InfoRow label="البريد" value={org.email || (isAr ? "غير محدد" : "Undefined")} icon={<Mail className="w-3.5 h-3.5" />} />
+            <InfoRow label="المدينة" value={org.city || (isAr ? "غير محدد" : "Undefined")} icon={<MapPin className="w-3.5 h-3.5" />} />
+            <InfoRow label="رقم الترخيص" value={org.licenseNumber || (isAr ? "غير محدد" : "Undefined")} icon={<FileText className="w-3.5 h-3.5" />} />
           </CardContent>
         </Card>
 
@@ -251,7 +252,7 @@ export default function OrganizationDetail() {
                 <div className="h-8 w-8 rounded-lg bg-[#FFB020]/10 flex items-center justify-center">
                   <CreditCard className="w-4 h-4 text-[#FFB020]" />
                 </div>
-                الاشتراك
+                {isAr ? "الاشتراك" : "Subscription"}
               </CardTitle>
               <Button
                 variant="outline"
@@ -260,24 +261,24 @@ export default function OrganizationDetail() {
                 onClick={() => setShowPlanDialog(true)}
               >
                 <Edit className="w-3 h-3 ml-1" />
-                تغيير الخطة
+                {isAr ? "تغيير الخطة" : "Change Plan"}
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-0">
             {org.subscription ? (
               <>
-                <InfoRow label="الخطة" value={plans?.find(p => p.id === org.subscription?.planId)?.nameAr || "غير محدد"} />
+                <InfoRow label={isAr ? "الخطة" : "Plan"} value={plans?.find(p => p.id === org.subscription?.planId)?.nameAr || "غير محدد"} />
                 <InfoRow label={t("common.status")} value={org.subscription.status === "active" ? "نشط" : org.subscription.status === "trialing" ? "تجريبي" : org.subscription.status} />
-                <InfoRow label="دورة الفوترة" value={org.subscription.billingCycle === "monthly" ? "شهرية" : "سنوية"} />
+                <InfoRow label={isAr ? "دورة الفوترة" : "Billing Cycle"} value={org.subscription.billingCycle === "monthly" ? "شهرية" : "سنوية"} />
                 <InfoRow label={t("superadmin.amount")} value={`${org.subscription.amount} ${org.subscription.currency}`} />
               </>
             ) : (
               <div className="text-center py-6">
                 <CreditCard className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                <p className="text-muted-foreground text-sm">لا يوجد اشتراك نشط</p>
+                <p className="text-muted-foreground text-sm">{isAr ? "لا يوجد اشتراك نشط" : "No active subscription"}</p>
                 <Button size="sm" className="mt-3 rounded-lg" onClick={() => setShowPlanDialog(true)}>
-                  تعيين خطة
+                  {isAr ? "تعيين خطة" : "Assign Plan"}
                 </Button>
               </div>
             )}
@@ -291,7 +292,7 @@ export default function OrganizationDetail() {
               <div className="h-8 w-8 rounded-lg bg-[#FF5CA8]/10 flex items-center justify-center">
                 <Palette className="w-4 h-4 text-[#FF5CA8]" />
               </div>
-              الهوية البصرية
+              {isAr ? "الهوية البصرية" : "Visual Identity"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -305,13 +306,13 @@ export default function OrganizationDetail() {
                     <div className="w-7 h-7 rounded-lg border border-border/50 shadow-sm" style={{ backgroundColor: org.branding.accentColor || "#FF5CA8" }} title="مميز" />
                   </div>
                 </div>
-                <InfoRow label="الخط" value={org.branding.fontFamily || "Cairo"} />
-                <InfoRow label="نمط الشريط الجانبي" value={org.branding.sidebarStyle === "dark" ? "داكن" : org.branding.sidebarStyle === "light" ? "فاتح" : "متدرج"} />
+                <InfoRow label={isAr ? "الخط" : "Font"} value={org.branding.fontFamily || "Cairo"} />
+                <InfoRow label={isAr ? "نمط الشريط الجانبي" : "Sidebar Style"} value={org.branding.sidebarStyle === "dark" ? "داكن" : org.branding.sidebarStyle === "light" ? "فاتح" : "متدرج"} />
               </div>
             ) : (
               <div className="text-center py-6">
                 <Palette className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                <p className="text-muted-foreground text-sm">لم يتم تخصيص الهوية البصرية</p>
+                <p className="text-muted-foreground text-sm">{isAr ? "لم يتم تخصيص الهوية البصرية" : "Visual identity not customized"}</p>
               </div>
             )}
           </CardContent>
@@ -333,11 +334,11 @@ export default function OrganizationDetail() {
                 {members.slice(0, 10).map((member) => (
                   <div key={member.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors">
                     <div>
-                      <p className="text-sm font-medium text-foreground">{member.userName || "مستخدم"}</p>
+                      <p className="text-sm font-medium text-foreground">{member.userName || (isAr ? "مستخدم" : "User")}</p>
                       <p className="text-xs text-muted-foreground">{member.userEmail || ""}</p>
                     </div>
                     <Badge variant="outline" className="text-xs rounded-lg">
-                      {roleLabels[member.role] || member.role}
+                      {getRoleLabels(isAr)[member.role] || member.role}
                     </Badge>
                   </div>
                 ))}
@@ -345,7 +346,7 @@ export default function OrganizationDetail() {
             ) : (
               <div className="text-center py-6">
                 <Users className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                <p className="text-muted-foreground text-sm">لا يوجد أعضاء</p>
+                <p className="text-muted-foreground text-sm">{isAr ? "لا يوجد أعضاء" : "No members"}</p>
               </div>
             )}
           </CardContent>
@@ -356,8 +357,8 @@ export default function OrganizationDetail() {
       <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تغيير خطة الاشتراك</DialogTitle>
-            <DialogDescription>اختر الخطة ودورة الفوترة المناسبة</DialogDescription>
+            <DialogTitle>{isAr ? "تغيير خطة الاشتراك" : "Change Subscription Plan"}</DialogTitle>
+            <DialogDescription>{isAr ? "اختر الخطة ودورة الفوترة المناسبة" : "Choose the plan and billing cycle"}</DialogDescription>
           </DialogHeader>
           <AssignPlanForm
             plans={plans || []}
@@ -373,16 +374,16 @@ export default function OrganizationDetail() {
   );
 }
 
-const roleLabels: Record<string, string> = {
-  owner: "مالك",
-  admin: "مدير",
-  principal: "مديرة",
-  teacher: "معلمة",
-  assistant: "مساعدة",
-  accountant: "محاسب",
-  receptionist: "استقبال",
-  parent: "ولي أمر",
-};
+const getRoleLabels = (isAr: boolean): Record<string, string>  => ({
+  owner: (isAr ? "مالك" : "Owner"),
+  admin: (isAr ? "مدير" : "Manager"),
+  principal: (isAr ? "مديرة" : "Director (female)"),
+  teacher: (isAr ? "معلمة" : "Teacher (female)"),
+  assistant: (isAr ? "مساعدة" : "Help"),
+  accountant: (isAr ? "محاسب" : "Accountant"),
+  receptionist: (isAr ? "استقبال" : "Reception"),
+  parent: (isAr ? "ولي أمر" : "Parent/Guardian"),
+});
 
 function InfoRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
@@ -407,16 +408,18 @@ function AssignPlanForm({
   onSubmit: (planId: number, billingCycle: "monthly" | "yearly") => void;
   isLoading: boolean;
 }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [planId, setPlanId] = useState<string>("");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
 
   return (
     <div className="space-y-4">
       <div>
-        <Label>الخطة</Label>
+        <Label>{isAr ? "الخطة" : "Plan"}</Label>
         <Select value={planId} onValueChange={setPlanId}>
           <SelectTrigger className="rounded-lg mt-1.5">
-            <SelectValue placeholder="اختر الخطة" />
+            <SelectValue placeholder={isAr ? "اختر الخطة" : "Choose Plan"} />
           </SelectTrigger>
           <SelectContent>
             {plans.map((plan) => (
@@ -429,14 +432,14 @@ function AssignPlanForm({
       </div>
 
       <div>
-        <Label>دورة الفوترة</Label>
+        <Label>{isAr ? "دورة الفوترة" : "Billing Cycle"}</Label>
         <Select value={billingCycle} onValueChange={(v) => setBillingCycle(v as any)}>
           <SelectTrigger className="rounded-lg mt-1.5">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="yearly">سنوية</SelectItem>
-            <SelectItem value="monthly">شهرية</SelectItem>
+            <SelectItem value="monthly">{isAr ? "شهرية" : "Monthly"}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -446,7 +449,7 @@ function AssignPlanForm({
         disabled={!planId || isLoading}
         onClick={() => onSubmit(parseInt(planId), billingCycle)}
       >
-        {isLoading ? "جاري التعيين..." : "تعيين الخطة"}
+        {isLoading ? "جاري التعيين..." : (isAr ? "تعيين الخطة" : "Assign Plan")}
       </Button>
     </div>
   );

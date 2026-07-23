@@ -134,14 +134,14 @@ export default function ForgotPassword() {
         <CardHeader className="text-center pb-2">
           <img
             src="/assets/logo.webp"
-            alt="نشأة"
+            alt={isAr ? "نشأة" : "Nasha\'a"}
             className="w-16 h-16 mx-auto mb-2 object-contain"
           />
           <h1 className="text-xl font-bold text-slate-800">
-            {step === "input" && "استعادة كلمة المرور"}
-            {step === "otp" && "إدخال رمز التحقق"}
-            {step === "newPassword" && "كلمة مرور جديدة"}
-            {step === "success" && "تم بنجاح"}
+            {step === "input" && (isAr ? "استعادة كلمة المرور" : "Reset Password")}
+            {step === "otp" && isAr ? "إدخال رمز التحقق" : "Enter Verification Code"}
+            {step === "newPassword" && isAr ? "كلمة مرور جديدة" : "New Password"}
+            {step === "success" && (isAr ? "تم بنجاح" : "Success")}
           </h1>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -149,7 +149,7 @@ export default function ForgotPassword() {
           {step === "input" && (
             <form onSubmit={handleRequestReset} className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                أدخل بريدك الإلكتروني أو رقم جوالك لاستعادة كلمة المرور
+                {isAr ? "أدخل بريدك الإلكتروني أو رقم جوالك لاستعادة كلمة المرور" : "Enter your email or mobile number to recover password"}
               </p>
 
               {/* Method selection */}
@@ -162,7 +162,7 @@ export default function ForgotPassword() {
                   }`}
                 >
                   <Phone className="h-4 w-4" />
-                  رسالة نصية
+                  {isAr ? "رسالة نصية" : "Text Message"}
                 </button>
                 <button
                   type="button"
@@ -172,13 +172,13 @@ export default function ForgotPassword() {
                   }`}
                 >
                   <Mail className="h-4 w-4" />
-                  بريد إلكتروني
+                  {isAr ? "بريد إلكتروني" : "Email"}
                 </button>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="identifier">
-                  {method === "sms" ? "رقم الجوال" : "البريد الإلكتروني"}
+                  {method === "sms" ? (isAr ? "رقم الجوال" : "Phone Number") : (isAr ? "البريد الإلكتروني" : "Email")}
                 </Label>
                 <Input
                   id="identifier"
@@ -196,7 +196,7 @@ export default function ForgotPassword() {
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={forgotMutation.isPending}
               >
-                {forgotMutation.isPending ? "جاري الإرسال..." : "إرسال رمز التحقق"}
+                {forgotMutation.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : "إرسال رمز التحقق"}
               </Button>
 
               <button
@@ -205,7 +205,7 @@ export default function ForgotPassword() {
                 className="flex items-center justify-center gap-1 w-full text-sm text-muted-foreground hover:text-foreground"
               >
                 <ArrowRight className="h-4 w-4" />
-                العودة لتسجيل الدخول
+                {isAr ? "العودة لتسجيل الدخول" : "Back to Login"}
               </button>
             </form>
           )}
@@ -214,7 +214,7 @@ export default function ForgotPassword() {
           {step === "otp" && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                تم إرسال رمز التحقق إلى{" "}
+                {isAr ? "تم إرسال رمز التحقق إلى" : "Verification code sent to"}{" "}
                 <span className="font-medium text-foreground" dir="ltr">{identifier}</span>
               </p>
 
@@ -225,15 +225,15 @@ export default function ForgotPassword() {
                   otpExpiryCountdown > 0 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
                 }`}>
                   {otpExpiryCountdown > 0 ? (
-                    <>صالح لمدة {formatTime(otpExpiryCountdown)}</>
+                    <>{isAr ? "صالح لمدة" : "Valid for"} {formatTime(otpExpiryCountdown)}</>
                   ) : (
-                    <>انتهت صلاحية الرمز</>
+                    <>{isAr ? "انتهت صلاحية الرمز" : "Code Expired"}</>
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="otp">رمز التحقق</Label>
+                <Label htmlFor="otp">{isAr ? "رمز التحقق" : "Verification Code"}</Label>
                 <Input
                   id="otp"
                   type="text"
@@ -252,7 +252,7 @@ export default function ForgotPassword() {
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={verifyOtpMutation.isPending || otpExpiryCountdown === 0}
               >
-                {verifyOtpMutation.isPending ? "جاري التحقق..." : "تحقق"}
+                {verifyOtpMutation.isPending ? (isAr ? "جاري التحقق..." : "Verifying...") : "تحقق"}
               </Button>
 
               {/* Resend OTP */}
@@ -264,11 +264,11 @@ export default function ForgotPassword() {
                     className="text-sm text-primary hover:underline font-medium"
                     disabled={resendOtpMutation.isPending}
                   >
-                    {resendOtpMutation.isPending ? "جاري الإرسال..." : "إعادة إرسال الرمز"}
+                    {resendOtpMutation.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : "إعادة إرسال الرمز"}
                   </button>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    إعادة الإرسال بعد {countdown} ثانية
+                    {isAr ? "إعادة الإرسال بعد" : "Resend After"} {countdown} ثانية
                   </p>
                 )}
               </div>
@@ -279,7 +279,7 @@ export default function ForgotPassword() {
                 className="flex items-center justify-center gap-1 w-full text-sm text-muted-foreground hover:text-foreground"
               >
                 <ArrowRight className="h-4 w-4" />
-                تغيير رقم الجوال / البريد
+                {isAr ? "تغيير رقم الجوال / البريد" : "Change Mobile Number / Email"}
               </button>
             </form>
           )}
@@ -288,15 +288,15 @@ export default function ForgotPassword() {
           {step === "newPassword" && (
             <form onSubmit={handleResetPassword} className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                أدخل كلمة المرور الجديدة
+                {isAr ? "أدخل كلمة المرور الجديدة" : "Enter New Password"}
               </p>
 
               <div className="space-y-2">
-                <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+                <Label htmlFor="newPassword">{isAr ? "كلمة المرور الجديدة" : "New Password"}</Label>
                 <Input
                   id="newPassword"
                   type="password"
-                  placeholder="6 أحرف على الأقل"
+                  placeholder={isAr ? "6 أحرف على الأقل" : "At least 6 characters"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   dir="ltr"
@@ -304,11 +304,11 @@ export default function ForgotPassword() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+                <Label htmlFor="confirmPassword">{isAr ? "تأكيد كلمة المرور" : "Confirm Password"}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="أعد إدخال كلمة المرور"
+                  placeholder={isAr ? "أعد إدخال كلمة المرور" : "Re-enter Password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   dir="ltr"
@@ -331,9 +331,9 @@ export default function ForgotPassword() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {newPassword.length === 0 ? "" :
-                   newPassword.length < 6 ? "ضعيفة جداً" :
-                   newPassword.length < 8 ? "متوسطة" :
-                   newPassword.length < 12 ? "جيدة" : "قوية"}
+                   newPassword.length < 6 ? isAr ? "ضعيفة جداً" : "Very Weak" :
+                   newPassword.length < 8 ? isAr ? "متوسطة" : "Medium" :
+                   newPassword.length < 12 ? isAr ? "جيدة" : "Good" : isAr ? "قوية" : "Strong"}
                 </p>
               </div>
 
@@ -342,7 +342,7 @@ export default function ForgotPassword() {
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
                 disabled={resetPasswordMutation.isPending}
               >
-                {resetPasswordMutation.isPending ? "جاري التحديث..." : "تعيين كلمة المرور"}
+                {resetPasswordMutation.isPending ? isAr ? "جاري التحديث..." : "Updating..." : isAr ? "تعيين كلمة المرور" : "Set Password"}
               </Button>
             </form>
           )}
@@ -352,16 +352,16 @@ export default function ForgotPassword() {
             <div className="text-center space-y-4 py-4">
               <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
               <h2 className="text-lg font-semibold text-slate-800">
-                تم تغيير كلمة المرور بنجاح
+                {isAr ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة
+                {isAr ? "يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة" : "You can now log in with the new password"}
               </p>
               <Button
                 onClick={() => setLocation("/login")}
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white h-11"
               >
-                تسجيل الدخول
+                {isAr ? "تسجيل الدخول" : "Login"}
               </Button>
             </div>
           )}

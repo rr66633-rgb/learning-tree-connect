@@ -52,12 +52,12 @@ const areaColors: Record<string, string> = {
   "EAD": "from-rose-500 to-rose-600",
 };
 
-const levelLabels: Record<string, string> = {
-  emerging: "ناشئ",
-  developing: "يتطور",
-  secure: "مستقر",
-  exceeding: "متفوق",
-};
+const getLevelLabels = (isAr: boolean): Record<string, string>  => ({
+  emerging: (isAr ? "ناشئ" : "Emerging"),
+  developing: (isAr ? "يتطور" : "Developing"),
+  secure: (isAr ? "مستقر" : "Stable"),
+  exceeding: (isAr ? "متفوق" : "Superior"),
+});
 
 const levelColors: Record<string, string> = {
   emerging: "text-red-600 bg-red-50 border-red-200",
@@ -133,7 +133,7 @@ export default function ChildDevelopmentProfile() {
             disabled={analyzeMutation.isPending}
           >
             {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Sparkles className="w-4 h-4 ml-2" />}
-            تحليل ذكي
+            {isAr ? "تحليل ذكي" : "Smart Analysis"}
           </Button>
           <Button
             variant="outline"
@@ -141,10 +141,10 @@ export default function ChildDevelopmentProfile() {
             disabled={generateReadinessMutation.isPending}
           >
             {generateReadinessMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <GraduationCap className="w-4 h-4 ml-2" />}
-            جاهزية مدرسية
+            {isAr ? "جاهزية مدرسية" : "School Readiness"}
           </Button>
           <Button onClick={() => navigate(`/staff/development/observations/new?childId=${childId}`)}>
-            ملاحظة جديدة
+            {isAr ? "ملاحظة جديدة" : "New Note"}
           </Button>
         </div>
       </div>
@@ -153,27 +153,27 @@ export default function ChildDevelopmentProfile() {
         <TabsList className="bg-muted/50 p-1 rounded-lg">
           <TabsTrigger value="progress" className="rounded-md">
             <BarChart3 className="w-4 h-4 ml-1" />
-            التقدم
+            {isAr ? "التقدم" : "Progress"}
           </TabsTrigger>
           <TabsTrigger value="readiness" className="rounded-md">
             <GraduationCap className="w-4 h-4 ml-1" />
-            الجاهزية المدرسية
+            {isAr ? "الجاهزية المدرسية" : "School Readiness"}
           </TabsTrigger>
           <TabsTrigger value="analysis" className="rounded-md">
             <Sparkles className="w-4 h-4 ml-1" />
-            التحليل الذكي
+            {isAr ? "التحليل الذكي" : "Smart Analysis"}
           </TabsTrigger>
           <TabsTrigger value="benchmark" className="rounded-md">
             <Target className="w-4 h-4 ml-1" />
-            المقارنة المعيارية
+            {isAr ? "المقارنة المعيارية" : "Benchmarking"}
           </TabsTrigger>
           <TabsTrigger value="timeline" className="rounded-md">
             <Clock className="w-4 h-4 ml-1" />
-            الخط الزمني
+            {isAr ? "الخط الزمني" : "Timeline"}
           </TabsTrigger>
           <TabsTrigger value="reports" className="rounded-md">
             <FileText className="w-4 h-4 ml-1" />
-            التقارير
+            {isAr ? "التقارير" : "Reports"}
           </TabsTrigger>
         </TabsList>
 
@@ -200,13 +200,13 @@ export default function ChildDevelopmentProfile() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">المستوى الحالي</span>
+                        <span className="text-muted-foreground">{isAr ? "المستوى الحالي" : "Current Level"}</span>
                         {item.latestLevel ? (
                           <Badge className={`${levelColors[item.latestLevel]} border`}>
-                            {levelLabels[item.latestLevel]}
+                            {getLevelLabels(isAr)[item.latestLevel]}
                           </Badge>
                         ) : (
-                          <span className="text-xs text-muted-foreground">لم يُقيّم</span>
+                          <span className="text-xs text-muted-foreground">{isAr ? "لم يُقيّم" : "Not assessed"}</span>
                         )}
                       </div>
                       <Progress value={levelToPercent[item.latestLevel] || 0} className="h-2" />
@@ -221,10 +221,10 @@ export default function ChildDevelopmentProfile() {
             <Card className="border-0 shadow-sm">
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد ملاحظات تطورية بعد</p>
-                <p className="text-sm mt-1">أضف ملاحظات لبدء تتبع تطور الطفل</p>
+                <p className="font-medium">{isAr ? "لا توجد ملاحظات تطورية بعد" : "No developmental notes yet"}</p>
+                <p className="text-sm mt-1">{isAr ? "أضف ملاحظات لبدء تتبع تطور الطفل" : "Add notes to start tracking child development"}</p>
                 <Button className="mt-4" onClick={() => navigate(`/staff/development/observations/new?childId=${childId}`)}>
-                  إضافة أول ملاحظة
+                  {isAr ? "إضافة أول ملاحظة" : "Add First Note"}
                 </Button>
               </CardContent>
             </Card>
@@ -237,16 +237,16 @@ export default function ChildDevelopmentProfile() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg">درجات الجاهزية المدرسية</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "درجات الجاهزية المدرسية" : "School Readiness Levels"}</CardTitle>
                   <CardDescription>آخر تقييم: {new Date(latestReadiness.assessedAt).toLocaleDateString("ar-SA")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { label: "الجاهزية اللغوية", value: latestReadiness.languageReadiness, icon: MessageCircle },
-                    { label: "الجاهزية الاجتماعية", value: latestReadiness.socialReadiness, icon: Heart },
-                    { label: "الجاهزية العاطفية", value: latestReadiness.emotionalReadiness, icon: Heart },
-                    { label: "الجاهزية المعرفية", value: latestReadiness.cognitiveReadiness, icon: Brain },
-                    { label: "الجاهزية البدنية", value: latestReadiness.physicalReadiness, icon: Activity },
+                    { label: (isAr ? "الجاهزية اللغوية" : "Language Readiness"), value: latestReadiness.languageReadiness, icon: MessageCircle },
+                    { label: (isAr ? "الجاهزية الاجتماعية" : "Social Readiness"), value: latestReadiness.socialReadiness, icon: Heart },
+                    { label: (isAr ? "الجاهزية العاطفية" : "Emotional Readiness"), value: latestReadiness.emotionalReadiness, icon: Heart },
+                    { label: (isAr ? "الجاهزية المعرفية" : "Cognitive Readiness"), value: latestReadiness.cognitiveReadiness, icon: Brain },
+                    { label: (isAr ? "الجاهزية البدنية" : "Physical Readiness"), value: latestReadiness.physicalReadiness, icon: Activity },
                   ].map((item) => (
                     <div key={item.label} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
@@ -264,7 +264,7 @@ export default function ChildDevelopmentProfile() {
 
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg">الدرجة الإجمالية</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "الدرجة الإجمالية" : "Overall Score"}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center py-8">
                   <div className="relative w-40 h-40">
@@ -285,9 +285,9 @@ export default function ChildDevelopmentProfile() {
                       </div>
                     </div>
                   </div>
-                  <p className="mt-4 text-sm text-muted-foreground">الجاهزية الإجمالية للمدرسة</p>
+                  <p className="mt-4 text-sm text-muted-foreground">{isAr ? "الجاهزية الإجمالية للمدرسة" : "Overall School Readiness"}</p>
                   <Badge className={`mt-2 ${Number(latestReadiness.overallReadiness) >= 70 ? "bg-emerald-100 text-emerald-700" : Number(latestReadiness.overallReadiness) >= 50 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
-                    {Number(latestReadiness.overallReadiness) >= 70 ? "جاهز" : Number(latestReadiness.overallReadiness) >= 50 ? "يحتاج دعم" : "غير جاهز بعد"}
+                    {Number(latestReadiness.overallReadiness) >= 70 ? "جاهز" : Number(latestReadiness.overallReadiness) >= 50 ? "يحتاج دعم" : (isAr ? "غير جاهز بعد" : "Not Ready Yet")}
                   </Badge>
                 </CardContent>
               </Card>
@@ -296,8 +296,8 @@ export default function ChildDevelopmentProfile() {
             <Card className="border-0 shadow-sm">
               <CardContent className="py-12 text-center text-muted-foreground">
                 <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لم يتم تقييم الجاهزية المدرسية بعد</p>
-                <p className="text-sm mt-1">أضف ملاحظات كافية ثم اضغط "جاهزية مدرسية" لتوليد التقييم</p>
+                <p className="font-medium">{isAr ? "لم يتم تقييم الجاهزية المدرسية بعد" : "School readiness not assessed yet"}</p>
+                <p className="text-sm mt-1">أضف ملاحظات كافية ثم اضغط (isAr ? "جاهزية مدرسية" : "School Readiness") لتوليد التقييم</p>
               </CardContent>
             </Card>
           )}
@@ -312,7 +312,7 @@ export default function ChildDevelopmentProfile() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-emerald-500" />
-                    نقاط القوة
+                    {isAr ? "نقاط القوة" : "Strengths"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -333,7 +333,7 @@ export default function ChildDevelopmentProfile() {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <TrendingDown className="w-5 h-5 text-amber-500" />
-                      مجالات تحتاج دعم
+                      {isAr ? "مجالات تحتاج دعم" : "Areas needing support"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -352,7 +352,7 @@ export default function ChildDevelopmentProfile() {
               {/* Summary */}
               <Card className="border-0 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">الملخص العام</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "الملخص العام" : "General Summary"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -365,8 +365,8 @@ export default function ChildDevelopmentProfile() {
             <Card className="border-0 shadow-sm">
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لم يتم إجراء تحليل ذكي بعد</p>
-                <p className="text-sm mt-1">أضف ملاحظات كافية ثم اضغط "تحليل ذكي" لتوليد تقرير شامل</p>
+                <p className="font-medium">{isAr ? "لم يتم إجراء تحليل ذكي بعد" : "No smart analysis has been performed yet"}</p>
+                <p className="text-sm mt-1">أضف ملاحظات كافية ثم اضغط (isAr ? "تحليل ذكي" : "Smart Analysis") لتوليد تقرير شامل</p>
               </CardContent>
             </Card>
           )}
@@ -377,7 +377,7 @@ export default function ChildDevelopmentProfile() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Target className="w-5 h-5 text-blue-500" />
-                  التوصيات
+                  {isAr ? "التوصيات" : "Recommendations"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -386,7 +386,7 @@ export default function ChildDevelopmentProfile() {
                     <div key={rec.recommendation.id} className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
                       <div className="flex items-center justify-between mb-1">
                         <Badge variant="outline" className="text-xs">
-                          {rec.recommendation.type === "classroom" ? "نشاط صفي" : rec.recommendation.type === "home" ? "نشاط منزلي" : "تدخل"}
+                          {rec.recommendation.type === "classroom" ? "نشاط صفي" : rec.recommendation.type === "home" ? "نشاط منزلي" : (isAr ? "تدخل" : "Intervention")}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{rec.area?.nameAr}</span>
                       </div>
@@ -406,7 +406,7 @@ export default function ChildDevelopmentProfile() {
             <div className="space-y-4">
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg">المقارنة المعيارية</CardTitle>
+                  <CardTitle className="text-lg">{isAr ? "المقارنة المعيارية" : "Benchmarking"}</CardTitle>
                   <CardDescription>مقارنة أداء الطفل بتوقعات EYFS ومتوسط الفصل</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -416,7 +416,7 @@ export default function ChildDevelopmentProfile() {
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{b.area?.nameAr || b.area?.nameEn}</span>
                           <Badge variant="outline" className={b.status === "above" ? "text-emerald-600" : b.status === "at" ? "text-blue-600" : "text-amber-600"}>
-                            {b.status === "above" ? "أعلى من المتوقع" : b.status === "at" ? "ضمن المتوقع" : "أقل من المتوقع"}
+                            {b.status === "above" ? "أعلى من المتوقع" : b.status === "at" ? "ضمن المتوقع" : (isAr ? "أقل من المتوقع" : "Below Expected")}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-xs">
@@ -425,7 +425,7 @@ export default function ChildDevelopmentProfile() {
                             <p className="font-bold text-blue-600">{(b.childAvg * 25).toFixed(0)}%</p>
                           </div>
                           <div className="p-2 rounded bg-gray-50 dark:bg-gray-950/20 text-center">
-                            <p className="text-muted-foreground">متوسط الفصل</p>
+                            <p className="text-muted-foreground">{isAr ? "متوسط الفصل" : "Class Average"}</p>
                             <p className="font-bold text-gray-600">{(b.classAvg * 25).toFixed(0)}%</p>
                           </div>
                           <div className="p-2 rounded bg-emerald-50 dark:bg-emerald-950/20 text-center">
@@ -443,8 +443,8 @@ export default function ChildDevelopmentProfile() {
             <Card className="border-0 shadow-sm">
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Target className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد بيانات كافية للمقارنة</p>
-                <p className="text-sm mt-1">أضف ملاحظات تطورية لتفعيل المقارنة المعيارية</p>
+                <p className="font-medium">{isAr ? "لا توجد بيانات كافية للمقارنة" : "Not enough data for comparison"}</p>
+                <p className="text-sm mt-1">{isAr ? "أضف ملاحظات تطورية لتفعيل المقارنة المعيارية" : "Add developmental notes to enable benchmarking"}</p>
               </CardContent>
             </Card>
           )}

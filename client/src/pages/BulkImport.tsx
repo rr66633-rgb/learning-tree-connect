@@ -7,17 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type EntityType = 'children' | 'parents' | 'teachers' | 'staff';
 
-const entityLabels: Record<EntityType, string> = {
-  children: 'الأطفال',
-  parents: 'أولياء الأمور',
-  teachers: 'المعلمات',
-  staff: 'الموظفين',
-};
+const getEntityLabels = (isAr: boolean): Record<EntityType, string>  => ({
+  children: (isAr ? "الأطفال" : "Children"),
+  parents: (isAr ? "أولياء الأمور" : "Parents"),
+  teachers: (isAr ? "المعلمات" : "Teachers"),
+  staff: (isAr ? "الموظفين" : "Employees"),
+});
 
 export default function BulkImport() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [entityType, setEntityType] = useState<EntityType>('children');
   const [file, setFile] = useState<File | null>(null);
   const [fileData, setFileData] = useState<string>('');
@@ -36,12 +39,12 @@ export default function BulkImport() {
     if (!selectedFile) return;
 
     if (!selectedFile.name.endsWith('.xlsx') && !selectedFile.name.endsWith('.xls')) {
-      toast.error('يرجى اختيار ملف Excel (.xlsx أو .xls)');
+      toast.error(isAr ? "يرجى اختيار ملف Excel (.xlsx أو .xls)" : "Please select an Excel file (.xlsx or .xls)");
       return;
     }
 
     if (selectedFile.size > 5 * 1024 * 1024) {
-      toast.error('حجم الملف يجب أن لا يتجاوز 5 ميجابايت');
+      toast.error(isAr ? "حجم الملف يجب أن لا يتجاوز 5 ميجابايت" : "File size must not exceed 5 MB");
       return;
     }
 
@@ -67,12 +70,12 @@ export default function BulkImport() {
       });
       setValidationResult(result);
       if (result.errorCount === 0) {
-        toast.success(`تم التحقق بنجاح: ${result.validCount} سجل صالح`);
+        toast.success(isAr ? `تم التحقق بنجاح: ${result.validCount} سجل صالح` : `Verified successfully:${result.validCount}Valid Record`);
       } else {
-        toast.warning(`${result.validCount} سجل صالح، ${result.errorCount} خطأ`);
+        toast.warning(isAr ? `${result.validCount} سجل صالح، ${result.errorCount} خطأ` : `${result.validCount}Valid Record,${result.errorCount}Error`);
       }
     } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ أثناء التحقق');
+      toast.error(err.message || (isAr ? "حدث خطأ أثناء التحقق" : "An error occurred during verification"));
     }
     setIsValidating(false);
   };
@@ -86,9 +89,9 @@ export default function BulkImport() {
         entityType,
       });
       setImportResult(result);
-      toast.success(`تم استيراد ${result.imported} سجل بنجاح`);
+      toast.success(isAr ? `تم استيراد ${result.imported} سجل بنجاح` : `تم استيراد ${result.imported} سجل بنجاح`);
     } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ أثناء الاستيراد');
+      toast.error(err.message || (isAr ? "حدث خطأ أثناء الاستيراد" : "An error occurred during import"));
     }
     setIsImporting(false);
   };
@@ -109,9 +112,9 @@ export default function BulkImport() {
       a.download = result.fileName;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('تم تحميل القالب بنجاح');
+      toast.success(isAr ? "تم تحميل القالب بنجاح" : "Template uploaded successfully");
     } catch (err: any) {
-      toast.error('حدث خطأ أثناء تحميل القالب');
+      toast.error(isAr ? "حدث خطأ أثناء تحميل القالب" : "An error occurred while loading the template");
     }
   };
 
@@ -144,16 +147,16 @@ export default function BulkImport() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="children">الأطفال</SelectItem>
-              <SelectItem value="parents">أولياء الأمور</SelectItem>
-              <SelectItem value="teachers">المعلمات</SelectItem>
-              <SelectItem value="staff">الموظفين</SelectItem>
+              <SelectItem value="children">{isAr ? "الأطفال" : "Children"}</SelectItem>
+              <SelectItem value="parents">{isAr ? "أولياء الأمور" : "Parents"}</SelectItem>
+              <SelectItem value="teachers">{isAr ? "المعلمات" : "Teachers"}</SelectItem>
+              <SelectItem value="staff">{isAr ? "الموظفين" : "Employees"}</SelectItem>
             </SelectContent>
           </Select>
 
           <Button variant="outline" onClick={handleDownloadTemplate} className="w-full">
             <Download className="w-4 h-4 ml-2" />
-            تحميل قالب {entityLabels[entityType]}
+            تحميل قالب {getEntityLabels(isAr)[entityType]}
           </Button>
         </CardContent>
       </Card>
@@ -166,7 +169,7 @@ export default function BulkImport() {
             الخطوة 2: رفع الملف
           </CardTitle>
           <CardDescription>
-            ارفع ملف Excel يحتوي على بيانات {entityLabels[entityType]}
+            ارفع ملف Excel يحتوي على بيانات {getEntityLabels(isAr)[entityType]}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -190,7 +193,7 @@ export default function BulkImport() {
             ) : (
               <div className="space-y-2">
                 <Upload className="w-12 h-12 mx-auto text-gray-400" />
-                <p className="text-gray-600">اضغط هنا لاختيار ملف أو اسحب الملف</p>
+                <p className="text-gray-600">{isAr ? "اضغط هنا لاختيار ملف أو اسحب الملف" : "Click here to choose file or drag file"}</p>
                 <p className="text-sm text-gray-400">الحد الأقصى: 5 ميجابايت | الصيغ المدعومة: .xlsx, .xls</p>
               </div>
             )}
@@ -198,7 +201,7 @@ export default function BulkImport() {
 
           {file && !validationResult && (
             <Button onClick={handleValidate} disabled={isValidating} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700">
-              {isValidating ? 'جاري التحقق...' : 'التحقق من البيانات'}
+              {isValidating ? (isAr ? "جاري التحقق..." : "Verifying...") : (isAr ? "التحقق من البيانات" : "Data Verification")}
             </Button>
           )}
         </CardContent>
@@ -214,35 +217,35 @@ export default function BulkImport() {
               ) : (
                 <AlertTriangle className="w-5 h-5 text-yellow-600" />
               )}
-              نتائج التحقق
+              {isAr ? "نتائج التحقق" : "Verification Results"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold">{validationResult.totalRows}</p>
-                <p className="text-sm text-gray-600">إجمالي السجلات</p>
+                <p className="text-sm text-gray-600">{isAr ? "إجمالي السجلات" : "Total Records"}</p>
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
                 <p className="text-2xl font-bold text-green-700">{validationResult.validCount}</p>
-                <p className="text-sm text-green-600">سجلات صالحة</p>
+                <p className="text-sm text-green-600">{isAr ? "سجلات صالحة" : "Valid Records"}</p>
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <p className="text-2xl font-bold text-red-700">{validationResult.errorCount}</p>
-                <p className="text-sm text-red-600">أخطاء</p>
+                <p className="text-sm text-red-600">{isAr ? "أخطاء" : "Errors"}</p>
               </div>
             </div>
 
             {validationResult.errors.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-medium mb-2 text-red-700">الأخطاء:</h4>
+                <h4 className="font-medium mb-2 text-red-700">{isAr ? "الأخطاء:" : "Errors:"}</h4>
                 <div className="max-h-40 overflow-y-auto border rounded-lg">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-right">الصف</TableHead>
-                        <TableHead className="text-right">الحقل</TableHead>
-                        <TableHead className="text-right">الخطأ</TableHead>
+                        <TableHead className="text-right">{isAr ? "الصف" : "Class"}</TableHead>
+                        <TableHead className="text-right">{isAr ? "الحقل" : "Field"}</TableHead>
+                        <TableHead className="text-right">{isAr ? "الخطأ" : "Error"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -261,7 +264,7 @@ export default function BulkImport() {
 
             {validationResult.preview.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-medium mb-2">معاينة البيانات (أول 10 سجلات):</h4>
+                <h4 className="font-medium mb-2">{isAr ? "معاينة البيانات (أول 10 سجلات):" : "Data Preview (First 10 Records):"}</h4>
                 <div className="overflow-x-auto border rounded-lg">
                   <Table>
                     <TableHeader>
@@ -287,10 +290,10 @@ export default function BulkImport() {
 
             <div className="flex gap-3 mt-4">
               <Button onClick={handleImport} disabled={isImporting} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-                {isImporting ? 'جاري الاستيراد...' : `استيراد ${validationResult.validCount} سجل`}
+                {isImporting ? (isAr ? "جاري الاستيراد..." : "Importing...") : `استيراد ${validationResult.validCount} سجل`}
               </Button>
               <Button variant="outline" onClick={resetForm} className="flex-1">
-                إلغاء
+                {isAr ? "إلغاء" : "Cancel"}
               </Button>
             </div>
           </CardContent>
@@ -303,31 +306,31 @@ export default function BulkImport() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-800">
               <CheckCircle2 className="w-5 h-5" />
-              تم الاستيراد بنجاح
+              {isAr ? "تم الاستيراد بنجاح" : "Imported successfully"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-xl font-bold">{importResult.totalRows}</p>
-                <p className="text-sm text-gray-600">الإجمالي</p>
+                <p className="text-sm text-gray-600">{isAr ? "الإجمالي" : "Total"}</p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-bold text-green-700">{importResult.imported}</p>
-                <p className="text-sm text-green-600">تم استيرادها</p>
+                <p className="text-sm text-green-600">{isAr ? "تم استيرادها" : "Imported"}</p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-bold text-yellow-700">{importResult.skipped}</p>
-                <p className="text-sm text-yellow-600">تم تخطيها (مكررة)</p>
+                <p className="text-sm text-yellow-600">{isAr ? "تم تخطيها (مكررة)" : "Skipped (duplicate)"}</p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-bold text-red-700">{importResult.errorCount}</p>
-                <p className="text-sm text-red-600">أخطاء</p>
+                <p className="text-sm text-red-600">{isAr ? "أخطاء" : "Errors"}</p>
               </div>
             </div>
 
             <Button variant="outline" onClick={resetForm} className="w-full mt-4">
-              استيراد ملف آخر
+              {isAr ? "استيراد ملف آخر" : "Import Another File"}
             </Button>
           </CardContent>
         </Card>

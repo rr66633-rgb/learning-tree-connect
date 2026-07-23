@@ -102,10 +102,10 @@ export function NotificationBell() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return "الآن";
-    if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
-    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-    if (diffDays < 7) return `منذ ${diffDays} يوم`;
+    if (diffMins < 1) return (isAr ? "الآن" : "Now");
+    if (diffMins < 60) return (isAr ? `منذ ${diffMins} دقيقة` : `Since${diffMins}Minute`);
+    if (diffHours < 24) return (isAr ? `منذ ${diffHours} ساعة` : `Since${diffHours}Hour`);
+    if (diffDays < 7) return (isAr ? `منذ ${diffDays} يوم` : `Since${diffDays}Day`);
     return d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' });
   };
 
@@ -154,7 +154,7 @@ export function NotificationBell() {
                 disabled={markAllRead.isPending}
               >
                 <CheckCheck className="h-3.5 w-3.5 ml-1" />
-                قراءة الكل
+                {isAr ? "قراءة الكل" : "Read All"}
               </Button>
             )}
           </div>
@@ -237,7 +237,7 @@ export function NotificationBell() {
                 <Bell className="h-7 w-7" />
               </div>
               <p className="text-sm font-medium">لا توجد إشعارات</p>
-              <p className="text-xs mt-1">ستظهر الإشعارات هنا عند وصولها</p>
+              <p className="text-xs mt-1">{isAr ? "ستظهر الإشعارات هنا عند وصولها" : "Notifications will appear here when they arrive"}</p>
             </div>
           )}
         </ScrollArea>

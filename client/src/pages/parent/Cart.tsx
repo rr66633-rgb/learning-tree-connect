@@ -17,17 +17,17 @@ export default function Cart() {
 
   const updateCartItem = trpc.store.updateCartItem.useMutation({
     onSuccess: () => utils.store.getCart.invalidate(),
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   const removeFromCart = trpc.store.removeFromCart.useMutation({
     onSuccess: () => { utils.store.getCart.invalidate(); toast.success(isAr ? "تم الحذف من السلة" : "Removed from cart"); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   const clearCart = trpc.store.clearCart.useMutation({
     onSuccess: () => { utils.store.getCart.invalidate(); toast.success(isAr ? "تم تفريغ السلة" : "Cart cleared"); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   if (isLoading) return <div className="p-6 space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;
@@ -39,12 +39,12 @@ export default function Cart() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">سلة المشتريات</h1>
-          <p className="text-muted-foreground">{cart?.length || 0} عنصر</p>
+          <h1 className="text-2xl font-bold">{isAr ? "سلة المشتريات" : "Shopping Cart"}</h1>
+          <p className="text-muted-foreground">{cart?.length || 0} {isAr ? "عنصر" : "Item"}</p>
         </div>
         <Button variant="ghost" onClick={() => navigate("/parent/store")}>
           <ArrowLeft className="h-4 w-4 ml-1" />
-          متابعة التسوق
+          {isAr ? "متابعة التسوق" : "Continue Shopping"}
         </Button>
       </div>
 
@@ -52,9 +52,9 @@ export default function Cart() {
         <Card>
           <CardContent className="py-12 text-center">
             <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">السلة فارغة</p>
-            <p className="text-muted-foreground mb-4">أضف منتجات من المتجر لتظهر هنا</p>
-            <Button onClick={() => navigate("/parent/store")}>تصفح المتجر</Button>
+            <p className="text-lg font-medium">{isAr ? "السلة فارغة" : "Cart is Empty"}</p>
+            <p className="text-muted-foreground mb-4">{isAr ? "أضف منتجات من المتجر لتظهر هنا" : "Add products from the store to appear here"}</p>
+            <Button onClick={() => navigate("/parent/store")}>{isAr ? "تصفح المتجر" : "Browse Store"}</Button>
           </CardContent>
         </Card>
       ) : (
@@ -74,7 +74,7 @@ export default function Cart() {
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{item.product.nameAr}</h3>
-                      <p className="text-primary font-bold mt-1">{item.product.price} ر.س</p>
+                      <p className="text-primary font-bold mt-1">{item.product.price} {isAr ? "ر.س" : "SAR"}</p>
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center gap-1 border rounded-lg">
                           <Button
@@ -108,7 +108,7 @@ export default function Cart() {
                       </div>
                     </div>
                     <div className="text-left">
-                      <p className="font-bold">{(Number(item.product.price) * item.quantity).toFixed(2)} ر.س</p>
+                      <p className="font-bold">{(Number(item.product.price) * item.quantity).toFixed(2)} {isAr ? "ر.س" : "SAR"}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -119,26 +119,26 @@ export default function Cart() {
           {/* Summary */}
           <Card className="border-primary/20">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">ملخص الطلب</CardTitle>
+              <CardTitle className="text-base">{isAr ? "ملخص الطلب" : "Request Summary"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">المجموع الفرعي</span>
-                <span>{total.toFixed(2)} ر.س</span>
+                <span className="text-muted-foreground">{isAr ? "المجموع الفرعي" : "Subtotal"}</span>
+                <span>{total.toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">التوصيل</span>
-                <span className="text-green-600">استلام من الحضانة</span>
+                <span className="text-muted-foreground">{isAr ? "التوصيل" : "Delivery"}</span>
+                <span className="text-green-600">{isAr ? "استلام من الحضانة" : "Pick up from Nursery"}</span>
               </div>
               <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                <span>الإجمالي</span>
-                <span className="text-primary">{total.toFixed(2)} ر.س</span>
+                <span>{isAr ? "الإجمالي" : "Total"}</span>
+                <span className="text-primary">{total.toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
               </div>
               <Button className="w-full mt-4" size="lg" onClick={() => navigate("/parent/store/checkout")}>
-                إتمام الطلب
+                {isAr ? "إتمام الطلب" : "Complete Order"}
               </Button>
-              <Button variant="ghost" className="w-full text-red-500" onClick={() => { if (confirm("هل تريد تفريغ السلة؟")) clearCart.mutate(); }}>
-                تفريغ السلة
+              <Button variant="ghost" className="w-full text-red-500" onClick={() => { if (confirm(isAr ? "هل تريد تفريغ السلة؟" : "Do you want to empty the cart?")) clearCart.mutate(); }}>
+                {isAr ? "تفريغ السلة" : "Empty Cart"}
               </Button>
             </CardContent>
           </Card>

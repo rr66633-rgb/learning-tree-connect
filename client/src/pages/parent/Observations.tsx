@@ -8,26 +8,27 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { useTranslation } from "react-i18next";
 
-const EYFS_AREAS = [
-  { name: "التواصل واللغة", icon: "💬", color: "from-blue-500 to-blue-600" },
-  { name: "النمو الجسدي", icon: "🏃", color: "from-green-500 to-green-600" },
-  { name: "النمو الشخصي والاجتماعي والعاطفي", icon: "💛", color: "from-yellow-500 to-yellow-600" },
-  { name: "القراءة والكتابة", icon: "📖", color: "from-indigo-500 to-indigo-600" },
-  { name: "الرياضيات", icon: "🔢", color: "from-purple-500 to-purple-600" },
-  { name: "فهم العالم", icon: "🌍", color: "from-teal-500 to-teal-600" },
-  { name: "الفنون التعبيرية والتصميم", icon: "🎨", color: "from-pink-500 to-pink-600" },
-];
+const getEYFS_AREAS = (isAr: boolean) => ([
+  { name: (isAr ? "التواصل واللغة" : "Communication & Language"), icon: "💬", color: "from-blue-500 to-blue-600" },
+  { name: (isAr ? "النمو الجسدي" : "Physical Development"), icon: "🏃", color: "from-green-500 to-green-600" },
+  { name: (isAr ? "النمو الشخصي والاجتماعي والعاطفي" : "Personal, Social & Emotional Development"), icon: "💛", color: "from-yellow-500 to-yellow-600" },
+  { name: (isAr ? "القراءة والكتابة" : "Literacy"), icon: "📖", color: "from-indigo-500 to-indigo-600" },
+  { name: (isAr ? "الرياضيات" : "Mathematics"), icon: "🔢", color: "from-purple-500 to-purple-600" },
+  { name: (isAr ? "فهم العالم" : "Understanding the World"), icon: "🌍", color: "from-teal-500 to-teal-600" },
+  { name: (isAr ? "الفنون التعبيرية والتصميم" : "Expressive Arts & Design"), icon: "🎨", color: "from-pink-500 to-pink-600" },
+]);
 
-const LEVELS = [
-  { value: "emerging", label: "ناشئ", color: "bg-amber-100 text-amber-700 border-amber-200", progressColor: "bg-amber-400" },
-  { value: "developing", label: "متطور", color: "bg-blue-100 text-blue-700 border-blue-200", progressColor: "bg-blue-500" },
-  { value: "secure", label: "متمكن", color: "bg-emerald-100 text-emerald-700 border-emerald-200", progressColor: "bg-emerald-500" },
-  { value: "exceeding", label: "متفوق", color: "bg-purple-100 text-purple-700 border-purple-200", progressColor: "bg-purple-500" },
-];
+const getLEVELS = (isAr: boolean) => ([
+  { value: "emerging", label: (isAr ? "ناشئ" : "Emerging"), color: "bg-amber-100 text-amber-700 border-amber-200", progressColor: "bg-amber-400" },
+  { value: "developing", label: (isAr ? "متطور" : "Advanced"), color: "bg-blue-100 text-blue-700 border-blue-200", progressColor: "bg-blue-500" },
+  { value: "secure", label: (isAr ? "متمكن" : "Proficient"), color: "bg-emerald-100 text-emerald-700 border-emerald-200", progressColor: "bg-emerald-500" },
+  { value: "exceeding", label: (isAr ? "متفوق" : "Superior"), color: "bg-purple-100 text-purple-700 border-purple-200", progressColor: "bg-purple-500" },
+]);
 
 export default function ParentObservations() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const isAr = i18n.language === "ar";
   const [selectedChild, setSelectedChild] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("progress");
 
@@ -61,9 +62,9 @@ export default function ParentObservations() {
   if (loadingChildren) return <PageSkeleton variant="detail" />;
 
   const tabs = [
-    { id: "progress", label: "التقدم", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", activeBg: "bg-emerald-100 border-emerald-300" },
+    { id: "progress", label: (isAr ? "التقدم" : "Progress"), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", activeBg: "bg-emerald-100 border-emerald-300" },
     { id: "assessments", label: "تقييمات EYFS", icon: GraduationCap, color: "text-blue-600", bg: "bg-blue-50", activeBg: "bg-blue-100 border-blue-300" },
-    { id: "observations", label: "الملاحظات", icon: Eye, color: "text-purple-600", bg: "bg-purple-50", activeBg: "bg-purple-100 border-purple-300" },
+    { id: "observations", label: (isAr ? "الملاحظات" : "Notes"), icon: Eye, color: "text-purple-600", bg: "bg-purple-50", activeBg: "bg-purple-100 border-purple-300" },
   ];
 
   return (
@@ -74,18 +75,18 @@ export default function ParentObservations() {
           <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">الملاحظات والتقييمات</h1>
+          <h1 className="text-xl font-bold text-foreground">{isAr ? "الملاحظات والتقييمات" : "Notes & Evaluations"}</h1>
         </div>
-        <p className="text-sm text-muted-foreground mr-13">تابعي تطور طفلك التعليمي</p>
+        <p className="text-sm text-muted-foreground mr-13">{isAr ? "تابعي تطور طفلك التعليمي" : "Track your child's educational development"}</p>
       </div>
 
       {/* Child Selection - Compact */}
       {children && children.length > 1 && (
         <div className="flex items-center gap-3 bg-muted/30 rounded-xl p-3">
-          <span className="text-sm font-medium text-muted-foreground">الطفل:</span>
+          <span className="text-sm font-medium text-muted-foreground">{isAr ? "الطفل:" : "Child:"}</span>
           <Select value={selectedChild?.toString() || ""} onValueChange={(v) => setSelectedChild(Number(v))}>
             <SelectTrigger className="max-w-[200px] h-9 rounded-lg">
-              <SelectValue placeholder="اختر طفلاً" />
+              <SelectValue placeholder={isAr ? "اختر طفلاً" : "Select a Child"} />
             </SelectTrigger>
             <SelectContent>
               {children?.map((child: any) => (
@@ -125,14 +126,14 @@ export default function ParentObservations() {
                 <CardHeader className="pb-3 bg-gradient-to-l from-emerald-50 to-transparent">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Sparkles className="w-5 h-5 text-emerald-500" />
-                    ملخص تقدم طفلك
+                    {isAr ? "ملخص تقدم طفلك" : "Child's Progress Summary"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {EYFS_AREAS.map(area => {
+                  {getEYFS_AREAS(isAr).map(area => {
                     const areaAssessments = assessmentsByArea[area.name] || [];
                     const latestLevel = areaAssessments[0]?.level || 'none';
-                    const levelInfo = LEVELS.find(l => l.value === latestLevel);
+                    const levelInfo = getLEVELS(isAr).find(l => l.value === latestLevel);
                     const progressWidth = latestLevel === 'emerging' ? '25%' : latestLevel === 'developing' ? '50%' : latestLevel === 'secure' ? '75%' : latestLevel === 'exceeding' ? '100%' : '5%';
                     return (
                       <div key={area.name} className="space-y-1.5">
@@ -164,10 +165,10 @@ export default function ParentObservations() {
           {/* EYFS Assessments Tab */}
           {activeTab === "assessments" && (
             <div className="space-y-3">
-              {EYFS_AREAS.map(area => {
+              {getEYFS_AREAS(isAr).map(area => {
                 const areaAssessments = assessmentsByArea[area.name] || [];
                 const latestLevel = areaAssessments[0]?.level;
-                const levelInfo = LEVELS.find(l => l.value === latestLevel);
+                const levelInfo = getLEVELS(isAr).find(l => l.value === latestLevel);
                 return (
                   <Card key={area.name} className="border-0 shadow-sm overflow-hidden">
                     <CardHeader className="pb-2 pt-4">
@@ -189,7 +190,7 @@ export default function ParentObservations() {
                                 {a.notes && <p className="text-xs text-muted-foreground/70 mt-0.5">{a.notes}</p>}
                               </div>
                               <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">{LEVELS.find(l => l.value === a.level)?.label}</Badge>
+                                <Badge variant="outline" className="text-xs">{getLEVELS(isAr).find(l => l.value === a.level)?.label}</Badge>
                                 <span className="text-xs text-muted-foreground">{new Date(a.assessedAt).toLocaleDateString('ar-SA')}</span>
                               </div>
                             </div>
@@ -199,7 +200,7 @@ export default function ParentObservations() {
                     )}
                     {areaAssessments.length === 0 && (
                       <CardContent className="pt-0 pb-4">
-                        <p className="text-xs text-muted-foreground">لا توجد تقييمات بعد</p>
+                        <p className="text-xs text-muted-foreground">{isAr ? "لا توجد تقييمات بعد" : "No evaluations yet"}</p>
                       </CardContent>
                     )}
                   </Card>
@@ -227,7 +228,7 @@ export default function ParentObservations() {
                           <p className="text-sm text-muted-foreground">{obs.description}</p>
                           {obs.nextSteps && (
                             <div className="mt-2 p-3 bg-blue-50 rounded-xl text-sm border border-blue-100">
-                              <span className="font-medium text-blue-700">الخطوات التالية: </span>
+                              <span className="font-medium text-blue-700">{isAr ? "الخطوات التالية:" : "Next Steps:"}</span>
                               <span className="text-blue-600">{obs.nextSteps}</span>
                             </div>
                           )}
@@ -255,8 +256,8 @@ export default function ParentObservations() {
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <BookOpen className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-1">اختر طفلاً</h3>
-            <p className="text-sm text-muted-foreground">لعرض الملاحظات والتقييمات</p>
+            <h3 className="text-lg font-medium text-foreground mb-1">{isAr ? "اختر طفلاً" : "Select a Child"}</h3>
+            <p className="text-sm text-muted-foreground">{isAr ? "لعرض الملاحظات والتقييمات" : "To view notes and assessments"}</p>
           </CardContent>
         </Card>
       )}

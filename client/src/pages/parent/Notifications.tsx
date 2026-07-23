@@ -36,11 +36,11 @@ export default function ParentNotifications() {
     const type = notification.type || '';
     const title = (notification.title || '').toLowerCase();
     
-    if (type === 'payment' || title.includes('دفع') || title.includes('فاتورة')) {
-      if (title.includes('فشل')) return <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />;
-      if (title.includes('تذكير') || title.includes('متأخر')) return <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />;
-      if (title.includes('جديدة')) return <FileText className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />;
-      if (title.includes('استرداد')) return <CreditCard className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />;
+    if (type === 'payment' || title.includes(isAr ? 'دفع' : 'Pay') || title.includes(isAr ? 'فاتورة' : 'Invoice')) {
+      if (title.includes(isAr ? 'فشل' : 'Failure')) return <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />;
+      if (title.includes(isAr ? 'تذكير' : 'Reminder') || title.includes(isAr ? 'متأخر' : 'Late')) return <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />;
+      if (title.includes(isAr ? 'جديدة' : 'New')) return <FileText className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />;
+      if (title.includes(isAr ? 'استرداد' : 'Refund')) return <CreditCard className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />;
       return <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />;
     }
     
@@ -52,8 +52,8 @@ export default function ParentNotifications() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><h1 className="text-2xl font-bold">الإشعارات</h1>{(unreadCount ?? 0) > 0 && <Badge>{unreadCount}</Badge>}</div>
-        <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={!unreadCount}>تحديد الكل كمقروء</Button>
+        <div className="flex items-center gap-2"><h1 className="text-2xl font-bold">{isAr ? "الإشعارات" : "Notifications"}</h1>{(unreadCount ?? 0) > 0 && <Badge>{unreadCount}</Badge>}</div>
+        <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={!unreadCount}>{isAr ? "تحديد الكل كمقروء" : "Mark All as Read"}</Button>
       </div>
       <div className="space-y-2">
         {isLoading ? <PageSkeleton variant="list" title={false} count={5} /> : notifications?.map((n: any) => (

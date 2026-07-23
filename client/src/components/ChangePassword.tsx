@@ -52,10 +52,10 @@ export default function ChangePassword() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lock className="h-5 w-5" />
-          تغيير كلمة المرور
+          {isAr ? "تغيير كلمة المرور" : "Change Password"}
         </CardTitle>
         <CardDescription>
-          قم بتحديث كلمة المرور الخاصة بك لتعزيز أمان حسابك
+          {isAr ? "قم بتحديث كلمة المرور الخاصة بك لتعزيز أمان حسابك" : "Update your password to enhance your account security"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -132,9 +132,9 @@ export default function ChangePassword() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                {newPassword.length < 6 ? "ضعيفة جداً" :
-                 newPassword.length < 8 ? "متوسطة" :
-                 newPassword.length < 12 ? "جيدة" : "قوية"}
+                {newPassword.length < 6 ? (isAr ? "ضعيفة جداً" : "Very Weak") :
+                 newPassword.length < 8 ? (isAr ? "متوسطة" : "Medium") :
+                 newPassword.length < 12 ? (isAr ? "جيدة" : "Good") : (isAr ? "قوية" : "Strong")}
               </p>
             </div>
           )}
@@ -145,7 +145,7 @@ export default function ChangePassword() {
               disabled={changePasswordMutation.isPending}
               className="bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:from-[#6D28D9] hover:to-[#5B21B6]"
             >
-              {changePasswordMutation.isPending ? "جاري التحديث..." : "تغيير كلمة المرور"}
+              {changePasswordMutation.isPending ? (isAr ? "جاري التحديث..." : "Updating...") : (isAr ? "تغيير كلمة المرور" : "Change Password")}
             </Button>
             {success && (
               <span className="flex items-center gap-1 text-sm text-green-600">

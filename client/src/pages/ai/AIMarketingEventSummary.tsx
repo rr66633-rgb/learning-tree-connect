@@ -30,7 +30,7 @@ export default function AIMarketingEventSummary() {
       toast.success(isAr ? "تم إنشاء الملخص بنجاح!" : "Summary created successfully!");
     },
     onError: (err) => {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
     },
   });
 
@@ -47,7 +47,7 @@ export default function AIMarketingEventSummary() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`تم نسخ ${label}`);
+    toast.success(`${isAr ? "تم نسخ " : "Copied"}${label}`);
   };
 
   return (
@@ -57,8 +57,8 @@ export default function AIMarketingEventSummary() {
           <Button variant="ghost" size="icon"><ArrowRight className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">ملخص ما بعد الفعالية</h1>
-          <p className="text-sm text-gray-500">أنشئ تقارير وملخصات بعد انتهاء الفعالية</p>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "ملخص ما بعد الفعالية" : "Post-Event Summary"}</h1>
+          <p className="text-sm text-gray-500">{isAr ? "أنشئ تقارير وملخصات بعد انتهاء الفعالية" : "Generate Reports and Summaries After the Event"}</p>
         </div>
       </div>
 
@@ -67,58 +67,58 @@ export default function AIMarketingEventSummary() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>اسم الفعالية *</Label>
-              <Input placeholder="مثال: اليوم الرياضي" value={form.eventName} onChange={(e) => setForm({ ...form, eventName: e.target.value })} />
+              <Input placeholder={isAr ? "مثال: اليوم الرياضي" : "Example: Sports Day"} value={form.eventName} onChange={(e) => setForm({ ...form, eventName: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>نوع الفعالية *</Label>
-              <Input placeholder="مثال: رياضي، تعليمي، احتفالي" value={form.eventType} onChange={(e) => setForm({ ...form, eventType: e.target.value })} />
+              <Input placeholder={isAr ? "مثال: رياضي، تعليمي، احتفالي" : "Example: Sports, educational, celebratory"} value={form.eventType} onChange={(e) => setForm({ ...form, eventType: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>التاريخ *</Label>
               <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>عدد الحضور</Label>
-              <Input type="number" placeholder="مثال: 50" value={form.attendeesCount} onChange={(e) => setForm({ ...form, attendeesCount: e.target.value })} />
+              <Label>{isAr ? "عدد الحضور" : "Number of attendees"}</Label>
+              <Input type="number" placeholder={isAr ? "مثال: 50" : "Example: 50"} value={form.attendeesCount} onChange={(e) => setForm({ ...form, attendeesCount: e.target.value })} />
             </div>
           </div>
           <div className="space-y-2">
             <Label>أبرز اللحظات والإنجازات *</Label>
-            <Textarea placeholder="اكتب أبرز ما حدث في الفعالية..." value={form.highlights} onChange={(e) => setForm({ ...form, highlights: e.target.value })} rows={4} />
+            <Textarea placeholder={isAr ? "اكتب أبرز ما حدث في الفعالية..." : "Write highlights of the event..."} value={form.highlights} onChange={(e) => setForm({ ...form, highlights: e.target.value })} rows={4} />
           </div>
           <div className="space-y-2">
             <Label>{isAr ? "اللغة" : "Language"}</Label>
             <Select value={form.language} onValueChange={(v: any) => setForm({ ...form, language: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ar">عربي فقط</SelectItem>
-                <SelectItem value="en">إنجليزي فقط</SelectItem>
-                <SelectItem value="both">عربي وإنجليزي</SelectItem>
+                <SelectItem value="ar">{isAr ? "عربي فقط" : "Arabic only"}</SelectItem>
+                <SelectItem value="en">{isAr ? "إنجليزي فقط" : "English Only"}</SelectItem>
+                <SelectItem value="both">{isAr ? "عربي وإنجليزي" : "Arabic and English"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <Button onClick={handleGenerate} disabled={generateMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700">
-            {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء الملخص</>}
+            {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Creating..."}</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء الملخص</>}
           </Button>
         </CardContent>
       </Card>
 
       {result && (
         <div className="space-y-4">
-          <ContentCard title="تقرير الفعالية" icon={<FileText className="h-5 w-5 text-blue-600" />} onCopy={() => copyToClipboard(result.eventReport || "", "التقرير")}>
+          <ContentCard title={isAr ? "تقرير الفعالية" : "Activity Report"} icon={<FileText className="h-5 w-5 text-blue-600" />} onCopy={() => copyToClipboard(result.eventReport || "", "التقرير")}>
             <p className="whitespace-pre-wrap leading-relaxed">{result.eventReport}</p>
           </ContentCard>
-          <ContentCard title="ملخص لأولياء الأمور" icon={<Heart className="h-5 w-5 text-pink-600" />} onCopy={() => copyToClipboard(result.parentSummary || "", "ملخص الأهل")}>
+          <ContentCard title={isAr ? "ملخص لأولياء الأمور" : "Summary for Parents"} icon={<Heart className="h-5 w-5 text-pink-600" />} onCopy={() => copyToClipboard(result.parentSummary || "", "ملخص الأهل")}>
             <p className="whitespace-pre-wrap">{result.parentSummary}</p>
           </ContentCard>
-          <ContentCard title="ملخص الإنجازات" icon={<Trophy className="h-5 w-5 text-amber-600" />} onCopy={() => copyToClipboard(result.achievementSummary || "", "الإنجازات")}>
+          <ContentCard title="ملخص الإنجازات" icon={<Trophy className="h-5 w-5 text-amber-600" />} onCopy={() => copyToClipboard(result.achievementSummary || "", (isAr ? "الإنجازات" : "Achievements") )}>
             <p className="whitespace-pre-wrap">{result.achievementSummary}</p>
           </ContentCard>
-          <ContentCard title="بوست سوشال ميديا" icon={<Share2 className="h-5 w-5 text-purple-600" />} onCopy={() => copyToClipboard(`${result.socialPost?.caption || ""}\n${result.socialPost?.hashtags?.join(" ") || ""}`, "البوست")}>
+          <ContentCard title={isAr ? "بوست سوشال ميديا" : "Social Media Post"} icon={<Share2 className="h-5 w-5 text-purple-600" />} onCopy={() => copyToClipboard(`${result.socialPost?.caption || ""}\n${result.socialPost?.hashtags?.join(" ") || ""}`, "البوست")}>
             <p className="whitespace-pre-wrap mb-2">{result.socialPost?.caption}</p>
             {result.socialPost?.hashtags && <div className="flex flex-wrap gap-1">{result.socialPost.hashtags.map((h: string, i: number) => <span key={i} className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">{h}</span>)}</div>}
           </ContentCard>
-          <ContentCard title="رسالة شكر" icon={<Heart className="h-5 w-5 text-red-500" />} onCopy={() => copyToClipboard(result.thankYouMessage || "", "رسالة الشكر")}>
+          <ContentCard title={isAr ? "رسالة شكر" : "Thank You Message"} icon={<Heart className="h-5 w-5 text-red-500" />} onCopy={() => copyToClipboard(result.thankYouMessage || "", "رسالة الشكر")}>
             <p className="whitespace-pre-wrap">{result.thankYouMessage}</p>
           </ContentCard>
         </div>

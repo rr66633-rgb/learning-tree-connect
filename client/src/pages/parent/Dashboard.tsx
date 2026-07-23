@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 
 export default function ParentDashboard() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const { user } = useAuth();
   const prefetch = usePrefetchParentData();
   useEffect(() => { prefetch(); }, []);

@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 
 export default function EngagementScore() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
   const [selectedChildId, setSelectedChildId] = useState<number>(0);
 
@@ -34,11 +35,11 @@ export default function EngagementScore() {
 
   const getLevelInfo = (level: string) => {
     const levels: Record<string, { label: string; color: string; icon: string; nextLevel: string; threshold: number }> = {
-      inactive: { label: "مبتدئ", color: "text-gray-500", icon: "🌱", nextLevel: "مشارك", threshold: 20 },
-      beginner: { label: "مشارك", color: "text-blue-500", icon: "🌿", nextLevel: "نشط", threshold: 40 },
-      active: { label: "نشط", color: "text-emerald-500", icon: "🌳", nextLevel: "متميز", threshold: 60 },
-      engaged: { label: "متميز", color: "text-purple-500", icon: "🌟", nextLevel: "بطل", threshold: 80 },
-      champion: { label: "بطل", color: "text-amber-500", icon: "🏆", nextLevel: "-", threshold: 100 },
+      inactive: { label: isAr ? "مبتدئ" : "Beginner", color: "text-gray-500", icon: "🌱", nextLevel: isAr ? "مشارك" : "Participant", threshold: 20 },
+      beginner: { label: "مشارك", color: "text-blue-500", icon: "🌿", nextLevel: isAr ? "نشط" : "Active", threshold: 40 },
+      active: { label: isAr ? "نشط" : "Active", color: "text-emerald-500", icon: "🌳", nextLevel: "متميز", threshold: 60 },
+      engaged: { label: isAr ? "متميز" : "Distinguished", color: "text-purple-500", icon: "🌟", nextLevel: isAr ? "بطل" : "Hero", threshold: 80 },
+      champion: { label: isAr ? "بطل" : "Hero", color: "text-amber-500", icon: "🏆", nextLevel: "-", threshold: 100 },
     };
     return levels[level] || levels.inactive;
   };
@@ -68,9 +69,9 @@ export default function EngagementScore() {
         <div className="flex-1">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Trophy className="h-5 w-5 text-amber-500" />
-            نقاط المشاركة
+            {isAr ? "نقاط المشاركة" : "Engagement Points"}
           </h1>
-          <p className="text-sm text-muted-foreground">تتبع مشاركتك في تعليم طفلك</p>
+          <p className="text-sm text-muted-foreground">{isAr ? "تتبع مشاركتك في تعليم طفلك" : "Track your involvement in your child\'s education"}</p>
         </div>
       </div>
 
@@ -81,7 +82,7 @@ export default function EngagementScore() {
             <span className="text-5xl">{levelInfo.icon}</span>
             <div>
               <h2 className="text-2xl font-bold">{levelInfo.label}</h2>
-              <p className={`text-sm ${levelInfo.color} font-medium`}>المستوى الحالي</p>
+              <p className={`text-sm ${levelInfo.color} font-medium`}>{isAr ? "المستوى الحالي" : "Current Level"}</p>
             </div>
             <div className="flex items-center justify-center gap-2">
               <span className="text-4xl font-bold">{currentScore}</span>
@@ -90,7 +91,7 @@ export default function EngagementScore() {
             <Progress value={currentScore} className="h-3 max-w-xs mx-auto" />
             {score?.level !== "champion" && (
               <p className="text-xs text-muted-foreground">
-                {levelInfo.threshold - currentScore} نقطة للوصول لمستوى {levelInfo.nextLevel}
+                {levelInfo.threshold - currentScore} {isAr ? "نقطة للوصول لمستوى" : "Point to reach level"} {levelInfo.nextLevel}
               </p>
             )}
           </div>
@@ -103,14 +104,14 @@ export default function EngagementScore() {
           <CardContent className="p-4 text-center">
             <Flame className="h-6 w-6 text-orange-500 mx-auto mb-1" />
             <p className="text-2xl font-bold">{score?.streak || 0}</p>
-            <p className="text-[10px] text-muted-foreground">أسابيع متتالية</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "أسابيع متتالية" : "consecutive weeks"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Star className="h-6 w-6 text-amber-500 mx-auto mb-1" />
             <p className="text-2xl font-bold">{score?.totalPoints || 0}</p>
-            <p className="text-[10px] text-muted-foreground">إجمالي النقاط</p>
+            <p className="text-[10px] text-muted-foreground">{isAr ? "إجمالي النقاط" : "Total Points"}</p>
           </CardContent>
         </Card>
       </div>
@@ -120,42 +121,42 @@ export default function EngagementScore() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-blue-500" />
-            تفاصيل المشاركة هذا الشهر
+            {isAr ? "تفاصيل المشاركة هذا الشهر" : "Participation Details This Month"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">أنشطة مكتملة</span>
+              <span className="text-sm">{isAr ? "أنشطة مكتملة" : "Completed Activities"}</span>
             </div>
             <Badge variant="secondary">{score?.activitiesCompleted || 0}</Badge>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-purple-500" />
-              <span className="text-sm">تحديات مكتملة</span>
+              <span className="text-sm">{isAr ? "تحديات مكتملة" : "Completed Challenges"}</span>
             </div>
             <Badge variant="secondary">{score?.challengesCompleted || 0}</Badge>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Camera className="h-4 w-4 text-pink-500" />
-              <span className="text-sm">يوميات الإنجاز</span>
+              <span className="text-sm">{isAr ? "يوميات الإنجاز" : "Achievement Diaries"}</span>
             </div>
             <Badge variant="secondary">{score?.journalEntries || 0}</Badge>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-teal-500" />
-              <span className="text-sm">ملاحظات مرسلة</span>
+              <span className="text-sm">{isAr ? "ملاحظات مرسلة" : "Sent Notes"}</span>
             </div>
             <Badge variant="secondary">{score?.observationsSubmitted || 0}</Badge>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Star className="h-4 w-4 text-indigo-500" />
-              <span className="text-sm">أهداف محققة</span>
+              <span className="text-sm">{isAr ? "أهداف محققة" : "Achieved Goals"}</span>
             </div>
             <Badge variant="secondary">{score?.goalsCompleted || 0}</Badge>
           </div>
@@ -168,7 +169,7 @@ export default function EngagementScore() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Trophy className="h-4 w-4 text-amber-500" />
-              لوحة المتصدرين
+              {isAr ? "لوحة المتصدرين" : "Leaderboard"}
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -26,13 +26,15 @@ const DAY_COLORS: Record<string, { bg: string; border: string; text: string; bad
 };
 
 function DayCard({ day, index }: { day: any; index: number }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const colors = DAY_COLORS[day.day] || { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-800", badge: "bg-gray-100 text-gray-700" };
 
   return (
     <div className={`rounded-xl ${colors.bg} ${colors.border} border p-5 space-y-4`}>
       {/* Day Header */}
       <div className="flex items-center justify-between">
-        <h3 className={`text-lg font-bold ${colors.text}`}>{day.day || `اليوم ${index + 1}`}</h3>
+        <h3 className={`text-lg font-bold ${colors.text}`}>{day.day || (isAr ? `اليوم ${index + 1}` : `Today${index + 1}`)}</h3>
         {day.totalDuration && (
           <Badge variant="outline" className={colors.badge}>
             <Clock className="h-3 w-3 ml-1" />{day.totalDuration}
@@ -45,7 +47,7 @@ function DayCard({ day, index }: { day: any; index: number }) {
         <div className="p-3 rounded-lg bg-white border border-gray-100">
           <div className="flex items-center gap-2 mb-1">
             <Lightbulb className="h-4 w-4 text-yellow-500" />
-            <span className="text-xs font-semibold text-gray-500">الهدف التعليمي</span>
+            <span className="text-xs font-semibold text-gray-500">{isAr ? "الهدف التعليمي" : "Learning Objective"}</span>
           </div>
           <p className="text-sm font-medium text-gray-800">{day.learningObjective}</p>
         </div>
@@ -56,14 +58,14 @@ function DayCard({ day, index }: { day: any; index: number }) {
         <div className="p-3 rounded-lg bg-white border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <Users className="h-4 w-4 text-indigo-500" />
-            <span className="text-xs font-semibold text-gray-500">حلقة الصباح</span>
+            <span className="text-xs font-semibold text-gray-500">{isAr ? "حلقة الصباح" : "Morning Circle"}</span>
             {day.circleTime.duration && <Badge variant="outline" className="text-[10px] h-5">{day.circleTime.duration}</Badge>}
           </div>
           <p className="text-sm font-semibold text-gray-800 mb-1">{day.circleTime.activity}</p>
           {day.circleTime.description && <p className="text-xs text-gray-600 mb-2">{day.circleTime.description}</p>}
           {day.circleTime.teacherInstructions && (
             <div className="mt-2 p-2 rounded bg-indigo-50 border border-indigo-100">
-              <p className="text-[11px] font-semibold text-indigo-700 mb-1">📋 تعليمات المعلمة:</p>
+              <p className="text-[11px] font-semibold text-indigo-700 mb-1">{isAr ? "📋 تعليمات المعلمة:" : "📋 Teacher Instructions:"}</p>
               <p className="text-xs text-indigo-800">{day.circleTime.teacherInstructions}</p>
             </div>
           )}
@@ -75,14 +77,14 @@ function DayCard({ day, index }: { day: any; index: number }) {
         <div className="p-3 rounded-lg bg-white border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <Star className="h-4 w-4 text-orange-500" />
-            <span className="text-xs font-semibold text-gray-500">النشاط الرئيسي</span>
+            <span className="text-xs font-semibold text-gray-500">{isAr ? "النشاط الرئيسي" : "Main Activity"}</span>
             {day.mainActivity.duration && <Badge variant="outline" className="text-[10px] h-5">{day.mainActivity.duration}</Badge>}
           </div>
           <p className="text-sm font-semibold text-gray-800 mb-1">{day.mainActivity.title}</p>
           {day.mainActivity.description && <p className="text-xs text-gray-600 mb-2">{day.mainActivity.description}</p>}
           {day.mainActivity.teacherInstructions && (
             <div className="mt-2 p-2 rounded bg-orange-50 border border-orange-100">
-              <p className="text-[11px] font-semibold text-orange-700 mb-1">📋 تعليمات المعلمة:</p>
+              <p className="text-[11px] font-semibold text-orange-700 mb-1">{isAr ? "📋 تعليمات المعلمة:" : "📋 Teacher Instructions:"}</p>
               <p className="text-xs text-orange-800">{day.mainActivity.teacherInstructions}</p>
             </div>
           )}
@@ -95,7 +97,7 @@ function DayCard({ day, index }: { day: any; index: number }) {
           )}
           {day.mainActivity.differentiation && (
             <div className="mt-2 p-2 rounded bg-yellow-50 border border-yellow-100">
-              <p className="text-[11px] font-semibold text-yellow-700 mb-1">🔄 التمايز:</p>
+              <p className="text-[11px] font-semibold text-yellow-700 mb-1">{isAr ? "🔄 التمايز:" : "🔄 Differentiation:"}</p>
               <p className="text-xs text-yellow-800">{day.mainActivity.differentiation}</p>
             </div>
           )}
@@ -107,7 +109,7 @@ function DayCard({ day, index }: { day: any; index: number }) {
         <div className="p-3 rounded-lg bg-white border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <BookOpen className="h-4 w-4 text-teal-500" />
-            <span className="text-xs font-semibold text-gray-500">القصة المقترحة</span>
+            <span className="text-xs font-semibold text-gray-500">{isAr ? "القصة المقترحة" : "Suggested Story"}</span>
           </div>
           <p className="text-sm font-semibold text-gray-800">{day.storyRecommendation.title}</p>
           {day.storyRecommendation.author && <p className="text-[11px] text-gray-500">المؤلف: {day.storyRecommendation.author}</p>}
@@ -121,7 +123,7 @@ function DayCard({ day, index }: { day: any; index: number }) {
         <div className="p-3 rounded-lg bg-white border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <MessageCircle className="h-4 w-4 text-pink-500" />
-            <span className="text-xs font-semibold text-gray-500">أسئلة النقاش</span>
+            <span className="text-xs font-semibold text-gray-500">{isAr ? "أسئلة النقاش" : "Discussion Questions"}</span>
           </div>
           <ul className="space-y-1">
             {day.discussionQuestions.map((q: string, i: number) => (
@@ -138,7 +140,7 @@ function DayCard({ day, index }: { day: any; index: number }) {
         <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-100">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm">🕌</span>
-            <span className="text-xs font-semibold text-emerald-700">القيمة الإسلامية</span>
+            <span className="text-xs font-semibold text-emerald-700">{isAr ? "القيمة الإسلامية" : "Islamic Value"}</span>
           </div>
           <p className="text-sm font-semibold text-emerald-800">{day.islamicValue.value}</p>
           {day.islamicValue.connection && <p className="text-xs text-emerald-700 mt-1">{day.islamicValue.connection}</p>}
@@ -153,10 +155,10 @@ function DayCard({ day, index }: { day: any; index: number }) {
         <div className="p-3 rounded-lg bg-white border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span className="text-xs font-semibold text-gray-500">فرصة التقييم</span>
+            <span className="text-xs font-semibold text-gray-500">{isAr ? "فرصة التقييم" : "Evaluation Opportunity"}</span>
           </div>
-          {day.assessmentOpportunity.what && <p className="text-xs text-gray-700"><strong>ماذا نقيّم:</strong> {day.assessmentOpportunity.what}</p>}
-          {day.assessmentOpportunity.how && <p className="text-xs text-gray-700 mt-1"><strong>كيف نقيّم:</strong> {day.assessmentOpportunity.how}</p>}
+          {day.assessmentOpportunity.what && <p className="text-xs text-gray-700"><strong>{isAr ? "ماذا نقيّم:" : "What we evaluate:"}</strong> {day.assessmentOpportunity.what}</p>}
+          {day.assessmentOpportunity.how && <p className="text-xs text-gray-700 mt-1"><strong>{isAr ? "كيف نقيّم:" : "How we evaluate:"}</strong> {day.assessmentOpportunity.how}</p>}
           {day.assessmentOpportunity.indicators && Array.isArray(day.assessmentOpportunity.indicators) && (
             <div className="mt-2 flex flex-wrap gap-1">
               {day.assessmentOpportunity.indicators.map((ind: string, i: number) => (
@@ -170,7 +172,7 @@ function DayCard({ day, index }: { day: any; index: number }) {
       {/* Materials for the day */}
       {day.materials && Array.isArray(day.materials) && day.materials.length > 0 && (
         <div className="p-3 rounded-lg bg-white border border-gray-100">
-          <p className="text-xs font-semibold text-gray-500 mb-2">📦 المواد المطلوبة لهذا اليوم</p>
+          <p className="text-xs font-semibold text-gray-500 mb-2">{isAr ? "📦 المواد المطلوبة لهذا اليوم" : "📦 Materials needed for this day"}</p>
           <div className="flex flex-wrap gap-1">
             {day.materials.map((m: string, i: number) => (
               <Badge key={i} variant="outline" className="text-[10px]">{m}</Badge>
@@ -200,7 +202,7 @@ export default function AIPlanner() {
       
       if (!data.days || !Array.isArray(data.days) || data.days.length < requiredDays) {
         const missingCount = requiredDays - (data.days?.length || 0);
-        toast.error(`الخطة غير مكتملة (${data.days?.length || 0} أيام من ${requiredDays}). يرجى إعادة التوليد.`);
+        toast.error(isAr ? `الخطة غير مكتملة (${data.days?.length || 0} أيام من ${requiredDays}). يرجى إعادة التوليد.` : `Plan Incomplete (${data.days?.length || 0}Days from${requiredDays}). يرجى إعادة التوليد.`);
         return;
       }
       
@@ -209,20 +211,20 @@ export default function AIPlanner() {
       for (const day of data.days) {
         const missing = requiredFields.filter(f => !day[f]);
         if (missing.length > 0) {
-          incompleteDays.push(day.day || 'يوم غير محدد');
+          incompleteDays.push(day.day || (isAr ? "يوم غير محدد" : "Undesignated Day"));
         }
       }
       
       if (incompleteDays.length > 0) {
-        toast.warning(`بعض الأيام غير مكتملة: ${incompleteDays.join('، ')}. يمكنك إعادة التوليد للحصول على خطة أفضل.`);
+        toast.warning(isAr ? `بعض الأيام غير مكتملة: ${incompleteDays.join('، ')}. يمكنك إعادة التوليد للحصول على خطة أفضل.` : `Some days are incomplete:${incompleteDays.join('، ')}. يمكنك إعادة التوليد للحصول على خطة أفضل.`);
       }
       
       setResult(data);
       setContentId(data.id ? Number(data.id) : null);
-      toast.success(`تم إنشاء الخطة الأسبوعية بنجاح (${data.days.length} أيام)`);
+      toast.success(isAr ? `تم إنشاء الخطة الأسبوعية بنجاح (${data.days.length} أيام)` : `Weekly plan created successfully (${data.days.length}Days)`);
     },
     onError: (err) => {
-      const msg = err.message || "حدث خطأ";
+      const msg = err.message || (isAr ? "حدث خطأ" : "An error occurred");
       // Show user-friendly error - never show raw JSON/technical errors
       if (msg.includes("JSON") || msg.includes("parse") || msg.includes("Unterminated") || msg.includes("Unexpected")) {
         toast.error(isAr ? "حدث خطأ أثناء إنشاء الخطة. يرجى المحاولة مرة أخرى." : "Error creating plan. Please try again.");
@@ -234,7 +236,7 @@ export default function AIPlanner() {
 
   const saveMutation = trpc.ai.saveToLibrary.useMutation({
     onSuccess: () => toast.success(isAr ? "تم الحفظ في المكتبة" : "Saved to library"),
-    onError: (err) => toast.error(err.message || "فشل الحفظ"),
+    onError: (err) => toast.error(err.message || (isAr ? "فشل الحفظ" : "Save Failed")),
   });
 
   const handleSaveToLibrary = () => {
@@ -266,7 +268,7 @@ export default function AIPlanner() {
             <div class="field objective-field">
               <div class="field-icon">🎯</div>
               <div class="field-content">
-                <div class="field-label">الهدف التعليمي</div>
+                <div class="field-label">{isAr ? "الهدف التعليمي" : "Learning Objective"}</div>
                 <div class="field-value">${day.learningObjective}</div>
               </div>
             </div>` : ''}
@@ -278,7 +280,7 @@ export default function AIPlanner() {
                 <div class="field-label">حلقة الصباح ${day.circleTime.duration ? `<span class="badge">${day.circleTime.duration}</span>` : ''}</div>
                 <div class="field-value"><strong>${day.circleTime.activity || ''}</strong></div>
                 ${day.circleTime.description ? `<div class="field-desc">${day.circleTime.description}</div>` : ''}
-                ${day.circleTime.teacherInstructions ? `<div class="teacher-note"><span class="note-label">تعليمات المعلمة:</span> ${day.circleTime.teacherInstructions}</div>` : ''}
+                ${day.circleTime.teacherInstructions ? `<div class="teacher-note"><span class="note-label">{isAr ? "تعليمات المعلمة:" : "Teacher Instructions:"}</span> ${day.circleTime.teacherInstructions}</div>` : ''}
               </div>
             </div>` : ''}
 
@@ -289,9 +291,9 @@ export default function AIPlanner() {
                 <div class="field-label">النشاط الرئيسي ${day.mainActivity.duration ? `<span class="badge">${day.mainActivity.duration}</span>` : ''}</div>
                 <div class="field-value"><strong>${day.mainActivity.title || ''}</strong></div>
                 ${day.mainActivity.description ? `<div class="field-desc">${day.mainActivity.description}</div>` : ''}
-                ${day.mainActivity.teacherInstructions ? `<div class="teacher-note"><span class="note-label">تعليمات المعلمة:</span> ${day.mainActivity.teacherInstructions}</div>` : ''}
+                ${day.mainActivity.teacherInstructions ? `<div class="teacher-note"><span class="note-label">{isAr ? "تعليمات المعلمة:" : "Teacher Instructions:"}</span> ${day.mainActivity.teacherInstructions}</div>` : ''}
                 ${day.mainActivity.materials && Array.isArray(day.mainActivity.materials) && day.mainActivity.materials.length > 0 ? `<div class="materials-list"><span class="note-label">المواد:</span> ${day.mainActivity.materials.join(' • ')}</div>` : ''}
-                ${day.mainActivity.differentiation ? `<div class="differentiation"><span class="note-label">التمايز:</span> ${day.mainActivity.differentiation}</div>` : ''}
+                ${day.mainActivity.differentiation ? `<div class="differentiation"><span class="note-label">{isAr ? "التمايز:" : "Differentiation:"}</span> ${day.mainActivity.differentiation}</div>` : ''}
               </div>
             </div>` : ''}
 
@@ -299,7 +301,7 @@ export default function AIPlanner() {
             <div class="field">
               <div class="field-icon">📖</div>
               <div class="field-content">
-                <div class="field-label">القصة المقترحة</div>
+                <div class="field-label">{isAr ? "القصة المقترحة" : "Suggested Story"}</div>
                 <div class="field-value"><strong>${day.storyRecommendation.title || ''}</strong>${day.storyRecommendation.author ? ` <span class="author">— ${day.storyRecommendation.author}</span>` : ''}</div>
                 ${day.storyRecommendation.summary ? `<div class="field-desc">${day.storyRecommendation.summary}</div>` : ''}
                 ${day.storyRecommendation.connection ? `<div class="connection">الربط بالموضوع: ${day.storyRecommendation.connection}</div>` : ''}
@@ -310,7 +312,7 @@ export default function AIPlanner() {
             <div class="field">
               <div class="field-icon">💬</div>
               <div class="field-content">
-                <div class="field-label">أسئلة النقاش</div>
+                <div class="field-label">{isAr ? "أسئلة النقاش" : "Discussion Questions"}</div>
                 <ol class="questions-list">${day.discussionQuestions.map((q: string) => `<li>${q}</li>`).join('')}</ol>
               </div>
             </div>` : ''}
@@ -319,7 +321,7 @@ export default function AIPlanner() {
             <div class="field islamic-field">
               <div class="field-icon">🕌</div>
               <div class="field-content">
-                <div class="field-label">القيمة الإسلامية</div>
+                <div class="field-label">{isAr ? "القيمة الإسلامية" : "Islamic Value"}</div>
                 <div class="field-value"><strong>${day.islamicValue.value || ''}</strong></div>
                 ${day.islamicValue.connection ? `<div class="field-desc">${day.islamicValue.connection}</div>` : ''}
                 ${day.islamicValue.hadithOrAyah ? `<div class="hadith">"${day.islamicValue.hadithOrAyah}"</div>` : ''}
@@ -330,9 +332,9 @@ export default function AIPlanner() {
             <div class="field assessment-field">
               <div class="field-icon">✅</div>
               <div class="field-content">
-                <div class="field-label">فرصة التقييم</div>
-                ${day.assessmentOpportunity.what ? `<div class="field-desc"><strong>ماذا نقيّم:</strong> ${day.assessmentOpportunity.what}</div>` : ''}
-                ${day.assessmentOpportunity.how ? `<div class="field-desc"><strong>كيف نقيّم:</strong> ${day.assessmentOpportunity.how}</div>` : ''}
+                <div class="field-label">{isAr ? "فرصة التقييم" : "Evaluation Opportunity"}</div>
+                ${day.assessmentOpportunity.what ? `<div class="field-desc"><strong>{isAr ? "ماذا نقيّم:" : "What we evaluate:"}</strong> ${day.assessmentOpportunity.what}</div>` : ''}
+                ${day.assessmentOpportunity.how ? `<div class="field-desc"><strong>{isAr ? "كيف نقيّم:" : "How we evaluate:"}</strong> ${day.assessmentOpportunity.how}</div>` : ''}
                 ${day.assessmentOpportunity.indicators && Array.isArray(day.assessmentOpportunity.indicators) ? `<div class="indicators">${day.assessmentOpportunity.indicators.map((ind: string) => `<span class="indicator-badge">${ind}</span>`).join('')}</div>` : ''}
               </div>
             </div>` : ''}
@@ -341,7 +343,7 @@ export default function AIPlanner() {
             <div class="field">
               <div class="field-icon">📦</div>
               <div class="field-content">
-                <div class="field-label">المواد المطلوبة لهذا اليوم</div>
+                <div class="field-label">{isAr ? "المواد المطلوبة لهذا اليوم" : "Materials needed for this day"}</div>
                 <div class="materials-list">${day.materials.join(' • ')}</div>
               </div>
             </div>` : ''}
@@ -353,7 +355,7 @@ export default function AIPlanner() {
 <html dir="${dir}" lang="${language}">
 <head>
   <meta charset="utf-8"/>
-  <title>${result.title || 'الخطة الأسبوعية'}</title>
+  <title>${result.title || (isAr ? "الخطة الأسبوعية" : "Weekly Plan")}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -648,7 +650,7 @@ export default function AIPlanner() {
 </head>
 <body>
   <div class="cover">
-    <h1>${result.title || 'الخطة الأسبوعية'}</h1>
+    <h1>${result.title || (isAr ? "الخطة الأسبوعية" : "Weekly Plan")}</h1>
     <p class="subtitle">${result.overview || 'خطة تعليمية أسبوعية شاملة وفق منهج EYFS'}</p>
     <div class="meta">
       <span>📅 ${today}</span>
@@ -661,36 +663,36 @@ export default function AIPlanner() {
     ${result.overview ? `<div class="overview-box"><p>${result.overview}</p></div>` : ''}
     ${result.learningObjectives && Array.isArray(result.learningObjectives) && result.learningObjectives.length > 0 ? `
       <div class="objectives-section">
-        <h3>أهداف الأسبوع</h3>
+        <h3>{isAr ? "أهداف الأسبوع" : "Weekly Goals"}</h3>
         <ul>${result.learningObjectives.map((o: string) => `<li>${o}</li>`).join('')}</ul>
       </div>` : ''}
     ${result.eyfsAreas && Array.isArray(result.eyfsAreas) && result.eyfsAreas.length > 0 ? `
       <div style="margin-bottom:20px;">
-        <span style="font-size:11px;color:#6b7280;font-weight:600;">مجالات EYFS المغطاة: </span>
+        <span style="font-size:11px;color:#6b7280;font-weight:600;">{isAr ? "مجالات EYFS المغطاة:" : "EYFS Areas Covered:"}</span>
         ${result.eyfsAreas.map((a: string) => `<span class="indicator-badge" style="background:#dbeafe;color:#1e40af;border-color:#bfdbfe;">${a}</span>`).join(' ')}
       </div>` : ''}
     ${daysHtml}
     <div class="summary-section">
       ${result.weeklyMaterials && Array.isArray(result.weeklyMaterials) && result.weeklyMaterials.length > 0 ? `
         <div class="summary-card">
-          <h4>📦 جميع المواد المطلوبة للأسبوع</h4>
+          <h4>{isAr ? "📦 جميع المواد المطلوبة للأسبوع" : "📦 All materials needed for the week"}</h4>
           <ul>${result.weeklyMaterials.map((m: string) => `<li>${m}</li>`).join('')}</ul>
         </div>` : ''}
       ${result.parentInvolvement ? `
         <div class="summary-card">
-          <h4>👨‍👩‍👧 إشراك الأهل</h4>
+          <h4>{isAr ? "👨‍👩‍👧 إشراك الأهل" : "👨‍👩‍👧 Parent Engagement"}</h4>
           <p>${result.parentInvolvement}</p>
         </div>` : ''}
       ${result.weeklyAssessment ? `
         <div class="summary-card">
-          <h4>📊 تقييم نهاية الأسبوع</h4>
+          <h4>{isAr ? "📊 تقييم نهاية الأسبوع" : "📊 End of Week Assessment"}</h4>
           <p>${result.weeklyAssessment}</p>
         </div>` : ''}
     </div>
     <div class="footer">
       <p class="logo-text">Naashah</p>
       <p>خطة أسبوعية تفصيلية — تم إنشاؤها بواسطة المساعد الذكي | ${today}</p>
-      <p>هذه الخطة مُعدّة للاستخدام المباشر في الفصل الدراسي</p>
+      <p>{isAr ? "هذه الخطة مُعدّة للاستخدام المباشر في الفصل الدراسي" : "This plan is ready for direct use in the classroom"}</p>
     </div>
   </div>
 </body>
@@ -732,7 +734,7 @@ export default function AIPlanner() {
           <CalendarDays className="h-5 w-5 text-blue-600" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">الخطة الأسبوعية</h1>
+          <h1 className="text-xl font-bold text-gray-900">{isAr ? "الخطة الأسبوعية" : "Weekly Plan"}</h1>
           <p className="text-sm text-muted-foreground">Weekly Planner - EYFS</p>
         </div>
       </div>
@@ -741,12 +743,12 @@ export default function AIPlanner() {
       {!result && (
         <div className="max-w-2xl mx-auto">
           <Card>
-            <CardHeader><CardTitle className="text-base">إنشاء خطة أسبوعية جاهزة للتطبيق</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{isAr ? "إنشاء خطة أسبوعية جاهزة للتطبيق" : "Create Ready-to-Use Weekly Plan"}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>الفئة العمرية</Label>
+                <Label>{isAr ? "الفئة العمرية" : "Age Group"}</Label>
                 <Select value={ageGroup} onValueChange={setAgeGroup}>
-                  <SelectTrigger><SelectValue placeholder="اختر الفئة العمرية" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={isAr ? "اختر الفئة العمرية" : "Select Age Group"} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0-1">0-1 سنة (رضّع)</SelectItem>
                     <SelectItem value="1-2">1-2 سنة (دارجين)</SelectItem>
@@ -758,11 +760,11 @@ export default function AIPlanner() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>الموضوع / الثيم</Label>
-                <Input placeholder="مثال: الفصول الأربعة، الحيوانات، الألوان، جسمي" value={theme} onChange={(e) => setTheme(e.target.value)} />
+                <Label>{isAr ? "الموضوع / الثيم" : "Topic / Theme"}</Label>
+                <Input placeholder={isAr ? "مثال: الفصول الأربعة، الحيوانات، الألوان، جسمي" : "Example: Four seasons, animals, colors, my body"} value={theme} onChange={(e) => setTheme(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>أهداف التعلم (سطر لكل هدف - اختياري)</Label>
+                <Label>{isAr ? "أهداف التعلم (سطر لكل هدف - اختياري)" : "Learning Objectives (one per line - optional)"}</Label>
                 <textarea
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   placeholder="تطوير المهارات الحركية الدقيقة&#10;تعزيز التعاون بين الأطفال&#10;التعرف على الأشكال الهندسية"
@@ -771,20 +773,20 @@ export default function AIPlanner() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>اللغة</Label>
+                <Label>{isAr ? "اللغة" : "Language"}</Label>
                 <Select value={language} onValueChange={(v) => setLanguage(v as "ar" | "en")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ar">العربية</SelectItem>
+                    <SelectItem value="ar">{isAr ? "العربية" : "Arabic"}</SelectItem>
                     <SelectItem value="en">English</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <Button onClick={handleGenerate} disabled={generateMutation.isPending} className="w-full h-12 text-base bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700">
-                {generateMutation.isPending ? (<><Loader2 className="h-5 w-5 animate-spin ml-2" />جاري إنشاء الخطة التفصيلية... (قد يستغرق 30 ثانية)</>) : (<><Sparkles className="h-5 w-5 ml-2" />إنشاء خطة أسبوعية كاملة</>)}
+                {generateMutation.isPending ? (<><Loader2 className="h-5 w-5 animate-spin ml-2" />{isAr ? "جاري إنشاء الخطة التفصيلية... (قد يستغرق 30 ثانية)" : "Generating Detailed Plan... (May take 30 seconds)"}</>) : (<><Sparkles className="h-5 w-5 ml-2" />{isAr ? "إنشاء خطة أسبوعية كاملة" : "Create Complete Weekly Plan"}</>)}
               </Button>
               {generateMutation.isPending && (
-                <p className="text-xs text-center text-muted-foreground">يتم إنشاء خطة تفصيلية لـ 5 أيام مع جميع التفاصيل اللازمة للتدريس المباشر</p>
+                <p className="text-xs text-center text-muted-foreground">{isAr ? "يتم إنشاء خطة تفصيلية لـ 5 أيام مع جميع التفاصيل اللازمة للتدريس المباشر" : "A detailed 5-day plan is created with all necessary details for direct teaching"}</p>
               )}
             </CardContent>
           </Card>
@@ -808,7 +810,7 @@ export default function AIPlanner() {
                   </div>
                   {result.learningObjectives && Array.isArray(result.learningObjectives) && (
                     <div className="mt-3">
-                      <p className="text-xs font-semibold text-gray-500 mb-1">أهداف الأسبوع:</p>
+                      <p className="text-xs font-semibold text-gray-500 mb-1">{isAr ? "أهداف الأسبوع:" : "Weekly Goals:"}</p>
                       <ul className="space-y-1">
                         {result.learningObjectives.map((obj: string, i: number) => (
                           <li key={i} className="text-xs text-gray-700 flex items-start gap-1">
@@ -820,9 +822,9 @@ export default function AIPlanner() {
                   )}
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(JSON.stringify(result, null, 2))}><Copy className="h-4 w-4 ml-1" />نسخ</Button>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(JSON.stringify(result, null, 2))}><Copy className="h-4 w-4 ml-1" />{isAr ? "نسخ" : "Copy"}</Button>
                   <Button variant="outline" size="sm" onClick={handleExportPDF}><Download className="h-4 w-4 ml-1" />PDF</Button>
-                  <Button variant="outline" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />حفظ</Button>
+                  <Button variant="outline" size="sm" onClick={handleSaveToLibrary} disabled={saveMutation.isPending}><Save className="h-4 w-4 ml-1" />{isAr ? "حفظ" : "Save"}</Button>
                   <Button variant="ghost" size="sm" onClick={() => setResult(null)}>خطة جديدة</Button>
                 </div>
               </div>
@@ -835,10 +837,10 @@ export default function AIPlanner() {
               <TabsList className="w-full justify-start overflow-x-auto">
                 {result.days.map((day: any, i: number) => (
                   <TabsTrigger key={i} value={String(i)} className="min-w-[80px]">
-                    {day.day || `يوم ${i + 1}`}
+                    {day.day || (isAr ? `يوم ${i + 1}` : `Day${i + 1}`)}
                   </TabsTrigger>
                 ))}
-                <TabsTrigger value="all">عرض الكل</TabsTrigger>
+                <TabsTrigger value="all">{isAr ? "عرض الكل" : "View All"}</TabsTrigger>
               </TabsList>
               {result.days.map((day: any, i: number) => (
                 <TabsContent key={i} value={String(i)}>
@@ -860,7 +862,7 @@ export default function AIPlanner() {
             {result.weeklyMaterials && Array.isArray(result.weeklyMaterials) && (
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">📦 المواد المطلوبة للأسبوع</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">{isAr ? "📦 المواد المطلوبة للأسبوع" : "📦 Materials needed for the week"}</p>
                   <div className="flex flex-wrap gap-1">
                     {result.weeklyMaterials.map((m: string, i: number) => (
                       <Badge key={i} variant="outline" className="text-[10px]">{m}</Badge>
@@ -872,7 +874,7 @@ export default function AIPlanner() {
             {result.parentInvolvement && (
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">👨‍👩‍👧 إشراك الأهل</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">{isAr ? "👨‍👩‍👧 إشراك الأهل" : "👨‍👩‍👧 Parent Engagement"}</p>
                   <p className="text-xs text-gray-700">{result.parentInvolvement}</p>
                 </CardContent>
               </Card>
@@ -880,7 +882,7 @@ export default function AIPlanner() {
             {result.weeklyAssessment && (
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">📊 تقييم نهاية الأسبوع</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">{isAr ? "📊 تقييم نهاية الأسبوع" : "📊 End of Week Assessment"}</p>
                   <p className="text-xs text-gray-700">{result.weeklyAssessment}</p>
                 </CardContent>
               </Card>

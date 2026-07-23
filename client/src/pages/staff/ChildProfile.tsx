@@ -221,9 +221,9 @@ export default function ChildProfile() {
   if (!child) {
     return (
       <div className="p-6 text-center" dir="rtl">
-        <h2 className="text-xl font-bold text-destructive">الطفل غير موجود</h2>
+        <h2 className="text-xl font-bold text-destructive">{isAr ? "الطفل غير موجود" : "Child Not Found"}</h2>
         <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/children")}>
-          <ArrowRight className="ml-2 h-4 w-4" /> العودة للقائمة
+          <ArrowRight className="ml-2 h-4 w-4" /> {isAr ? "العودة للقائمة" : "Back to Menu"}
         </Button>
       </div>
     );
@@ -264,27 +264,27 @@ export default function ChildProfile() {
             {c.arabicName && <p className="text-muted-foreground">{c.arabicName}</p>}
           </div>
           <Badge variant={c.status === "active" ? "default" : "secondary"}>
-            {c.status === "active" ? "نشط" : c.status === "inactive" ? "غير نشط" : c.status === "graduated" ? "متخرج" : "قائمة انتظار"}
+            {c.status === "active" ? (isAr ? "نشط" : "Active") : c.status === "inactive" ? (isAr ? "غير نشط" : "Inactive") : c.status === "graduated" ? (isAr ? "متخرج" : "Graduated") : "قائمة انتظار"}
           </Badge>
         </div>
         <div className="flex gap-2">
           {!editing && (
             <Button variant="outline" onClick={startEditing}>
-              <Edit className="ml-2 h-4 w-4" /> تعديل
+              <Edit className="ml-2 h-4 w-4" /> {isAr ? "تعديل" : "Edit"}
             </Button>
           )}
           <Button onClick={() => setLinkDialogOpen(true)}>
-            <UserPlus className="ml-2 h-4 w-4" /> ربط ولي أمر
+            <UserPlus className="ml-2 h-4 w-4" /> {isAr ? "ربط ولي أمر" : "Link Parent"}
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="personal">البيانات الشخصية</TabsTrigger>
+          <TabsTrigger value="personal">{isAr ? "البيانات الشخصية" : "Personal Data"}</TabsTrigger>
           <TabsTrigger value="parent">{isAr ? "ولي الأمر" : "Parent"}</TabsTrigger>
-          <TabsTrigger value="medical">الطبية</TabsTrigger>
-          <TabsTrigger value="nursery">الحضانة</TabsTrigger>
+          <TabsTrigger value="medical">{isAr ? "الطبية" : "Medical"}</TabsTrigger>
+          <TabsTrigger value="nursery">{isAr ? "الحضانة" : "Nursery"}</TabsTrigger>
           <TabsTrigger value="documents">{isAr ? "المستندات" : "Documents"}</TabsTrigger>
         </TabsList>
 
@@ -293,34 +293,34 @@ export default function ChildProfile() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" /> البيانات الشخصية
+                <Calendar className="h-5 w-5" /> {isAr ? "البيانات الشخصية" : "Personal Data"}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label>الاسم الأول</Label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-                  <div><Label>اسم العائلة</Label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
-                  <div><Label>الاسم بالعربي</Label><Input value={form.arabicName} onChange={(e) => setForm({ ...form, arabicName: e.target.value })} /></div>
-                  <div><Label>تاريخ الميلاد</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} /></div>
+                  <div><Label>{isAr ? "الاسم الأول" : "First Name"}</Label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
+                  <div><Label>{isAr ? "اسم العائلة" : "Last Name"}</Label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
+                  <div><Label>{isAr ? "الاسم بالعربي" : "Arabic Name"}</Label><Input value={form.arabicName} onChange={(e) => setForm({ ...form, arabicName: e.target.value })} /></div>
+                  <div><Label>{isAr ? "تاريخ الميلاد" : "Date of Birth"}</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} /></div>
                   <div>
-                    <Label>الجنس</Label>
+                    <Label>{isAr ? "الجنس" : "Gender"}</Label>
                     <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">ذكر</SelectItem>
-                        <SelectItem value="female">أنثى</SelectItem>
+                        <SelectItem value="male">{isAr ? "ذكر" : "Male"}</SelectItem>
+                        <SelectItem value="female">{isAr ? "أنثى" : "Female"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div><Label>الجنسية</Label><Input value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value })} /></div>
-                  <div><Label>رقم الهوية / الإقامة</Label><Input value={form.childNationalId} onChange={(e) => setForm({ ...form, childNationalId: e.target.value })} /></div>
+                  <div><Label>{isAr ? "الجنسية" : "Nationality"}</Label><Input value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value })} /></div>
+                  <div><Label>{isAr ? "رقم الهوية / الإقامة" : "ID / Iqama Number"}</Label><Input value={form.childNationalId} onChange={(e) => setForm({ ...form, childNationalId: e.target.value })} /></div>
                   <div>
                     <Label>{isAr ? "الفصل" : "Class"}</Label>
                     <Select value={form.classId || "none"} onValueChange={(v) => setForm({ ...form, classId: v === "none" ? "" : v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">بدون فصل</SelectItem>
+                        <SelectItem value="none">{isAr ? "بدون فصل" : "No Class"}</SelectItem>
                         {(classes as any[])?.map((cl: any) => (
                           <SelectItem key={cl.id} value={String(cl.id)}>{cl.nameAr || cl.name}</SelectItem>
                         ))}
@@ -328,20 +328,20 @@ export default function ChildProfile() {
                     </Select>
                   </div>
                   <div className="col-span-full flex gap-2 mt-2">
-                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
+                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}</Button>
                     <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label="الاسم الأول" value={c.firstName} />
-                  <InfoRow label="اسم العائلة" value={c.lastName} />
-                  <InfoRow label="الاسم بالعربي" value={c.arabicName || "—"} />
-                  <InfoRow label="تاريخ الميلاد" value={c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString("ar-SA") : "—"} />
-                  <InfoRow label="الجنس" value={c.gender === "male" ? "ذكر" : c.gender === "female" ? "أنثى" : "—"} />
-                  <InfoRow label="الجنسية" value={c.nationality || "—"} />
-                  <InfoRow label="رقم الهوية / الإقامة" value={c.childNationalId || "—"} />
-                  <InfoRow label="الفصل" value={classNameStr} />
+                  <InfoRow label={isAr ? "الاسم الأول" : "First Name"} value={c.firstName} />
+                  <InfoRow label={isAr ? "اسم العائلة" : "Last Name"} value={c.lastName} />
+                  <InfoRow label={isAr ? "الاسم بالعربي" : "Arabic Name"} value={c.arabicName || "—"} />
+                  <InfoRow label={isAr ? "تاريخ الميلاد" : "Date of Birth"} value={c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString("ar-SA") : "—"} />
+                  <InfoRow label={isAr ? "الجنس" : "Gender"} value={c.gender === "male" ? "ذكر" : c.gender === "female" ? "أنثى" : "—"} />
+                  <InfoRow label={isAr ? "الجنسية" : "Nationality"} value={c.nationality || "—"} />
+                  <InfoRow label={isAr ? "رقم الهوية / الإقامة" : "ID / Iqama Number"} value={c.childNationalId || "—"} />
+                  <InfoRow label={isAr ? "الفصل" : "Class"} value={classNameStr} />
                 </div>
               )}
             </CardContent>
@@ -352,30 +352,30 @@ export default function ChildProfile() {
         <TabsContent value="parent" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> بيانات ولي الأمر</CardTitle>
+              <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" />{isAr ? " بيانات ولي الأمر" : "Parent Information"}</CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label>اسم الأب</Label><Input value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} /></div>
-                  <div><Label>اسم الأم</Label><Input value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} /></div>
+                  <div><Label>{isAr ? "اسم الأب" : "Father's Name"}</Label><Input value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} /></div>
+                  <div><Label>{isAr ? "اسم الأم" : "Mother's Name"}</Label><Input value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} /></div>
                   <div><Label>{isAr ? "البريد الإلكتروني" : "Email"}</Label><Input type="email" value={form.parentEmail} onChange={(e) => setForm({ ...form, parentEmail: e.target.value })} dir="ltr" /></div>
                   <div><Label>{isAr ? "رقم الجوال" : "Phone"}</Label><Input value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} dir="ltr" /></div>
-                  <div><Label>رقم بديل</Label><Input value={form.altPhone} onChange={(e) => setForm({ ...form, altPhone: e.target.value })} dir="ltr" /></div>
-                  <div className="col-span-full"><Label>العنوان</Label><Textarea value={form.homeAddress} onChange={(e) => setForm({ ...form, homeAddress: e.target.value })} /></div>
+                  <div><Label>{isAr ? "رقم بديل" : "Alternative Number"}</Label><Input value={form.altPhone} onChange={(e) => setForm({ ...form, altPhone: e.target.value })} dir="ltr" /></div>
+                  <div className="col-span-full"><Label>{isAr ? "العنوان" : "Address"}</Label><Textarea value={form.homeAddress} onChange={(e) => setForm({ ...form, homeAddress: e.target.value })} /></div>
                   <div className="col-span-full flex gap-2 mt-2">
-                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
+                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}</Button>
                     <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label="اسم الأب" value={c.fatherName || "—"} />
-                  <InfoRow label="اسم الأم" value={c.motherName || "—"} />
-                  <InfoRow label="البريد الإلكتروني" value={c.parentEmail || "—"} />
-                  <InfoRow label="رقم الجوال" value={c.parentMobile || "—"} />
-                  <InfoRow label="رقم بديل" value={c.altPhone || "—"} />
-                  <InfoRow label="العنوان" value={c.homeAddress || "—"} />
+                  <InfoRow label={isAr ? "اسم الأب" : "Father's Name"} value={c.fatherName || "—"} />
+                  <InfoRow label={isAr ? "اسم الأم" : "Mother's Name"} value={c.motherName || "—"} />
+                  <InfoRow label={isAr ? "البريد الإلكتروني" : "Email"} value={c.parentEmail || "—"} />
+                  <InfoRow label={isAr ? "رقم الجوال" : "Phone Number"} value={c.parentMobile || "—"} />
+                  <InfoRow label={isAr ? "رقم بديل" : "Alternative Number"} value={c.altPhone || "—"} />
+                  <InfoRow label={isAr ? "العنوان" : "Address"} value={c.homeAddress || "—"} />
                 </div>
               )}
             </CardContent>
@@ -384,14 +384,14 @@ export default function ChildProfile() {
           {/* Linked Parents */}
           {(parents as any[])?.length > 0 && (
             <Card>
-              <CardHeader><CardTitle className="text-base">أولياء الأمور المرتبطون</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{isAr ? "أولياء الأمور المرتبطون" : "Linked Parents"}</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {(parents as any[]).map((p: any) => (
                     <div key={p.id} className="flex items-center justify-between p-2 border rounded">
                       <div>
                         <p className="font-medium">{p.parentName || p.name || "—"}</p>
-                        <p className="text-xs text-muted-foreground">{p.relationship === "father" ? "أب" : p.relationship === "mother" ? "أم" : "ولي أمر"}</p>
+                        <p className="text-xs text-muted-foreground">{p.relationship === "father" ? "أب" : p.relationship === "mother" ? "أم" : (isAr ? "ولي أمر" : "Parent")}</p>
                       </div>
                       <Button size="sm" variant="ghost" className="text-destructive" onClick={() => unlinkParent.mutate({ parentId: p.parentId || p.id, childId })}>
                         <Unlink className="h-4 w-4" />
@@ -408,22 +408,22 @@ export default function ChildProfile() {
         <TabsContent value="medical" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5" /> المعلومات الطبية</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5" />{isAr ? " المعلومات الطبية" : "Medical Information"}</CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label>الحساسية</Label><Textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} /></div>
-                  <div><Label>الحالات الطبية</Label><Textarea value={form.medicalConditions} onChange={(e) => setForm({ ...form, medicalConditions: e.target.value })} /></div>
-                  <div><Label>الأدوية</Label><Input value={form.medications} onChange={(e) => setForm({ ...form, medications: e.target.value })} /></div>
-                  <div><Label>الاحتياجات الخاصة</Label><Input value={form.specialNeeds} onChange={(e) => setForm({ ...form, specialNeeds: e.target.value })} /></div>
-                  <div><Label>اسم الطبيب</Label><Input value={form.doctorName} onChange={(e) => setForm({ ...form, doctorName: e.target.value })} /></div>
+                  <div><Label>{isAr ? "الحساسية" : "Allergies"}</Label><Textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })} /></div>
+                  <div><Label>{isAr ? "الحالات الطبية" : "Medical Conditions"}</Label><Textarea value={form.medicalConditions} onChange={(e) => setForm({ ...form, medicalConditions: e.target.value })} /></div>
+                  <div><Label>{isAr ? "الأدوية" : "Medications"}</Label><Input value={form.medications} onChange={(e) => setForm({ ...form, medications: e.target.value })} /></div>
+                  <div><Label>{isAr ? "الاحتياجات الخاصة" : "Special Needs"}</Label><Input value={form.specialNeeds} onChange={(e) => setForm({ ...form, specialNeeds: e.target.value })} /></div>
+                  <div><Label>{isAr ? "اسم الطبيب" : "Doctor's Name"}</Label><Input value={form.doctorName} onChange={(e) => setForm({ ...form, doctorName: e.target.value })} /></div>
                   <div>
-                    <Label>فصيلة الدم</Label>
+                    <Label>{isAr ? "فصيلة الدم" : "Blood Type"}</Label>
                     <Select value={form.bloodType || "unknown"} onValueChange={(v) => setForm({ ...form, bloodType: v === "unknown" ? "" : v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="unknown">غير محدد</SelectItem>
+                        <SelectItem value="unknown">{isAr ? "غير محدد" : "Not Specified"}</SelectItem>
                         <SelectItem value="A+">A+</SelectItem>
                         <SelectItem value="A-">A-</SelectItem>
                         <SelectItem value="B+">B+</SelectItem>
@@ -435,21 +435,21 @@ export default function ChildProfile() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-full"><Label>ملاحظات طبية</Label><Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} /></div>
+                  <div className="col-span-full"><Label>{isAr ? "ملاحظات طبية" : "Medical Notes"}</Label><Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} /></div>
                   <div className="col-span-full flex gap-2 mt-2">
-                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
+                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}</Button>
                     <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label="الحساسية" value={c.allergies || "لا يوجد"} />
-                  <InfoRow label="الحالات الطبية" value={c.medicalConditions || "لا يوجد"} />
-                  <InfoRow label="الأدوية" value={c.medications || "لا يوجد"} />
-                  <InfoRow label="الاحتياجات الخاصة" value={c.specialNeeds || "لا يوجد"} />
-                  <InfoRow label="اسم الطبيب" value={c.doctorName || "—"} />
-                  <InfoRow label="فصيلة الدم" value={c.bloodType || "—"} />
-                  <div className="col-span-full"><InfoRow label="ملاحظات طبية" value={c.medicalNotes || "—"} /></div>
+                  <InfoRow label={isAr ? "الحساسية" : "Allergies"} value={c.allergies || "لا يوجد"} />
+                  <InfoRow label="الحالات الطبية" value={c.medicalConditions || (isAr ? "لا يوجد" : "None")} />
+                  <InfoRow label={isAr ? "الأدوية" : "Medications"} value={c.medications || "لا يوجد"} />
+                  <InfoRow label="الاحتياجات الخاصة" value={c.specialNeeds || (isAr ? "لا يوجد" : "None")} />
+                  <InfoRow label={isAr ? "اسم الطبيب" : "Doctor's Name"} value={c.doctorName || "—"} />
+                  <InfoRow label={isAr ? "فصيلة الدم" : "Blood Type"} value={c.bloodType || "—"} />
+                  <div className="col-span-full"><InfoRow label={isAr ? "ملاحظات طبية" : "Medical Notes"} value={c.medicalNotes || "—"} /></div>
                 </div>
               )}
             </CardContent>
@@ -460,18 +460,18 @@ export default function ChildProfile() {
         <TabsContent value="nursery" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> بيانات الحضانة</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />{isAr ? " بيانات الحضانة" : "Nursery Data"}</CardTitle>
             </CardHeader>
             <CardContent>
               {editing ? (
                 <div className="grid grid-cols-1 gap-4">
                   <div className="flex items-center gap-3">
                     <Switch checked={form.busRequired} onCheckedChange={(v) => setForm({ ...form, busRequired: v })} />
-                    <Label>يحتاج نقل بالباص</Label>
+                    <Label>{isAr ? "يحتاج نقل بالباص" : "Needs Bus Transport"}</Label>
                   </div>
-                  <div><Label>ملاحظات عامة</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+                  <div><Label>{isAr ? "ملاحظات عامة" : "General Notes"}</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
                   <div className="flex gap-2 mt-2">
-                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}</Button>
+                    <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}</Button>
                     <Button variant="outline" onClick={() => setEditing(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
                   </div>
                 </div>
@@ -479,10 +479,10 @@ export default function ChildProfile() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Bus className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">نقل بالباص:</span>
-                    <Badge variant={c.busRequired ? "default" : "secondary"}>{c.busRequired ? "نعم" : "لا"}</Badge>
+                    <span className="text-sm text-muted-foreground">{isAr ? "نقل بالباص:" : "Bus Transport:"}</span>
+                    <Badge variant={c.busRequired ? "default" : "secondary"}>{c.busRequired ? (isAr ? "نعم" : "Yes") : (isAr ? "لا" : "No")}</Badge>
                   </div>
-                  <InfoRow label="ملاحظات" value={c.notes || "—"} />
+                  <InfoRow label={isAr ? "ملاحظات" : "Notes"} value={c.notes || "—"} />
                 </div>
               )}
             </CardContent>
@@ -492,9 +492,9 @@ export default function ChildProfile() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between flex-wrap gap-2">
-                <span className="flex items-center gap-2"><UserPlus className="h-5 w-5" /> الأشخاص المصرح لهم بالاستلام</span>
+                <span className="flex items-center gap-2"><UserPlus className="h-5 w-5" />{isAr ? " الأشخاص المصرح لهم بالاستلام" : "Authorized Pick-up Persons"}</span>
                 <Button size="sm" onClick={() => setAddPersonDialog(true)}>
-                  <Plus className="h-4 w-4 ml-1" /> إضافة شخص
+                  <Plus className="h-4 w-4 ml-1" /> {isAr ? "إضافة شخص" : "Add Person"}
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -502,14 +502,14 @@ export default function ChildProfile() {
               {authorizedPersons.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Shield className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>لا يوجد أشخاص مصرح لهم بالاستلام</p>
-                  <p className="text-xs mt-1">أضف الأشخاص المخولين باستلام الطفل</p>
+                  <p>{isAr ? "لا يوجد أشخاص مصرح لهم بالاستلام" : "No authorized pick-up persons"}</p>
+                  <p className="text-xs mt-1">{isAr ? "أضف الأشخاص المخولين باستلام الطفل" : "Add authorized persons to pick up the child"}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {authorizedPersons.map((person: any) => {
                     const isAutoParent = person.id < 0;
-                    const relLabels: Record<string, string> = { father: "الأب", mother: "الأم", grandfather: "الجد", grandmother: "الجدة", driver: "السائق", relative: "قريب", other: "آخر" };
+                    const relLabels: Record<string, string> = { father: "الأب", mother: "الأم", grandfather: "الجد", grandmother: "الجدة", driver: "السائق", relative: "قريب", other: isAr ? "آخر" : "Other" };
                     return (
                       <div key={person.id} className={`flex items-center gap-3 p-3 rounded-lg border ${isAutoParent ? 'bg-primary/5 border-primary/20' : 'bg-card'}`}>
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -518,8 +518,8 @@ export default function ChildProfile() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium">{person.name}</p>
-                            {isAutoParent && <Badge variant="secondary" className="text-xs">ولي أمر مرتبط</Badge>}
-                            <Badge className="bg-green-100 text-green-800 text-xs">مصرح</Badge>
+                            {isAutoParent && <Badge variant="secondary" className="text-xs">{isAr ? "ولي أمر مرتبط" : "Linked Parent/Guardian"}</Badge>}
+                            <Badge className="bg-green-100 text-green-800 text-xs">{isAr ? "مصرح" : "Authorized"}</Badge>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                             <span>{relLabels[person.relationship] || person.relationship}</span>
@@ -552,24 +552,24 @@ export default function ChildProfile() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between flex-wrap gap-2">
-                <span className="flex items-center gap-2"><FileText className="h-5 w-5" /> مستندات الطفل</span>
+                <span className="flex items-center gap-2"><FileText className="h-5 w-5" />{isAr ? " مستندات الطفل" : "Child Documents"}</span>
                 <div className="flex items-center gap-2">
                   <Select value={docType} onValueChange={setDocType}>
                     <SelectTrigger className="w-[140px] text-sm"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="birth_certificate">شهادة ميلاد</SelectItem>
-                      <SelectItem value="family_id">سجل الأسرة</SelectItem>
-                      <SelectItem value="immunization">سجل التطعيمات</SelectItem>
-                      <SelectItem value="passport">جواز سفر</SelectItem>
-                      <SelectItem value="national_id">هوية وطنية</SelectItem>
-                      <SelectItem value="medical_report">تقرير طبي</SelectItem>
-                      <SelectItem value="allergy_report">تقرير حساسية</SelectItem>
-                      <SelectItem value="photo">صورة</SelectItem>
-                      <SelectItem value="other">أخرى</SelectItem>
+                      <SelectItem value="birth_certificate">{isAr ? "شهادة ميلاد" : "Birth Certificate"}</SelectItem>
+                      <SelectItem value="family_id">{isAr ? "سجل الأسرة" : "Family Record"}</SelectItem>
+                      <SelectItem value="immunization">{isAr ? "سجل التطعيمات" : "Vaccination Log"}</SelectItem>
+                      <SelectItem value="passport">{isAr ? "جواز سفر" : "Passport"}</SelectItem>
+                      <SelectItem value="national_id">{isAr ? "هوية وطنية" : "National ID"}</SelectItem>
+                      <SelectItem value="medical_report">{isAr ? "تقرير طبي" : "Medical Report"}</SelectItem>
+                      <SelectItem value="allergy_report">{isAr ? "تقرير حساسية" : "Allergy Report"}</SelectItem>
+                      <SelectItem value="photo">{isAr ? "صورة" : "Photo"}</SelectItem>
+                      <SelectItem value="other">{isAr ? "أخرى" : "Other"}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button size="sm" onClick={() => docInputRef.current?.click()} disabled={docUploading}>
-                    <Upload className="ml-1 h-4 w-4" /> {docUploading ? "جارٍ الرفع..." : "رفع مستند"}
+                    <Upload className="ml-1 h-4 w-4" /> {docUploading ? isAr ? "جارٍ الرفع..." : "Uploading..." : isAr ? "رفع مستند" : "Upload Document"}
                   </Button>
                   <input ref={docInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={handleDocUpload} />
                 </div>
@@ -577,7 +577,7 @@ export default function ChildProfile() {
             </CardHeader>
             <CardContent>
               {(childDocs as any[]).length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">لا توجد مستندات</p>
+                <p className="text-center text-muted-foreground py-8">{isAr ? "لا توجد مستندات" : "No documents"}</p>
               ) : (
                 <div className="space-y-3">
                   {(childDocs as any[]).map((doc: any) => (
@@ -587,17 +587,17 @@ export default function ChildProfile() {
                         <div>
                           <p className="font-medium text-sm">{doc.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {{ birth_certificate: "شهادة ميلاد", family_id: "سجل الأسرة", immunization: "تطعيمات", passport: "جواز سفر", national_id: "هوية وطنية", medical_report: "تقرير طبي", allergy_report: "تقرير حساسية", photo: "صورة", other: "أخرى" }[doc.type as string] || doc.type} • {new Date(doc.createdAt).toLocaleDateString("ar-SA")}
+                            {{ birth_certificate: "شهادة ميلاد", family_id: "سجل الأسرة", immunization: "تطعيمات", passport: "جواز سفر", national_id: "هوية وطنية", medical_report: "تقرير طبي", allergy_report: isAr ? "تقرير حساسية" : "Allergy Report", photo: "صورة", other: "أخرى" }[doc.type as string] || doc.type} • {new Date(doc.createdAt).toLocaleDateString("ar-SA")}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <Badge variant={doc.status === 'approved' ? 'default' : doc.status === 'rejected' ? 'destructive' : 'secondary'}>
-                          {doc.status === 'approved' ? 'معتمد' : doc.status === 'rejected' ? 'مرفوض' : 'بانتظار المراجعة'}
+                          {doc.status === 'approved' ? isAr ? 'معتمد' : 'Approved' : doc.status === 'rejected' ? isAr ? 'مرفوض' : 'Rejected' : isAr ? 'بانتظار المراجعة' : 'Awaiting Review'}
                         </Badge>
                         {doc.status === 'pending' && (
                           <>
-                            <Button size="sm" variant="ghost" className="text-green-600 h-8 w-8 p-0" onClick={() => approveDoc.mutate({ id: doc.id })} title="اعتماد">
+                            <Button size="sm" variant="ghost" className="text-green-600 h-8 w-8 p-0" onClick={() => approveDoc.mutate({ id: doc.id })} title={isAr ? "اعتماد" : "Approval"}>
                               <CheckCircle className="h-4 w-4" />
                             </Button>
                             <Button size="sm" variant="ghost" className="text-destructive h-8 w-8 p-0" onClick={() => rejectDoc.mutate({ id: doc.id })} title={isAr ? "رفض" : "Reject"}>
@@ -626,26 +626,26 @@ export default function ChildProfile() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" /> إضافة شخص مخول بالاستلام
+              <UserPlus className="h-5 w-5" /> {isAr ? "إضافة شخص مخول بالاستلام" : "Add Authorized Pickup Person"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>الاسم الكامل *</Label>
-              <Input value={personForm.name} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} placeholder="اسم الشخص المخول" />
+              <Input value={personForm.name} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} placeholder={isAr ? "اسم الشخص المخول" : "Authorized Person Name"} />
             </div>
             <div>
               <Label>صلة القرابة *</Label>
               <Select value={personForm.relationship} onValueChange={(v) => setPersonForm({ ...personForm, relationship: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="father">الأب</SelectItem>
-                  <SelectItem value="mother">الأم</SelectItem>
-                  <SelectItem value="grandfather">الجد</SelectItem>
-                  <SelectItem value="grandmother">الجدة</SelectItem>
-                  <SelectItem value="driver">السائق</SelectItem>
-                  <SelectItem value="relative">قريب مخول</SelectItem>
-                  <SelectItem value="other">شخص مخول آخر</SelectItem>
+                  <SelectItem value="father">{isAr ? "الأب" : "Father"}</SelectItem>
+                  <SelectItem value="mother">{isAr ? "الأم" : "Mother"}</SelectItem>
+                  <SelectItem value="grandfather">{isAr ? "الجد" : "Grandfather"}</SelectItem>
+                  <SelectItem value="grandmother">{isAr ? "الجدة" : "Grandmother"}</SelectItem>
+                  <SelectItem value="driver">{isAr ? "السائق" : "Driver"}</SelectItem>
+                  <SelectItem value="relative">{isAr ? "قريب مخول" : "Authorized Relative"}</SelectItem>
+                  <SelectItem value="other">{isAr ? "شخص مخول آخر" : "Another Authorized Person"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -654,8 +654,8 @@ export default function ChildProfile() {
               <Input value={personForm.phone} onChange={(e) => setPersonForm({ ...personForm, phone: e.target.value })} placeholder="05xxxxxxxx" dir="ltr" />
             </div>
             <div>
-              <Label>رقم الهوية (اختياري)</Label>
-              <Input value={personForm.nationalId} onChange={(e) => setPersonForm({ ...personForm, nationalId: e.target.value })} placeholder="رقم الهوية الوطنية" dir="ltr" />
+              <Label>{isAr ? "رقم الهوية (اختياري)" : "ID Number (Optional)"}</Label>
+              <Input value={personForm.nationalId} onChange={(e) => setPersonForm({ ...personForm, nationalId: e.target.value })} placeholder={isAr ? "رقم الهوية الوطنية" : "National ID Number"} dir="ltr" />
             </div>
           </div>
           <DialogFooter>
@@ -673,7 +673,7 @@ export default function ChildProfile() {
               }}
               disabled={addAuthorizedPerson.isPending || !personForm.name.trim()}
             >
-              {addAuthorizedPerson.isPending ? "جارٍ الإضافة..." : "إضافة"}
+              {addAuthorizedPerson.isPending ? (isAr ? "جارٍ الإضافة..." : "Adding...") : (isAr ? "إضافة" : "Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -683,13 +683,13 @@ export default function ChildProfile() {
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>ربط ولي أمر بالطفل</DialogTitle>
+            <DialogTitle>{isAr ? "ربط ولي أمر بالطفل" : "Link Parent to Child"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>{isAr ? "ولي الأمر" : "Parent"}</Label>
               <Select value={selectedParentId} onValueChange={setSelectedParentId}>
-                <SelectTrigger><SelectValue placeholder="اختر ولي الأمر" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={isAr ? "اختر ولي الأمر" : "Select Parent"} /></SelectTrigger>
                 <SelectContent>
                   {parentUsers.map((u: any) => (
                     <SelectItem key={u.id} value={u.id.toString()}>{u.name} - {u.email}</SelectItem>
@@ -698,14 +698,14 @@ export default function ChildProfile() {
               </Select>
             </div>
             <div>
-              <Label>صلة القرابة</Label>
+              <Label>{isAr ? "صلة القرابة" : "Relationship"}</Label>
               <Select value={relationship} onValueChange={setRelationship}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="father">أب</SelectItem>
-                  <SelectItem value="mother">أم</SelectItem>
-                  <SelectItem value="guardian">ولي أمر</SelectItem>
-                  <SelectItem value="parent">ولي أمر (عام)</SelectItem>
+                  <SelectItem value="father">{isAr ? "أب" : "Father"}</SelectItem>
+                  <SelectItem value="mother">{isAr ? "أم" : "Mother"}</SelectItem>
+                  <SelectItem value="guardian">{isAr ? "ولي أمر" : "Parent"}</SelectItem>
+                  <SelectItem value="parent">{isAr ? "ولي أمر (عام)" : "Parent/Guardian (General)"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -716,7 +716,7 @@ export default function ChildProfile() {
               onClick={() => { if (selectedParentId) linkParent.mutate({ parentId: parseInt(selectedParentId), childId, relationship }); }}
               disabled={!selectedParentId || linkParent.isPending}
             >
-              {linkParent.isPending ? "جارٍ الربط..." : "ربط"}
+              {linkParent.isPending ? isAr ? "جارٍ الربط..." : "Linking..." : isAr ? "ربط" : "Link"}
             </Button>
           </DialogFooter>
         </DialogContent>

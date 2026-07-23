@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 
 export default function StaffDashboard() {
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const isEn = i18n.language === 'en';
   const locale = isEn ? 'en-US' : 'ar-SA';
   const { user } = useAuth();
@@ -291,11 +292,11 @@ export default function StaffDashboard() {
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <BookOpen className="h-4 w-4 text-primary" />
                 </div>
-                {isEn ? 'Today\'s Activity' : 'نشاط اليوم'}
+                {isEn ? 'Today\'s Activity' : isAr ? 'نشاط اليوم' : 'Today\'s Activity'}
               </CardTitle>
               <Link href={`/${user?.role === 'parent' ? 'parent' : 'staff'}/attendance`}>
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1 rounded-lg">
-                  {isEn ? 'View All' : 'عرض الكل'}
+                  {isEn ? 'View All' : isAr ? 'عرض الكل' : 'View All'}
                   <ArrowUpRight className="h-3 w-3" />
                 </Button>
               </Link>

@@ -33,7 +33,7 @@ export default function ParentAnnouncements() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">الإعلانات</h1>
+      <h1 className="text-2xl font-bold">{isAr ? "الإعلانات" : "Announcements"}</h1>
       <div className="space-y-3">
         {announcements?.map((a: any) => (
           <Card key={a.id} className={`${a.isPinned ? "border-amber-300 bg-amber-50/50 shadow-sm" : ""} ${isRead(a.id) ? "opacity-80" : ""}`}>
@@ -51,12 +51,12 @@ export default function ParentAnnouncements() {
                     <p className="font-medium">{a.title}</p>
                     {a.isPinned && (
                       <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs">
-                        <Pin className="h-3 w-3 ml-1" />مهم
+                        <Pin className="h-3 w-3 ml-1" />{isAr ? "مهم" : "Important"}
                       </Badge>
                     )}
                     {isRead(a.id) && (
                       <Badge className="bg-green-100 text-green-700 border-green-300 text-xs">
-                        <CheckCircle2 className="h-3 w-3 ml-1" />تمت القراءة
+                        <CheckCircle2 className="h-3 w-3 ml-1" />{isAr ? "تمت القراءة" : "Read"}
                       </Badge>
                     )}
                   </div>
@@ -64,7 +64,7 @@ export default function ParentAnnouncements() {
                   {a.imageUrl && (
                     <img
                       src={a.imageUrl}
-                      alt="مرفق"
+                      alt={isAr ? "مرفق" : "Attachment"}
                       className="mt-3 rounded-lg border max-h-56 w-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
                       onClick={() => setPreviewImage(a.imageUrl)}
                     />
@@ -80,7 +80,7 @@ export default function ParentAnnouncements() {
                         disabled={markRead.isPending}
                       >
                         <Eye className="h-4 w-4 ml-1" />
-                        {markRead.isPending ? "جاري..." : "تأكيد القراءة"}
+                        {markRead.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "تأكيد القراءة" : "Confirm Read"}
                       </Button>
                     )}
                   </div>
@@ -96,7 +96,7 @@ export default function ParentAnnouncements() {
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
         <DialogContent className="max-w-3xl p-2">
           {previewImage && (
-            <img src={previewImage} alt="معاينة" className="w-full h-auto rounded-lg" />
+            <img src={previewImage} alt={isAr ? "معاينة" : "Preview"} className="w-full h-auto rounded-lg" />
           )}
         </DialogContent>
       </Dialog>

@@ -61,7 +61,7 @@ export default function AddStaff() {
       toast.success(isAr ? "تم إضافة الموظف بنجاح" : "Staff added successfully");
       navigate(`/staff/staff-management/${result.id}`);
     },
-    onError: (err) => toast.error(err.message || "حدث خطأ أثناء الإضافة"),
+    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء الإضافة" : "An error occurred during addition"),
   });
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +81,7 @@ export default function AddStaff() {
         body: formData,
         credentials: "include",
       });
-      if (!res.ok) throw new Error("فشل رفع الصورة");
+      if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
       const data = await res.json();
       setForm(f => ({ ...f, photo: data.url }));
       setPhotoPreview(data.url);
@@ -121,8 +121,8 @@ export default function AddStaff() {
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">إضافة موظف جديد</h1>
-          <p className="text-sm text-muted-foreground">أدخل بيانات الموظف الأساسية والتفصيلية</p>
+          <h1 className="text-2xl font-bold">{isAr ? "إضافة موظف جديد" : "Add New Employee"}</h1>
+          <p className="text-sm text-muted-foreground">{isAr ? "أدخل بيانات الموظف الأساسية والتفصيلية" : "Enter basic and detailed employee data"}</p>
         </div>
       </div>
 
@@ -131,23 +131,23 @@ export default function AddStaff() {
           <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
             <TabsTrigger value="personal" className="gap-1.5 text-xs md:text-sm">
               <User className="h-3.5 w-3.5" />
-              شخصية
+              {isAr ? "شخصية" : "Personal"}
             </TabsTrigger>
             <TabsTrigger value="employment" className="gap-1.5 text-xs md:text-sm">
               <Briefcase className="h-3.5 w-3.5" />
-              وظيفية
+              {isAr ? "وظيفية" : "Functional"}
             </TabsTrigger>
             <TabsTrigger value="qualifications" className="gap-1.5 text-xs md:text-sm">
               <GraduationCap className="h-3.5 w-3.5" />
-              مؤهلات
+              {isAr ? "مؤهلات" : "Qualifications"}
             </TabsTrigger>
             <TabsTrigger value="financial" className="gap-1.5 text-xs md:text-sm">
               <CreditCard className="h-3.5 w-3.5" />
-              مالية
+              {isAr ? "مالية" : "Financial"}
             </TabsTrigger>
             <TabsTrigger value="emergency" className="gap-1.5 text-xs md:text-sm">
               <PhoneIcon className="h-3.5 w-3.5" />
-              طوارئ
+              {isAr ? "طوارئ" : "Emergency"}
             </TabsTrigger>
           </TabsList>
 
@@ -155,14 +155,14 @@ export default function AddStaff() {
           <TabsContent value="personal">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">البيانات الشخصية</CardTitle>
+                <CardTitle className="text-lg">{isAr ? "البيانات الشخصية" : "Personal Data"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Photo Upload */}
                 <div className="flex items-center gap-6">
                   <Avatar className="h-20 w-20 border-2 border-dashed border-[#7C3AED]/30 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     {photoPreview ? (
-                      <img src={photoPreview} alt="صورة" className="h-full w-full object-cover rounded-full" />
+                      <img src={photoPreview} alt={isAr ? "صورة" : "Photo"} className="h-full w-full object-cover rounded-full" />
                     ) : (
                       <AvatarFallback className="bg-[#7C3AED]/5">
                         <Upload className="h-6 w-6 text-[#7C3AED]/50" />
@@ -171,7 +171,7 @@ export default function AddStaff() {
                   </Avatar>
                   <div>
                     <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                      {uploading ? "جاري الرفع..." : "رفع صورة شخصية"}
+                      {uploading ? (isAr ? "جاري الرفع..." : "Uploading...") : "رفع صورة شخصية"}
                     </Button>
                     <p className="text-xs text-muted-foreground mt-1">PNG, JPG حتى 5 ميجابايت</p>
                   </div>
@@ -180,48 +180,48 @@ export default function AddStaff() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>الاسم الكامل بالعربي <span className="text-red-500">*</span></Label>
-                    <Input value={form.fullNameAr} onChange={e => updateField("fullNameAr", e.target.value)} placeholder="محمد أحمد العلي" />
+                    <Label>{isAr ? "الاسم الكامل بالعربي" : "Full Name (Arabic)"} <span className="text-red-500">*</span></Label>
+                    <Input value={form.fullNameAr} onChange={e => updateField("fullNameAr", e.target.value)} placeholder={isAr ? "محمد أحمد العلي" : "Mohammed Ahmed Al Ali"} />
                   </div>
                   <div className="space-y-2">
-                    <Label>الاسم الكامل بالإنجليزي</Label>
+                    <Label>{isAr ? "الاسم الكامل بالإنجليزي" : "Full Name (English)"}</Label>
                     <Input value={form.fullNameEn} onChange={e => updateField("fullNameEn", e.target.value)} placeholder="Mohammed Ahmed Al-Ali" dir="ltr" />
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم الهوية الوطنية</Label>
+                    <Label>{isAr ? "رقم الهوية الوطنية" : "National ID Number"}</Label>
                     <Input value={form.nationalId} onChange={e => updateField("nationalId", e.target.value)} placeholder="1xxxxxxxxx" dir="ltr" />
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم الإقامة</Label>
+                    <Label>{isAr ? "رقم الإقامة" : "Residency Number"}</Label>
                     <Input value={form.iqamaNumber} onChange={e => updateField("iqamaNumber", e.target.value)} placeholder="2xxxxxxxxx" dir="ltr" />
                   </div>
                   <div className="space-y-2">
-                    <Label>تاريخ الميلاد</Label>
+                    <Label>{isAr ? "تاريخ الميلاد" : "Date of Birth"}</Label>
                     <Input type="date" value={form.dateOfBirth} onChange={e => updateField("dateOfBirth", e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label>الجنس</Label>
+                    <Label>{isAr ? "الجنس" : "Gender"}</Label>
                     <Select value={form.gender} onValueChange={v => updateField("gender", v)}>
-                      <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={isAr ? "اختر" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">ذكر</SelectItem>
-                        <SelectItem value="female">أنثى</SelectItem>
+                        <SelectItem value="male">{isAr ? "ذكر" : "Male"}</SelectItem>
+                        <SelectItem value="female">{isAr ? "أنثى" : "Female"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>الجنسية</Label>
-                    <Input value={form.nationality} onChange={e => updateField("nationality", e.target.value)} placeholder="سعودي" />
+                    <Label>{isAr ? "الجنسية" : "Nationality"}</Label>
+                    <Input value={form.nationality} onChange={e => updateField("nationality", e.target.value)} placeholder={isAr ? "سعودي" : "Saudi"} />
                   </div>
                   <div className="space-y-2">
-                    <Label>الحالة الاجتماعية</Label>
+                    <Label>{isAr ? "الحالة الاجتماعية" : "Marital Status"}</Label>
                     <Select value={form.maritalStatus} onValueChange={v => updateField("maritalStatus", v)}>
-                      <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={isAr ? "اختر" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="single">أعزب/عزباء</SelectItem>
-                        <SelectItem value="married">متزوج/ة</SelectItem>
-                        <SelectItem value="divorced">مطلق/ة</SelectItem>
-                        <SelectItem value="widowed">أرمل/ة</SelectItem>
+                        <SelectItem value="single">{isAr ? "أعزب/عزباء" : "Single"}</SelectItem>
+                        <SelectItem value="married">{isAr ? "متزوج/ة" : "Married"}</SelectItem>
+                        <SelectItem value="divorced">{isAr ? "مطلق/ة" : "Divorced"}</SelectItem>
+                        <SelectItem value="widowed">{isAr ? "أرمل/ة" : "Widowed"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -229,27 +229,27 @@ export default function AddStaff() {
 
                 {/* Contact */}
                 <div className="border-t pt-4">
-                  <h3 className="font-medium mb-3">معلومات الاتصال</h3>
+                  <h3 className="font-medium mb-3">{isAr ? "معلومات الاتصال" : "Contact Information"}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>رقم الجوال <span className="text-red-500">*</span></Label>
+                      <Label>{isAr ? "رقم الجوال" : "Mobile Number"} <span className="text-red-500">*</span></Label>
                       <Input value={form.mobile} onChange={e => updateField("mobile", e.target.value)} placeholder="05xxxxxxxx" dir="ltr" />
                     </div>
                     <div className="space-y-2">
-                      <Label>رقم هاتف بديل</Label>
+                      <Label>{isAr ? "رقم هاتف بديل" : "Alternative Phone Number"}</Label>
                       <Input value={form.altPhone} onChange={e => updateField("altPhone", e.target.value)} dir="ltr" />
                     </div>
                     <div className="space-y-2">
-                      <Label>البريد الإلكتروني <span className="text-red-500">*</span></Label>
+                      <Label>{isAr ? "البريد الإلكتروني" : "Email"} <span className="text-red-500">*</span></Label>
                       <Input type="email" value={form.email} onChange={e => updateField("email", e.target.value)} placeholder="email@example.com" dir="ltr" />
                     </div>
                     <div className="space-y-2">
-                      <Label>المدينة</Label>
-                      <Input value={form.city} onChange={e => updateField("city", e.target.value)} placeholder="الرياض" />
+                      <Label>{isAr ? "المدينة" : "City"}</Label>
+                      <Input value={form.city} onChange={e => updateField("city", e.target.value)} placeholder={isAr ? "الرياض" : "Riyadh"} />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label>العنوان</Label>
-                      <Input value={form.address} onChange={e => updateField("address", e.target.value)} placeholder="العنوان التفصيلي" />
+                      <Label>{isAr ? "العنوان" : "Address"}</Label>
+                      <Input value={form.address} onChange={e => updateField("address", e.target.value)} placeholder={isAr ? "العنوان التفصيلي" : "Detailed Address"} />
                     </div>
                   </div>
                 </div>
@@ -261,60 +261,60 @@ export default function AddStaff() {
           <TabsContent value="employment">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">البيانات الوظيفية</CardTitle>
+                <CardTitle className="text-lg">{isAr ? "البيانات الوظيفية" : "Job Data"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>المسمى الوظيفي <span className="text-red-500">*</span></Label>
+                    <Label>{isAr ? "المسمى الوظيفي" : "Job Title"} <span className="text-red-500">*</span></Label>
                     <Select value={form.jobTitle} onValueChange={v => updateField("jobTitle", v)}>
-                      <SelectTrigger><SelectValue placeholder="اختر المسمى" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={isAr ? "اختر المسمى" : "Select Title"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="teacher">معلم/ة</SelectItem>
-                        <SelectItem value="supervisor">مشرف/ة</SelectItem>
-                        <SelectItem value="principal">مدير/ة</SelectItem>
-                        <SelectItem value="assistant">مساعد/ة</SelectItem>
-                        <SelectItem value="admin_staff">إداري/ة</SelectItem>
-                        <SelectItem value="specialist">أخصائي/ة</SelectItem>
-                        <SelectItem value="accountant">محاسب/ة</SelectItem>
-                        <SelectItem value="receptionist">موظف/ة استقبال</SelectItem>
-                        <SelectItem value="driver">سائق</SelectItem>
-                        <SelectItem value="other">أخرى</SelectItem>
+                        <SelectItem value="teacher">{isAr ? "معلم/ة" : "Teacher"}</SelectItem>
+                        <SelectItem value="supervisor">{isAr ? "مشرف/ة" : "Supervisor"}</SelectItem>
+                        <SelectItem value="principal">{isAr ? "مدير/ة" : "Manager"}</SelectItem>
+                        <SelectItem value="assistant">{isAr ? "مساعد/ة" : "Assistant"}</SelectItem>
+                        <SelectItem value="admin_staff">{isAr ? "إداري/ة" : "Administrator"}</SelectItem>
+                        <SelectItem value="specialist">{isAr ? "أخصائي/ة" : "Specialist"}</SelectItem>
+                        <SelectItem value="accountant">{isAr ? "محاسب/ة" : "Accountant"}</SelectItem>
+                        <SelectItem value="receptionist">{isAr ? "موظف/ة استقبال" : "Receptionist"}</SelectItem>
+                        <SelectItem value="driver">{isAr ? "سائق" : "Driver"}</SelectItem>
+                        <SelectItem value="other">{isAr ? "أخرى" : "Other"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   {form.jobTitle === "other" && (
                     <div className="space-y-2">
-                      <Label>المسمى المخصص</Label>
+                      <Label>{isAr ? "المسمى المخصص" : "Custom Title"}</Label>
                       <Input value={form.customJobTitle} onChange={e => updateField("customJobTitle", e.target.value)} />
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label>القسم</Label>
-                    <Input value={form.department} onChange={e => updateField("department", e.target.value)} placeholder="مثال: قسم الروضة" />
+                    <Label>{isAr ? "القسم" : "Section"}</Label>
+                    <Input value={form.department} onChange={e => updateField("department", e.target.value)} placeholder={isAr ? "مثال: قسم الروضة" : "Example: Kindergarten Section"} />
                   </div>
                   <div className="space-y-2">
-                    <Label>الفرع</Label>
-                    <Input value={form.branch} onChange={e => updateField("branch", e.target.value)} placeholder="مثال: الفرع الرئيسي" />
+                    <Label>{isAr ? "الفرع" : "Branch"}</Label>
+                    <Input value={form.branch} onChange={e => updateField("branch", e.target.value)} placeholder={isAr ? "مثال: الفرع الرئيسي" : "Example: Main Branch"} />
                   </div>
                   <div className="space-y-2">
-                    <Label>تاريخ التعيين</Label>
+                    <Label>{isAr ? "تاريخ التعيين" : "Hire Date"}</Label>
                     <Input type="date" value={form.hireDate} onChange={e => updateField("hireDate", e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label>نوع العقد</Label>
+                    <Label>{isAr ? "نوع العقد" : "Contract Type"}</Label>
                     <Select value={form.contractType} onValueChange={v => updateField("contractType", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="full_time">دوام كامل</SelectItem>
-                        <SelectItem value="part_time">دوام جزئي</SelectItem>
-                        <SelectItem value="contract">عقد مؤقت</SelectItem>
-                        <SelectItem value="temporary">مؤقت</SelectItem>
+                        <SelectItem value="full_time">{isAr ? "دوام كامل" : "Full-time"}</SelectItem>
+                        <SelectItem value="part_time">{isAr ? "دوام جزئي" : "Part-time"}</SelectItem>
+                        <SelectItem value="contract">{isAr ? "عقد مؤقت" : "Temporary Contract"}</SelectItem>
+                        <SelectItem value="temporary">{isAr ? "مؤقت" : "Temporary"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>تاريخ انتهاء العقد</Label>
+                    <Label>{isAr ? "تاريخ انتهاء العقد" : "Contract End Date"}</Label>
                     <Input type="date" value={form.contractEndDate} onChange={e => updateField("contractEndDate", e.target.value)} />
                   </div>
                 </div>
@@ -326,26 +326,26 @@ export default function AddStaff() {
           <TabsContent value="qualifications">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">المؤهلات والخبرات</CardTitle>
+                <CardTitle className="text-lg">{isAr ? "المؤهلات والخبرات" : "Qualifications & Experience"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>المؤهل العلمي</Label>
-                    <Input value={form.qualification} onChange={e => updateField("qualification", e.target.value)} placeholder="بكالوريوس تربية طفولة مبكرة" />
+                    <Label>{isAr ? "المؤهل العلمي" : "Educational Qualification"}</Label>
+                    <Input value={form.qualification} onChange={e => updateField("qualification", e.target.value)} placeholder={isAr ? "بكالوريوس تربية طفولة مبكرة" : "Bachelor of Early Childhood Education"} />
                   </div>
                   <div className="space-y-2">
-                    <Label>التخصص</Label>
-                    <Input value={form.specialization} onChange={e => updateField("specialization", e.target.value)} placeholder="تربية خاصة" />
+                    <Label>{isAr ? "التخصص" : "Specialization"}</Label>
+                    <Input value={form.specialization} onChange={e => updateField("specialization", e.target.value)} placeholder={isAr ? "تربية خاصة" : "Special Education"} />
                   </div>
                   <div className="space-y-2">
-                    <Label>سنوات الخبرة</Label>
+                    <Label>{isAr ? "سنوات الخبرة" : "Years of Experience"}</Label>
                     <Input type="number" value={form.yearsOfExperience} onChange={e => updateField("yearsOfExperience", e.target.value)} placeholder="5" />
                   </div>
                 </div>
                 <div className="mt-4 space-y-2">
-                  <Label>ملاحظات إضافية</Label>
-                  <Textarea value={form.notes} onChange={e => updateField("notes", e.target.value)} placeholder="أي ملاحظات أو معلومات إضافية..." rows={3} />
+                  <Label>{isAr ? "ملاحظات إضافية" : "Additional Notes"}</Label>
+                  <Textarea value={form.notes} onChange={e => updateField("notes", e.target.value)} placeholder={isAr ? "أي ملاحظات أو معلومات إضافية..." : "Any notes or additional information..."} rows={3} />
                 </div>
               </CardContent>
             </Card>
@@ -355,20 +355,20 @@ export default function AddStaff() {
           <TabsContent value="financial">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">البيانات المالية</CardTitle>
+                <CardTitle className="text-lg">{isAr ? "البيانات المالية" : "Financial Data"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>اسم البنك</Label>
-                    <Input value={form.bankName} onChange={e => updateField("bankName", e.target.value)} placeholder="البنك الأهلي" />
+                    <Label>{isAr ? "اسم البنك" : "Bank Name"}</Label>
+                    <Input value={form.bankName} onChange={e => updateField("bankName", e.target.value)} placeholder={isAr ? "البنك الأهلي" : "National Bank"} />
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم الآيبان</Label>
+                    <Label>{isAr ? "رقم الآيبان" : "IBAN Number"}</Label>
                     <Input value={form.iban} onChange={e => updateField("iban", e.target.value)} placeholder="SA..." dir="ltr" />
                   </div>
                   <div className="space-y-2">
-                    <Label>الراتب الشهري (ريال)</Label>
+                    <Label>{isAr ? "الراتب الشهري (ريال)" : "Monthly Salary (SAR)"}</Label>
                     <Input value={form.salary} onChange={e => updateField("salary", e.target.value)} placeholder="0.00" dir="ltr" />
                   </div>
                 </div>
@@ -380,21 +380,21 @@ export default function AddStaff() {
           <TabsContent value="emergency">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">جهة الاتصال في حالات الطوارئ</CardTitle>
+                <CardTitle className="text-lg">{isAr ? "جهة الاتصال في حالات الطوارئ" : "Emergency Contact"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>اسم جهة الاتصال</Label>
+                    <Label>{isAr ? "اسم جهة الاتصال" : "Contact Name"}</Label>
                     <Input value={form.emergencyContactName} onChange={e => updateField("emergencyContactName", e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم الهاتف</Label>
+                    <Label>{isAr ? "رقم الهاتف" : "Phone Number"}</Label>
                     <Input value={form.emergencyContactPhone} onChange={e => updateField("emergencyContactPhone", e.target.value)} dir="ltr" />
                   </div>
                   <div className="space-y-2">
-                    <Label>صلة القرابة</Label>
-                    <Input value={form.emergencyContactRelation} onChange={e => updateField("emergencyContactRelation", e.target.value)} placeholder="أخ، أب، زوج..." />
+                    <Label>{isAr ? "صلة القرابة" : "Relationship"}</Label>
+                    <Input value={form.emergencyContactRelation} onChange={e => updateField("emergencyContactRelation", e.target.value)} placeholder={isAr ? "أخ، أب، زوج..." : "Brother, Father, Husband..."} />
                   </div>
                 </div>
               </CardContent>
@@ -405,11 +405,11 @@ export default function AddStaff() {
         {/* Submit Button */}
         <div className="flex justify-end gap-3 mt-6 sticky bottom-4">
           <Button type="button" variant="outline" onClick={() => navigate("/staff/staff-management")}>
-            إلغاء
+            {isAr ? "إلغاء" : "Cancel"}
           </Button>
           <Button type="submit" disabled={createStaff.isPending} className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9]">
             <Save className="h-4 w-4" />
-            {createStaff.isPending ? "جاري الحفظ..." : "حفظ الموظف"}
+            {createStaff.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : "حفظ الموظف"}
           </Button>
         </div>
       </form>

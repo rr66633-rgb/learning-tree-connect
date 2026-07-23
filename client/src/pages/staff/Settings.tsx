@@ -18,14 +18,16 @@ import { apiUrl } from "@/lib/apiBase";
 
 function PickupAlertSettingsSection() {
   const { user } = useAuth();
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const isAdmin = user?.role && ['super_admin', 'admin', 'principal'].includes(user.role);
   const { data: settings, isLoading } = trpc.pickup.alertSettings.useQuery();
   const updateSettings = trpc.pickup.updateAlertSettings.useMutation({
-    onSuccess: () => toast.success('تم حفظ إعدادات التنبيه'),
+    onSuccess: () => toast.success(isAr ? "تم حفظ إعدادات التنبيه" : "Alert Settings Saved"),
   });
   const testAlert = trpc.pickup.testAlert.useMutation({
-    onSuccess: (data) => toast.success(`تم إرسال تنبيه تجريبي إلى ${data.onDutyCount} موظف (${data.sent} تم الإرسال)`),
-    onError: () => toast.error('فشل إرسال التنبيه التجريبي'),
+    onSuccess: (data) => toast.success(isAr ? `تم إرسال تنبيه تجريبي إلى ${data.onDutyCount} موظف (${data.sent} تم الإرسال)` : `Test alert sent to${data.onDutyCount}Employee (${data.sent}Sent)`),
+    onError: () => toast.error(isAr ? "فشل إرسال التنبيه التجريبي" : "Failed to Send Test Alert"),
   });
 
   const [volume, setVolume] = useState(80);
@@ -50,10 +52,10 @@ function PickupAlertSettingsSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-amber-500" />
-          إعدادات تنبيهات الاستلام التشغيلية
+          {isAr ? "إعدادات تنبيهات الاستلام التشغيلية" : "Operational Pickup Alert Settings"}
         </CardTitle>
         <CardDescription>
-          تحكم في صوت التنبيه، التكرار، ووقت التصعيد
+          {isAr ? "تحكم في صوت التنبيه، التكرار، ووقت التصعيد" : "Control alert sound, repetition, and escalation time"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -71,16 +73,16 @@ function PickupAlertSettingsSection() {
 
         {/* Tone */}
         <div className="space-y-2">
-          <Label>نغمة التنبيه</Label>
+          <Label>{isAr ? "نغمة التنبيه" : "Alert Tone"}</Label>
           <Select value={tone} onValueChange={setTone}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="urgent">عاجل (صوت قوي)</SelectItem>
-              <SelectItem value="alarm">إنذار (صوت تحذيري)</SelectItem>
-              <SelectItem value="gentle">هادئ (صوت لطيف)</SelectItem>
-              <SelectItem value="chime">رنين (صوت موسيقي)</SelectItem>
+              <SelectItem value="urgent">{isAr ? "عاجل (صوت قوي)" : "Urgent (loud sound)"}</SelectItem>
+              <SelectItem value="alarm">{isAr ? "إنذار (صوت تحذيري)" : "Alarm (Warning Sound)"}</SelectItem>
+              <SelectItem value="gentle">{isAr ? "هادئ (صوت لطيف)" : "Calm (Gentle Sound)"}</SelectItem>
+              <SelectItem value="chime">{isAr ? "رنين (صوت موسيقي)" : "Ringtone (Musical Sound)"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -108,7 +110,7 @@ function PickupAlertSettingsSection() {
             step={1}
           />
           <p className="text-xs text-muted-foreground">
-            إذا لم يتم الاستجابة خلال هذا الوقت، يتم تصعيد التنبيه للمشرف
+            {isAr ? "إذا لم يتم الاستجابة خلال هذا الوقت، يتم تصعيد التنبيه للمشرف" : "If no response within this time, alert is escalated to supervisor"}
           </p>
         </div>
 
@@ -120,7 +122,7 @@ function PickupAlertSettingsSection() {
             disabled={updateSettings.isPending}
           >
             <Save className="ml-2 h-4 w-4" />
-            حفظ الإعدادات
+            {isAr ? "حفظ الإعدادات" : "Save Settings"}
           </Button>
           <Button
             variant="outline"
@@ -129,7 +131,7 @@ function PickupAlertSettingsSection() {
             className="border-amber-500 text-amber-700 hover:bg-amber-50"
           >
             <Bell className="ml-2 h-4 w-4" />
-            تجربة تنبيه الاستلام
+            {isAr ? "تجربة تنبيه الاستلام" : "Pickup Alert Test"}
           </Button>
         </div>
       </CardContent>
@@ -138,23 +140,25 @@ function PickupAlertSettingsSection() {
 }
 
 function TestNotificationSection() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const testPush = trpc.push.test.useMutation({
     onSuccess: (data) => {
       if (data.sent > 0) {
-        toast.success(`تم إرسال إشعار تجريبي بنجاح (${data.sent} جهاز)`);
+        toast.success(isAr ? `تم إرسال إشعار تجريبي بنجاح (${data.sent} جهاز)` : `Test notification sent successfully (${data.sent}Device)`);
       } else {
-        toast.error('لم يتم إرسال أي إشعار. تأكد من تفعيل الإشعارات أولاً.');
+        toast.error(isAr ? "لم يتم إرسال أي إشعار. تأكد من تفعيل الإشعارات أولاً." : "No notification sent. Make sure notifications are enabled first.");
       }
     },
-    onError: () => toast.error('فشل إرسال الإشعار التجريبي'),
+    onError: () => toast.error(isAr ? "فشل إرسال الإشعار التجريبي" : "Failed to Send Test Notification"),
   });
 
   return (
     <div className="pt-4 border-t space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium">اختبار الإشعارات</p>
-          <p className="text-xs text-muted-foreground">إرسال إشعار تجريبي للتأكد من عمل الصوت والاهتزاز</p>
+          <p className="text-sm font-medium">{isAr ? "اختبار الإشعارات" : "Test Notifications"}</p>
+          <p className="text-xs text-muted-foreground">{isAr ? "إرسال إشعار تجريبي للتأكد من عمل الصوت والاهتزاز" : "Send a test notification to ensure sound and vibration are working"}</p>
         </div>
         <Button
           variant="outline"
@@ -164,7 +168,7 @@ function TestNotificationSection() {
           className="gap-2"
         >
           <Send className="h-4 w-4" />
-          {testPush.isPending ? 'جاري الإرسال...' : 'إرسال إشعار تجريبي'}
+          {testPush.isPending ? (isAr ? "جاري الإرسال..." : "Sending...") : (isAr ? "إرسال إشعار تجريبي" : "Send Test Notification")}
         </Button>
       </div>
     </div>
@@ -254,12 +258,12 @@ export default function StaffSettings() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>اسم المركز</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="مركز شجرة التعلم" />
+            <Label>{isAr ? "اسم المركز" : "Center Name"}</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder={isAr ? "مركز شجرة التعلم" : "Learning Tree Center"} />
           </div>
           {/* Logo Upload */}
           <div>
-            <Label>شعار المركز</Label>
+            <Label>{isAr ? "شعار المركز" : "Center Logo"}</Label>
             <p className="text-xs text-muted-foreground mb-2">يظهر في ترويسة الفاتورة عند الطباعة أو التصدير ك PDF</p>
             <div className="flex items-center gap-4">
               {logoUrl ? (
@@ -284,7 +288,7 @@ export default function StaffSettings() {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     if (file.size > 2 * 1024 * 1024) {
-                      toast.error('حجم الصورة يجب أن يكون أقل من 2 ميغابايت');
+                      toast.error(isAr ? "حجم الصورة يجب أن يكون أقل من 2 ميغابايت" : "Image size must be less than 2 MB");
                       return;
                     }
                     setUploading(true);
@@ -295,12 +299,12 @@ export default function StaffSettings() {
                       const data = await resp.json();
                       if (data.url) {
                         setLogoUrl(data.url);
-                        toast.success('تم رفع الشعار بنجاح');
+                        toast.success(isAr ? "تم رفع الشعار بنجاح" : "Logo Uploaded Successfully");
                       } else {
-                        toast.error('فشل رفع الشعار');
+                        toast.error(isAr ? "فشل رفع الشعار" : "Failed to Upload Logo");
                       }
                     } catch {
-                      toast.error('فشل رفع الشعار');
+                      toast.error(isAr ? "فشل رفع الشعار" : "Failed to Upload Logo");
                     } finally {
                       setUploading(false);
                     }
@@ -308,7 +312,7 @@ export default function StaffSettings() {
                 />
                 <Button variant="outline" size="sm" disabled={uploading} onClick={() => document.getElementById('logo-upload')?.click()}>
                   <Upload className="h-4 w-4 ml-1" />
-                  {uploading ? 'جاري الرفع...' : 'رفع شعار'}
+                  {uploading ? (isAr ? "جاري الرفع..." : "Uploading...") : (isAr ? "رفع شعار" : "Upload Logo")}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">PNG أو JPG - أقل من 2 ميغا</p>
               </div>
@@ -322,9 +326,9 @@ export default function StaffSettings() {
               <p className="text-xs text-muted-foreground mt-1">يظهر في الفواتير ورمز QR</p>
             </div>
             <div>
-              <Label>السجل التجاري</Label>
+              <Label>{isAr ? "السجل التجاري" : "Commercial Register"}</Label>
               <Input value={commercialRegister} onChange={e => setCommercialRegister(e.target.value)} placeholder="1010000000" dir="ltr" />
-              <p className="text-xs text-muted-foreground mt-1">يظهر في الفواتير</p>
+              <p className="text-xs text-muted-foreground mt-1">{isAr ? "يظهر في الفواتير" : "Appears on invoices"}</p>
             </div>
           </div>
         </CardContent>
@@ -342,29 +346,29 @@ export default function StaffSettings() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>خط العرض</Label>
+              <Label>{isAr ? "خط العرض" : "Latitude"}</Label>
               <Input type="number" step="any" value={lat} onChange={e => setLat(e.target.value)} placeholder="24.7136" dir="ltr" />
             </div>
             <div>
-              <Label>خط الطول</Label>
+              <Label>{isAr ? "خط الطول" : "Longitude"}</Label>
               <Input type="number" step="any" value={lng} onChange={e => setLng(e.target.value)} placeholder="46.6753" dir="ltr" />
             </div>
           </div>
           <Button variant="outline" onClick={handleGetCurrentLocation} className="gap-2">
             <MapPin className="h-4 w-4" />
-            استخدام موقعي الحالي
+            {isAr ? "استخدام موقعي الحالي" : "Use My Current Location"}
           </Button>
           <Separator />
           <div>
-            <Label>نطاق الحضور المسموح (بالمتر)</Label>
+            <Label>{isAr ? "نطاق الحضور المسموح (بالمتر)" : "Allowed Attendance Range (in meters)"}</Label>
             <Input type="number" value={radius} onChange={e => setRadius(e.target.value)} placeholder="100" dir="ltr" />
             <p className="text-xs text-muted-foreground mt-1">
-              المسافة القصوى المسموح بها لتسجيل حضور الموظفين من موقع المركز
+              {isAr ? "المسافة القصوى المسموح بها لتسجيل حضور الموظفين من موقع المركز" : "Maximum allowed distance for staff attendance from center location"}
             </p>
           </div>
           {lat && lng && (
             <div className="p-3 bg-muted/50 rounded-lg text-sm">
-              <p className="font-medium mb-1">الموقع المحدد:</p>
+              <p className="font-medium mb-1">{isAr ? "الموقع المحدد:" : "Selected Location:"}</p>
               <p className="text-muted-foreground" dir="ltr">{lat}, {lng}</p>
               <p className="text-muted-foreground">النطاق: {radius || 100} متر</p>
             </div>
@@ -384,11 +388,11 @@ export default function StaffSettings() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>بداية الدوام</Label>
+              <Label>{isAr ? "بداية الدوام" : "Start Time"}</Label>
               <Input type="time" value={workStart} onChange={e => setWorkStart(e.target.value)} dir="ltr" />
             </div>
             <div>
-              <Label>نهاية الدوام</Label>
+              <Label>{isAr ? "نهاية الدوام" : "End of Workday"}</Label>
               <Input type="time" value={workEnd} onChange={e => setWorkEnd(e.target.value)} dir="ltr" />
             </div>
           </div>

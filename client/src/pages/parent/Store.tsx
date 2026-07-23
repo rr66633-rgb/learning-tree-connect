@@ -37,7 +37,7 @@ export default function ParentStore() {
 
   const addToCart = trpc.store.addToCart.useMutation({
     onSuccess: () => { trpc.useUtils().store.getCart.invalidate(); toast.success(isAr ? "تمت الإضافة للسلة" : "Added to cart"); },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
   });
 
   // Calculate max price when products change
@@ -80,8 +80,8 @@ export default function ParentStore() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">المتجر</h1>
-          <p className="text-muted-foreground">تسوق منتجات وخدمات الحضانة</p>
+          <h1 className="text-2xl font-bold">{isAr ? "المتجر" : "Store"}</h1>
+          <p className="text-muted-foreground">{isAr ? "تسوق منتجات وخدمات الحضانة" : "Shop Nursery Products & Services"}</p>
         </div>
         <Button variant="outline" onClick={() => navigate("/parent/store/cart")} className="relative">
           <ShoppingCart className="h-5 w-5" />
@@ -96,11 +96,11 @@ export default function ParentStore() {
       {/* Nursery Selection */}
       <Card>
         <CardContent className="pt-4">
-          <Label className="text-sm font-medium mb-2 block">اختر الحضانة</Label>
+          <Label className="text-sm font-medium mb-2 block">{isAr ? "اختر الحضانة" : "Select Nursery"}</Label>
           {!organizations?.length ? (
             <div className="text-center py-8">
               <StoreIcon className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">لا توجد حضانات لديها متجر حالياً</p>
+              <p className="text-muted-foreground">{isAr ? "لا توجد حضانات لديها متجر حالياً" : "No nurseries currently have a store"}</p>
             </div>
           ) : (
             <Select
@@ -108,7 +108,7 @@ export default function ParentStore() {
               onValueChange={(v) => { setSelectedOrgId(Number(v)); setSelectedCategoryId(null); setSearchQuery(""); }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="اختر الحضانة لتصفح منتجاتها" />
+                <SelectValue placeholder={isAr ? "اختر الحضانة لتصفح منتجاتها" : "Select a nursery to browse its products"} />
               </SelectTrigger>
               <SelectContent>
                 {organizations.map((org) => (
@@ -133,7 +133,7 @@ export default function ParentStore() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="ابحث عن منتج..."
+                placeholder={isAr ? "ابحث عن منتج..." : "Search for a product..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-9"
@@ -162,7 +162,7 @@ export default function ParentStore() {
             <Card>
               <CardContent className="pt-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">فلترة حسب السعر</Label>
+                  <Label className="text-sm font-medium">{isAr ? "فلترة حسب السعر" : "Filter by Price"}</Label>
                   {hasActiveFilters && (
                     <Button
                       variant="ghost"
@@ -170,7 +170,7 @@ export default function ParentStore() {
                       onClick={() => { setPriceRange([0, maxPriceLimit]); setSearchQuery(""); }}
                       className="text-xs h-7"
                     >
-                      إعادة تعيين
+                      {isAr ? "إعادة تعيين" : "Reset"}
                     </Button>
                   )}
                 </div>
@@ -184,8 +184,8 @@ export default function ParentStore() {
                   />
                 </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{priceRange[0]} ر.س</span>
-                  <span>{priceRange[1]} ر.س</span>
+                  <span>{priceRange[0]} {isAr ? "ر.س" : "SAR"}</span>
+                  <span>{priceRange[1]} {isAr ? "ر.س" : "SAR"}</span>
                 </div>
               </CardContent>
             </Card>
@@ -194,7 +194,7 @@ export default function ParentStore() {
           {/* Active filters indicator */}
           {hasActiveFilters && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>عرض {filteredProducts.length} من {products?.length || 0} منتج</span>
+              <span>{isAr ? "عرض" : "View"} {filteredProducts.length} {isAr ? "من" : "From"} {products?.length || 0} {isAr ? "منتج" : "Product"}</span>
             </div>
           )}
         </div>
@@ -208,7 +208,7 @@ export default function ParentStore() {
             variant={selectedCategoryId === null ? "default" : "outline"}
             onClick={() => setSelectedCategoryId(null)}
           >
-            الكل
+            {isAr ? "الكل" : "All"}
           </Button>
           {categories.map((cat) => (
             <Button
@@ -234,10 +234,10 @@ export default function ParentStore() {
             <CardContent className="py-12 text-center">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-lg font-medium">
-                {hasActiveFilters ? "لا توجد نتائج" : "لا توجد منتجات"}
+                {hasActiveFilters ? (isAr ? "لا توجد نتائج" : "No results found") : "لا توجد منتجات"}
               </p>
               <p className="text-muted-foreground">
-                {hasActiveFilters ? "جرب تغيير معايير البحث أو الفلترة" : "لم تضف هذه الحضانة منتجات بعد"}
+                {hasActiveFilters ? isAr ? "جرب تغيير معايير البحث أو الفلترة" : "Try changing search or filter criteria" : isAr ? "لم تضف هذه الحضانة منتجات بعد" : "This nursery has not added products yet"}
               </p>
               {hasActiveFilters && (
                 <Button
@@ -246,7 +246,7 @@ export default function ParentStore() {
                   className="mt-3"
                   onClick={() => { setPriceRange([0, maxPriceLimit]); setSearchQuery(""); }}
                 >
-                  مسح الفلاتر
+                  {isAr ? "مسح الفلاتر" : "Clear Filters"}
                 </Button>
               )}
             </CardContent>
@@ -273,15 +273,15 @@ export default function ParentStore() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl font-bold text-primary">{product.price} ر.س</span>
+                      <span className="text-xl font-bold text-primary">{product.price} {isAr ? "ر.س" : "SAR"}</span>
                       {product.compareAtPrice && (
-                        <span className="text-sm text-muted-foreground line-through">{product.compareAtPrice} ر.س</span>
+                        <span className="text-sm text-muted-foreground line-through">{product.compareAtPrice} {isAr ? "ر.س" : "SAR"}</span>
                       )}
                     </div>
-                    <Badge variant="outline">{product.type === "product" ? "منتج" : "خدمة"}</Badge>
+                    <Badge variant="outline">{product.type === "product" ? isAr ? "منتج" : "Product" : isAr ? "خدمة" : "Service"}</Badge>
                   </div>
                   {product.type === "product" && product.stock !== -1 && product.stock === 0 && (
-                    <p className="text-sm text-red-500 font-medium">نفذت الكمية</p>
+                    <p className="text-sm text-red-500 font-medium">{isAr ? "نفذت الكمية" : "Out of Stock"}</p>
                   )}
                   <Button
                     className="w-full"
@@ -289,7 +289,7 @@ export default function ParentStore() {
                     onClick={() => addToCart.mutate({ productId: product.id, quantity: 1 })}
                   >
                     <ShoppingCart className="h-4 w-4 ml-2" />
-                    {product.type === "product" && product.stock !== -1 && product.stock === 0 ? "نفذت الكمية" : "أضف للسلة"}
+                    {product.type === "product" && product.stock !== -1 && product.stock === 0 ? isAr ? "نفذت الكمية" : "Out of Stock" : isAr ? "أضف للسلة" : "Add to Cart"}
                   </Button>
                 </CardContent>
               </Card>
@@ -303,7 +303,7 @@ export default function ParentStore() {
         <div className="text-center pt-4">
           <Button variant="ghost" onClick={() => navigate("/parent/store/orders")}>
             <ShoppingBag className="h-4 w-4 ml-1" />
-            عرض طلباتي السابقة
+            {isAr ? "عرض طلباتي السابقة" : "View Previous Orders"}
           </Button>
         </div>
       )}

@@ -60,13 +60,13 @@ export default function DevelopmentDashboard() {
             <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">مركز النمو والتطور</h1>
-            <p className="text-sm text-muted-foreground">لوحة المعلم - متابعة تطور الأطفال</p>
+            <h1 className="text-2xl font-bold text-foreground">{isAr ? "مركز النمو والتطور" : "Growth and Development Center"}</h1>
+            <p className="text-sm text-muted-foreground">{isAr ? "لوحة المعلم - متابعة تطور الأطفال" : "Teacher Dashboard - Child Development Tracking"}</p>
           </div>
         </div>
         <Button onClick={() => navigate("/staff/development/observations/new")} className="bg-emerald-600 hover:bg-emerald-700">
           <ClipboardList className="w-4 h-4 ml-2" />
-          ملاحظة جديدة
+          {isAr ? "ملاحظة جديدة" : "New Note"}
         </Button>
       </div>
 
@@ -76,7 +76,7 @@ export default function DevelopmentDashboard() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">إجمالي الأطفال</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{isAr ? "إجمالي الأطفال" : "Total Children"}</p>
                 <p className="text-3xl font-bold text-blue-700 dark:text-blue-300 mt-1">{dashboard.totalChildren}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-blue-200/50 dark:bg-blue-800/30 flex items-center justify-center">
@@ -90,7 +90,7 @@ export default function DevelopmentDashboard() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">يحتاجون اهتمام</p>
+                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">{isAr ? "يحتاجون اهتمام" : "Need Attention"}</p>
                 <p className="text-3xl font-bold text-amber-700 dark:text-amber-300 mt-1">{dashboard.childrenNeedingAttention}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-amber-200/50 dark:bg-amber-800/30 flex items-center justify-center">
@@ -104,7 +104,7 @@ export default function DevelopmentDashboard() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">يتفوقون</p>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{isAr ? "يتفوقون" : "Excelling"}</p>
                 <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mt-1">{dashboard.childrenExceeding}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-emerald-200/50 dark:bg-emerald-800/30 flex items-center justify-center">
@@ -118,7 +118,7 @@ export default function DevelopmentDashboard() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium">تنبيهات نشطة</p>
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">{isAr ? "تنبيهات نشطة" : "Active Alerts"}</p>
                 <p className="text-3xl font-bold text-red-700 dark:text-red-300 mt-1">{dashboard.activeAlerts}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-red-200/50 dark:bg-red-800/30 flex items-center justify-center">
@@ -134,19 +134,19 @@ export default function DevelopmentDashboard() {
         <TabsList className="bg-muted/50 p-1 rounded-lg">
           <TabsTrigger value="attention" className="rounded-md">
             <AlertTriangle className="w-4 h-4 ml-1" />
-            يحتاجون اهتمام
+            {isAr ? "يحتاجون اهتمام" : "Need Attention"}
           </TabsTrigger>
           <TabsTrigger value="exceeding" className="rounded-md">
             <Star className="w-4 h-4 ml-1" />
-            يتفوقون
+            {isAr ? "يتفوقون" : "Excelling"}
           </TabsTrigger>
           <TabsTrigger value="below" className="rounded-md">
             <TrendingDown className="w-4 h-4 ml-1" />
-            أقل من المتوقع
+            {isAr ? "أقل من المتوقع" : "Below Expected"}
           </TabsTrigger>
           <TabsTrigger value="missing" className="rounded-md">
             <ClipboardList className="w-4 h-4 ml-1" />
-            تقييمات ناقصة
+            {isAr ? "تقييمات ناقصة" : "Missing Evaluations"}
           </TabsTrigger>
         </TabsList>
 
@@ -155,9 +155,9 @@ export default function DevelopmentDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-500" />
-                أطفال يحتاجون اهتمام خاص
+                {isAr ? "أطفال يحتاجون اهتمام خاص" : "Children Needing Special Attention"}
               </CardTitle>
-              <CardDescription>أطفال لديهم تنبيهات نشطة أو تقييمات أقل من المتوقع</CardDescription>
+              <CardDescription>{isAr ? "أطفال لديهم تنبيهات نشطة أو تقييمات أقل من المتوقع" : "Children with Active Alerts or Below Expected Assessments"}</CardDescription>
             </CardHeader>
             <CardContent>
               {dashboard.childrenNeedingAttentionList?.length > 0 ? (
@@ -170,7 +170,7 @@ export default function DevelopmentDashboard() {
                         </div>
                         <div>
                           <p className="font-semibold text-foreground">{child.firstName} {child.lastName}</p>
-                          <p className="text-xs text-muted-foreground">{child.reason || "تنبيه نشط"}</p>
+                          <p className="text-xs text-muted-foreground">{child.reason || isAr ? "تنبيه نشط" : "Active Alert"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -187,8 +187,8 @@ export default function DevelopmentDashboard() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">لا يوجد أطفال يحتاجون اهتمام حالياً</p>
-                  <p className="text-sm mt-1">جميع الأطفال يتقدمون بشكل جيد</p>
+                  <p className="font-medium">{isAr ? "لا يوجد أطفال يحتاجون اهتمام حالياً" : "No children needing attention currently"}</p>
+                  <p className="text-sm mt-1">{isAr ? "جميع الأطفال يتقدمون بشكل جيد" : "All Children Progressing Well"}</p>
                 </div>
               )}
             </CardContent>
@@ -200,9 +200,9 @@ export default function DevelopmentDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Star className="w-5 h-5 text-emerald-500" />
-                أطفال يتفوقون على التوقعات
+                {isAr ? "أطفال يتفوقون على التوقعات" : "Children Exceeding Expectations"}
               </CardTitle>
-              <CardDescription>أطفال أداؤهم أعلى من المستوى المتوقع لأعمارهم</CardDescription>
+              <CardDescription>{isAr ? "أطفال أداؤهم أعلى من المستوى المتوقع لأعمارهم" : "Children performing above age-expected level"}</CardDescription>
             </CardHeader>
             <CardContent>
               {dashboard.exceedingList?.length > 0 ? (
@@ -215,12 +215,12 @@ export default function DevelopmentDashboard() {
                         </div>
                         <div>
                           <p className="font-semibold text-foreground">{child.firstName} {child.lastName}</p>
-                          <p className="text-xs text-muted-foreground">أداء متميز</p>
+                          <p className="text-xs text-muted-foreground">{isAr ? "أداء متميز" : "Excellent Performance"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-emerald-600 border-emerald-300">
-                          متفوق
+                          {isAr ? "متفوق" : "Superior"}
                         </Badge>
                         <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/development/child/${child.id}`)}>
                           <Eye className="w-4 h-4" />
@@ -232,8 +232,8 @@ export default function DevelopmentDashboard() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Star className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">لا توجد بيانات كافية بعد</p>
-                  <p className="text-sm mt-1">أضف ملاحظات تطورية لرؤية الأطفال المتفوقين</p>
+                  <p className="font-medium">{isAr ? "لا توجد بيانات كافية بعد" : "Not enough data yet"}</p>
+                  <p className="text-sm mt-1">{isAr ? "أضف ملاحظات تطورية لرؤية الأطفال المتفوقين" : "Add developmental notes to see gifted children"}</p>
                 </div>
               )}
             </CardContent>
@@ -245,9 +245,9 @@ export default function DevelopmentDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-red-500" />
-                أطفال أقل من المستوى المتوقع
+                {isAr ? "أطفال أقل من المستوى المتوقع" : "Children below expected level"}
               </CardTitle>
-              <CardDescription>أطفال يحتاجون دعم إضافي في مجالات معينة</CardDescription>
+              <CardDescription>{isAr ? "أطفال يحتاجون دعم إضافي في مجالات معينة" : "Children Needing Additional Support in Specific Areas"}</CardDescription>
             </CardHeader>
             <CardContent>
               {dashboard.belowExpectedList?.length > 0 ? (
@@ -260,12 +260,12 @@ export default function DevelopmentDashboard() {
                         </div>
                         <div>
                           <p className="font-semibold text-foreground">{child.firstName} {child.lastName}</p>
-                          <p className="text-xs text-muted-foreground">يحتاج دعم إضافي</p>
+                          <p className="text-xs text-muted-foreground">{isAr ? "يحتاج دعم إضافي" : "Needs Additional Support"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-red-600 border-red-300">
-                          أقل من المتوقع
+                          {isAr ? "أقل من المتوقع" : "Below Expected"}
                         </Badge>
                         <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/development/child/${child.id}`)}>
                           <Eye className="w-4 h-4" />
@@ -277,8 +277,8 @@ export default function DevelopmentDashboard() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <TrendingDown className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">لا توجد بيانات كافية بعد</p>
-                  <p className="text-sm mt-1">أضف ملاحظات تطورية لتحديد الأطفال الذين يحتاجون دعم</p>
+                  <p className="font-medium">{isAr ? "لا توجد بيانات كافية بعد" : "Not enough data yet"}</p>
+                  <p className="text-sm mt-1">{isAr ? "أضف ملاحظات تطورية لتحديد الأطفال الذين يحتاجون دعم" : "Add developmental notes to identify children who need support"}</p>
                 </div>
               )}
             </CardContent>
@@ -290,9 +290,9 @@ export default function DevelopmentDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-blue-500" />
-                تقييمات ناقصة
+                {isAr ? "تقييمات ناقصة" : "Missing Evaluations"}
               </CardTitle>
-              <CardDescription>أطفال لم يتم تقييمهم في هذا الفصل الدراسي</CardDescription>
+              <CardDescription>{isAr ? "أطفال لم يتم تقييمهم في هذا الفصل الدراسي" : "Children Not Assessed This Semester"}</CardDescription>
             </CardHeader>
             <CardContent>
               {dashboard.missingAssessmentsList?.length > 0 ? (
@@ -305,13 +305,13 @@ export default function DevelopmentDashboard() {
                         </div>
                         <div>
                           <p className="font-semibold text-foreground">{child.firstName} {child.lastName}</p>
-                          <p className="text-xs text-muted-foreground">لم يتم تقييمه هذا الفصل</p>
+                          <p className="text-xs text-muted-foreground">{isAr ? "لم يتم تقييمه هذا الفصل" : "Not assessed this semester"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button size="sm" variant="outline" onClick={() => navigate(`/staff/development/observations/new?childId=${child.id}`)}>
                           <ClipboardList className="w-4 h-4 ml-1" />
-                          تقييم
+                          {isAr ? "تقييم" : "Evaluation"}
                         </Button>
                       </div>
                     </div>
@@ -320,8 +320,8 @@ export default function DevelopmentDashboard() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">جميع الأطفال تم تقييمهم</p>
-                  <p className="text-sm mt-1">ممتاز! لا توجد تقييمات ناقصة</p>
+                  <p className="font-medium">{isAr ? "جميع الأطفال تم تقييمهم" : "All Children Assessed"}</p>
+                  <p className="text-sm mt-1">{isAr ? "ممتاز! لا توجد تقييمات ناقصة" : "Excellent! No Missing Assessments"}</p>
                 </div>
               )}
             </CardContent>
@@ -335,7 +335,7 @@ export default function DevelopmentDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Bell className="w-5 h-5 text-red-500" />
-              آخر التنبيهات
+              {isAr ? "آخر التنبيهات" : "Latest Alerts"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -348,7 +348,7 @@ export default function DevelopmentDashboard() {
                     <p className="text-xs text-muted-foreground">{alert.description}</p>
                   </div>
                   <Badge variant="outline" className={alert.severity === 'high' ? 'text-red-600 border-red-300' : 'text-amber-600 border-amber-300'}>
-                    {alert.severity === 'high' ? 'عالي' : alert.severity === 'medium' ? 'متوسط' : 'منخفض'}
+                    {alert.severity === 'high' ? isAr ? 'عالي' : 'High' : alert.severity === 'medium' ? isAr ? 'متوسط' : 'Average' : isAr ? 'منخفض' : 'Low'}
                   </Badge>
                 </div>
               ))}

@@ -73,7 +73,7 @@ export default function Login() {
         msg.includes('a server with the specified hostname could not be found');
       
       const friendlyMessage = isNetworkError
-        ? "حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى."
+        ? isAr ? "حدث خطأ في الاتصال. يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى." : "Connection error. Please check your internet connection and try again."
         : error.message;
       toast.error(friendlyMessage);
       setIsLoading(false);
@@ -87,7 +87,7 @@ export default function Login() {
     const isNetwork = msg.includes('fetch') || msg.includes('network') || msg.includes('failed') ||
       msg.includes('abort') || msg.includes('timeout') || msg.includes('load failed') ||
       msg.includes('the internet connection appears to be offline');
-    return isNetwork ? "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى." : error.message;
+    return isNetwork ? isAr ? "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى." : "Connection error. Please try again." : error.message;
   };
 
   const sendPhoneOtpMutation = trpc.auth.sendPhoneOtp.useMutation({
@@ -176,12 +176,12 @@ export default function Login() {
         <CardHeader className="text-center pb-2">
           <img
             src="/assets/logo.webp"
-            alt="نشأة"
+            alt={isAr ? "نشأة" : "Nasha\'a"}
             className="w-20 h-20 mx-auto mb-3 object-contain"
           />
-          <h1 className="text-2xl font-bold text-slate-800">تسجيل الدخول</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{isAr ? "تسجيل الدخول" : "Login"}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            مرحباً بك في نشأة
+            {isAr ? "مرحباً بك في نشأة" : "Welcome to Nash\'ah"}
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -197,7 +197,7 @@ export default function Login() {
               }`}
             >
               <Lock className="h-5 w-5" />
-              كلمة المرور
+              {isAr ? "كلمة المرور" : "Password"}
             </button>
             <button
               type="button"
@@ -209,7 +209,7 @@ export default function Login() {
               }`}
             >
               <Smartphone className="h-5 w-5" />
-              رمز التحقق
+              {isAr ? "رمز التحقق" : "Verification Code"}
             </button>
           </div>
 
@@ -218,13 +218,13 @@ export default function Login() {
             <form onSubmit={handlePasswordLogin} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="identifier" className="text-sm font-medium">
-                  البريد الإلكتروني أو رقم الجوال
+                  {isAr ? "البريد الإلكتروني أو رقم الجوال" : "Email or Mobile Number"}
                 </Label>
                 <div className="relative">
                   <Input
                     id="identifier"
                     type="text"
-                    placeholder="example@email.com أو 05xxxxxxxx"
+                    placeholder={isAr ? "example@email.com أو 05xxxxxxxx" : "example@email.com or 05xxxxxxxx"}
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     className="pr-10 text-right"
@@ -238,7 +238,7 @@ export default function Login() {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
-                  كلمة المرور
+                  {isAr ? "كلمة المرور" : "Password"}
                 </Label>
                 <div className="relative">
                   <Input
@@ -269,14 +269,14 @@ export default function Login() {
                   onClick={() => setLocation("/forgot-password")}
                   className="text-sm text-primary hover:underline font-medium py-2 px-1"
                 >
-                  نسيت كلمة المرور؟
+                  {isAr ? "نسيت كلمة المرور؟" : "Forgot Password?"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setLocation("/recover-account")}
                   className="text-sm text-amber-600 hover:underline font-medium py-2 px-1"
                 >
-                  استعادة حساب محذوف
+                  {isAr ? "استعادة حساب محذوف" : "Restore Deleted Account"}
                 </button>
               </div>
 
@@ -288,10 +288,10 @@ export default function Login() {
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                    جاري تسجيل الدخول...
+                    {isAr ? "جاري تسجيل الدخول..." : "Logging In..."}
                   </span>
                 ) : (
-                  "تسجيل الدخول"
+                  (isAr ? "تسجيل الدخول" : "Login")
                 )}
               </Button>
             </form>
@@ -302,7 +302,7 @@ export default function Login() {
             <form onSubmit={handleSendOtp} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-sm font-medium">
-                  رقم الجوال
+                  {isAr ? "رقم الجوال" : "Mobile Number"}
                 </Label>
                 <div className="relative">
                   <Input
@@ -319,7 +319,7 @@ export default function Login() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  سيتم إرسال رمز تحقق إلى بريدك الإلكتروني المرتبط بهذا الرقم
+                  {isAr ? "سيتم إرسال رمز تحقق إلى بريدك الإلكتروني المرتبط بهذا الرقم" : "A verification code will be sent to your email associated with this number"}
                 </p>
               </div>
 
@@ -331,10 +331,10 @@ export default function Login() {
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                    جاري الإرسال...
+                    {isAr ? "جاري الإرسال..." : "Sending..."}
                   </span>
                 ) : (
-                  "إرسال رمز التحقق"
+                  isAr ? "إرسال رمز التحقق" : "Send Verification Code"
                 )}
               </Button>
             </form>
@@ -348,12 +348,12 @@ export default function Login() {
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
               >
                 <ArrowRight className="h-4 w-4" />
-                تغيير الرقم
+                {isAr ? "تغيير الرقم" : "Change Number"}
               </button>
 
               <div className="text-center py-2">
                 <p className="text-sm text-slate-600">
-                  تم إرسال رمز التحقق إلى البريد المرتبط بالرقم
+                  {isAr ? "تم إرسال رمز التحقق إلى البريد المرتبط بالرقم" : "Verification code sent to email linked to number"}
                 </p>
                 <p className="text-lg font-bold text-slate-800 mt-1 tracking-wider" dir="ltr">
                   {phone}
@@ -362,7 +362,7 @@ export default function Login() {
 
               <div className="space-y-2">
                 <Label htmlFor="otp" className="text-sm font-medium">
-                  رمز التحقق
+                  {isAr ? "رمز التحقق" : "Verification Code"}
                 </Label>
                 <Input
                   id="otp"
@@ -386,10 +386,10 @@ export default function Login() {
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                    جاري التحقق...
+                    {isAr ? "جاري التحقق..." : "Verifying..."}
                   </span>
                 ) : (
-                  "تأكيد الدخول"
+                  isAr ? "تأكيد الدخول" : "Confirm Entry"
                 )}
               </Button>
 
@@ -404,7 +404,7 @@ export default function Login() {
                     onClick={handleResendOtp}
                     className="text-sm text-primary hover:underline font-medium"
                   >
-                    إعادة إرسال الرمز
+                    {isAr ? "إعادة إرسال الرمز" : "Resend Code"}
                   </button>
                 )}
               </div>
@@ -413,25 +413,25 @@ export default function Login() {
 
           <div className="text-center pt-2">
             <p className="text-sm text-muted-foreground">
-              ليس لديك حساب؟{" "}
+              {isAr ? "ليس لديك حساب؟" : "Don't have an account?"}{" "}
               <button
                 onClick={() => setLocation("/register")}
                 className="text-primary hover:underline font-medium"
               >
-                إنشاء حساب جديد
+                {isAr ? "إنشاء حساب جديد" : "Create New Account"}
               </button>
             </p>
           </div>
 
           <div className="text-center pt-4 border-t mt-4">
             <p className="text-xs text-muted-foreground">
-              بتسجيل الدخول، أنت توافق على{" "}
+              {isAr ? "بتسجيل الدخول، أنت توافق على" : "By logging in, you agree to"}{" "}
               <a href="/terms" className="text-primary hover:underline">
-                شروط الخدمة
+                {isAr ? "شروط الخدمة" : "Terms of Service"}
               </a>
               {" "}و{" "}
               <a href="/privacy" className="text-primary hover:underline">
-                سياسة الخصوصية
+                {isAr ? "سياسة الخصوصية" : "Privacy Policy"}
               </a>
             </p>
           </div>

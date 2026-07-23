@@ -40,7 +40,7 @@ export default function StoreCheckout() {
       // Initialize Moyasar payment
       initMoyasarPayment(data.orderId, Number(data.total));
     },
-    onError: (e: any) => toast.error(e.message || "حدث خطأ في إنشاء الطلب"),
+    onError: (e: any) => toast.error(e.message || isAr ? "حدث خطأ في إنشاء الطلب" : "An error occurred while creating the order"),
   });
 
   const verifyPayment = trpc.store.verifyPayment.useMutation({
@@ -75,7 +75,7 @@ export default function StoreCheckout() {
             element: moyasarRef.current,
             amount: amountInHalalas,
             currency: "SAR",
-            description: `طلب متجر #${orderNumber}`,
+            description: `${isAr ? "طلب متجر " : "Store request"}#${orderNumber}`,
             publishable_api_key: paymentConfig.publishableKey,
             callback_url: `${window.location.origin}/store-payment-callback?orderId=${oId}`,
             methods: ["creditcard", "applepay"],
@@ -126,8 +126,8 @@ export default function StoreCheckout() {
         <Card>
           <CardContent className="py-12 text-center">
             <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">السلة فارغة</p>
-            <Button className="mt-4" onClick={() => navigate("/parent/store")}>العودة للمتجر</Button>
+            <p className="text-lg font-medium">{isAr ? "السلة فارغة" : "Cart is Empty"}</p>
+            <Button className="mt-4" onClick={() => navigate("/parent/store")}>{isAr ? "العودة للمتجر" : "Back to Store"}</Button>
           </CardContent>
         </Card>
       </div>
@@ -144,16 +144,16 @@ export default function StoreCheckout() {
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">تم الدفع بنجاح!</h2>
+              <h2 className="text-xl font-semibold">{isAr ? "تم الدفع بنجاح!" : "Payment successful!"}</h2>
               <p className="text-muted-foreground">رقم الطلب: #{orderNumber}</p>
-              <p className="text-sm text-muted-foreground">سيتم إعداد طلبك وإشعارك عندما يكون جاهزاً للاستلام من الحضانة</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "سيتم إعداد طلبك وإشعارك عندما يكون جاهزاً للاستلام من الحضانة" : "Your order will be prepared and you will be notified when it is ready for pickup from the nursery"}</p>
             </div>
             <div className="space-y-3 w-full">
               <Button className="w-full" onClick={() => navigate("/parent/store/orders")}>
-                عرض طلباتي
+                {isAr ? "عرض طلباتي" : "View My Orders"}
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate("/parent/store")}>
-                متابعة التسوق
+                {isAr ? "متابعة التسوق" : "Continue Shopping"}
               </Button>
             </div>
           </CardContent>
@@ -172,15 +172,15 @@ export default function StoreCheckout() {
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">فشلت عملية الدفع</h2>
-              <p className="text-muted-foreground">يرجى المحاولة مرة أخرى أو استخدام وسيلة دفع مختلفة</p>
+              <h2 className="text-xl font-semibold">{isAr ? "فشلت عملية الدفع" : "Payment Failed"}</h2>
+              <p className="text-muted-foreground">{isAr ? "يرجى المحاولة مرة أخرى أو استخدام وسيلة دفع مختلفة" : "Please try again or use a different payment method"}</p>
             </div>
             <div className="space-y-3 w-full">
               <Button className="w-full" onClick={() => navigate("/parent/store/cart")}>
-                العودة للسلة
+                {isAr ? "العودة للسلة" : "Back to Cart"}
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => navigate("/parent/store")}>
-                العودة للمتجر
+                {isAr ? "العودة للمتجر" : "Back to Store"}
               </Button>
             </div>
           </CardContent>
@@ -194,22 +194,22 @@ export default function StoreCheckout() {
     return (
       <div className="p-4 md:p-6 max-w-lg mx-auto space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">إتمام الدفع</h1>
-          <p className="text-muted-foreground text-sm">ادفع بأمان عبر بوابة ميسر</p>
+          <h1 className="text-2xl font-bold">{isAr ? "إتمام الدفع" : "Complete Payment"}</h1>
+          <p className="text-muted-foreground text-sm">{isAr ? "ادفع بأمان عبر بوابة ميسر" : "Pay securely via Maysar gateway"}</p>
         </div>
 
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-primary" />
-              بيانات الدفع
+              {isAr ? "بيانات الدفع" : "Payment Data"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {paymentInitiated ? (
               <div className="flex flex-col items-center justify-center py-8 space-y-3">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">جاري معالجة الدفع...</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "جاري معالجة الدفع..." : "Processing Payment..."}</p>
               </div>
             ) : (
               <div ref={moyasarRef} className="moyasar-form" />
@@ -223,7 +223,7 @@ export default function StoreCheckout() {
         </div>
 
         <div className="flex items-center justify-center gap-4 opacity-60">
-          <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mada.svg" alt="مدى" className="h-6" />
+          <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mada.svg" alt={isAr ? "مدى" : "Mada"} className="h-6" />
           <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/visa.svg" alt="Visa" className="h-6" />
           <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mastercard.svg" alt="Mastercard" className="h-6" />
         </div>
@@ -231,7 +231,7 @@ export default function StoreCheckout() {
         <div className="text-center">
           <Button variant="ghost" onClick={() => navigate("/parent/store/cart")} className="text-muted-foreground">
             <ArrowRight className="w-4 h-4 ml-1" />
-            العودة للسلة
+            {isAr ? "العودة للسلة" : "Back to Cart"}
           </Button>
         </div>
       </div>
@@ -242,17 +242,17 @@ export default function StoreCheckout() {
   return (
     <div className="p-6 max-w-lg mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">إتمام الطلب</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "إتمام الطلب" : "Complete Order"}</h1>
         <Button variant="ghost" onClick={() => navigate("/parent/store/cart")}>
           <ArrowRight className="w-4 h-4 ml-1" />
-          العودة
+          {isAr ? "العودة" : "Back"}
         </Button>
       </div>
 
       {/* Order Items */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">تفاصيل الطلب</CardTitle>
+          <CardTitle className="text-base">{isAr ? "تفاصيل الطلب" : "Order Details"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {cart?.map((item) => (
@@ -267,10 +267,10 @@ export default function StoreCheckout() {
                 )}
                 <div>
                   <p className="text-sm font-medium">{item.product.nameAr}</p>
-                  <p className="text-xs text-muted-foreground">{item.quantity} × {item.product.price} ر.س</p>
+                  <p className="text-xs text-muted-foreground">{item.quantity} × {item.product.price} {isAr ? "ر.س" : "SAR"}</p>
                 </div>
               </div>
-              <span className="font-medium">{(Number(item.product.price) * item.quantity).toFixed(2)} ر.س</span>
+              <span className="font-medium">{(Number(item.product.price) * item.quantity).toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
             </div>
           ))}
         </CardContent>
@@ -279,11 +279,11 @@ export default function StoreCheckout() {
       {/* Notes */}
       <Card>
         <CardContent className="pt-4">
-          <label className="text-sm font-medium mb-2 block">ملاحظات (اختياري)</label>
+          <label className="text-sm font-medium mb-2 block">{isAr ? "ملاحظات (اختياري)" : "Notes (Optional)"}</label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="أي ملاحظات خاصة بالطلب..."
+            placeholder={isAr ? "أي ملاحظات خاصة بالطلب..." : "Any special notes for the order..."}
             rows={3}
           />
         </CardContent>
@@ -293,16 +293,16 @@ export default function StoreCheckout() {
       <Card className="border-primary/20">
         <CardContent className="pt-4 space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">المجموع</span>
-            <span>{total.toFixed(2)} ر.س</span>
+            <span className="text-muted-foreground">{isAr ? "المجموع" : "Total"}</span>
+            <span>{total.toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">طريقة الاستلام</span>
-            <span className="text-green-600">استلام من الحضانة</span>
+            <span className="text-muted-foreground">{isAr ? "طريقة الاستلام" : "Pick-up method"}</span>
+            <span className="text-green-600">{isAr ? "استلام من الحضانة" : "Pick up from Nursery"}</span>
           </div>
           <div className="border-t pt-3 flex justify-between font-bold text-lg">
-            <span>الإجمالي</span>
-            <span className="text-primary">{total.toFixed(2)} ر.س</span>
+            <span>{isAr ? "الإجمالي" : "Total"}</span>
+            <span className="text-primary">{total.toFixed(2)} {isAr ? "ر.س" : "SAR"}</span>
           </div>
           <Button
             className="w-full mt-4"
@@ -311,9 +311,9 @@ export default function StoreCheckout() {
             onClick={() => createOrder.mutate({ notes: notes || undefined })}
           >
             {createOrder.isPending ? (
-              <><Loader2 className="h-4 w-4 ml-2 animate-spin" /> جاري إنشاء الطلب...</>
+              <><Loader2 className="h-4 w-4 ml-2 animate-spin" />{isAr ? " جاري إنشاء الطلب..." : "Creating Request..."}</>
             ) : (
-              <><CreditCard className="h-4 w-4 ml-2" /> ادفع الآن</>
+              <><CreditCard className="h-4 w-4 ml-2" />{isAr ? " ادفع الآن" : "Pay Now"}</>
             )}
           </Button>
         </CardContent>

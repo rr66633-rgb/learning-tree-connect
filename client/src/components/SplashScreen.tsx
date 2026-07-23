@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -6,6 +7,8 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onComplete, minDuration = 4000 }: SplashScreenProps) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
 
   useEffect(() => {
@@ -108,7 +111,7 @@ export function SplashScreen({ onComplete, minDuration = 4000 }: SplashScreenPro
             className="text-4xl font-bold tracking-tight"
             style={{ color: "#1A1F36" }}
           >
-            نشأة
+            {isAr ? "نشأة" : "Nasha'a"}
           </h1>
         </div>
 

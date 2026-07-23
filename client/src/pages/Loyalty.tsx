@@ -33,7 +33,7 @@ export default function Loyalty() {
       utils.loyalty.transactions.invalidate();
       toast.success(isAr ? "تم استبدال المكافأة بنجاح" : "Reward redeemed successfully");
     },
-    onError: (err) => toast.error(err.message || "رصيد النقاط غير كافٍ"),
+    onError: (err) => toast.error(err.message || isAr ? "رصيد النقاط غير كافٍ" : "Insufficient Points Balance"),
   });
 
   const [form, setForm] = useState({ name: "", description: "", pointsCost: "" });
@@ -48,17 +48,17 @@ export default function Loyalty() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">برنامج الولاء</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "برنامج الولاء" : "Loyalty Program"}</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />مكافأة جديدة</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{isAr ? "مكافأة جديدة" : "New Reward"}</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>إضافة مكافأة جديدة</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{isAr ? "إضافة مكافأة جديدة" : "Add New Reward"}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div><Label>اسم المكافأة</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required placeholder="مثال: خصم 10% على الرسوم" /></div>
-              <div><Label>الوصف</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف تفصيلي للمكافأة" /></div>
-              <div><Label>النقاط المطلوبة</Label><Input type="number" value={form.pointsCost} onChange={e => setForm(f => ({ ...f, pointsCost: e.target.value }))} required /></div>
+              <div><Label>{isAr ? "اسم المكافأة" : "Reward Name"}</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required placeholder="مثال: خصم 10% على الرسوم" /></div>
+              <div><Label>{isAr ? "الوصف" : "Description"}</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف تفصيلي للمكافأة" /></div>
+              <div><Label>{isAr ? "النقاط المطلوبة" : "Required Points"}</Label><Input type="number" value={form.pointsCost} onChange={e => setForm(f => ({ ...f, pointsCost: e.target.value }))} required /></div>
               <Button type="submit" className="w-full" disabled={createReward.isPending}>
-                {createReward.isPending ? "جارٍ الإضافة..." : "إضافة المكافأة"}
+                {createReward.isPending ? (isAr ? "جارٍ الإضافة..." : "Adding...") : (isAr ? "إضافة المكافأة" : "Add Reward")}
               </Button>
             </form>
           </DialogContent>
@@ -70,7 +70,7 @@ export default function Loyalty() {
           <CardContent className="p-4 flex items-center gap-3">
             <Coins className="h-8 w-8 text-amber-500" />
             <div>
-              <p className="text-sm text-muted-foreground">رصيد النقاط</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "رصيد النقاط" : "Points Balance"}</p>
               <p className="text-2xl font-bold text-amber-700">{currentPoints}</p>
             </div>
           </CardContent>
@@ -79,7 +79,7 @@ export default function Loyalty() {
           <CardContent className="p-4 flex items-center gap-3">
             <Gift className="h-8 w-8 text-primary" />
             <div>
-              <p className="text-sm text-muted-foreground">المكافآت المتاحة</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "المكافآت المتاحة" : "Available Rewards"}</p>
               <p className="text-xl font-bold">{rewards?.length ?? 0}</p>
             </div>
           </CardContent>
@@ -88,7 +88,7 @@ export default function Loyalty() {
           <CardContent className="p-4 flex items-center gap-3">
             <TrendingUp className="h-8 w-8 text-green-600" />
             <div>
-              <p className="text-sm text-muted-foreground">عمليات الاستبدال</p>
+              <p className="text-sm text-muted-foreground">{isAr ? "عمليات الاستبدال" : "Replacements"}</p>
               <p className="text-xl font-bold">{transactions?.filter(t => t.type === 'redeemed').length ?? 0}</p>
             </div>
           </CardContent>
@@ -97,13 +97,13 @@ export default function Loyalty() {
 
       <Tabs defaultValue="rewards" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="rewards"><Gift className="h-4 w-4 ml-2" />المكافآت</TabsTrigger>
-          <TabsTrigger value="history"><History className="h-4 w-4 ml-2" />سجل العمليات</TabsTrigger>
+          <TabsTrigger value="rewards"><Gift className="h-4 w-4 ml-2" />{isAr ? "المكافآت" : "Rewards"}</TabsTrigger>
+          <TabsTrigger value="history"><History className="h-4 w-4 ml-2" />{isAr ? "سجل العمليات" : "Operations Log"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="rewards">
           <Card>
-            <CardHeader><CardTitle>المكافآت المتاحة للاستبدال</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{isAr ? "المكافآت المتاحة للاستبدال" : "Rewards Available for Redemption"}</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {rewards?.map(reward => (
@@ -122,7 +122,7 @@ export default function Loyalty() {
                         disabled={currentPoints < reward.pointsCost || redeemReward.isPending}
                         onClick={() => redeemReward.mutate({ rewardId: reward.id })}
                       >
-                        {currentPoints >= reward.pointsCost ? "استبدال" : "نقاط غير كافية"}
+                        {currentPoints >= reward.pointsCost ? (isAr ? "استبدال" : "Redeem") : (isAr ? "نقاط غير كافية" : "Insufficient Points")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -130,7 +130,7 @@ export default function Loyalty() {
                 {(!rewards || rewards.length === 0) && (
                   <div className="col-span-full text-center py-12 text-muted-foreground">
                     <Gift className="h-12 w-12 mx-auto mb-4" />
-                    <p>لا توجد مكافآت بعد</p>
+                    <p>{isAr ? "لا توجد مكافآت بعد" : "No rewards yet"}</p>
                   </div>
                 )}
               </div>
@@ -140,16 +140,16 @@ export default function Loyalty() {
 
         <TabsContent value="history">
           <Card>
-            <CardHeader><CardTitle>سجل عمليات النقاط</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{isAr ? "سجل عمليات النقاط" : "Points Operations Log"}</CardTitle></CardHeader>
             <CardContent>
               {transactions && transactions.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>النقاط</TableHead>
-                      <TableHead>الوصف</TableHead>
+                      <TableHead>{isAr ? "التاريخ" : "Date"}</TableHead>
+                      <TableHead>{isAr ? "النوع" : "Type"}</TableHead>
+                      <TableHead>{isAr ? "النقاط" : "Points"}</TableHead>
+                      <TableHead>{isAr ? "الوصف" : "Description"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -158,7 +158,7 @@ export default function Loyalty() {
                         <TableCell>{new Date(tx.createdAt).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>
                           <Badge variant={tx.type === 'earned' ? 'default' : 'secondary'}>
-                            {tx.type === 'earned' ? 'مكتسبة' : 'مستبدلة'}
+                            {tx.type === 'earned' ? isAr ? 'مكتسبة' : 'Acquired' : isAr ? 'مستبدلة' : 'Replaced'}
                           </Badge>
                         </TableCell>
                         <TableCell className={tx.points > 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
@@ -172,7 +172,7 @@ export default function Loyalty() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <History className="h-12 w-12 mx-auto mb-4" />
-                  <p>لا توجد عمليات بعد</p>
+                  <p>{isAr ? "لا توجد عمليات بعد" : "No operations yet"}</p>
                 </div>
               )}
             </CardContent>

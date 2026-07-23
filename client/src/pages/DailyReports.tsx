@@ -14,12 +14,13 @@ import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 import { useTranslation } from "react-i18next";
 
-const moodLabels: Record<string, string> = { happy: "سعيد", calm: "هادئ", tired: "متعب", upset: "منزعج", excited: "متحمس" };
 const moodColors: Record<string, string> = { happy: "bg-green-100 text-green-700", calm: "bg-blue-100 text-blue-700", tired: "bg-amber-100 text-amber-700", upset: "bg-red-100 text-red-700", excited: "bg-purple-100 text-purple-700" };
 
 export default function DailyReports() {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const moodLabels: Record<string, string> = { happy: "سعيد", calm: "هادئ", tired: "متعب", upset: isAr ? "منزعج" : "Upset", excited: "متحمس" };
+
   const { data: reports, isLoading: reportsLoading } = trpc.dailyReports.list.useQuery();
   const { data: children } = trpc.children.list.useQuery();
   const utils = trpc.useUtils();
@@ -122,7 +123,7 @@ export default function DailyReports() {
 
   const getChildName = (childId: number) => {
     const child = children?.find(c => c.id === childId);
-    return child ? `${child.firstName} ${child.lastName}` : "غير معروف";
+    return child ? `${child.firstName} ${child.lastName}` : isAr ? "غير معروف" : "Unknown";
   };
 
   const getReportPhotos = (report: any): string[] => {
@@ -135,57 +136,57 @@ export default function DailyReports() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          التقارير اليومية
+          {isAr ? "التقارير اليومية" : "Daily Reports"}
           {reportsLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
         </h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 ml-2" />تقرير جديد</Button>
+            <Button><Plus className="h-4 w-4 ml-2" />{isAr ? "تقرير جديد" : "New Report"}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>إنشاء تقرير يومي</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{isAr ? "إنشاء تقرير يومي" : "Create Daily Report"}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>الطفل</Label>
+                  <Label>{isAr ? "الطفل" : "Child"}</Label>
                   <Select value={form.childId ? String(form.childId) : ""} onValueChange={v => setForm(f => ({ ...f, childId: Number(v) }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر الطفل" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={isAr ? "اختر الطفل" : "Select Child"} /></SelectTrigger>
                     <SelectContent>{children?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>التاريخ</Label><Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+                <div><Label>{isAr ? "التاريخ" : "Date"}</Label><Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
               </div>
               <div>
-                <Label>المزاج</Label>
+                <Label>{isAr ? "المزاج" : "Mood"}</Label>
                 <Select value={form.mood} onValueChange={v => setForm(f => ({ ...f, mood: v as any }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="happy">سعيد</SelectItem>
-                    <SelectItem value="calm">هادئ</SelectItem>
-                    <SelectItem value="tired">متعب</SelectItem>
-                    <SelectItem value="upset">منزعج</SelectItem>
-                    <SelectItem value="excited">متحمس</SelectItem>
+                    <SelectItem value="happy">{isAr ? "سعيد" : "Happy"}</SelectItem>
+                    <SelectItem value="calm">{isAr ? "هادئ" : "Calm"}</SelectItem>
+                    <SelectItem value="tired">{isAr ? "متعب" : "Tired"}</SelectItem>
+                    <SelectItem value="upset">{isAr ? "منزعج" : "Upset"}</SelectItem>
+                    <SelectItem value="excited">{isAr ? "متحمس" : "Excited"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold">الوجبات</Label>
-                <Input placeholder="الإفطار" value={form.meals.breakfast} onChange={e => setForm(f => ({ ...f, meals: { ...f.meals, breakfast: e.target.value } }))} />
-                <Input placeholder="الغداء" value={form.meals.lunch} onChange={e => setForm(f => ({ ...f, meals: { ...f.meals, lunch: e.target.value } }))} />
-                <Input placeholder="وجبة خفيفة" value={form.meals.snack} onChange={e => setForm(f => ({ ...f, meals: { ...f.meals, snack: e.target.value } }))} />
+                <Label className="font-semibold">{isAr ? "الوجبات" : "Meals"}</Label>
+                <Input placeholder={isAr ? "الإفطار" : "Breakfast"} value={form.meals.breakfast} onChange={e => setForm(f => ({ ...f, meals: { ...f.meals, breakfast: e.target.value } }))} />
+                <Input placeholder={isAr ? "الغداء" : "Lunch"} value={form.meals.lunch} onChange={e => setForm(f => ({ ...f, meals: { ...f.meals, lunch: e.target.value } }))} />
+                <Input placeholder={isAr ? "وجبة خفيفة" : "Snack"} value={form.meals.snack} onChange={e => setForm(f => ({ ...f, meals: { ...f.meals, snack: e.target.value } }))} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>النوم من</Label><Input type="time" value={form.sleep.from} onChange={e => setForm(f => ({ ...f, sleep: { ...f.sleep, from: e.target.value } }))} /></div>
-                <div><Label>النوم إلى</Label><Input type="time" value={form.sleep.to} onChange={e => setForm(f => ({ ...f, sleep: { ...f.sleep, to: e.target.value } }))} /></div>
+                <div><Label>{isAr ? "النوم من" : "Sleep from"}</Label><Input type="time" value={form.sleep.from} onChange={e => setForm(f => ({ ...f, sleep: { ...f.sleep, from: e.target.value } }))} /></div>
+                <div><Label>{isAr ? "النوم إلى" : "Sleep to"}</Label><Input type="time" value={form.sleep.to} onChange={e => setForm(f => ({ ...f, sleep: { ...f.sleep, to: e.target.value } }))} /></div>
               </div>
-              <div><Label>الأنشطة</Label><Textarea value={form.activities} onChange={e => setForm(f => ({ ...f, activities: e.target.value }))} placeholder="وصف الأنشطة التي قام بها الطفل اليوم" /></div>
-              <div><Label>ملاحظات المعلمة</Label><Textarea value={form.teacherNotes} onChange={e => setForm(f => ({ ...f, teacherNotes: e.target.value }))} placeholder="ملاحظات إضافية لولي الأمر" /></div>
+              <div><Label>{isAr ? "الأنشطة" : "Activities"}</Label><Textarea value={form.activities} onChange={e => setForm(f => ({ ...f, activities: e.target.value }))} placeholder="وصف الأنشطة التي قام بها الطفل اليوم" /></div>
+              <div><Label>{isAr ? "ملاحظات المعلمة" : "Teacher\'s Notes"}</Label><Textarea value={form.teacherNotes} onChange={e => setForm(f => ({ ...f, teacherNotes: e.target.value }))} placeholder="ملاحظات إضافية لولي الأمر" /></div>
 
               {/* Photo Upload Section */}
               <div className="space-y-2">
                 <Label className="font-semibold flex items-center gap-2">
                   <Camera className="h-4 w-4" />
-                  صور الأنشطة
+                  {isAr ? "صور الأنشطة" : "Activity Photos"}
                   <span className="text-xs text-muted-foreground font-normal">(اختياري - حد أقصى 5 صور)</span>
                 </Label>
                 <input
@@ -221,13 +222,13 @@ export default function DailyReports() {
                     className="w-full border-dashed"
                   >
                     <Camera className="h-4 w-4 ml-2" />
-                    إضافة صور
+                    {isAr ? "إضافة صور" : "Add Photos"}
                   </Button>
                 )}
               </div>
 
               <Button type="submit" className="w-full" disabled={createReport.isPending || uploading}>
-                {uploading ? "جارٍ رفع الصور..." : createReport.isPending ? "جارٍ الإنشاء..." : "إنشاء التقرير"}
+                {uploading ? (isAr ? "جارٍ رفع الصور..." : "Uploading photos...") : createReport.isPending ? (isAr ? "جارٍ الإنشاء..." : "Creating...") : (isAr ? "إنشاء التقرير" : "Create Report")}
               </Button>
             </form>
           </DialogContent>
@@ -278,10 +279,10 @@ export default function DailyReports() {
                       )}
                     </div>
                   )}
-                  {report.activities && <p className="text-sm"><span className="font-medium">الأنشطة:</span> {report.activities}</p>}
-                  {report.teacherNotes && <p className="text-sm"><span className="font-medium">ملاحظات:</span> {report.teacherNotes}</p>}
+                  {report.activities && <p className="text-sm"><span className="font-medium">{isAr ? "الأنشطة:" : "Activities:"}</span> {report.activities}</p>}
+                  {report.teacherNotes && <p className="text-sm"><span className="font-medium">{isAr ? "ملاحظات:" : "Notes:"}</span> {report.teacherNotes}</p>}
                   <div className="flex items-center gap-2 pt-2">
-                    <Badge variant={report.isPublished ? "default" : "secondary"}>{report.isPublished ? "منشور" : "مسودة"}</Badge>
+                    <Badge variant={report.isPublished ? "default" : "secondary"}>{report.isPublished ? (isAr ? "منشور" : "Published") : (isAr ? "مسودة" : "Draft")}</Badge>
                     {reportPhotos.length > 0 && (
                       <Badge variant="outline" className="text-xs">
                         <ImageIcon className="h-3 w-3 ml-1" />
@@ -297,7 +298,7 @@ export default function DailyReports() {
             <Card className="col-span-full">
               <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <FileText className="h-12 w-12 mb-4" />
-                <p>لا توجد تقارير يومية بعد</p>
+                <p>{isAr ? "لا توجد تقارير يومية بعد" : "No daily reports yet"}</p>
               </CardContent>
             </Card>
           )}

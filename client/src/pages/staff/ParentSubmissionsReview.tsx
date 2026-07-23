@@ -101,14 +101,14 @@ export default function ParentSubmissionsReview() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Eye className="h-6 w-6 text-teal-500" />
-            مراجعة مشاركات الأهالي
+            {isAr ? "مراجعة مشاركات الأهالي" : "Review Parents\' Posts"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            راجع يوميات الإنجاز وملاحظات الأهالي
+            {isAr ? "راجع يوميات الإنجاز وملاحظات الأهالي" : "Review achievement diaries and parent notes"}
           </p>
         </div>
         {totalPending > 0 && (
-          <Badge className="bg-amber-500 text-lg px-3 py-1">{totalPending} بانتظار المراجعة</Badge>
+          <Badge className="bg-amber-500 text-lg px-3 py-1">{totalPending} {isAr ? "بانتظار المراجعة" : "Awaiting Review"}</Badge>
         )}
       </div>
 
@@ -117,14 +117,14 @@ export default function ParentSubmissionsReview() {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="journals" className="flex items-center gap-2">
             <Camera className="h-4 w-4" />
-            يوميات الإنجاز
+            {isAr ? "يوميات الإنجاز" : "Achievement Diaries"}
             {pendingJournals && pendingJournals.length > 0 && (
               <Badge variant="secondary" className="text-[10px] mr-1">{pendingJournals.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="observations" className="flex items-center gap-2">
             <Eye className="h-4 w-4" />
-            ملاحظات الأهالي
+            {isAr ? "ملاحظات الأهالي" : "Parents\' Notes"}
             {pendingObservations && pendingObservations.length > 0 && (
               <Badge variant="secondary" className="text-[10px] mr-1">{pendingObservations.length}</Badge>
             )}
@@ -139,8 +139,8 @@ export default function ParentSubmissionsReview() {
             <Card className="border-dashed">
               <CardContent className="p-6 text-center">
                 <CheckCircle className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
-                <h3 className="font-bold">لا توجد يوميات بانتظار المراجعة</h3>
-                <p className="text-sm text-muted-foreground">جميع اليوميات تمت مراجعتها</p>
+                <h3 className="font-bold">{isAr ? "لا توجد يوميات بانتظار المراجعة" : "No daily logs pending review"}</h3>
+                <p className="text-sm text-muted-foreground">{isAr ? "جميع اليوميات تمت مراجعتها" : "All Diaries Reviewed"}</p>
               </CardContent>
             </Card>
           ) : (
@@ -173,7 +173,7 @@ export default function ParentSubmissionsReview() {
                       onClick={() => openReviewDialog(entry, "journal")}
                     >
                       <CheckCircle className="h-3 w-3 ml-1" />
-                      مراجعة
+                      {isAr ? "مراجعة" : "Review"}
                     </Button>
                   </div>
                 </CardContent>
@@ -190,8 +190,8 @@ export default function ParentSubmissionsReview() {
             <Card className="border-dashed">
               <CardContent className="p-6 text-center">
                 <CheckCircle className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
-                <h3 className="font-bold">لا توجد ملاحظات بانتظار المراجعة</h3>
-                <p className="text-sm text-muted-foreground">جميع الملاحظات تمت مراجعتها</p>
+                <h3 className="font-bold">{isAr ? "لا توجد ملاحظات بانتظار المراجعة" : "No notes pending review"}</h3>
+                <p className="text-sm text-muted-foreground">{isAr ? "جميع الملاحظات تمت مراجعتها" : "All Notes Reviewed"}</p>
               </CardContent>
             </Card>
           ) : (
@@ -205,7 +205,7 @@ export default function ParentSubmissionsReview() {
                         <Badge variant="outline" className="text-[10px]">{obs.context}</Badge>
                         {obs.significance && obs.significance !== "routine" && (
                           <Badge className={`text-[10px] ${obs.significance === "milestone" ? "bg-purple-600" : obs.significance === "concern" ? "bg-red-600" : "bg-blue-600"}`}>
-                            {obs.significance === "milestone" ? "إنجاز" : obs.significance === "concern" ? "قلق" : "تقدم"}
+                            {obs.significance === "milestone" ? (isAr ? "إنجاز" : "Milestone") : obs.significance === "concern" ? "قلق" : "تقدم"}
                           </Badge>
                         )}
                       </div>
@@ -232,7 +232,7 @@ export default function ParentSubmissionsReview() {
                       onClick={() => openReviewDialog(obs, "observation")}
                     >
                       <CheckCircle className="h-3 w-3 ml-1" />
-                      مراجعة
+                      {isAr ? "مراجعة" : "Review"}
                     </Button>
                   </div>
                 </CardContent>
@@ -247,7 +247,7 @@ export default function ParentSubmissionsReview() {
         <DialogContent dir="rtl" className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {reviewType === "journal" ? "مراجعة يومية الإنجاز" : "مراجعة ملاحظة ولي الأمر"}
+              {reviewType === "journal" ? isAr ? "مراجعة يومية الإنجاز" : "Daily Achievement Review" : isAr ? "مراجعة ملاحظة ولي الأمر" : "Review Parent\'s Note"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -263,11 +263,11 @@ export default function ParentSubmissionsReview() {
               </div>
             )}
             <div className="space-y-2">
-              <label className="text-sm font-medium">ملاحظات المراجعة (اختياري)</label>
+              <label className="text-sm font-medium">{isAr ? "ملاحظات المراجعة (اختياري)" : "Review Notes (Optional)"}</label>
               <Textarea
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
-                placeholder="أضف ملاحظاتك..."
+                placeholder={isAr ? "أضف ملاحظاتك..." : "Add your notes..."}
                 rows={3}
               />
             </div>
@@ -275,17 +275,17 @@ export default function ParentSubmissionsReview() {
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={handleReject} className="text-red-600 border-red-200 hover:bg-red-50">
               <XCircle className="h-4 w-4 ml-1" />
-              {reviewType === "journal" ? "رفض" : "تمييز"}
+              {reviewType === "journal" ? (isAr ? "رفض" : "Refused") : "تمييز"}
             </Button>
             {reviewType === "observation" && (
               <Button variant="outline" onClick={handleLinkToAssessment} className="text-purple-600 border-purple-200 hover:bg-purple-50">
                 <Link2 className="h-4 w-4 ml-1" />
-                ربط بتقييم
+                {isAr ? "ربط بتقييم" : "Link to Evaluation"}
               </Button>
             )}
             <Button onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700">
               <CheckCircle className="h-4 w-4 ml-1" />
-              موافقة
+              {isAr ? "موافقة" : "Approval"}
             </Button>
           </DialogFooter>
         </DialogContent>

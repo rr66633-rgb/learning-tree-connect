@@ -9,29 +9,30 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-const CATEGORIES = [
-  { value: "holiday", label: "إجازة", color: "bg-red-100 text-red-700" },
-  { value: "event", label: "فعالية", color: "bg-blue-100 text-blue-700" },
-  { value: "meeting", label: "اجتماع", color: "bg-purple-100 text-purple-700" },
-  { value: "exam", label: "اختبار", color: "bg-orange-100 text-orange-700" },
-  { value: "activity", label: "نشاط", color: "bg-green-100 text-green-700" },
-  { value: "celebration", label: "احتفال", color: "bg-pink-100 text-pink-700" },
-  { value: "other", label: "أخرى", color: "bg-gray-100 text-gray-700" },
-];
+const getCATEGORIES = (isAr: boolean) => ([
+  { value: "holiday", label: (isAr ? "إجازة" : "Leave"), color: "bg-red-100 text-red-700" },
+  { value: "event", label: (isAr ? "فعالية" : "Event"), color: "bg-blue-100 text-blue-700" },
+  { value: "meeting", label: (isAr ? "اجتماع" : "Meeting"), color: "bg-purple-100 text-purple-700" },
+  { value: "exam", label: (isAr ? "اختبار" : "Test"), color: "bg-orange-100 text-orange-700" },
+  { value: "activity", label: (isAr ? "نشاط" : "Activity"), color: "bg-green-100 text-green-700" },
+  { value: "celebration", label: (isAr ? "احتفال" : "Celebration"), color: "bg-pink-100 text-pink-700" },
+  { value: "other", label: (isAr ? "أخرى" : "Other"), color: "bg-gray-100 text-gray-700" },
+]);
 
-const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-const DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const getMONTHS_AR = (isAr: boolean) => ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const getDAYS_AR = (isAr: boolean) => ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
-function getCategoryStyle(cat: string) {
-  return CATEGORIES.find(c => c.value === cat)?.color || "bg-gray-100 text-gray-700";
+function getCategoryStyle(cat: string, isAr: boolean) {
+  return getCATEGORIES(isAr).find(c => c.value === cat)?.color || "bg-gray-100 text-gray-700";
 }
-function getCategoryLabel(cat: string) {
-  return CATEGORIES.find(c => c.value === cat)?.label || cat;
+function getCategoryLabel(cat: string, isAr: boolean) {
+  return getCATEGORIES(isAr).find(c => c.value === cat)?.label || cat;
 }
 
 export default function ParentCalendar() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const isAr = i18n.language === "ar";
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [viewEvent, setViewEvent] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -96,15 +97,15 @@ export default function ParentCalendar() {
     today.setHours(0, 0, 0, 0);
     const evDate = new Date(eventDate + "T00:00:00");
     const diff = Math.ceil((evDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 0) return "اليوم";
-    if (diff === 1) return "غداً";
-    if (diff < 0) return "انتهى";
-    return `بعد ${diff} أيام`;
+    if (diff === 0) return (isAr ? "اليوم" : "Today");
+    if (diff === 1) return (isAr ? "غداً" : "Tomorrow");
+    if (diff < 0) return (isAr ? "انتهى" : "Ended");
+    return (isAr ? `بعد ${diff} أيام` : `After${diff}Days`);
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">التقويم السنوي</h1>
+      <h1 className="text-2xl font-bold">{isAr ? "التقويم السنوي" : "Annual Calendar"}</h1>
 
       {/* Category Filter */}
       <div className="flex flex-wrap gap-2">
@@ -113,9 +114,9 @@ export default function ParentCalendar() {
           size="sm"
           onClick={() => setSelectedCategory("")}
         >
-          الكل
+          {isAr ? "الكل" : "All"}
         </Button>
-        {CATEGORIES.map(c => (
+        {getCATEGORIES(isAr).map(c => (
           <Button
             key={c.value}
             variant={selectedCategory === c.value ? "default" : "outline"}
@@ -135,7 +136,7 @@ export default function ParentCalendar() {
               <ChevronRight className="h-5 w-5" />
             </Button>
             <CardTitle className="text-xl">
-              {MONTHS_AR[month - 1]} {year}
+              {getMONTHS_AR(isAr)[month - 1]} {year}
             </CardTitle>
             <Button variant="ghost" size="icon" onClick={() => setCurrentDate(new Date(year, month, 1))}>
               <ChevronLeft className="h-5 w-5" />
@@ -145,7 +146,7 @@ export default function ParentCalendar() {
         <CardContent>
           {/* Day headers */}
           <div className="grid grid-cols-7 mb-2">
-            {DAYS_AR.map(d => (
+            {getDAYS_AR(isAr).map(d => (
               <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">{d}</div>
             ))}
           </div>
@@ -169,7 +170,7 @@ export default function ParentCalendar() {
                     {dayEvents.slice(0, 2).map((ev: any) => (
                       <div
                         key={ev.id}
-                        className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer hover:opacity-80 ${getCategoryStyle(ev.category)}`}
+                        className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer hover:opacity-80 ${getCategoryStyle(ev.category, isAr)}`}
                         onClick={() => setViewEvent(ev)}
                         title={ev.titleAr}
                       >
@@ -190,7 +191,7 @@ export default function ParentCalendar() {
       {/* Upcoming Events List */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">الأحداث القادمة</CardTitle>
+          <CardTitle className="text-lg">{isAr ? "الأحداث القادمة" : "Upcoming Events"}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -207,14 +208,14 @@ export default function ParentCalendar() {
                     className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-sm transition-shadow cursor-pointer"
                     onClick={() => setViewEvent(ev)}
                   >
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${getCategoryStyle(ev.category)}`}>
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${getCategoryStyle(ev.category, isAr)}`}>
                       <CalIcon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{ev.titleAr}</span>
-                        <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(ev.category)}`}>
-                          {getCategoryLabel(ev.category)}
+                        <Badge variant="outline" className={`text-[10px] ${getCategoryStyle(ev.category, isAr)}`}>
+                          {getCategoryLabel(ev.category, isAr)}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -248,7 +249,7 @@ export default function ParentCalendar() {
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                   <CalIcon className="h-5 w-5 text-primary shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">التاريخ</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "التاريخ" : "Date"}</p>
                     <p className="font-medium text-sm">
                       {new Date(viewEvent.eventDate + "T00:00:00").toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                     </p>
@@ -262,7 +263,7 @@ export default function ParentCalendar() {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <Clock className="h-5 w-5 text-blue-600 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">الوقت</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "الوقت" : "Time"}</p>
                       <p className="font-medium text-sm">{viewEvent.eventTime}</p>
                     </div>
                   </div>
@@ -272,7 +273,7 @@ export default function ParentCalendar() {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <MapPin className="h-5 w-5 text-green-600 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">الموقع</p>
+                      <p className="text-xs text-muted-foreground">{isAr ? "الموقع" : "Location"}</p>
                       <p className="font-medium text-sm">{viewEvent.location}</p>
                     </div>
                   </div>
@@ -282,7 +283,7 @@ export default function ParentCalendar() {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
                     <Package className="h-5 w-5 text-amber-600 shrink-0" />
                     <div>
-                      <p className="text-xs text-amber-700 font-medium">المواد المطلوبة</p>
+                      <p className="text-xs text-amber-700 font-medium">{isAr ? "المواد المطلوبة" : "Required Materials"}</p>
                       <p className="text-sm">{viewEvent.requiredMaterials}</p>
                     </div>
                   </div>
@@ -292,7 +293,7 @@ export default function ParentCalendar() {
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
                     <Shirt className="h-5 w-5 text-purple-600 shrink-0" />
                     <div>
-                      <p className="text-xs text-purple-700 font-medium">الزي المطلوب</p>
+                      <p className="text-xs text-purple-700 font-medium">{isAr ? "الزي المطلوب" : "Required Uniform"}</p>
                       <p className="text-sm">{viewEvent.dressCode}</p>
                     </div>
                   </div>
@@ -300,13 +301,13 @@ export default function ParentCalendar() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Badge className={getCategoryStyle(viewEvent.category)}>{getCategoryLabel(viewEvent.category)}</Badge>
+                <Badge className={getCategoryStyle(viewEvent.category, isAr)}>{getCategoryLabel(viewEvent.category, isAr)}</Badge>
                 <Badge variant="outline" className="text-xs">{getDaysUntil(viewEvent.eventDate)}</Badge>
               </div>
 
               {viewEvent.description && (
                 <div className="border-t pt-3">
-                  <p className="text-xs text-muted-foreground mb-1">التفاصيل</p>
+                  <p className="text-xs text-muted-foreground mb-1">{isAr ? "التفاصيل" : "Details"}</p>
                   <p className="text-sm whitespace-pre-wrap">{viewEvent.description}</p>
                 </div>
               )}

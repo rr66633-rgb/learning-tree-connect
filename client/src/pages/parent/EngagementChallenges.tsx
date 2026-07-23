@@ -50,11 +50,11 @@ export default function EngagementChallenges() {
         <Link href="/parent/engagement">
           <Button variant="ghost" size="sm" className="mb-1 -mr-2">
             <ChevronRight className="h-4 w-4 ml-1" />
-            العودة
+            {isAr ? "العودة" : "Back"}
           </Button>
         </Link>
-        <h1 className="text-xl font-bold">التحديات الأسرية</h1>
-        <p className="text-sm text-muted-foreground">شارك مع عائلتك في تحديات ممتعة وتعليمية</p>
+        <h1 className="text-xl font-bold">{isAr ? "التحديات الأسرية" : "Family Challenges"}</h1>
+        <p className="text-sm text-muted-foreground">{isAr ? "شارك مع عائلتك في تحديات ممتعة وتعليمية" : "Share fun and educational challenges with your family"}</p>
       </div>
 
       {/* Active Challenges */}
@@ -90,7 +90,7 @@ export default function EngagementChallenges() {
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {daysLeft > 0 ? `${daysLeft} يوم متبقي` : "انتهى"}
+                      {daysLeft > 0 ? `${daysLeft} يوم متبقي` : isAr ? "انتهى" : "Ended"}
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
@@ -105,7 +105,7 @@ export default function EngagementChallenges() {
                   {isJoined ? (
                     <div className="mt-4">
                       <div className="flex items-center justify-between text-sm mb-1">
-                        <span>التقدم</span>
+                        <span>{isAr ? "التقدم" : "Progress"}</span>
                         <span className="font-medium">
                           {challenge.participation?.completedDays || 0}/{challenge.targetDays}
                         </span>
@@ -121,12 +121,12 @@ export default function EngagementChallenges() {
                           onClick={() => submitMutation.mutate({
                             participationId: challenge.participation?.id || 0,
                             progressPercent: Math.min(100, ((challenge.participation?.completedDays || 0) + 1) / challenge.targetDays * 100),
-                            notes: "تم إكمال اليوم",
+                            notes: isAr ? "تم إكمال اليوم" : "Day Completed",
                           })}
                           disabled={submitMutation.isPending}
                         >
                           <CheckCircle2 className="h-4 w-4 ml-1" />
-                          تسجيل إنجاز اليوم
+                          {isAr ? "تسجيل إنجاز اليوم" : "Log Today\'s Achievement"}
                         </Button>
                       )}
                       {challenge.participation?.status === "completed" && (
@@ -142,7 +142,7 @@ export default function EngagementChallenges() {
                       onClick={() => joinMutation.mutate({ challengeId: challenge.id, childId: 0 })}
                       disabled={joinMutation.isPending || daysLeft <= 0}
                     >
-                      {daysLeft <= 0 ? "انتهى التحدي" : "انضم للتحدي"}
+                      {daysLeft <= 0 ? isAr ? "انتهى التحدي" : "Challenge Ended" : isAr ? "انضم للتحدي" : "Join the Challenge"}
                     </Button>
                   )}
                 </CardContent>

@@ -21,49 +21,55 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-const JOB_TITLES: Record<string, string> = {
-  teacher: "معلم/ة", supervisor: "مشرف/ة", principal: "مدير/ة",
-  assistant: "مساعد/ة", admin_staff: "إداري/ة", specialist: "أخصائي/ة",
-  accountant: "محاسب/ة", receptionist: "موظف/ة استقبال", driver: "سائق", other: "أخرى",
-};
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  active: { label: "نشط", color: "bg-emerald-100 text-emerald-800" },
-  inactive: { label: "غير نشط", color: "bg-gray-100 text-gray-800" },
-  on_leave: { label: "في إجازة", color: "bg-amber-100 text-amber-800" },
-  terminated: { label: "منتهي", color: "bg-red-100 text-red-800" },
-  resigned: { label: "مستقيل", color: "bg-orange-100 text-orange-800" },
-};
 
-const LEAVE_TYPES: Record<string, string> = {
-  annual: "سنوية", sick: "مرضية", emergency: "اضطرارية",
-  unpaid: "بدون راتب", maternity: "أمومة", other: "أخرى",
-};
 
-const LEAVE_STATUS: Record<string, { label: string; icon: any; color: string }> = {
-  pending: { label: "قيد المراجعة", icon: Clock, color: "text-amber-600" },
-  approved: { label: "مقبولة", icon: CheckCircle, color: "text-emerald-600" },
-  rejected: { label: "مرفوضة", icon: XCircle, color: "text-red-600" },
-  cancelled: { label: "ملغاة", icon: AlertCircle, color: "text-gray-500" },
-};
 
-const NOTE_TYPES: Record<string, { label: string; color: string }> = {
-  general: { label: "عام", color: "bg-blue-100 text-blue-800" },
-  performance: { label: "أداء", color: "bg-purple-100 text-purple-800" },
-  warning: { label: "تنبيه", color: "bg-red-100 text-red-800" },
-  appreciation: { label: "تقدير", color: "bg-emerald-100 text-emerald-800" },
-  meeting: { label: "اجتماع", color: "bg-amber-100 text-amber-800" },
-  other: { label: "أخرى", color: "bg-gray-100 text-gray-800" },
-};
 
-const DOC_TYPES: Record<string, string> = {
-  contract: "عقد عمل", id_copy: "صورة هوية", certificate: "شهادة",
-  license: "رخصة", medical: "تقرير طبي", other: "أخرى",
-};
 
 export default function StaffProfile() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const JOB_TITLES: Record<string, string> = {
+  teacher: isAr ? "معلم/ة" : "Teacher", supervisor: isAr ? "مشرف/ة" : "Supervisor", principal: isAr ? "مدير/ة" : "Manager",
+  assistant: isAr ? "مساعد/ة" : "Assistant", admin_staff: isAr ? "إداري/ة" : "Administrator", specialist: isAr ? "أخصائي/ة" : "Specialist",
+  accountant: "محاسب/ة", receptionist: "موظف/ة استقبال", driver: isAr ? "سائق" : "Driver", other: "أخرى",
+  };
+
+  const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  active: { label: isAr ? "نشط" : "Active", color: "bg-emerald-100 text-emerald-800" },
+  inactive: { label: isAr ? "غير نشط" : "Inactive", color: "bg-gray-100 text-gray-800" },
+  on_leave: { label: isAr ? "في إجازة" : "On Leave", color: "bg-amber-100 text-amber-800" },
+  terminated: { label: isAr ? "منتهي" : "Expired", color: "bg-red-100 text-red-800" },
+  resigned: { label: isAr ? "مستقيل" : "Resigned", color: "bg-orange-100 text-orange-800" },
+  };
+
+  const LEAVE_TYPES: Record<string, string> = {
+  annual: isAr ? "سنوية" : "Annual", sick: "مرضية", emergency: "اضطرارية",
+  unpaid: isAr ? "بدون راتب" : "Unpaid", maternity: "أمومة", other: "أخرى",
+  };
+
+  const LEAVE_STATUS: Record<string, { label: string; icon: any; color: string }> = {
+  pending: { label: isAr ? "قيد المراجعة" : "Under Review", icon: Clock, color: "text-amber-600" },
+  approved: { label: isAr ? "مقبولة" : "Accepted", icon: CheckCircle, color: "text-emerald-600" },
+  rejected: { label: isAr ? "مرفوضة" : "Rejected", icon: XCircle, color: "text-red-600" },
+  cancelled: { label: isAr ? "ملغاة" : "Cancelled", icon: AlertCircle, color: "text-gray-500" },
+  };
+
+  const NOTE_TYPES: Record<string, { label: string; color: string }> = {
+  general: { label: isAr ? "عام" : "General", color: "bg-blue-100 text-blue-800" },
+  performance: { label: isAr ? "أداء" : "Performance", color: "bg-purple-100 text-purple-800" },
+  warning: { label: isAr ? "تنبيه" : "Alert", color: "bg-red-100 text-red-800" },
+  appreciation: { label: isAr ? "تقدير" : "Estimate", color: "bg-emerald-100 text-emerald-800" },
+  meeting: { label: isAr ? "اجتماع" : "Meeting", color: "bg-amber-100 text-amber-800" },
+  other: { label: isAr ? "أخرى" : "Other", color: "bg-gray-100 text-gray-800" },
+  };
+
+  const DOC_TYPES: Record<string, string> = {
+  contract: isAr ? "عقد عمل" : "Employment Contract", id_copy: isAr ? "صورة هوية" : "ID Photo", certificate: isAr ? "شهادة" : "Certificate",
+  license: "رخصة", medical: isAr ? "تقرير طبي" : "Medical Report", other: "أخرى",
+  };
+
   const params = useParams<{ id: string }>();
   const staffId = parseInt(params.id || "0");
   const [, navigate] = useLocation();
@@ -179,8 +185,8 @@ export default function StaffProfile() {
   if (!staff) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">الموظف غير موجود</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/staff-management")}>العودة للدليل</Button>
+        <p className="text-muted-foreground">{isAr ? "الموظف غير موجود" : "Employee not found"}</p>
+        <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/staff-management")}>{isAr ? "العودة للدليل" : "Back to Directory"}</Button>
       </div>
     );
   }
@@ -192,7 +198,7 @@ export default function StaffProfile() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/staff/staff-management")}>
           <ArrowRight className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">الملف الوظيفي</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "الملف الوظيفي" : "Profile"}</h1>
       </div>
 
       {/* Profile Header Card */}
@@ -224,7 +230,7 @@ export default function StaffProfile() {
             </div>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(`/staff/staff-management/${staffId}/edit`)}>
               <Edit className="h-3.5 w-3.5" />
-              تعديل
+              {isAr ? "تعديل" : "Edit"}
             </Button>
           </div>
         </CardContent>
@@ -233,10 +239,10 @@ export default function StaffProfile() {
       {/* Tabs */}
       <Tabs defaultValue="info" className="space-y-4">
         <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
-          <TabsTrigger value="info" className="gap-1.5 text-xs md:text-sm"><User className="h-3.5 w-3.5" />المعلومات</TabsTrigger>
-          <TabsTrigger value="leaves" className="gap-1.5 text-xs md:text-sm"><Calendar className="h-3.5 w-3.5" />الإجازات</TabsTrigger>
-          <TabsTrigger value="attendance" className="gap-1.5 text-xs md:text-sm"><Clock className="h-3.5 w-3.5" />الحضور</TabsTrigger>
-          <TabsTrigger value="notes" className="gap-1.5 text-xs md:text-sm"><MessageSquare className="h-3.5 w-3.5" />الملاحظات</TabsTrigger>
+          <TabsTrigger value="info" className="gap-1.5 text-xs md:text-sm"><User className="h-3.5 w-3.5" />{isAr ? "المعلومات" : "Information"}</TabsTrigger>
+          <TabsTrigger value="leaves" className="gap-1.5 text-xs md:text-sm"><Calendar className="h-3.5 w-3.5" />{isAr ? "الإجازات" : "Holidays"}</TabsTrigger>
+          <TabsTrigger value="attendance" className="gap-1.5 text-xs md:text-sm"><Clock className="h-3.5 w-3.5" />{isAr ? "الحضور" : "Attendance"}</TabsTrigger>
+          <TabsTrigger value="notes" className="gap-1.5 text-xs md:text-sm"><MessageSquare className="h-3.5 w-3.5" />{isAr ? "الملاحظات" : "Notes"}</TabsTrigger>
           <TabsTrigger value="documents" className="gap-1.5 text-xs md:text-sm"><FolderOpen className="h-3.5 w-3.5" />{isAr ? "المستندات" : "Documents"}</TabsTrigger>
         </TabsList>
 
@@ -244,42 +250,42 @@ export default function StaffProfile() {
         <TabsContent value="info">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader><CardTitle className="text-base">البيانات الشخصية</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{isAr ? "البيانات الشخصية" : "Personal Data"}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <InfoRow label="الاسم بالإنجليزي" value={staff.fullNameEn} />
-                <InfoRow label="رقم الهوية" value={staff.nationalId} />
-                <InfoRow label="رقم الإقامة" value={staff.iqamaNumber} />
-                <InfoRow label="تاريخ الميلاد" value={staff.dateOfBirth ? new Date(staff.dateOfBirth).toLocaleDateString("ar-SA") : null} />
-                <InfoRow label="الجنس" value={staff.gender === "male" ? "ذكر" : staff.gender === "female" ? "أنثى" : null} />
-                <InfoRow label="الجنسية" value={staff.nationality} />
-                <InfoRow label="الحالة الاجتماعية" value={staff.maritalStatus ? { single: "أعزب/عزباء", married: "متزوج/ة", divorced: "مطلق/ة", widowed: "أرمل/ة" }[staff.maritalStatus] : null} />
+                <InfoRow label={isAr ? "الاسم بالإنجليزي" : "Name (English)"} value={staff.fullNameEn} />
+                <InfoRow label={isAr ? "رقم الهوية" : "National ID"} value={staff.nationalId} />
+                <InfoRow label={isAr ? "رقم الإقامة" : "Residency Number"} value={staff.iqamaNumber} />
+                <InfoRow label={isAr ? "تاريخ الميلاد" : "Date of Birth"} value={staff.dateOfBirth ? new Date(staff.dateOfBirth).toLocaleDateString("ar-SA") : null} />
+                <InfoRow label={isAr ? "الجنس" : "Gender"} value={staff.gender === "male" ? "ذكر" : staff.gender === "female" ? "أنثى" : null} />
+                <InfoRow label={isAr ? "الجنسية" : "Nationality"} value={staff.nationality} />
+                <InfoRow label={isAr ? "الحالة الاجتماعية" : "Marital Status"} value={staff.maritalStatus ? { single: "أعزب/عزباء", married: "متزوج/ة", divorced: "مطلق/ة", widowed: "أرمل/ة" }[staff.maritalStatus] : null} />
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle className="text-base">البيانات الوظيفية</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{isAr ? "البيانات الوظيفية" : "Job Data"}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <InfoRow label="تاريخ التعيين" value={staff.hireDate ? new Date(staff.hireDate).toLocaleDateString("ar-SA") : null} />
-                <InfoRow label="نوع العقد" value={({ full_time: "دوام كامل", part_time: "دوام جزئي", contract: "عقد مؤقت", temporary: "مؤقت" } as Record<string, string>)[staff.contractType || ""] || null} />
-                <InfoRow label="انتهاء العقد" value={staff.contractEndDate ? new Date(staff.contractEndDate).toLocaleDateString("ar-SA") : null} />
-                <InfoRow label="المؤهل" value={staff.qualification} />
-                <InfoRow label="التخصص" value={staff.specialization} />
-                <InfoRow label="سنوات الخبرة" value={staff.yearsOfExperience?.toString()} />
+                <InfoRow label={isAr ? "تاريخ التعيين" : "Hire Date"} value={staff.hireDate ? new Date(staff.hireDate).toLocaleDateString("ar-SA") : null} />
+                <InfoRow label={isAr ? "نوع العقد" : "Contract Type"} value={({ full_time: "دوام كامل", part_time: "دوام جزئي", contract: "عقد مؤقت", temporary: "مؤقت" } as Record<string, string>)[staff.contractType || ""] || null} />
+                <InfoRow label={isAr ? "انتهاء العقد" : "Contract End"} value={staff.contractEndDate ? new Date(staff.contractEndDate).toLocaleDateString("ar-SA") : null} />
+                <InfoRow label={isAr ? "المؤهل" : "Qualification"} value={staff.qualification} />
+                <InfoRow label={isAr ? "التخصص" : "Specialization"} value={staff.specialization} />
+                <InfoRow label={isAr ? "سنوات الخبرة" : "Years of Experience"} value={staff.yearsOfExperience?.toString()} />
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle className="text-base">البيانات المالية</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{isAr ? "البيانات المالية" : "Financial Data"}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <InfoRow label="البنك" value={staff.bankName} />
-                <InfoRow label="الآيبان" value={staff.iban} dir="ltr" />
-                <InfoRow label="الراتب" value={staff.salary ? `${staff.salary} ريال` : null} />
+                <InfoRow label={isAr ? "البنك" : "Bank"} value={staff.bankName} />
+                <InfoRow label={isAr ? "الآيبان" : "IBAN"} value={staff.iban} dir="ltr" />
+                <InfoRow label={isAr ? "الراتب" : "Salary"} value={staff.salary ? `${staff.salary} ريال` : null} />
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle className="text-base">جهة الطوارئ</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{isAr ? "جهة الطوارئ" : "Emergency Contact"}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <InfoRow label="الاسم" value={staff.emergencyContactName} />
-                <InfoRow label="الهاتف" value={staff.emergencyContactPhone} dir="ltr" />
-                <InfoRow label="صلة القرابة" value={staff.emergencyContactRelation} />
+                <InfoRow label={isAr ? "الاسم" : "Name"} value={staff.emergencyContactName} />
+                <InfoRow label={isAr ? "الهاتف" : "Phone"} value={staff.emergencyContactPhone} dir="ltr" />
+                <InfoRow label={isAr ? "صلة القرابة" : "Relationship"} value={staff.emergencyContactRelation} />
               </CardContent>
             </Card>
           </div>
@@ -294,28 +300,28 @@ export default function StaffProfile() {
                 <Card className="border-r-4 border-r-blue-500">
                   <CardContent className="p-4 text-center">
                     <p className="text-2xl font-bold">{(leaveBalance as any).annualTotal - (leaveBalance as any).annualUsed}</p>
-                    <p className="text-xs text-muted-foreground">سنوية متبقية</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "سنوية متبقية" : "Remaining Annual"}</p>
                     <p className="text-xs text-blue-600">{(leaveBalance as any).annualUsed}/{(leaveBalance as any).annualTotal}</p>
                   </CardContent>
                 </Card>
                 <Card className="border-r-4 border-r-orange-500">
                   <CardContent className="p-4 text-center">
                     <p className="text-2xl font-bold">{(leaveBalance as any).sickTotal - (leaveBalance as any).sickUsed}</p>
-                    <p className="text-xs text-muted-foreground">مرضية متبقية</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "مرضية متبقية" : "Remaining sick leave"}</p>
                     <p className="text-xs text-orange-600">{(leaveBalance as any).sickUsed}/{(leaveBalance as any).sickTotal}</p>
                   </CardContent>
                 </Card>
                 <Card className="border-r-4 border-r-red-500">
                   <CardContent className="p-4 text-center">
                     <p className="text-2xl font-bold">{(leaveBalance as any).emergencyTotal - (leaveBalance as any).emergencyUsed}</p>
-                    <p className="text-xs text-muted-foreground">اضطرارية متبقية</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "اضطرارية متبقية" : "Remaining Emergency"}</p>
                     <p className="text-xs text-red-600">{(leaveBalance as any).emergencyUsed}/{(leaveBalance as any).emergencyTotal}</p>
                   </CardContent>
                 </Card>
                 <Card className="border-r-4 border-r-gray-500">
                   <CardContent className="p-4 text-center">
                     <p className="text-2xl font-bold">{(leaveBalance as any).unpaidUsed}</p>
-                    <p className="text-xs text-muted-foreground">بدون راتب مستخدمة</p>
+                    <p className="text-xs text-muted-foreground">{isAr ? "بدون راتب مستخدمة" : "No Salary Used"}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -323,10 +329,10 @@ export default function StaffProfile() {
 
             {/* Leaves List */}
             <Card>
-              <CardHeader><CardTitle className="text-base">سجل الإجازات</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{isAr ? "سجل الإجازات" : "Leave Record"}</CardTitle></CardHeader>
               <CardContent>
                 {!leavesData?.items?.length ? (
-                  <p className="text-center text-muted-foreground py-6">لا توجد إجازات مسجلة</p>
+                  <p className="text-center text-muted-foreground py-6">{isAr ? "لا توجد إجازات مسجلة" : "No leaves recorded"}</p>
                 ) : (
                   <div className="space-y-3">
                     {leavesData.items.map((item: any) => {
@@ -349,7 +355,7 @@ export default function StaffProfile() {
                             <Badge className={`text-xs ${statusInfo.color} bg-transparent border`}>{statusInfo.label}</Badge>
                             {leave.status === "pending" && (
                               <div className="flex gap-1">
-                                <Button size="sm" variant="ghost" className="h-7 text-emerald-600" onClick={() => approveLeave.mutate({ id: leave.id })}>قبول</Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-emerald-600" onClick={() => approveLeave.mutate({ id: leave.id })}>{isAr ? "قبول" : "Accept"}</Button>
                                 <Button size="sm" variant="ghost" className="h-7 text-red-600" onClick={() => rejectLeave.mutate({ id: leave.id })}>{isAr ? "رفض" : "Reject"}</Button>
                               </div>
                             )}
@@ -369,10 +375,10 @@ export default function StaffProfile() {
           <Card>
             <CardContent className="py-12 text-center">
               <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">سجل الحضور</h3>
-              <p className="text-muted-foreground">يمكنك تتبع حضور وانصراف الموظف من صفحة الحضور الرئيسية</p>
+              <h3 className="text-lg font-semibold mb-2">{isAr ? "سجل الحضور" : "Attendance Log"}</h3>
+              <p className="text-muted-foreground">{isAr ? "يمكنك تتبع حضور وانصراف الموظف من صفحة الحضور الرئيسية" : "You can track employee attendance from the main attendance page"}</p>
               <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/attendance")}>
-                الذهاب لصفحة الحضور
+                {isAr ? "الذهاب لصفحة الحضور" : "Go to Attendance Page"}
               </Button>
             </CardContent>
           </Card>
@@ -382,20 +388,20 @@ export default function StaffProfile() {
         <TabsContent value="notes">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">الملاحظات</CardTitle>
+              <CardTitle className="text-base">{isAr ? "الملاحظات" : "Notes"}</CardTitle>
               <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="gap-1.5"><Plus className="h-3.5 w-3.5" />إضافة ملاحظة</Button>
+                  <Button size="sm" className="gap-1.5"><Plus className="h-3.5 w-3.5" />{isAr ? "إضافة ملاحظة" : "Add Observation"}</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>إضافة ملاحظة جديدة</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{isAr ? "إضافة ملاحظة جديدة" : "Add New Note"}</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>العنوان</Label>
+                      <Label>{isAr ? "العنوان" : "Address"}</Label>
                       <Input value={noteForm.title} onChange={e => setNoteForm(f => ({ ...f, title: e.target.value }))} />
                     </div>
                     <div className="space-y-2">
-                      <Label>النوع</Label>
+                      <Label>{isAr ? "النوع" : "Type"}</Label>
                       <Select value={noteForm.type} onValueChange={v => setNoteForm(f => ({ ...f, type: v }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -404,11 +410,11 @@ export default function StaffProfile() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>المحتوى</Label>
+                      <Label>{isAr ? "المحتوى" : "Content"}</Label>
                       <Textarea value={noteForm.content} onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))} rows={4} />
                     </div>
                     <Button onClick={() => createNote.mutate({ staffProfileId: staffId, ...noteForm })} disabled={!noteForm.title || !noteForm.content || createNote.isPending} className="w-full">
-                      {createNote.isPending ? "جاري الحفظ..." : "حفظ الملاحظة"}
+                      {createNote.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : "حفظ الملاحظة"}
                     </Button>
                   </div>
                 </DialogContent>
@@ -416,7 +422,7 @@ export default function StaffProfile() {
             </CardHeader>
             <CardContent>
               {!notes?.length ? (
-                <p className="text-center text-muted-foreground py-6">لا توجد ملاحظات</p>
+                <p className="text-center text-muted-foreground py-6">{isAr ? "لا توجد ملاحظات" : "No notes"}</p>
               ) : (
                 <div className="space-y-3">
                   {notes.map((item: any) => (
@@ -428,7 +434,7 @@ export default function StaffProfile() {
                             <Badge className={`text-xs ${NOTE_TYPES[item.note.type]?.color || ""}`}>{NOTE_TYPES[item.note.type]?.label || item.note.type}</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">{item.note.content}</p>
-                          <p className="text-xs text-muted-foreground mt-2">بواسطة: {item.authorName} • {new Date(item.note.createdAt).toLocaleDateString("ar-SA")}</p>
+                          <p className="text-xs text-muted-foreground mt-2">{isAr ? "بواسطة:" : "By:"} {item.authorName} • {new Date(item.note.createdAt).toLocaleDateString("ar-SA")}</p>
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" onClick={() => deleteNote.mutate({ id: item.note.id })}>
                           <Trash2 className="h-3.5 w-3.5" />
@@ -449,17 +455,17 @@ export default function StaffProfile() {
               <CardTitle className="text-base">{isAr ? "المستندات" : "Documents"}</CardTitle>
               <Dialog open={showDocDialog} onOpenChange={setShowDocDialog}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="gap-1.5"><Upload className="h-3.5 w-3.5" />رفع مستند</Button>
+                  <Button size="sm" className="gap-1.5"><Upload className="h-3.5 w-3.5" />{isAr ? "رفع مستند" : "Upload Document"}</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>رفع مستند جديد</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{isAr ? "رفع مستند جديد" : "Upload New Document"}</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>اسم المستند</Label>
-                      <Input value={docForm.name} onChange={e => setDocForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: عقد العمل" />
+                      <Label>{isAr ? "اسم المستند" : "Document Name"}</Label>
+                      <Input value={docForm.name} onChange={e => setDocForm(f => ({ ...f, name: e.target.value }))} placeholder={isAr ? "مثال: عقد العمل" : "Example: Employment contract"} />
                     </div>
                     <div className="space-y-2">
-                      <Label>نوع المستند</Label>
+                      <Label>{isAr ? "نوع المستند" : "Document Type"}</Label>
                       <Select value={docForm.type} onValueChange={v => setDocForm(f => ({ ...f, type: v }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -468,7 +474,7 @@ export default function StaffProfile() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>تاريخ الانتهاء (اختياري)</Label>
+                      <Label>{isAr ? "تاريخ الانتهاء (اختياري)" : "End Date (Optional)"}</Label>
                       <Input type="date" value={docForm.expiryDate} onChange={e => setDocForm(f => ({ ...f, expiryDate: e.target.value }))} />
                     </div>
                     <div className="space-y-2">
@@ -477,7 +483,7 @@ export default function StaffProfile() {
                     </div>
                     <Button onClick={() => docInputRef.current?.click()} disabled={docUploading} className="w-full gap-2">
                       <Upload className="h-4 w-4" />
-                      {docUploading ? "جاري الرفع..." : "اختيار ملف ورفعه"}
+                      {docUploading ? (isAr ? "جاري الرفع..." : "Uploading...") : "اختيار ملف ورفعه"}
                     </Button>
                     <input ref={docInputRef} type="file" className="hidden" onChange={handleDocUpload} />
                   </div>
@@ -486,7 +492,7 @@ export default function StaffProfile() {
             </CardHeader>
             <CardContent>
               {!documents?.length ? (
-                <p className="text-center text-muted-foreground py-6">لا توجد مستندات</p>
+                <p className="text-center text-muted-foreground py-6">{isAr ? "لا توجد مستندات" : "No documents"}</p>
               ) : (
                 <div className="space-y-3">
                   {documents.map((doc: any) => (
@@ -499,7 +505,7 @@ export default function StaffProfile() {
                           <p className="font-medium text-sm">{doc.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {DOC_TYPES[doc.type] || doc.type}
-                            {doc.expiryDate && ` • ينتهي: ${new Date(doc.expiryDate).toLocaleDateString("ar-SA")}`}
+                            {doc.expiryDate && ` • ${isAr ? "ينتهي" : "Ends"}: ${new Date(doc.expiryDate).toLocaleDateString("ar-SA")}`}
                           </p>
                         </div>
                       </div>

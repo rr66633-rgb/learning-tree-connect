@@ -43,9 +43,9 @@ export default function EngagementActivities() {
 
   const getDifficultyBadge = (difficulty: string) => {
     const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      easy: { label: "سهل", variant: "secondary" },
-      medium: { label: "متوسط", variant: "default" },
-      hard: { label: "متقدم", variant: "destructive" },
+      easy: { label: isAr ? "سهل" : "Easy", variant: "secondary" },
+      medium: { label: isAr ? "متوسط" : "Average", variant: "default" },
+      hard: { label: isAr ? "متقدم" : "Advanced", variant: "destructive" },
     };
     return map[difficulty] || map.easy;
   };
@@ -85,11 +85,11 @@ export default function EngagementActivities() {
           <Link href="/parent/engagement">
             <Button variant="ghost" size="sm" className="mb-1 -mr-2">
               <ChevronRight className="h-4 w-4 ml-1" />
-              العودة
+              {isAr ? "العودة" : "Back"}
             </Button>
           </Link>
-          <h1 className="text-xl font-bold">الأنشطة المنزلية</h1>
-          <p className="text-sm text-muted-foreground">أنشطة مخصصة بالذكاء الاصطناعي لتطوير طفلك</p>
+          <h1 className="text-xl font-bold">{isAr ? "الأنشطة المنزلية" : "Home Activities"}</h1>
+          <p className="text-sm text-muted-foreground">{isAr ? "أنشطة مخصصة بالذكاء الاصطناعي لتطوير طفلك" : "AI-Powered Custom Activities for Your Child\'s Development"}</p>
         </div>
         <Button
           size="sm"
@@ -98,7 +98,7 @@ export default function EngagementActivities() {
           className="gap-1"
         >
           <Sparkles className="h-4 w-4" />
-          {generateMutation.isPending ? "جاري..." : "أنشطة جديدة"}
+          {generateMutation.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "أنشطة جديدة" : "New Activities"}
         </Button>
       </div>
 
@@ -138,7 +138,7 @@ export default function EngagementActivities() {
                   disabled={generateMutation.isPending}
                 >
                   <Sparkles className="h-4 w-4 ml-2" />
-                  إنشاء أنشطة بالذكاء الاصطناعي
+                  {isAr ? "إنشاء أنشطة بالذكاء الاصطناعي" : "Create AI Activities"}
                 </Button>
               </CardContent>
             </Card>
@@ -167,7 +167,7 @@ export default function EngagementActivities() {
                           </span>
                         </div>
                         {activity.materialsNeeded && (
-                          <p className="text-xs text-blue-600 mt-1">المواد: {activity.materialsNeeded}</p>
+                          <p className="text-xs text-blue-600 mt-1">{isAr ? "المواد:" : "Materials:"} {activity.materialsNeeded}</p>
                         )}
                       </div>
                     </div>
@@ -179,7 +179,7 @@ export default function EngagementActivities() {
                         disabled={completeMutation.isPending}
                       >
                         <CheckCircle2 className="h-4 w-4 ml-1" />
-                        تم الإكمال
+                        {isAr ? "تم الإكمال" : "Completed"}
                       </Button>
                     </div>
                   </CardContent>
@@ -193,7 +193,7 @@ export default function EngagementActivities() {
           {completed.length === 0 ? (
             <Card>
               <CardContent>
-                <EmptyState variant="activities" compact title="لم تكمل أي أنشطة بعد" description="أكمل الأنشطة المعينة لكسب النقاط والشارات" />
+                <EmptyState variant="activities" compact title={isAr ? "لم تكمل أي أنشطة بعد" : "You haven\'t completed any activities yet"} description={isAr ? "أكمل الأنشطة المعينة لكسب النقاط والشارات" : "Complete Assigned Activities to Earn Points and Badges"} />
               </CardContent>
             </Card>
           ) : (
@@ -204,7 +204,7 @@ export default function EngagementActivities() {
                     <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{activity.titleAr}</p>
-                      <p className="text-xs text-muted-foreground">+{activity.pointsValue} نقطة</p>
+                      <p className="text-xs text-muted-foreground">+{activity.pointsValue} {isAr ? "نقطة" : "Point"}</p>
                     </div>
                   </div>
                 </CardContent>

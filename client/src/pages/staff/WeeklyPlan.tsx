@@ -66,6 +66,8 @@ const OBJECT_LABEL_KEYS: Record<string, string> = {
 };
 
 function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: string; t: (key: string) => string }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   if (!content) return <p className="text-gray-400 text-sm">{t('weeklyPlan.noContent')}</p>;
 
   // Handle string content
@@ -147,6 +149,8 @@ function SectionEditor({ content, onChange }: { content: any; onChange: (val: st
 }
 
 function TemplateCard({ template, onSelect, isEn }: { template: WeeklyPlanTemplate; onSelect: (t: WeeklyPlanTemplate) => void; isEn: boolean }) {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   return (
     <button
       onClick={() => onSelect(template)}
@@ -158,7 +162,7 @@ function TemplateCard({ template, onSelect, isEn }: { template: WeeklyPlanTempla
       <div className="mt-2 flex flex-wrap gap-1">
         {template.ageGroups.slice(0, 2).map(ag => (
           <span key={ag} className="text-[10px] bg-white/70 rounded px-1.5 py-0.5 text-gray-600">
-            {ag === 'nursery' ? (isEn ? 'Nursery' : 'حضانة') : ag.toUpperCase()}
+            {ag === 'nursery' ? (isEn ? 'Nursery' : (isAr ? "حضانة" : "Nursery")) : ag.toUpperCase()}
           </span>
         ))}
         {template.ageGroups.length > 2 && (
@@ -172,6 +176,7 @@ function TemplateCard({ template, onSelect, isEn }: { template: WeeklyPlanTempla
 export default function WeeklyPlanPage() {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === 'en';
+  const isAr = i18n.language === 'ar';
 
   const [view, setView] = useState<"list" | "generate" | "preview">("list");
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -342,7 +347,7 @@ export default function WeeklyPlanPage() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <Badge variant={plan.status === "published" ? "default" : "secondary"} className={plan.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
-                      {plan.status === "published" ? (isEn ? "Published" : "منشورة") : (isEn ? "Draft" : "مسودة")}
+                      {plan.status === "published" ? (isEn ? "Published" : (isAr ? "منشورة" : "Published")) : (isEn ? "Draft" : (isAr ? "مسودة" : "Draft"))}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       {AGE_GROUPS.find(g => g.value === plan.ageGroup)?.label?.split(" ")[0] || plan.ageGroup}
@@ -582,7 +587,7 @@ export default function WeeklyPlanPage() {
             <h1 className="text-xl font-bold text-gray-900">{plan?.theme || "..."}</h1>
             <div className="flex items-center gap-3 mt-1">
               <Badge variant={plan?.status === "published" ? "default" : "secondary"} className={plan?.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
-                {plan?.status === "published" ? (isEn ? "Published" : "منشورة") : (isEn ? "Draft" : "مسودة")}
+                {plan?.status === "published" ? (isEn ? "Published" : (isAr ? "منشورة" : "Published")) : (isEn ? "Draft" : (isAr ? "مسودة" : "Draft"))}
               </Badge>
               <span className="text-xs text-gray-500">{plan?.weekStartDate} - {plan?.weekEndDate}</span>
               <span className="text-xs text-gray-500">

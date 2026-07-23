@@ -40,7 +40,7 @@ export default function PendingApprovals() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">طلبات الموافقة</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "طلبات الموافقة" : "Approval requests"}</h1>
         <div className="grid gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full" />
@@ -54,8 +54,8 @@ export default function PendingApprovals() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">طلبات الموافقة</h1>
-          <p className="text-muted-foreground text-sm mt-1">مراجعة وقبول أو رفض حسابات أولياء الأمور الجدد</p>
+          <h1 className="text-2xl font-bold">{isAr ? "طلبات الموافقة" : "Approval requests"}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{isAr ? "مراجعة وقبول أو رفض حسابات أولياء الأمور الجدد" : "Review and approve or reject new parent accounts"}</p>
         </div>
         <Badge variant="secondary" className="gap-1 text-base px-3 py-1">
           <Clock className="h-4 w-4" />
@@ -69,8 +69,8 @@ export default function PendingApprovals() {
             <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
               <UserCheck className="h-8 w-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">لا توجد طلبات معلقة</h3>
-            <p className="text-muted-foreground text-sm">جميع الحسابات تمت مراجعتها</p>
+            <h3 className="text-lg font-semibold mb-2">{isAr ? "لا توجد طلبات معلقة" : "No pending requests"}</h3>
+            <p className="text-muted-foreground text-sm">{isAr ? "جميع الحسابات تمت مراجعتها" : "All Accounts Reviewed"}</p>
           </CardContent>
         </Card>
       ) : (
@@ -83,7 +83,7 @@ export default function PendingApprovals() {
                     <Users className="h-6 w-6 text-amber-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-base">{user.name || "مستخدم جديد"}</h3>
+                    <h3 className="font-semibold text-base">{user.name || isAr ? "مستخدم جديد" : "New User"}</h3>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
                       {user.email && (
                         <span className="flex items-center gap-1">
@@ -107,7 +107,7 @@ export default function PendingApprovals() {
                 <div className="flex items-center gap-2 border-t pt-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => setSelectedUser(user)}>
                     <Eye className="h-4 w-4" />
-                    عرض
+                    {isAr ? "عرض" : "View"}
                   </Button>
                   <Button
                     size="sm"
@@ -116,7 +116,7 @@ export default function PendingApprovals() {
                     disabled={approveUser.isPending}
                   >
                     <UserCheck className="h-4 w-4" />
-                    قبول
+                    {isAr ? "قبول" : "Accept"}
                   </Button>
                   <Button
                     variant="destructive"
@@ -126,7 +126,7 @@ export default function PendingApprovals() {
                     disabled={rejectUser.isPending}
                   >
                     <UserX className="h-4 w-4" />
-                    رفض
+                    {isAr ? "رفض" : "Reject"}
                   </Button>
                 </div>
               </CardContent>
@@ -139,7 +139,7 @@ export default function PendingApprovals() {
       <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تفاصيل المستخدم</DialogTitle>
+            <DialogTitle>{isAr ? "تفاصيل المستخدم" : "User Details"}</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4 py-4">
@@ -148,8 +148,8 @@ export default function PendingApprovals() {
                   <Users className="h-8 w-8 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">{selectedUser.name || "مستخدم جديد"}</h3>
-                  <Badge variant="secondary">في انتظار الموافقة</Badge>
+                  <h3 className="text-lg font-semibold">{selectedUser.name || isAr ? "مستخدم جديد" : "New User"}</h3>
+                  <Badge variant="secondary">{isAr ? "في انتظار الموافقة" : "Pending Approval"}</Badge>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
@@ -162,29 +162,29 @@ export default function PendingApprovals() {
                   <span dir="ltr">{selectedUser.phone || "-"}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">رقم الهوية</span>
+                  <span className="text-muted-foreground">{isAr ? "رقم الهوية" : "National ID"}</span>
                   <span dir="ltr">{selectedUser.nationalId || "-"}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">تاريخ التسجيل</span>
+                  <span className="text-muted-foreground">{isAr ? "تاريخ التسجيل" : "Registration Date"}</span>
                   <span>{new Date(selectedUser.createdAt).toLocaleDateString('ar-SA')}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b">
-                  <span className="text-muted-foreground">طريقة التسجيل</span>
-                  <span>{selectedUser.loginMethod || "مباشر"}</span>
+                  <span className="text-muted-foreground">{isAr ? "طريقة التسجيل" : "Registration method"}</span>
+                  <span>{selectedUser.loginMethod || isAr ? "مباشر" : "Direct"}</span>
                 </div>
               </div>
             </div>
           )}
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setSelectedUser(null)}>إغلاق</Button>
+            <Button variant="outline" onClick={() => setSelectedUser(null)}>{isAr ? "إغلاق" : "Close"}</Button>
             <Button
               className="gap-1 bg-green-600 hover:bg-green-700"
               onClick={() => approveUser.mutate({ id: selectedUser.id })}
               disabled={approveUser.isPending}
             >
               <UserCheck className="h-4 w-4" />
-              قبول كولي أمر
+              {isAr ? "قبول كولي أمر" : "Accept as Guardian"}
             </Button>
             <Button
               variant="destructive"
@@ -193,7 +193,7 @@ export default function PendingApprovals() {
               disabled={rejectUser.isPending}
             >
               <UserX className="h-4 w-4" />
-              رفض
+              {isAr ? "رفض" : "Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -7,86 +7,87 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 
-const aiFeatures = [
+
+export default function AIHub() {
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
+  const aiFeatures = [
   {
     id: "observation",
-    title: "كاتب الملاحظات",
+    title: isAr ? "كاتب الملاحظات" : "Note Taker",
     description: "إنشاء ملاحظات مهنية مع تحليل EYFS تلقائياً",
     icon: Eye,
     bgColor: "bg-violet-100",
     iconColor: "text-violet-600",
-    tag: "الأكثر استخداماً",
+    tag: isAr ? "الأكثر استخداماً" : "Most Used",
   },
   {
     id: "planner",
-    title: "الخطة الأسبوعية",
-    description: "إنشاء خطط أسبوعية شاملة بأنشطة يومية",
+    title: isAr ? "الخطة الأسبوعية" : "Weekly Plan",
+    description: isAr ? "إنشاء خطط أسبوعية شاملة بأنشطة يومية" : "Create Comprehensive Weekly Plans with Daily Activities",
     icon: CalendarDays,
     bgColor: "bg-blue-100",
     iconColor: "text-blue-600",
   },
   {
     id: "activity",
-    title: "مولّد الأنشطة",
-    description: "أنشطة تعليمية مبتكرة حسب العمر والموضوع",
+    title: isAr ? "مولّد الأنشطة" : "Activity Generator",
+    description: isAr ? "أنشطة تعليمية مبتكرة حسب العمر والموضوع" : "Innovative Educational Activities by Age and Topic",
     icon: Lightbulb,
     bgColor: "bg-amber-100",
     iconColor: "text-amber-600",
   },
   {
     id: "report",
-    title: "تقرير التقدم",
-    description: "تقارير شاملة لأولياء الأمور من بيانات الطفل",
+    title: isAr ? "تقرير التقدم" : "Progress Report",
+    description: isAr ? "تقارير شاملة لأولياء الأمور من بيانات الطفل" : "Comprehensive reports for parents from child data",
     icon: BarChart3,
     bgColor: "bg-emerald-100",
     iconColor: "text-emerald-600",
   },
   {
     id: "message",
-    title: "رسائل أولياء الأمور",
-    description: "رسائل مهنية بالعربية والإنجليزية بنقرة واحدة",
+    title: isAr ? "رسائل أولياء الأمور" : "Parent Messages",
+    description: isAr ? "رسائل مهنية بالعربية والإنجليزية بنقرة واحدة" : "Professional messages in Arabic and English with one click",
     icon: MessageSquare,
     bgColor: "bg-pink-100",
     iconColor: "text-pink-600",
   },
   {
     id: "newsletter",
-    title: "النشرة الشهرية",
-    description: "نشرة إخبارية جاهزة من أنشطة وأحداث الشهر",
+    title: isAr ? "النشرة الشهرية" : "Monthly Newsletter",
+    description: isAr ? "نشرة إخبارية جاهزة من أنشطة وأحداث الشهر" : "Ready Newsletter of Monthly Activities and Events",
     icon: Newspaper,
     bgColor: "bg-indigo-100",
     iconColor: "text-indigo-600",
   },
   {
     id: "story",
-    title: "صانع القصص",
-    description: "قصص تعليمية مع أسئلة نقاشية ومفردات",
+    title: isAr ? "صانع القصص" : "Story Maker",
+    description: isAr ? "قصص تعليمية مع أسئلة نقاشية ومفردات" : "Educational stories with discussion questions and vocabulary",
     icon: BookOpen,
     bgColor: "bg-teal-100",
     iconColor: "text-teal-600",
   },
   {
     id: "marketing",
-    title: "التسويق الذكي",
-    description: "محتوى تسويقي احترافي للفعاليات والسوشال ميديا",
+    title: isAr ? "التسويق الذكي" : "Smart Marketing",
+    description: isAr ? "محتوى تسويقي احترافي للفعاليات والسوشال ميديا" : "Professional marketing content for events and social media",
     icon: Megaphone,
     bgColor: "bg-rose-100",
     iconColor: "text-rose-600",
-    tag: "جديد",
+    tag: isAr ? "جديد" : "New",
   },
   {
     id: "library",
-    title: "المكتبة",
-    description: "حفظ واسترجاع جميع المحتوى المُنشأ",
+    title: isAr ? "المكتبة" : "Library",
+    description: isAr ? "حفظ واسترجاع جميع المحتوى المُنشأ" : "Save and Restore All Created Content",
     icon: Library,
     bgColor: "bg-muted",
     iconColor: "text-muted-foreground",
   },
-];
+  ];
 
-export default function AIHub() {
-  const { t, i18n } = useTranslation();
-  const isAr = i18n.language === "ar";
   return (
     <div className="max-w-6xl mx-auto space-y-8" dir="rtl">
       {/* Header */}
@@ -97,14 +98,14 @@ export default function AIHub() {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">المساعد الذكي</h1>
-              <p className="text-sm text-muted-foreground">أدوات ذكاء اصطناعي لتقليل الأعمال الورقية</p>
+              <h1 className="text-2xl font-bold text-foreground">{isAr ? "المساعد الذكي" : "AI Assistant"}</h1>
+              <p className="text-sm text-muted-foreground">{isAr ? "أدوات ذكاء اصطناعي لتقليل الأعمال الورقية" : "AI tools to reduce paperwork"}</p>
             </div>
           </div>
         </div>
         <Badge variant="outline" className="w-fit rounded-xl px-4 py-2 text-sm border-violet-200 text-violet-700 bg-violet-50">
           <Zap className="h-3.5 w-3.5 ml-1.5" />
-          توفير 70% من الوقت
+          {isAr ? "توفير 70% من الوقت" : "Save 70% of time"}
         </Badge>
       </div>
 
@@ -138,11 +139,11 @@ export default function AIHub() {
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-4 w-4 text-violet-600" />
-            <span className="text-sm font-semibold text-violet-800">نصيحة سريعة</span>
+            <span className="text-sm font-semibold text-violet-800">{isAr ? "نصيحة سريعة" : "Quick Tip"}</span>
           </div>
           <p className="text-sm text-violet-700/80 leading-relaxed">
-            جميع المحتوى المُنشأ يُحفظ تلقائياً في المكتبة. يمكنك إعادة استخدامه أو تعديله لاحقاً.
-            اللغة العربية هي الافتراضية لجميع الأدوات مع دعم كامل للإنجليزية.
+            {isAr ? "جميع المحتوى المُنشأ يُحفظ تلقائياً في المكتبة. يمكنك إعادة استخدامه أو تعديله لاحقاً." : "All created content is automatically saved in the library. You can reuse or modify it later."}
+            {isAr ? "اللغة العربية هي الافتراضية لجميع الأدوات مع دعم كامل للإنجليزية." : "Arabic is the default language for all tools with full English support."}
           </p>
         </CardContent>
       </Card>

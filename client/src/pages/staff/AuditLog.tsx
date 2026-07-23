@@ -41,13 +41,13 @@ export default function AuditLog() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Shield className="w-6 h-6 text-green-700" />
-          سجل المراجعة
+          {isAr ? "سجل المراجعة" : "Review Log"}
         </h1>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">آخر العمليات</CardTitle>
+          <CardTitle className="text-base">{isAr ? "آخر العمليات" : "Latest Operations"}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -89,7 +89,7 @@ export default function AuditLog() {
           ) : (
             <div className="py-12 text-center">
               <Shield className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">لا توجد عمليات مسجلة بعد</p>
+              <p className="text-muted-foreground">{isAr ? "لا توجد عمليات مسجلة بعد" : "No operations recorded yet"}</p>
             </div>
           )}
         </CardContent>

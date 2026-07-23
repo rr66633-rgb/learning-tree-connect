@@ -72,7 +72,7 @@ export default function InvoiceDetail() {
 
   const sendInvoiceEmail = trpc.finance.sendInvoiceEmail.useMutation({
     onSuccess: () => toast.success(isAr ? "تم إرسال الفاتورة بالبريد الإلكتروني بنجاح" : "Invoice sent by email successfully"),
-    onError: (e: any) => toast.error(e.message || 'فشل إرسال البريد الإلكتروني'),
+    onError: (e: any) => toast.error(e.message || isAr ? 'فشل إرسال البريد الإلكتروني' : 'Failed to Send Email'),
   });
 
   const handlePrint = async () => {
@@ -89,7 +89,7 @@ export default function InvoiceDetail() {
       });
     } catch (err) {
       console.error('Print error:', err);
-      toast.error('حدث خطأ أثناء الطباعة');
+      toast.error(isAr ? 'حدث خطأ أثناء الطباعة' : 'An error occurred during printing');
     }
   };
 
@@ -105,10 +105,10 @@ export default function InvoiceDetail() {
         commercialRegister: (centerSettings as any)?.commercialRegister || undefined,
         logoUrl: (centerSettings as any)?.logoUrl || undefined,
       });
-      toast.success('تم تحميل الفاتورة بنجاح');
+      toast.success(isAr ? 'تم تحميل الفاتورة بنجاح' : 'Invoice uploaded successfully');
     } catch (err) {
       console.error('PDF generation error:', err);
-      toast.error('حدث خطأ أثناء توليد الفاتورة');
+      toast.error(isAr ? 'حدث خطأ أثناء توليد الفاتورة' : 'An error occurred while generating the invoice');
     }
   };
 
@@ -133,9 +133,9 @@ export default function InvoiceDetail() {
   if (!invoice) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground text-lg">الفاتورة غير موجودة</p>
+        <p className="text-muted-foreground text-lg">{isAr ? "الفاتورة غير موجودة" : "Invoice Not Found"}</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate(user?.role === 'parent' ? '/parent/finance' : '/staff/finance')}>
-          <ArrowRight className="h-4 w-4 ml-2" />العودة للمالية
+          <ArrowRight className="h-4 w-4 ml-2" />{isAr ? "العودة للمالية" : "Back to Finance"}
         </Button>
       </div>
     );
@@ -151,7 +151,7 @@ export default function InvoiceDetail() {
           </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">فاتورة #{invoice.invoiceNumber}</h1>
-            <p className="text-sm text-muted-foreground">تاريخ الإنشاء: {new Date(invoice.createdAt).toLocaleDateString('ar-SA')}</p>
+            <p className="text-sm text-muted-foreground">{isAr ? "تاريخ الإنشاء:" : "Creation Date:"} {new Date(invoice.createdAt).toLocaleDateString('ar-SA')}</p>
           </div>
         </div>
         <Badge className={`text-sm px-3 py-1 ${statusColors[invoice.status]}`}>
@@ -165,11 +165,11 @@ export default function InvoiceDetail() {
           <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
               <div>
-                <CardTitle className="text-lg text-primary">حضانة شجرة التعلم</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">فاتورة ضريبية مبسطة</p>
+                <CardTitle className="text-lg text-primary">{isAr ? "حضانة شجرة التعلم" : "Learning Tree Nursery"}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">{isAr ? "فاتورة ضريبية مبسطة" : "Simplified Tax Invoice"}</p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="text-sm font-medium">رقم الفاتورة</p>
+                <p className="text-sm font-medium">{isAr ? "رقم الفاتورة" : "Invoice Number"}</p>
                 <p className="text-lg font-bold text-primary">{invoice.invoiceNumber}</p>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function InvoiceDetail() {
             {/* Child & Parent Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">معلومات الطفل</h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">{isAr ? "معلومات الطفل" : "Child Information"}</h3>
                 <p className="font-medium">{invoice.childName}</p>
               </div>
               <div className="space-y-2">
@@ -197,21 +197,21 @@ export default function InvoiceDetail() {
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <span>{isAr ? "الوصف" : "Description"}</span>
-                  <span className="font-medium">{invoice.description || "بدون وصف"}</span>
+                  <span className="font-medium">{invoice.description || isAr ? "بدون وصف" : "No Description"}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span>المبلغ قبل الضريبة</span>
-                  <span className="font-medium">{Number(invoice.subtotal).toLocaleString('ar-SA')} ر.س</span>
+                  <span>{isAr ? "المبلغ قبل الضريبة" : "Amount Before Tax"}</span>
+                  <span className="font-medium">{Number(invoice.subtotal).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>ضريبة القيمة المضافة ({invoice.vatRate}%)</span>
-                  <span className="font-medium">{Number(invoice.vatAmount).toLocaleString('ar-SA')} ر.س</span>
+                  <span>{isAr ? "ضريبة القيمة المضافة (" : "VAT ("}{invoice.vatRate}%)</span>
+                  <span className="font-medium">{Number(invoice.vatAmount).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center text-lg font-bold">
-                  <span>الإجمالي</span>
-                  <span className="text-primary">{Number(invoice.total).toLocaleString('ar-SA')} ر.س</span>
+                  <span>{isAr ? "الإجمالي" : "Total"}</span>
+                  <span className="text-primary">{Number(invoice.total).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span>
                 </div>
               </div>
             </div>
@@ -221,18 +221,18 @@ export default function InvoiceDetail() {
             {/* Dates & Payment Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">التواريخ</h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">{isAr ? "التواريخ" : "Dates"}</h3>
                 <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span>تاريخ الإنشاء:</span><span>{new Date(invoice.createdAt).toLocaleDateString('ar-SA')}</span></div>
-                  <div className="flex justify-between"><span>تاريخ الاستحقاق:</span><span>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</span></div>
-                  {invoice.paidAt && <div className="flex justify-between"><span>تاريخ الدفع:</span><span>{new Date(invoice.paidAt).toLocaleDateString('ar-SA')}</span></div>}
+                  <div className="flex justify-between"><span>{isAr ? "تاريخ الإنشاء:" : "Creation Date:"}</span><span>{new Date(invoice.createdAt).toLocaleDateString('ar-SA')}</span></div>
+                  <div className="flex justify-between"><span>{isAr ? "تاريخ الاستحقاق:" : "Due Date:"}</span><span>{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</span></div>
+                  {invoice.paidAt && <div className="flex justify-between"><span>{isAr ? "تاريخ الدفع:" : "Payment Date:"}</span><span>{new Date(invoice.paidAt).toLocaleDateString('ar-SA')}</span></div>}
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">حالة الدفع</h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">{isAr ? "حالة الدفع" : "Payment Status"}</h3>
                 <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span>الحالة:</span><Badge className={statusColors[invoice.status]}>{statusLabels[invoice.status]}</Badge></div>
-                  {invoice.paymentMethod && <div className="flex justify-between"><span>طريقة الدفع:</span><span>{paymentMethodLabels[invoice.paymentMethod] || invoice.paymentMethod}</span></div>}
+                  <div className="flex justify-between"><span>{isAr ? "الحالة:" : "Status:"}</span><Badge className={statusColors[invoice.status]}>{statusLabels[invoice.status]}</Badge></div>
+                  {invoice.paymentMethod && <div className="flex justify-between"><span>{isAr ? "طريقة الدفع:" : "Payment Method:"}</span><span>{paymentMethodLabels[invoice.paymentMethod] || invoice.paymentMethod}</span></div>}
                 </div>
               </div>
             </div>
@@ -247,31 +247,31 @@ export default function InvoiceDetail() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {invoice.status !== 'paid' && (
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setPayDialog(true)}>
-                  <CheckCircle2 className="h-4 w-4 ml-2" />تسجيل دفع
+                  <CheckCircle2 className="h-4 w-4 ml-2" />{isAr ? "تسجيل دفع" : "Record Payment"}
                 </Button>
               )}
               {invoice.status === 'paid' && (
                 <Button variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => markPending.mutate({ id: invoiceId })}>
-                  <Clock className="h-4 w-4 ml-2" />إرجاع لمعلقة
+                  <Clock className="h-4 w-4 ml-2" />{isAr ? "إرجاع لمعلقة" : "Return to Pending"}
                 </Button>
               )}
               <Button variant="outline" onClick={openEditDialog}>
-                <Pencil className="h-4 w-4 ml-2" />تعديل
+                <Pencil className="h-4 w-4 ml-2" />{isAr ? "تعديل" : "Edit"}
               </Button>
               <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-50" onClick={() => setDeleteConfirm(true)}>
-                <Trash2 className="h-4 w-4 ml-2" />حذف
+                <Trash2 className="h-4 w-4 ml-2" />{isAr ? "حذف" : "Delete"}
               </Button>
               <Button variant="outline" onClick={handleDownloadPDF}>
-                <Download className="h-4 w-4 ml-2" />تحميل
+                <Download className="h-4 w-4 ml-2" />{isAr ? "تحميل" : "Download"}
               </Button>
               <Button variant="outline" onClick={handlePrint}>
-                <Printer className="h-4 w-4 ml-2" />طباعة
+                <Printer className="h-4 w-4 ml-2" />{isAr ? "طباعة" : "Print"}
               </Button>
               <Button variant="outline" onClick={() => sendToParent.mutate({ id: invoiceId })} disabled={sendToParent.isPending}>
-                <Send className="h-4 w-4 ml-2" />{sendToParent.isPending ? "جاري..." : "تذكير"}
+                <Send className="h-4 w-4 ml-2" />{sendToParent.isPending ? "جاري..." : (isAr ? "تذكير" : "Reminder")}
               </Button>
               <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => sendInvoiceEmail.mutate({ id: invoiceId })} disabled={sendInvoiceEmail.isPending}>
-                <Mail className="h-4 w-4 ml-2" />{sendInvoiceEmail.isPending ? "جاري..." : "إرسال إيميل"}
+                <Mail className="h-4 w-4 ml-2" />{sendInvoiceEmail.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "إرسال إيميل" : "Send Email"}
               </Button>
             </div>
           </CardContent>
@@ -281,22 +281,22 @@ export default function InvoiceDetail() {
       {/* Mark as Paid Dialog */}
       <Dialog open={payDialog} onOpenChange={setPayDialog}>
         <DialogContent>
-          <DialogHeader><DialogTitle>تسجيل دفع الفاتورة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "تسجيل دفع الفاتورة" : "Record Invoice Payment"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">المبلغ: <span className="font-bold text-foreground">{Number(invoice.total).toLocaleString('ar-SA')} ر.س</span></p>
+            <p className="text-sm text-muted-foreground">{isAr ? "المبلغ:" : "Amount:"} <span className="font-bold text-foreground">{Number(invoice.total).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span></p>
             <div>
-              <Label>طريقة الدفع</Label>
+              <Label>{isAr ? "طريقة الدفع" : "Payment Method"}</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger><SelectValue placeholder="اختر طريقة الدفع" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={isAr ? "اختر طريقة الدفع" : "Select Payment Method"} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">
-                    <div className="flex items-center gap-2"><Banknote className="h-4 w-4" />نقدي</div>
+                    <div className="flex items-center gap-2"><Banknote className="h-4 w-4" />{isAr ? "نقدي" : "Cash"}</div>
                   </SelectItem>
                   <SelectItem value="bank_transfer">
-                    <div className="flex items-center gap-2"><Building2 className="h-4 w-4" />تحويل بنكي</div>
+                    <div className="flex items-center gap-2"><Building2 className="h-4 w-4" />{isAr ? "تحويل بنكي" : "Bank Transfer"}</div>
                   </SelectItem>
                   <SelectItem value="card">
-                    <div className="flex items-center gap-2"><CreditCard className="h-4 w-4" />بطاقة</div>
+                    <div className="flex items-center gap-2"><CreditCard className="h-4 w-4" />{isAr ? "بطاقة" : "Card"}</div>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -305,7 +305,7 @@ export default function InvoiceDetail() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayDialog(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button className="bg-green-600 hover:bg-green-700" disabled={!paymentMethod || markPaid.isPending} onClick={() => markPaid.mutate({ id: invoiceId, paymentMethod: paymentMethod as any })}>
-              {markPaid.isPending ? "جاري..." : "تأكيد الدفع"}
+              {markPaid.isPending ? "جاري..." : (isAr ? "تأكيد الدفع" : "Confirm Payment")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -314,16 +314,16 @@ export default function InvoiceDetail() {
       {/* Edit Dialog */}
       <Dialog open={editDialog} onOpenChange={setEditDialog}>
         <DialogContent>
-          <DialogHeader><DialogTitle>تعديل الفاتورة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "تعديل الفاتورة" : "Edit Invoice"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>{isAr ? "الوصف" : "Description"}</Label><Input value={editDesc} onChange={e => setEditDesc(e.target.value)} /></div>
-            <div><Label>المبلغ قبل الضريبة (ر.س)</Label><Input type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} /></div>
-            <div><Label>تاريخ الاستحقاق</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
+            <div><Label>{isAr ? "المبلغ قبل الضريبة (ر.س)" : "Amount Before Tax (SAR)"}</Label><Input type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} /></div>
+            <div><Label>{isAr ? "تاريخ الاستحقاق" : "Due Date"}</Label><Input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button disabled={updateInvoice.isPending} onClick={() => updateInvoice.mutate({ id: invoiceId, description: editDesc || undefined, subtotal: editAmount || undefined, dueDate: editDueDate || undefined })}>
-              {updateInvoice.isPending ? "جاري..." : "حفظ التعديلات"}
+              {updateInvoice.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "حفظ التعديلات" : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -333,8 +333,8 @@ export default function InvoiceDetail() {
       <AlertDialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>حذف الفاتورة</AlertDialogTitle>
-            <AlertDialogDescription>هل أنت متأكد من حذف هذه الفاتورة؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+            <AlertDialogTitle>{isAr ? "حذف الفاتورة" : "Delete Invoice"}</AlertDialogTitle>
+            <AlertDialogDescription>{isAr ? "هل أنت متأكد من حذف هذه الفاتورة؟ لا يمكن التراجع عن هذا الإجراء." : "Are you sure you want to delete this invoice? This action cannot be undone."}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{isAr ? "إلغاء" : "Cancel"}</AlertDialogCancel>

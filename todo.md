@@ -2445,3 +2445,14 @@ Fix:
 - [x] Translate shared components (ChangePassword, NotificationSoundSettings, PushNotificationBanner + NotificationBell)
 - [x] Translate remaining toast notifications in sub-components (all 182+ toast messages translated)
 - [x] Translate landing page (NurseriesLanding.tsx) with full i18n and add language switcher button
+- [ ] Fix parent/Children.tsx - still shows only Arabic, not switching with language
+- [ ] Fix parent/DailySchedule.tsx - still shows only Arabic, not switching with language
+
+## English Language Support Fix (Batch Translation)
+- [x] Fix 338 TypeScript errors from batch translation script (isAr not in scope)
+- [x] Add isAr declarations to all sub-components that use translated strings
+- [x] Convert module-level constants with Arabic to getter functions (getCATEGORIES, getActivityTypes, etc.)
+- [x] Translate remaining Arabic strings in pages (toast messages, JSX text, object values)
+- [x] Translate remaining Arabic strings in components (DashboardLayout, EmptyState, etc.)
+- [x] Fix broken JSX structure in AIMarketingEventContent.tsx (reverted to safe state)
+- [x] Ensure all pages display in English when English language is selected

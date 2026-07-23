@@ -63,7 +63,7 @@ export function NotificationSoundSettings() {
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>منخفض</span>
+              <span>{isAr ? "منخفض" : "Low"}</span>
               <span>مرتفع</span>
             </div>
           </div>

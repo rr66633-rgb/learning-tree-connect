@@ -67,7 +67,7 @@ export default function SubscriptionCheckout() {
         element: moyasarRef.current,
         amount: amountInHalalas,
         currency: "SAR",
-        description: `اشتراك ${selectedPlan.nameAr} - ${billingCycle === "yearly" ? "سنوي" : "شهري"}`,
+        description: `اشتراك ${selectedPlan.nameAr} - ${billingCycle === "yearly" ? isAr ? "سنوي" : "Annual" : isAr ? "شهري" : "Monthly"}`,
         publishable_api_key: gatewayStatus.publishableKey,
         callback_url: `https://naashah.com/payment-callback?plan=${planId}&cycle=${billingCycle}&org=${orgId || ""}`,
         methods: ["creditcard", "applepay"],
@@ -116,10 +116,10 @@ export default function SubscriptionCheckout() {
       <div className="min-h-screen flex items-center justify-center p-6 bg-background">
         <Card className="w-full max-w-md text-center">
           <CardContent className="pt-8 pb-8 space-y-4">
-            <p className="text-muted-foreground">لم يتم تحديد خطة اشتراك صالحة</p>
+            <p className="text-muted-foreground">{isAr ? "لم يتم تحديد خطة اشتراك صالحة" : "No valid subscription plan selected"}</p>
             <Button onClick={() => navigate("/pricing")} variant="outline">
               <ArrowRight className="w-4 h-4 ml-2" />
-              العودة لخطط الاشتراك
+              {isAr ? "العودة لخطط الاشتراك" : "Back to Subscription Plans"}
             </Button>
           </CardContent>
         </Card>
@@ -133,12 +133,12 @@ export default function SubscriptionCheckout() {
         <Card className="w-full max-w-md text-center">
           <CardContent className="pt-8 pb-8 space-y-4">
             <CreditCard className="w-12 h-12 mx-auto text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-foreground">بوابة الدفع غير مفعلة</h2>
+            <h2 className="text-lg font-semibold text-foreground">{isAr ? "بوابة الدفع غير مفعلة" : "Payment Gateway Not Active"}</h2>
             <p className="text-muted-foreground text-sm">
-              يرجى التواصل مع الإدارة لتفعيل بوابة الدفع الإلكتروني.
+              {isAr ? "يرجى التواصل مع الإدارة لتفعيل بوابة الدفع الإلكتروني." : "Please contact administration to activate the electronic payment gateway."}
             </p>
             <Button onClick={() => navigate("/")} variant="outline">
-              العودة للرئيسية
+              {isAr ? "العودة للرئيسية" : "Back to Home"}
             </Button>
           </CardContent>
         </Card>
@@ -151,8 +151,8 @@ export default function SubscriptionCheckout() {
       <div className="w-full max-w-lg space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">إتمام الدفع</h1>
-          <p className="text-muted-foreground text-sm">ادفع بأمان عبر بوابة ميسر</p>
+          <h1 className="text-2xl font-bold text-foreground">{isAr ? "إتمام الدفع" : "Complete Payment"}</h1>
+          <p className="text-muted-foreground text-sm">{isAr ? "ادفع بأمان عبر بوابة ميسر" : "Pay securely via Maysar gateway"}</p>
         </div>
 
         {/* Plan Summary */}
@@ -161,25 +161,25 @@ export default function SubscriptionCheckout() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">{selectedPlan.nameAr}</CardTitle>
               <Badge variant="secondary" className="bg-[#00C9B7]/10 text-[#00C9B7]">
-                {billingCycle === "yearly" ? "سنوي" : "شهري"}
+                {billingCycle === "yearly" ? isAr ? "سنوي" : "Annual" : isAr ? "شهري" : "Monthly"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">السعر الأصلي</span>
-              <span className="text-muted-foreground line-through">{amount.toLocaleString("ar-SA")} ر.س</span>
+              <span className="text-muted-foreground">{isAr ? "السعر الأصلي" : "Original Price"}</span>
+              <span className="text-muted-foreground line-through">{amount.toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-[#FF5CA8] font-medium">خصم 50% (عرض خاص)</span>
-              <span className="text-[#FF5CA8] font-medium">-{(amount - discountedAmount).toLocaleString("ar-SA")} ر.س</span>
+              <span className="text-[#FF5CA8] font-medium">{isAr ? "خصم 50% (عرض خاص)" : "50% off (Special offer)"}</span>
+              <span className="text-[#FF5CA8] font-medium">-{(amount - discountedAmount).toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
             </div>
             <div className="border-t border-border pt-3 flex items-center justify-between">
-              <span className="font-semibold text-foreground">المبلغ المطلوب</span>
-              <span className="text-xl font-bold text-[#00C9B7]">{discountedAmount.toLocaleString("ar-SA")} ر.س</span>
+              <span className="font-semibold text-foreground">{isAr ? "المبلغ المطلوب" : "Amount Required"}</span>
+              <span className="text-xl font-bold text-[#00C9B7]">{discountedAmount.toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              شامل ضريبة القيمة المضافة • {billingCycle === "yearly" ? "اشتراك سنوي" : "اشتراك شهري"}
+              شامل ضريبة القيمة المضافة • {billingCycle === "yearly" ? isAr ? "اشتراك سنوي" : "Annual Subscription" : isAr ? "اشتراك شهري" : "Monthly Subscription"}
             </p>
           </CardContent>
         </Card>
@@ -189,14 +189,14 @@ export default function SubscriptionCheckout() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-[#7B61FF]" />
-              بيانات الدفع
+              {isAr ? "بيانات الدفع" : "Payment Data"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {paymentInitiated ? (
               <div className="flex flex-col items-center justify-center py-8 space-y-3">
                 <Loader2 className="w-8 h-8 animate-spin text-[#00C9B7]" />
-                <p className="text-sm text-muted-foreground">جاري معالجة الدفع...</p>
+                <p className="text-sm text-muted-foreground">{isAr ? "جاري معالجة الدفع..." : "Processing Payment..."}</p>
               </div>
             ) : (
               <div ref={moyasarRef} className="moyasar-form" />
@@ -212,7 +212,7 @@ export default function SubscriptionCheckout() {
 
         {/* Supported Networks */}
         <div className="flex items-center justify-center gap-4 opacity-60">
-          <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mada.svg" alt="مدى" className="h-6" />
+          <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mada.svg" alt={isAr ? "مدى" : "Mada"} className="h-6" />
           <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/visa.svg" alt="Visa" className="h-6" />
           <img src="https://cdn.jsdelivr.net/npm/moyasar-payment-form@2.2.9/dist/assets/mastercard.svg" alt="Mastercard" className="h-6" />
         </div>
@@ -221,7 +221,7 @@ export default function SubscriptionCheckout() {
         <div className="text-center">
           <Button variant="ghost" onClick={() => navigate(-1 as any)} className="text-muted-foreground">
             <ArrowRight className="w-4 h-4 ml-1" />
-            العودة
+            {isAr ? "العودة" : "Back"}
           </Button>
         </div>
       </div>

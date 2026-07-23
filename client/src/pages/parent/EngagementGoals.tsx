@@ -78,14 +78,14 @@ export default function EngagementGoals() {
 
   const getCategoryInfo = (category: string) => {
     const categories: Record<string, { label: string; color: string }> = {
-      vocabulary: { label: "المفردات", color: "bg-blue-100 text-blue-700" },
-      fine_motor: { label: "المهارات الحركية الدقيقة", color: "bg-purple-100 text-purple-700" },
-      gross_motor: { label: "المهارات الحركية الكبرى", color: "bg-orange-100 text-orange-700" },
-      social: { label: "المهارات الاجتماعية", color: "bg-pink-100 text-pink-700" },
-      independence: { label: "الاستقلالية", color: "bg-teal-100 text-teal-700" },
-      literacy: { label: "القراءة والكتابة", color: "bg-indigo-100 text-indigo-700" },
-      numeracy: { label: "الحساب", color: "bg-amber-100 text-amber-700" },
-      creativity: { label: "الإبداع", color: "bg-rose-100 text-rose-700" },
+      vocabulary: { label: isAr ? "المفردات" : "Vocabulary", color: "bg-blue-100 text-blue-700" },
+      fine_motor: { label: isAr ? "المهارات الحركية الدقيقة" : "Fine Motor Skills", color: "bg-purple-100 text-purple-700" },
+      gross_motor: { label: isAr ? "المهارات الحركية الكبرى" : "Gross Motor Skills", color: "bg-orange-100 text-orange-700" },
+      social: { label: isAr ? "المهارات الاجتماعية" : "Social Skills", color: "bg-pink-100 text-pink-700" },
+      independence: { label: isAr ? "الاستقلالية" : "Independence", color: "bg-teal-100 text-teal-700" },
+      literacy: { label: isAr ? "القراءة والكتابة" : "Literacy", color: "bg-indigo-100 text-indigo-700" },
+      numeracy: { label: isAr ? "الحساب" : "Account", color: "bg-amber-100 text-amber-700" },
+      creativity: { label: isAr ? "الإبداع" : "Creativity", color: "bg-rose-100 text-rose-700" },
     };
     return categories[category] || { label: category, color: "bg-gray-100 text-gray-700" };
   };
@@ -113,10 +113,10 @@ export default function EngagementGoals() {
         <div className="flex-1">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Target className="h-5 w-5 text-indigo-500" />
-            أهداف النمو الشهرية
+            {isAr ? "أهداف النمو الشهرية" : "Monthly Growth Goals"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            أهداف مخصصة لتطوير مهارات طفلك
+            {isAr ? "أهداف مخصصة لتطوير مهارات طفلك" : "Custom Goals for Your Child\'s Skill Development"}
           </p>
         </div>
       </div>
@@ -136,7 +136,7 @@ export default function EngagementGoals() {
               ) : (
                 <Sparkles className="h-4 w-4 ml-2" />
               )}
-              إنشاء أهداف بالذكاء الاصطناعي
+              {isAr ? "إنشاء أهداف بالذكاء الاصطناعي" : "Create AI Goals"}
             </Button>
           </CardContent>
         </Card>
@@ -171,7 +171,7 @@ export default function EngagementGoals() {
                   </div>
                   {goal.suggestedActivities && goal.suggestedActivities.length > 0 && (
                     <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                      <p className="text-[10px] font-bold text-muted-foreground">أنشطة مقترحة:</p>
+                      <p className="text-[10px] font-bold text-muted-foreground">{isAr ? "أنشطة مقترحة:" : "Suggested Activities:"}</p>
                       {goal.suggestedActivities.slice(0, 2).map((act: any, idx: number) => (
                         <p key={idx} className="text-xs">• {act.titleAr || act.description}</p>
                       ))}
@@ -184,7 +184,7 @@ export default function EngagementGoals() {
                     onClick={() => openUpdateDialog(goal)}
                   >
                     <TrendingUp className="h-3 w-3 ml-1" />
-                    تحديث التقدم
+                    {isAr ? "تحديث التقدم" : "Update Progress"}
                   </Button>
                 </CardContent>
               </Card>
@@ -225,7 +225,7 @@ export default function EngagementGoals() {
       <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
         <DialogContent dir="rtl">
           <DialogHeader>
-            <DialogTitle>تحديث التقدم</DialogTitle>
+            <DialogTitle>{isAr ? "تحديث التقدم" : "Update Progress"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -234,7 +234,7 @@ export default function EngagementGoals() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>نسبة الإنجاز</span>
+                <span>{isAr ? "نسبة الإنجاز" : "Achievement Rate"}</span>
                 <span className="font-bold">{progressValue[0]}%</span>
               </div>
               <Slider
@@ -246,23 +246,23 @@ export default function EngagementGoals() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">ملاحظات (اختياري)</label>
+              <label className="text-sm font-medium">{isAr ? "ملاحظات (اختياري)" : "Notes (Optional)"}</label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="أضف ملاحظاتك عن تقدم طفلك..."
+                placeholder={isAr ? "أضف ملاحظاتك عن تقدم طفلك..." : "Add your notes on your child\'s progress..."}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUpdateDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setUpdateDialogOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={handleUpdateProgress}
               disabled={updateMutation.isPending}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              {updateMutation.isPending ? "جاري الحفظ..." : "حفظ التقدم"}
+              {updateMutation.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : "حفظ التقدم"}
             </Button>
           </DialogFooter>
         </DialogContent>

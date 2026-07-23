@@ -64,7 +64,7 @@ export default function ParentFinance() {
         setOpenPayDialog(false);
       }
     },
-    onError: (err) => toast.error(err.message || "حدث خطأ أثناء عملية الدفع"),
+    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء عملية الدفع" : "An error occurred during the payment process"),
   });
 
   const totalPending = invoices?.filter((inv: any) => inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partially_paid').reduce((sum: number, inv: any) => sum + (Number(inv.total) - Number(inv.paidAmount || 0)), 0) ?? 0;
@@ -103,7 +103,7 @@ export default function ParentFinance() {
         element: node,
         amount: amountInHalalas,
         currency: 'SAR',
-        description: `فاتورة ${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
+        description: `${isAr ? "فاتورة " : "Invoice"}${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
         publishable_api_key: gatewayStatus.publishableKey,
         callback_url: `https://naashah.com/payment-callback?invoiceId=${selectedInvoice.id}`,
         methods: ['creditcard', 'applepay', 'stcpay'],
@@ -152,13 +152,13 @@ export default function ParentFinance() {
         },
         on_failure: async function(error: any) {
           console.error('Moyasar payment failed:', error);
-          toast.error('فشلت عملية الدفع: ' + (typeof error === 'string' ? error : 'يرجى المحاولة مرة أخرى'));
+          toast.error(isAr ? 'فشلت عملية الدفع: ' : 'Payment Failed:' + (typeof error === 'string' ? error : isAr ? 'يرجى المحاولة مرة أخرى' : 'Please try again'));
         },
         });
         setMoyasarInitialized(true);
       } catch (err) {
         console.error('Moyasar init error:', err);
-        toast.error('حدث خطأ في تهيئة بوابة الدفع');
+        toast.error(isAr ? 'حدث خطأ في تهيئة بوابة الدفع' : 'An error occurred while initializing the payment gateway');
       }
     });
   };
@@ -168,11 +168,11 @@ export default function ParentFinance() {
     // Keep for backward compatibility
     if (!selectedInvoice) return;
     if (!gatewayStatus?.publishableKey) {
-      toast.error('بوابة الدفع غير مفعلة حالياً');
+      toast.error(isAr ? 'بوابة الدفع غير مفعلة حالياً' : 'Payment Gateway Currently Inactive');
       return;
     }
     // The Moyasar form handles the payment directly
-    toast.info('يرجى إدخال بيانات البطاقة في النموذج أدناه');
+    toast.info(isAr ? 'يرجى إدخال بيانات البطاقة في النموذج أدناه' : 'Please enter card details in the form below');
   };
 
   const handleViewDetails = (invoice: any) => {
@@ -192,7 +192,7 @@ export default function ParentFinance() {
 ضريبة القيمة المضافة (${invoice.vatRate}%): ${Number(invoice.vatAmount).toLocaleString('ar-SA')} ر.س
 الإجمالي: ${Number(invoice.total).toLocaleString('ar-SA')} ر.س
 الحالة: ${statusLabels[invoice.status]}
-${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDateString('ar-SA')}` : ''}
+${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Date(invoice.paidAt).toLocaleDateString('ar-SA')}` : ''}
     `.trim();
     
     const blob = new Blob(["\uFEFF" + content], { type: "text/plain;charset=utf-8" });
@@ -208,7 +208,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">الفواتير والمدفوعات</h1>
+        <h1 className="text-2xl font-bold">{isAr ? "الفواتير والمدفوعات" : "Invoices & Payments"}</h1>
       </div>
 
       {/* Summary Cards */}
@@ -217,8 +217,8 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
           <CardContent className="p-4 flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 text-amber-600 shrink-0" />
             <div>
-              <p className="text-xs text-muted-foreground">المبلغ المستحق</p>
-              <p className="text-lg font-bold text-amber-600">{totalPending.toLocaleString('ar-SA')} ر.س</p>
+              <p className="text-xs text-muted-foreground">{isAr ? "المبلغ المستحق" : "Amount Due"}</p>
+              <p className="text-lg font-bold text-amber-600">{totalPending.toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</p>
             </div>
           </CardContent>
         </Card>
@@ -226,8 +226,8 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
           <CardContent className="p-4 flex items-center gap-3">
             <CheckCircle2 className="h-8 w-8 text-green-600 shrink-0" />
             <div>
-              <p className="text-xs text-muted-foreground">إجمالي المدفوع</p>
-              <p className="text-lg font-bold text-green-600">{totalPaid.toLocaleString('ar-SA')} ر.س</p>
+              <p className="text-xs text-muted-foreground">{isAr ? "إجمالي المدفوع" : "Total Paid"}</p>
+              <p className="text-lg font-bold text-green-600">{totalPaid.toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</p>
             </div>
           </CardContent>
         </Card>
@@ -235,12 +235,12 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
           <CardContent className="p-4 flex items-center gap-3">
             <CreditCard className="h-8 w-8 text-primary shrink-0" />
             <div>
-              <p className="text-xs text-muted-foreground">بوابة الدفع</p>
+              <p className="text-xs text-muted-foreground">{isAr ? "بوابة الدفع" : "Payment Gateway"}</p>
               <p className="text-sm font-medium">
                 {gatewayStatus?.isConfigured ? (
-                  <span className="text-green-600">مفعلة</span>
+                  <span className="text-green-600">{isAr ? "مفعلة" : "Activated"}</span>
                 ) : (
-                  <span className="text-amber-600">قيد التفعيل</span>
+                  <span className="text-amber-600">{isAr ? "قيد التفعيل" : "Activating"}</span>
                 )}
               </p>
             </div>
@@ -251,8 +251,8 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
       {/* Tabs */}
       <Tabs defaultValue="invoices" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="invoices"><FileText className="h-4 w-4 ml-1" />الفواتير</TabsTrigger>
-          <TabsTrigger value="history"><History className="h-4 w-4 ml-1" />سجل المدفوعات</TabsTrigger>
+          <TabsTrigger value="invoices"><FileText className="h-4 w-4 ml-1" />{isAr ? "الفواتير" : "Invoices"}</TabsTrigger>
+          <TabsTrigger value="history"><History className="h-4 w-4 ml-1" />{isAr ? "سجل المدفوعات" : "Payments Log"}</TabsTrigger>
         </TabsList>
 
         {/* INVOICES TAB */}
@@ -261,10 +261,10 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[160px]"><SelectValue placeholder={t("common.status")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الفواتير</SelectItem>
-                <SelectItem value="unpaid">غير مدفوعة</SelectItem>
-                <SelectItem value="paid">مدفوعة</SelectItem>
-                <SelectItem value="overdue">متأخرة</SelectItem>
+                <SelectItem value="all">{isAr ? "جميع الفواتير" : "All Invoices"}</SelectItem>
+                <SelectItem value="unpaid">{isAr ? "غير مدفوعة" : "Unpaid"}</SelectItem>
+                <SelectItem value="paid">{isAr ? "مدفوعة" : "Paid"}</SelectItem>
+                <SelectItem value="overdue">{isAr ? "متأخرة" : "Overdue"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -276,13 +276,13 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">رقم الفاتورة</TableHead>
-                      <TableHead className="text-right">الطفل</TableHead>
-                      <TableHead className="text-right">النوع</TableHead>
-                      <TableHead className="text-right">الإجمالي</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-right">الاستحقاق</TableHead>
-                      <TableHead className="text-right">إجراءات</TableHead>
+                      <TableHead className="text-right">{isAr ? "رقم الفاتورة" : "Invoice Number"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الطفل" : "Child"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "النوع" : "Type"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الإجمالي" : "Total"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "الاستحقاق" : "Entitlement"}</TableHead>
+                      <TableHead className="text-right">{isAr ? "إجراءات" : "Actions"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -292,19 +292,19 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
                       <TableRow key={inv.id}>
                         <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
                         <TableCell className="font-medium">{inv.childName || "—"}</TableCell>
-                        <TableCell><Badge variant="outline">{invoiceTypeLabels[inv.invoiceType] || "رسوم"}</Badge></TableCell>
-                        <TableCell className="font-bold">{Number(inv.total).toLocaleString('ar-SA')} ر.س</TableCell>
+                        <TableCell><Badge variant="outline">{invoiceTypeLabels[inv.invoiceType] || isAr ? "رسوم" : "Fees"}</Badge></TableCell>
+                        <TableCell className="font-bold">{Number(inv.total).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</TableCell>
                         <TableCell><Badge className={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge></TableCell>
                         <TableCell>{new Date(inv.dueDate).toLocaleDateString('ar-SA')}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             {(inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partially_paid') && (
                               <Button size="sm" onClick={() => handlePay(inv)}>
-                                <CreditCard className="h-3 w-3 ml-1" />ادفع
+                                <CreditCard className="h-3 w-3 ml-1" />{isAr ? "ادفع" : "Pay"}
                               </Button>
                             )}
                             <Button size="sm" variant="outline" onClick={() => handleViewDetails(inv)}>
-                              <FileText className="h-3 w-3 ml-1" />تفاصيل
+                              <FileText className="h-3 w-3 ml-1" />{isAr ? "تفاصيل" : "Details"}
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => handleDownloadPDF(inv)}>
                               <Download className="h-3 w-3" />
@@ -337,21 +337,21 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
                     <Badge className={statusColors[inv.status]}>{statusLabels[inv.status]}</Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{inv.description || "بدون وصف"}</span>
-                    <span className="font-bold text-lg">{Number(inv.total).toLocaleString('ar-SA')} ر.س</span>
+                    <span className="text-muted-foreground">{inv.description || isAr ? "بدون وصف" : "No Description"}</span>
+                    <span className="font-bold text-lg">{Number(inv.total).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
                     <span>{inv.invoiceNumber}</span>
-                    <span>استحقاق: {new Date(inv.dueDate).toLocaleDateString('ar-SA')}</span>
+                    <span>{isAr ? "استحقاق:" : "Due:"} {new Date(inv.dueDate).toLocaleDateString('ar-SA')}</span>
                   </div>
                   <div className="flex gap-2 pt-1">
                     {(inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partially_paid') && (
                       <Button size="sm" className="flex-1" onClick={() => handlePay(inv)}>
-                        <CreditCard className="h-3 w-3 ml-1" />ادفع الآن
+                        <CreditCard className="h-3 w-3 ml-1" />{isAr ? "ادفع الآن" : "Pay Now"}
                       </Button>
                     )}
                     <Button size="sm" variant="outline" onClick={() => handleViewDetails(inv)}>
-                      <FileText className="h-3 w-3 ml-1" />تفاصيل
+                      <FileText className="h-3 w-3 ml-1" />{isAr ? "تفاصيل" : "Details"}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => handleDownloadPDF(inv)}>
                       <Download className="h-3 w-3" />
@@ -366,12 +366,12 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
         {/* PAYMENT HISTORY TAB */}
         <TabsContent value="history">
           <Card>
-            <CardHeader><CardTitle>سجل المدفوعات</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{isAr ? "سجل المدفوعات" : "Payments Log"}</CardTitle></CardHeader>
             <CardContent>
               {historyLoading ? (
                 <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
               ) : !paymentHistory || paymentHistory.length === 0 ? (
-                <EmptyState variant="finance" compact title="لا توجد مدفوعات سابقة" description="ستظهر هنا سجل المدفوعات السابقة" />
+                <EmptyState variant="finance" compact title={isAr ? "لا توجد مدفوعات سابقة" : "No previous payments"} description={isAr ? "ستظهر هنا سجل المدفوعات السابقة" : "Previous payment history will appear here"} />
               ) : (
                 <div className="space-y-3">
                   {paymentHistory.map((payment: any) => (
@@ -383,7 +383,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
                            <Clock className="h-4 w-4 text-amber-600" />}
                         </div>
                         <div>
-                          <p className="font-medium text-sm">{payment.invoiceDescription || payment.invoiceNumber || "دفعة"}</p>
+                          <p className="font-medium text-sm">{payment.invoiceDescription || payment.invoiceNumber || isAr ? "دفعة" : "Payment"}</p>
                           <p className="text-xs text-muted-foreground">
                             {payment.childFirstName ? `${payment.childFirstName} ${payment.childLastName || ''}` : ''} 
                             {payment.method ? ` • ${paymentMethodLabels[payment.method] || payment.method}` : ''}
@@ -413,20 +413,20 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
         if (!open) setMoyasarInitialized(false);
       }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>دفع الفاتورة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "دفع الفاتورة" : "Pay Invoice"}</DialogTitle></DialogHeader>
           {selectedInvoice && (
             <div className="space-y-4">
               <div className="bg-muted p-4 rounded-lg space-y-2">
-                <div className="flex justify-between"><span className="text-muted-foreground">رقم الفاتورة</span><span className="font-mono">{selectedInvoice.invoiceNumber}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">الطفل</span><span>{selectedInvoice.childName}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">الوصف</span><span>{selectedInvoice.description}</span></div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2"><span>المبلغ المطلوب</span><span>{(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)).toLocaleString('ar-SA')} ر.س</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{isAr ? "رقم الفاتورة" : "Invoice Number"}</span><span className="font-mono">{selectedInvoice.invoiceNumber}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{isAr ? "الطفل" : "Child"}</span><span>{selectedInvoice.childName}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{isAr ? "الوصف" : "Description"}</span><span>{selectedInvoice.description}</span></div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2"><span>{isAr ? "المبلغ المطلوب" : "Amount Required"}</span><span>{(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0)).toLocaleString('ar-SA')} ر.س</span></div>
               </div>
 
               {!gatewayStatus?.isConfigured ? (
                 <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm text-amber-700">
                   <AlertTriangle className="h-4 w-4 inline ml-1" />
-                  بوابة الدفع الإلكتروني قيد التفعيل. سيتم تفعيل الدفع الإلكتروني قريباً.
+                  {isAr ? "بوابة الدفع الإلكتروني قيد التفعيل. سيتم تفعيل الدفع الإلكتروني قريباً." : "The electronic payment gateway is being activated. Electronic payment will be activated soon."}
                 </div>
               ) : (
                 <div ref={initMoyasarForm} className="moyasar-form" />
@@ -434,7 +434,7 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenPayDialog(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpenPayDialog(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -442,31 +442,31 @@ ${invoice.paidAt ? `تاريخ الدفع: ${new Date(invoice.paidAt).toLocaleDa
       {/* Invoice Detail Dialog */}
       <Dialog open={openDetailDialog} onOpenChange={setOpenDetailDialog}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>تفاصيل الفاتورة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{isAr ? "تفاصيل الفاتورة" : "Invoice Details"}</DialogTitle></DialogHeader>
           {selectedInvoice && (
             <div className="space-y-4">
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">رقم الفاتورة</span><span className="font-mono">{selectedInvoice.invoiceNumber}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">الطفل</span><span>{selectedInvoice.childName}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">النوع</span><span>{invoiceTypeLabels[selectedInvoice.invoiceType] || "رسوم"}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">الوصف</span><span>{selectedInvoice.description || "—"}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">تاريخ الإنشاء</span><span>{new Date(selectedInvoice.createdAt).toLocaleDateString('ar-SA')}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">تاريخ الاستحقاق</span><span>{new Date(selectedInvoice.dueDate).toLocaleDateString('ar-SA')}</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">المبلغ الأساسي</span><span>{Number(selectedInvoice.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
-                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">ضريبة القيمة المضافة ({selectedInvoice.vatRate}%)</span><span>{Number(selectedInvoice.vatAmount).toLocaleString('ar-SA')} ر.س</span></div>
-                <div className="flex justify-between py-1 border-b font-bold text-base"><span>الإجمالي</span><span>{Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</span></div>
-                <div className="flex justify-between py-1"><span className="text-muted-foreground">الحالة</span><Badge className={statusColors[selectedInvoice.status]}>{statusLabels[selectedInvoice.status]}</Badge></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "رقم الفاتورة" : "Invoice Number"}</span><span className="font-mono">{selectedInvoice.invoiceNumber}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "الطفل" : "Child"}</span><span>{selectedInvoice.childName}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "النوع" : "Type"}</span><span>{invoiceTypeLabels[selectedInvoice.invoiceType] || "رسوم"}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "الوصف" : "Description"}</span><span>{selectedInvoice.description || "—"}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "تاريخ الإنشاء" : "Creation Date"}</span><span>{new Date(selectedInvoice.createdAt).toLocaleDateString('ar-SA')}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "تاريخ الاستحقاق" : "Due Date"}</span><span>{new Date(selectedInvoice.dueDate).toLocaleDateString('ar-SA')}</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "المبلغ الأساسي" : "Base Amount"}</span><span>{Number(selectedInvoice.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
+                <div className="flex justify-between py-1 border-b"><span className="text-muted-foreground">{isAr ? "ضريبة القيمة المضافة (" : "VAT ("}{selectedInvoice.vatRate}%)</span><span>{Number(selectedInvoice.vatAmount).toLocaleString('ar-SA')} {isAr ? "ر.س" : "SAR"}</span></div>
+                <div className="flex justify-between py-1 border-b font-bold text-base"><span>{isAr ? "الإجمالي" : "Total"}</span><span>{Number(selectedInvoice.total).toLocaleString('ar-SA')} ر.س</span></div>
+                <div className="flex justify-between py-1"><span className="text-muted-foreground">{isAr ? "الحالة" : "Status"}</span><Badge className={statusColors[selectedInvoice.status]}>{statusLabels[selectedInvoice.status]}</Badge></div>
                 {selectedInvoice.paidAt && (
-                  <div className="flex justify-between py-1 border-t"><span className="text-muted-foreground">تاريخ الدفع</span><span>{new Date(selectedInvoice.paidAt).toLocaleDateString('ar-SA')}</span></div>
+                  <div className="flex justify-between py-1 border-t"><span className="text-muted-foreground">{isAr ? "تاريخ الدفع" : "Payment Date"}</span><span>{new Date(selectedInvoice.paidAt).toLocaleDateString('ar-SA')}</span></div>
                 )}
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => handleDownloadPDF(selectedInvoice)}>
-                  <Download className="h-4 w-4 ml-2" />تحميل الفاتورة
+                  <Download className="h-4 w-4 ml-2" />{isAr ? "تحميل الفاتورة" : "Download Invoice"}
                 </Button>
                 {(selectedInvoice.status === 'pending' || selectedInvoice.status === 'overdue') && (
                   <Button className="flex-1" onClick={() => { setOpenDetailDialog(false); handlePay(selectedInvoice); }}>
-                    <CreditCard className="h-4 w-4 ml-2" />ادفع الآن
+                    <CreditCard className="h-4 w-4 ml-2" />{isAr ? "ادفع الآن" : "Pay Now"}
                   </Button>
                 )}
               </div>

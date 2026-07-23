@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from "react-i18next";
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,8 @@ import { Badge } from '@/components/ui/badge';
  * - Auto-escalation indicator after 2 minutes
  */
 export function OperationalAlert() {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
   const [alerts, setAlerts] = useState<any[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -148,8 +151,8 @@ export function OperationalAlert() {
     const diff = Date.now() - new Date(requestedAt).getTime();
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
-    if (minutes > 0) return `${minutes} دقيقة ${seconds} ثانية`;
-    return `${seconds} ثانية`;
+    if (minutes > 0) return (isAr ? `${minutes} دقيقة ${seconds} ثانية` : `${minutes}Minute${seconds}Second`);
+    return (isAr ? `${seconds} ثانية` : `${seconds}Second`);
   };
 
   // Update wait times every second
