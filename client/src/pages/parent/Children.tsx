@@ -322,7 +322,7 @@ export default function ParentChildren() {
               </TabsList>
               <TabsContent value="info" className="space-y-2 mt-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><span className="text-muted-foreground">الجنس:</span> <span>{child.gender === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}</span></div>
+                  <div><span className="text-muted-foreground">{isAr ? "الجنس:" : "Gender:"}</span> <span>{child.gender === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}</span></div>
                   <div><span className="text-muted-foreground">{isAr ? "فصيلة الدم:" : "Blood Type:"}</span> <span>{child.bloodType || "-"}</span></div>
                   <div><span className="text-muted-foreground">{isAr ? "اسم الأب:" : "Father's Name:"}</span> <span>{child.fatherName || "-"}</span></div>
                   <div><span className="text-muted-foreground">{isAr ? "اسم الأم:" : "Mother's Name:"}</span> <span>{child.motherName || "-"}</span></div>

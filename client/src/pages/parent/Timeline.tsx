@@ -105,7 +105,7 @@ export default function ParentTimeline() {
             <Button variant="outline" size="icon" onClick={() => changeDate(-1)}><ChevronRight className="h-4 w-4" /></Button>
             <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{new Date(date).toLocaleDateString('ar-SA', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+              <span className="text-sm font-medium">{new Date(date).toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
             </div>
             <Button variant="outline" size="icon" onClick={() => changeDate(1)} disabled={isToday}><ChevronLeft className="h-4 w-4" /></Button>
             {!isToday && <Button variant="ghost" size="sm" onClick={() => setDate(new Date().toISOString().split('T')[0])}>اليوم</Button>}
@@ -128,7 +128,7 @@ export default function ParentTimeline() {
                     <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(todayDeparture.departureTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(todayDeparture.departureTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span className="flex items-center gap-1">
                         <User className="h-3 w-3" />
@@ -174,7 +174,7 @@ export default function ParentTimeline() {
                             <div className="flex items-center gap-2 mb-1">
                               <Badge variant="secondary" className="text-xs">{getLabelMap(isAr)[act.type] || act.type}</Badge>
                               <span className="text-xs text-muted-foreground">
-                                {new Date(act.recordedAt || act.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(act.recordedAt || act.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
                             {(act.details || act.description) && (

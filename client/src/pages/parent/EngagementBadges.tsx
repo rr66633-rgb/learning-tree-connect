@@ -79,15 +79,15 @@ export default function EngagementBadges() {
         <div className="space-y-3">
           <h2 className="font-bold text-base flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-emerald-500" />
-            الشارات المكتسبة ({earned.length})
+            {isAr ? `الشارات المكتسبة (${earned.length})` : `Earned Badges (${earned.length})`}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             {earned.map((item: any) => (
               <Card key={item.id} className="overflow-hidden border-amber-200 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-900/10">
                 <CardContent className="p-4 text-center space-y-2">
                   <span className="text-4xl block">{item.badge?.icon || "🏅"}</span>
-                  <h3 className="font-bold text-sm">{item.badge?.nameAr || item.badge?.nameEn}</h3>
-                  <p className="text-[10px] text-muted-foreground">{item.badge?.descriptionAr || item.badge?.descriptionEn}</p>
+                  <h3 className="font-bold text-sm">{isAr ? (item.badge?.nameAr || item.badge?.nameEn) : (item.badge?.nameEn || item.badge?.nameAr)}</h3>
+                  <p className="text-[10px] text-muted-foreground">{isAr ? (item.badge?.descriptionAr || item.badge?.descriptionEn) : (item.badge?.descriptionEn || item.badge?.descriptionAr)}</p>
                   <p className="text-[10px] text-amber-600">
                     {isAr ? "حصلت عليها" : "Got it"} {new Date(item.earnedAt).toLocaleDateString(locale)}
                   </p>
@@ -103,7 +103,7 @@ export default function EngagementBadges() {
         <div className="space-y-3">
           <h2 className="font-bold text-base flex items-center gap-2">
             <Lock className="h-4 w-4 text-gray-400" />
-            شارات متاحة للاكتساب ({available.length})
+            {isAr ? `شارات متاحة للاكتساب (${available.length})` : `Available Badges (${available.length})`}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             {available.map((badge: any) => (
@@ -113,8 +113,8 @@ export default function EngagementBadges() {
                     <span className="text-4xl block grayscale">{badge.icon || "🏅"}</span>
                     <Lock className="h-4 w-4 absolute -bottom-1 -left-1 text-gray-400" />
                   </div>
-                  <h3 className="font-bold text-sm">{badge.nameAr || badge.nameEn}</h3>
-                  <p className="text-[10px] text-muted-foreground">{badge.descriptionAr || badge.descriptionEn}</p>
+                  <h3 className="font-bold text-sm">{isAr ? (badge.nameAr || badge.nameEn) : (badge.nameEn || badge.nameAr)}</h3>
+                  <p className="text-[10px] text-muted-foreground">{isAr ? (badge.descriptionAr || badge.descriptionEn) : (badge.descriptionEn || badge.descriptionAr)}</p>
                   <Badge variant="outline" className="text-[10px]">
                     {getCriteriaLabel(badge.criteria, isAr)}
                   </Badge>

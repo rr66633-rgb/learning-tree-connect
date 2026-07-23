@@ -159,7 +159,7 @@ export default function EngagementChatbot() {
               </div>
               <h2 className="text-lg font-bold">{isAr ? `مرحباً ${user?.name?.split(" ")[0]}` : `Hello ${user?.name?.split(" ")[0]}`}</h2>
               <p className="text-sm text-muted-foreground max-w-sm">
-                أنا مستشارك في تربية وتنمية {selectedChild?.firstName || (isAr ? "طفلك" : "Your child")}. اسألني عن أي شيء يتعلق بنمو طفلك وتطوره.
+                {isAr ? `أنا مستشارك في تربية وتنمية ${selectedChild?.firstName || "طفلك"}. اسألني عن أي شيء يتعلق بنمو طفلك وتطوره.` : `I am your consultant in raising and developing ${selectedChild?.firstName || "your child"}. Ask me anything about your child's growth and development.`}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 w-full max-w-md">

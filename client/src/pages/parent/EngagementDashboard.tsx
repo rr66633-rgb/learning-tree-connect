@@ -255,7 +255,7 @@ export default function EngagementDashboard() {
               {badgesData.earned.map((item) => (
                 <div key={item.id} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
                   <span className="text-2xl">{item.badge?.icon}</span>
-                  <span className="text-[10px] font-medium text-center">{item.badge?.nameAr}</span>
+                  <span className="text-[10px] font-medium text-center">{isAr ? item.badge?.nameAr : (item.badge?.nameEn || item.badge?.nameAr)}</span>
                 </div>
               ))}
               {badgesData.earned.length === 0 && (
@@ -269,7 +269,7 @@ export default function EngagementDashboard() {
                   {badgesData.available.slice(0, 5).map((badge) => (
                     <div key={badge.id} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 opacity-50">
                       <span className="text-xl">{badge.icon}</span>
-                      <span className="text-[10px] text-center">{badge.nameAr}</span>
+                      <span className="text-[10px] text-center">{isAr ? badge.nameAr : (badge.nameEn || badge.nameAr)}</span>
                     </div>
                   ))}
                 </div>

@@ -31,8 +31,8 @@ const getAUDIENCES = (isAr: boolean) => ([
   { value: "admin", label: (isAr ? "الإدارة فقط" : "Management Only") },
 ]);
 
-const getMONTHS_AR = (isAr: boolean) => ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-const getDAYS_AR = (isAr: boolean) => ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const getMONTHS_AR = (isAr: boolean) => isAr ? ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"] : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const getDAYS_AR = (isAr: boolean) => isAr ? ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const getREMINDER_STATUS_MAP = (isAr: boolean): Record<string, { label: string; color: string }>  => ({
   pending: { label: (isAr ? "قيد الانتظار" : "Pending"), color: "bg-yellow-100 text-yellow-700" },
@@ -347,7 +347,7 @@ export default function StaffCalendar() {
       {/* Events List Below Calendar */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">أحداث {getMONTHS_AR(isAr)[month - 1]}</CardTitle>
+          <CardTitle className="text-lg">{isAr ? `أحداث ${getMONTHS_AR(isAr)[month - 1]}` : `${getMONTHS_AR(isAr)[month - 1]} Events`}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (

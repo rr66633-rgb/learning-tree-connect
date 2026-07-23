@@ -128,7 +128,7 @@ export default function AIAssistant() {
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">المساعد الذكي</h1>
+            <h1 className="text-lg font-bold text-gray-900">{isAr ? "المساعد الذكي" : "AI Assistant"}</h1>
             <p className="text-xs text-muted-foreground">{isAr ? "مساعدك في حفظ القرآن والتعلم" : "Your assistant in memorizing the Quran and learning"}</p>
           </div>
         </div>
@@ -146,7 +146,7 @@ export default function AIAssistant() {
               {isAr ? "مرحباً" : "Welcome"}{firstName}! 🌟
             </h2>
             <p className="text-muted-foreground mb-6 max-w-md">
-              أنا مساعدك الذكي لحفظ القرآن الكريم والتعلم عن الإسلام. كيف أقدر أساعدك اليوم؟
+              {isAr ? "أنا مساعدك الذكي لحفظ القرآن الكريم والتعلم عن الإسلام. كيف أقدر أساعدك اليوم؟" : "I am your smart assistant for memorizing the Holy Quran and learning about Islam. How can I help you today?"}
             </p>
 
             {/* Quick Actions */}
@@ -169,8 +169,8 @@ export default function AIAssistant() {
                 <Rocket className="h-4 w-4 text-amber-600" />
                 <span className="text-sm font-medium text-amber-800">{isAr ? "حكمة اليوم" : "Wisdom of the Day"}</span>
               </div>
-              <p className="text-sm text-amber-700">
-                (isAr ? "خيركم من تعلم القرآن وعلمه" : "The best among you are those who learn the Quran and teach it") - رسول الله ﷺ
+              <p className="text-xs text-amber-700 italic">
+                {isAr ? '"خيركم من تعلم القرآن وعلمه" - رسول الله ﷺ' : '"The best among you are those who learn the Quran and teach it" - Prophet Muhammad ﷺ'}
               </p>
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function AIAssistant() {
                 >
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   <p className={`text-[10px] mt-1 ${message.role === "user" ? "text-emerald-200" : "text-gray-400"}`}>
-                    {message.timestamp.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+                    {message.timestamp.toLocaleTimeString(isAr ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               </div>

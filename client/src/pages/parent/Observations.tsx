@@ -152,7 +152,7 @@ export default function ParentObservations() {
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Star className="w-3 h-3 text-amber-400" />
-                          <span>{areaAssessments.length} تقييم</span>
+                          <span>{areaAssessments.length} {isAr ? "تقييم" : "assessments"}</span>
                         </div>
                       </div>
                     );

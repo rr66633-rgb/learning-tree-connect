@@ -2462,3 +2462,7 @@ Fix:
 - [x] Translate Notifications page content to English (notification titles/body still Arabic)
 - [x] Translate Photos/Activities page empty state to English ("لا توجد صور أو فيديو بعد")
 - [x] Translate Daily Schedule page "اختر الطفل" dropdown to English
+
+## English Translation Fixes - Round 3
+- [x] Fix AIAssistant.tsx line 172 corrupted by sed unicode escapes (restored proper Arabic hadith quote)
+- [x] Fix AIAssistant.tsx timestamp locale (hardcoded ar-SA → dynamic based on language)

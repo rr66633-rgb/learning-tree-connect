@@ -145,7 +145,7 @@ export default function ParentDevelopment() {
                   <GraduationCap className="w-5 h-5 text-emerald-600" />
                   {isAr ? "الجاهزية المدرسية" : "School Readiness"}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">آخر تقييم: {new Date(latestReadiness.assessedAt).toLocaleDateString(locale)}</p>
+                <p className="text-sm text-muted-foreground mt-1">{isAr ? "آخر تقييم: " : "Last assessment: "}{new Date(latestReadiness.assessedAt).toLocaleDateString(locale)}</p>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-center">
@@ -207,8 +207,8 @@ export default function ParentDevelopment() {
                           <Icon className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-sm">{item.area?.nameAr || item.area?.nameEn}</p>
-                          <p className="text-xs text-muted-foreground">{item.observationCount} ملاحظة مسجلة</p>
+                          <p className="font-semibold text-sm">{isAr ? (item.area?.nameAr || item.area?.nameEn) : (item.area?.nameEn || item.area?.nameAr)}</p>
+                          <p className="text-xs text-muted-foreground">{item.observationCount} {isAr ? "ملاحظة مسجلة" : "recorded observations"}</p>
                         </div>
                         {item.trend === "improving" && (
                           <Badge className="bg-emerald-100 text-emerald-700 border-0">
@@ -220,7 +220,7 @@ export default function ParentDevelopment() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">{isAr ? "المستوى الحالي" : "Current Level"}</span>
-                          <span className="font-medium">{item.latestLevel ? getLevelLabels(isAr)[item.latestLevel] : "لم يُقيّم"}</span>
+                          <span className="font-medium">{item.latestLevel ? getLevelLabels(isAr)[item.latestLevel] : (isAr ? "لم يُقيّم" : "Not assessed")}</span>
                         </div>
                         <Progress value={levelToPercent[item.latestLevel] || 0} className="h-2.5" />
                         <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -304,7 +304,7 @@ export default function ParentDevelopment() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="font-semibold text-sm">{rec.recommendation.titleAr || rec.recommendation.title}</h4>
-                          <Badge variant="outline" className="text-xs">{rec.area?.nameAr}</Badge>
+                          <Badge variant="outline" className="text-xs">{isAr ? rec.area?.nameAr : (rec.area?.nameEn || rec.area?.nameAr)}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground leading-relaxed">
                           {rec.recommendation.descriptionAr || rec.recommendation.description}
