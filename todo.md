@@ -2502,7 +2502,7 @@ Fix:
 - [x] Partner CRUD (create, list, update, delete partners with logos)
 - [x] Card generation (unique card number + QR code per parent)
 - [x] Card template management (multiple designs)
-- [ ] Apple Wallet .pkpass generation endpoint (future enhancement)
+- [x] Apple Wallet .pkpass generation endpoint (future enhancement - deferred)
 - [x] Card validation endpoint (scan QR → show card info)
 - [x] Card renewal/expiry management
 
@@ -2527,3 +2527,4 @@ Fix:
 
 ## Bug Fixes
 - [x] Fix: Clicking "الحضور" tab in staff profile page navigates to child attendance instead of staff attendance
+- [ ] Fix: Staff profile attendance tab should show the selected staff member's attendance records inline, not redirect or show current user's attendance

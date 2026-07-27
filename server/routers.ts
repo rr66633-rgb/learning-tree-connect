@@ -2093,6 +2093,9 @@ export const appRouter = router({
     myHistory: protectedProcedure.query(async ({ ctx }) => {
       return db.getStaffAttendanceByUser(ctx.user!.id);
     }),
+    userHistory: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => {
+      return db.getStaffAttendanceByUser(input.userId);
+    }),
     checkIn: protectedProcedure.input(z.object({
       gpsLat: z.number(),
       gpsLng: z.number(),

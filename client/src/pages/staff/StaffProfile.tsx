@@ -20,12 +20,81 @@ import {
   Download, Upload
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+function StaffAttendanceTab({ staffUserId, isAr }: { staffUserId?: number; isAr: boolean }) {
+  const { data: records, isLoading } = trpc.staffAttendance.userHistory.useQuery(
+    { userId: staffUserId! },
+    { enabled: !!staffUserId }
+  );
 
+  if (isLoading) return (
+    <Card><CardContent className="py-8"><div className="space-y-3">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div></CardContent></Card>
+  );
 
+  if (!records || records.length === 0) return (
+    <Card><CardContent className="py-12 text-center">
+      <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+      <h3 className="text-lg font-semibold mb-2">{isAr ? "لا يوجد سجلات حضور" : "No attendance records"}</h3>
+      <p className="text-muted-foreground">{isAr ? "لم يتم تسجيل أي حضور لهذا الموظف بعد" : "No attendance has been recorded for this employee yet"}</p>
+    </CardContent></Card>
+  );
 
+  const formatTime = (t: any) => {
+    if (!t) return "-";
+    const d = new Date(t);
+    return d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  };
+  const formatDate = (t: any) => {
+    if (!t) return "-";
+    const d = new Date(t);
+    return d.toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric", weekday: "short" });
+  };
+  const getStatusBadge = (status: string) => {
+    const map: Record<string, { label: string; cls: string }> = {
+      checked_in: { label: isAr ? "حاضر" : "Present", cls: "bg-emerald-100 text-emerald-800" },
+      checked_out: { label: isAr ? "انصرف" : "Left", cls: "bg-blue-100 text-blue-800" },
+      absent: { label: isAr ? "غائب" : "Absent", cls: "bg-red-100 text-red-800" },
+      late: { label: isAr ? "متأخر" : "Late", cls: "bg-amber-100 text-amber-800" },
+    };
+    const s = map[status] || { label: status, cls: "bg-gray-100 text-gray-800" };
+    return <Badge className={s.cls}>{s.label}</Badge>;
+  };
 
-
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{isAr ? `سجل الحضور (${records.length} يوم)` : `Attendance Log (${records.length} days)`}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-auto max-h-[500px]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">{isAr ? "التاريخ" : "Date"}</TableHead>
+                <TableHead className="text-right">{isAr ? "الحالة" : "Status"}</TableHead>
+                <TableHead className="text-right">{isAr ? "وقت الحضور" : "Check In"}</TableHead>
+                <TableHead className="text-right">{isAr ? "وقت الانصراف" : "Check Out"}</TableHead>
+                <TableHead className="text-right">{isAr ? "ملاحظات" : "Notes"}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((r: any) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{formatDate(r.date)}</TableCell>
+                  <TableCell>{getStatusBadge(r.status)}</TableCell>
+                  <TableCell>{formatTime(r.checkInTime)}</TableCell>
+                  <TableCell>{formatTime(r.checkOutTime)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{r.notes || (r.isLateRecord ? (isAr ? `تسجيل متأخر: ${r.lateReason || ""}` : `Late: ${r.lateReason || ""}`) : "-")}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function StaffProfile() {
   const { t, i18n } = useTranslation();
@@ -372,16 +441,7 @@ export default function StaffProfile() {
 
         {/* Attendance Tab */}
         <TabsContent value="attendance">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{isAr ? "سجل الحضور" : "Attendance Log"}</h3>
-              <p className="text-muted-foreground">{isAr ? "يمكنك تتبع حضور وانصراف الموظف من صفحة الحضور الرئيسية" : "You can track employee attendance from the main attendance page"}</p>
-              <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/staff-attendance")}>
-                {isAr ? "الذهاب لصفحة حضور الموظفين" : "Go to Staff Attendance Page"}
-              </Button>
-            </CardContent>
-          </Card>
+          <StaffAttendanceTab staffUserId={staff?.userId} isAr={isAr} />
         </TabsContent>
 
         {/* Notes Tab */}
