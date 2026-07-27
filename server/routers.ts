@@ -741,6 +741,7 @@ export const appRouter = router({
       medicalNotes: z.string().optional(),
       pickupAuthorization: z.string().optional(),
       busRequired: z.boolean().optional(),
+      attendanceDays: z.array(z.number().min(0).max(6)).optional(),
       notes: z.string().optional(),
       status: z.enum(["active", "inactive", "graduated", "waitlist"]).optional(),
     })).mutation(async ({ input }) => {

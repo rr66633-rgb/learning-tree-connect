@@ -170,6 +170,7 @@ export default function ChildProfile() {
         medicalNotes: c.medicalNotes || "",
         pickupAuthorization: c.pickupAuthorization || "",
         busRequired: c.busRequired || false,
+        attendanceDays: c.attendanceDays || [0,1,2,3,4],
         notes: c.notes || "",
       });
       setEditing(true);
@@ -202,6 +203,7 @@ export default function ChildProfile() {
       medicalNotes: form.medicalNotes || undefined,
       pickupAuthorization: form.pickupAuthorization || undefined,
       busRequired: form.busRequired,
+      attendanceDays: form.attendanceDays,
       notes: form.notes || undefined,
     };
     updateChild.mutate(updateData);
@@ -469,6 +471,30 @@ export default function ChildProfile() {
                     <Switch checked={form.busRequired} onCheckedChange={(v) => setForm({ ...form, busRequired: v })} />
                     <Label>{isAr ? "يحتاج نقل بالباص" : "Needs Bus Transport"}</Label>
                   </div>
+                  <div>
+                    <Label className="mb-2 block">{isAr ? "أيام الحضور المحددة" : "Scheduled Attendance Days"}</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[{day: 0, ar: "الأحد", en: "Sun"}, {day: 1, ar: "الإثنين", en: "Mon"}, {day: 2, ar: "الثلاثاء", en: "Tue"}, {day: 3, ar: "الأربعاء", en: "Wed"}, {day: 4, ar: "الخميس", en: "Thu"}, {day: 5, ar: "الجمعة", en: "Fri"}, {day: 6, ar: "السبت", en: "Sat"}].map(d => (
+                        <button
+                          key={d.day}
+                          type="button"
+                          onClick={() => {
+                            const current = form.attendanceDays || [0,1,2,3,4];
+                            const updated = current.includes(d.day) ? current.filter((x: number) => x !== d.day) : [...current, d.day];
+                            setForm({ ...form, attendanceDays: updated });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            (form.attendanceDays || [0,1,2,3,4]).includes(d.day)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {isAr ? d.ar : d.en}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{isAr ? "اختر الأيام التي يحضر فيها الطفل (الافتراضي: أحد - خميس)" : "Select days the child attends (default: Sun-Thu)"}</p>
+                  </div>
                   <div><Label>{isAr ? "ملاحظات عامة" : "General Notes"}</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
                   <div className="flex gap-2 mt-2">
                     <Button onClick={handleSave} disabled={updateChild.isPending}>{updateChild.isPending ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}</Button>
@@ -481,6 +507,14 @@ export default function ChildProfile() {
                     <Bus className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">{isAr ? "نقل بالباص:" : "Bus Transport:"}</span>
                     <Badge variant={c.busRequired ? "default" : "secondary"}>{c.busRequired ? (isAr ? "نعم" : "Yes") : (isAr ? "لا" : "No")}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{isAr ? "أيام الحضور:" : "Attendance Days:"}</span>
+                    {(c.attendanceDays || [0,1,2,3,4]).map((d: number) => {
+                      const dayNames = isAr ? ["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"] : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+                      return <Badge key={d} variant="outline" className="text-xs">{dayNames[d]}</Badge>;
+                    })}
                   </div>
                   <InfoRow label={isAr ? "ملاحظات" : "Notes"} value={c.notes || "—"} />
                 </div>

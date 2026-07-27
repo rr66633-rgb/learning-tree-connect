@@ -79,6 +79,7 @@ export const children = mysqlTable("children", {
   // Nursery Information
   pickupAuthorization: text("pickupAuthorization"),
   busRequired: boolean("busRequired").default(false).notNull(),
+  attendanceDays: json("attendanceDays").$type<number[]>().default([0, 1, 2, 3, 4]),
   notes: text("notes"),
   // Status & Metadata
   status: mysqlEnum("status", ["active", "inactive", "graduated", "waitlist"]).default("active").notNull(),

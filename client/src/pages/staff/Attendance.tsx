@@ -92,13 +92,23 @@ export default function StaffAttendance() {
     return map;
   }, [records]);
 
-  const currentlyInCenter = useMemo(() => {
-    if (!records || !children) return [];
+  // Filter children to only show those scheduled for the selected day
+  const scheduledChildren = useMemo(() => {
+    if (!children) return [];
+    const dayOfWeek = new Date(selectedDate).getDay(); // 0=Sunday, 1=Monday, etc.
     return children.filter((child: any) => {
+      if (!child.attendanceDays || !Array.isArray(child.attendanceDays)) return true; // default: show all days
+      return child.attendanceDays.includes(dayOfWeek);
+    });
+  }, [children, selectedDate]);
+
+  const currentlyInCenter = useMemo(() => {
+    if (!records || !scheduledChildren) return [];
+    return scheduledChildren.filter((child: any) => {
       const record = attendanceMap.get(child.id);
       return record && (record.status === 'present' || record.status === 'late' || record.status === 'checked_in') && !record.checkOutTime;
     });
-  }, [children, records, attendanceMap]);
+  }, [scheduledChildren, records, attendanceMap]);
 
   function handleCheckInSubmit() {
     if (!checkInDialog) return;
@@ -154,7 +164,7 @@ export default function StaffAttendance() {
           <p className="text-sm text-muted-foreground mt-1">{new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <Badge variant="outline" className="w-fit rounded-xl px-4 py-2 text-sm border-primary/20 text-primary bg-primary/5">
-          {children?.length ?? 0} {t('staffAttendance.registeredChild')}
+          {scheduledChildren?.length ?? 0} {t('staffAttendance.registeredChild')}
         </Badge>
       </div>
 
@@ -197,7 +207,7 @@ export default function StaffAttendance() {
             <TableBody>
               {isLoading ? Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-              )) : children?.map((child: any) => {
+              )) : scheduledChildren?.map((child: any) => {
                 const record = attendanceMap.get(child.id);
                 const childName = `${child.firstName} ${child.lastName}`;
                 return (

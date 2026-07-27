@@ -2482,3 +2482,10 @@ Fix:
 ## AI Planner & Assessment Print Improvements
 - [x] Make AI weekly plan generation always bilingual (Arabic + English) by default
 - [x] Add language selection (Arabic/English) option when printing child assessments
+
+## Scheduled Attendance Days Feature
+- [x] Add attendanceDays column to children table (JSON array of weekday numbers)
+- [x] Update server attendance logic to only count absence on scheduled days
+- [x] Add UI in child profile to set which days the child attends
+- [x] Update attendance page to filter/show only children scheduled for today
+- [x] Update attendance reports/statistics to calculate based on scheduled days only
