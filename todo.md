@@ -2524,3 +2524,6 @@ Fix:
 ### Navigation
 - [x] Add loyalty to admin sidebar
 - [x] Add loyalty to parent sidebar
+
+## Bug Fixes
+- [x] Fix: Clicking "الحضور" tab in staff profile page navigates to child attendance instead of staff attendance

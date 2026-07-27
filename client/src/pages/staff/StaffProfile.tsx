@@ -377,8 +377,8 @@ export default function StaffProfile() {
               <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">{isAr ? "سجل الحضور" : "Attendance Log"}</h3>
               <p className="text-muted-foreground">{isAr ? "يمكنك تتبع حضور وانصراف الموظف من صفحة الحضور الرئيسية" : "You can track employee attendance from the main attendance page"}</p>
-              <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/attendance")}>
-                {isAr ? "الذهاب لصفحة الحضور" : "Go to Attendance Page"}
+              <Button variant="outline" className="mt-4" onClick={() => navigate("/staff/staff-attendance")}>
+                {isAr ? "الذهاب لصفحة حضور الموظفين" : "Go to Staff Attendance Page"}
               </Button>
             </CardContent>
           </Card>
