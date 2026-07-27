@@ -159,6 +159,10 @@ const ParentStoreOrders = lazy(() => import("./pages/parent/StoreOrders"));
 const StoreCheckout = lazy(() => import("./pages/parent/StoreCheckout"));
 const SuperAdminStore = lazy(() => import("./pages/superadmin/Store"));
 
+// Loyalty Pages
+const LoyaltyAdmin = lazy(() => import("./pages/LoyaltyAdmin"));
+const LoyaltyCard = lazy(() => import("./pages/LoyaltyCard"));
+
 function PageLoader() {
   return (
     <div className="p-6 space-y-4">
@@ -244,6 +248,7 @@ function StaffRouter() {
         <Route path="/staff/store/reports" component={StoreSalesReport} />
         <Route path="/staff/store/orders" component={StoreOrders} />
         <Route path="/staff/store" component={StoreProducts} />
+        <Route path="/staff/loyalty" component={LoyaltyAdmin} />
         <Route path="/staff/account-settings" component={AccountSettings} />
         <Route component={NotFound} />
       </Switch>
@@ -292,6 +297,7 @@ function ParentRouter() {
         <Route path="/parent/store/cart" component={ParentCart} />
         <Route path="/parent/store/checkout" component={StoreCheckout} />
         <Route path="/parent/store" component={ParentStore} />
+        <Route path="/parent/loyalty" component={LoyaltyCard} />
         <Route path="/parent/account-settings" component={AccountSettings} />
         <Route component={NotFound} />
       </Switch>

@@ -2489,3 +2489,38 @@ Fix:
 - [x] Add UI in child profile to set which days the child attends
 - [x] Update attendance page to filter/show only children scheduled for today
 - [x] Update attendance reports/statistics to calculate based on scheduled days only
+
+## Loyalty Card System (Digital Cards + Apple Wallet)
+
+### Database Schema
+- [x] Create loyalty_partners table (partner name, logo, discount description, discount percentage, isActive)
+- [x] Create loyalty_cards table (userId, cardNumber, qrCode, expiryDate, templateId, isActive)
+- [x] Create loyalty_card_templates table (name, backgroundColor, textColor, logoUrl, design style)
+- [x] Update loyalty_settings with card-related settings
+
+### Backend
+- [x] Partner CRUD (create, list, update, delete partners with logos)
+- [x] Card generation (unique card number + QR code per parent)
+- [x] Card template management (multiple designs)
+- [ ] Apple Wallet .pkpass generation endpoint (future enhancement)
+- [x] Card validation endpoint (scan QR → show card info)
+- [x] Card renewal/expiry management
+
+### Staff/Admin UI
+- [x] Partner management page (add/edit/delete partners with logos and discounts)
+- [x] Card templates management (choose/customize card designs)
+- [x] View all issued cards with status
+- [x] Loyalty settings (earn rules, card expiry period)
+- [x] Rewards catalog management (CRUD)
+- [x] View parent points and manually award/deduct
+
+### Parent UI
+- [x] Digital loyalty card display (with QR code, card number, expiry)
+- [x] Add to Apple Wallet button (.pkpass download)
+- [x] Points balance and history
+- [x] Partner discounts list (with logos)
+- [x] Redeem rewards
+
+### Navigation
+- [x] Add loyalty to admin sidebar
+- [x] Add loyalty to parent sidebar

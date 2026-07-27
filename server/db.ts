@@ -716,10 +716,12 @@ export async function getLoyaltyBalance(userId: number) {
   return result[0] ?? { points: 0 };
 }
 
-export async function getLoyaltyTransactions(userId: number) {
+export async function getLoyaltyTransactions(userId: number, limit?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(loyaltyTransactions).where(eq(loyaltyTransactions.userId, userId)).orderBy(desc(loyaltyTransactions.createdAt));
+  const q = db.select().from(loyaltyTransactions).where(eq(loyaltyTransactions.userId, userId)).orderBy(desc(loyaltyTransactions.createdAt));
+  if (limit) return q.limit(limit);
+  return q;
 }
 
 export async function addLoyaltyPoints(userId: number, points: number, type: "earned" | "redeemed" | "adjusted", description: string) {
@@ -740,11 +742,172 @@ export async function getLoyaltyRewards() {
   return db.select().from(loyaltyRewards).where(eq(loyaltyRewards.isActive, true));
 }
 
-export async function createLoyaltyReward(data: { name: string; nameAr: string; description?: string; descriptionAr?: string; pointsCost: number }) {
+export async function createLoyaltyReward(data: { name: string; nameAr: string; description?: string; descriptionAr?: string; pointsCost: number; category?: string; maxRedemptions?: number | null }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(loyaltyRewards).values(data);
+  const result = await db.insert(loyaltyRewards).values(data as any);
   return { id: result[0].insertId, ...data };
+}
+
+export async function updateLoyaltyReward(id: number, data: Record<string, any>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(loyaltyRewards).set(data).where(eq(loyaltyRewards.id, id));
+  return { success: true };
+}
+
+export async function deleteLoyaltyReward(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(loyaltyRewards).set({ isActive: false }).where(eq(loyaltyRewards.id, id));
+  return { success: true };
+}
+
+export async function incrementRewardRedemptions(rewardId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const reward = await db.select().from(loyaltyRewards).where(eq(loyaltyRewards.id, rewardId)).limit(1);
+  if (reward.length > 0) {
+    await db.update(loyaltyRewards).set({ currentRedemptions: (reward[0].currentRedemptions ?? 0) + 1 }).where(eq(loyaltyRewards.id, rewardId));
+  }
+}
+
+export async function createLoyaltyRedemption(userId: number, rewardId: number, pointsSpent: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.execute(sql`INSERT INTO loyalty_redemptions (userId, rewardId, pointsSpent) VALUES (${userId}, ${rewardId}, ${pointsSpent})`);
+  return { id: (result as any)[0]?.insertId };
+}
+
+export async function getUserRedemptions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.execute(sql`SELECT r.*, lr.name, lr.nameAr, lr.pointsCost as rewardCost FROM loyalty_redemptions r LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id WHERE r.userId = ${userId} ORDER BY r.createdAt DESC`);
+}
+
+export async function getLoyaltySettings() {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.execute(sql`SELECT * FROM loyalty_settings LIMIT 1`);
+  return (result as any)[0]?.[0] ?? null;
+}
+
+export async function updateLoyaltySettings(data: Record<string, any>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const sets = Object.entries(data).filter(([_, v]) => v !== undefined).map(([k, v]) => `${k} = ${typeof v === 'boolean' ? (v ? 1 : 0) : v}`).join(', ');
+  if (sets) {
+    await db.execute(sql.raw(`UPDATE loyalty_settings SET ${sets} WHERE id = 1`));
+  }
+  return { success: true };
+}
+
+export async function getAllParentsLoyaltyPoints() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`SELECT lp.*, u.name as userName, u.nameAr as userNameAr, u.email FROM loyalty_points lp LEFT JOIN users u ON lp.userId = u.id ORDER BY lp.points DESC`);
+  return (result as any)[0] ?? [];
+}
+
+export async function getAllRedemptions() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`SELECT r.*, u.name as userName, u.nameAr as userNameAr, lr.name as rewardName, lr.nameAr as rewardNameAr FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id ORDER BY r.createdAt DESC`);
+  return (result as any)[0] ?? [];
+}
+
+export async function updateRedemptionStatus(id: number, status: string, adminNote?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updates: any = { status };
+  if (adminNote) updates.adminNote = adminNote;
+  if (status === 'fulfilled') updates.fulfilledAt = new Date();
+  await db.execute(sql`UPDATE loyalty_redemptions SET status = ${status}, adminNote = ${adminNote ?? null}, fulfilledAt = ${status === 'fulfilled' ? new Date() : null} WHERE id = ${id}`);
+  return { success: true };
+}
+
+// ============ LOYALTY PARTNERS ============
+
+export async function getLoyaltyPartners() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`SELECT * FROM loyalty_partners WHERE isActive = 1 ORDER BY createdAt DESC`);
+  return (result as any)[0] ?? [];
+}
+
+export async function getAllLoyaltyPartners() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`SELECT * FROM loyalty_partners ORDER BY createdAt DESC`);
+  return (result as any)[0] ?? [];
+}
+
+export async function createLoyaltyPartner(data: { name: string; nameAr: string; logoUrl?: string; discountDescription?: string; discountDescriptionAr?: string; discountPercentage?: number; contactInfo?: string; website?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.execute(sql`INSERT INTO loyalty_partners (name, nameAr, logoUrl, discountDescription, discountDescriptionAr, discountPercentage, contactInfo, website) VALUES (${data.name}, ${data.nameAr}, ${data.logoUrl ?? null}, ${data.discountDescription ?? null}, ${data.discountDescriptionAr ?? null}, ${data.discountPercentage ?? 0}, ${data.contactInfo ?? null}, ${data.website ?? null})`);
+  return { id: (result as any)[0]?.insertId, ...data };
+}
+
+export async function updateLoyaltyPartner(id: number, data: Record<string, any>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const fields = Object.entries(data).filter(([_, v]) => v !== undefined);
+  if (fields.length === 0) return { success: true };
+  const setClause = fields.map(([k, v]) => `\`${k}\` = ${v === null ? 'NULL' : typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v}`).join(', ');
+  await db.execute(sql.raw(`UPDATE loyalty_partners SET ${setClause} WHERE id = ${id}`));
+  return { success: true };
+}
+
+export async function deleteLoyaltyPartner(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.execute(sql`UPDATE loyalty_partners SET isActive = 0 WHERE id = ${id}`);
+  return { success: true };
+}
+
+// ============ LOYALTY CARDS ============
+
+export async function getLoyaltyCard(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.execute(sql`SELECT c.*, t.name as templateName, t.backgroundColor, t.textColor, t.accentColor, t.backgroundPattern FROM loyalty_cards c LEFT JOIN loyalty_card_templates t ON c.templateId = t.id WHERE c.userId = ${userId} AND c.isActive = 1 LIMIT 1`);
+  return (result as any)[0]?.[0] ?? null;
+}
+
+export async function createLoyaltyCard(userId: number, cardNumber: string, qrCodeData: string, templateId: number, expiryDate: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.execute(sql`INSERT INTO loyalty_cards (userId, cardNumber, qrCodeData, templateId, expiryDate) VALUES (${userId}, ${cardNumber}, ${qrCodeData}, ${templateId}, ${expiryDate})`);
+  return { cardNumber, qrCodeData };
+}
+
+export async function getAllLoyaltyCards() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, u.email, t.name as templateName FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_card_templates t ON c.templateId = t.id ORDER BY c.createdAt DESC`);
+  return (result as any)[0] ?? [];
+}
+
+export async function getCardByNumber(cardNumber: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, lp.points FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_points lp ON c.userId = lp.userId WHERE c.cardNumber = ${cardNumber} AND c.isActive = 1 LIMIT 1`);
+  return (result as any)[0]?.[0] ?? null;
+}
+
+export async function getCardTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`SELECT * FROM loyalty_card_templates ORDER BY isDefault DESC, createdAt ASC`);
+  return (result as any)[0] ?? [];
+}
+
+export async function createCardTemplate(data: { name: string; nameAr: string; backgroundColor: string; textColor: string; accentColor: string; backgroundPattern?: string; logoUrl?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.execute(sql`INSERT INTO loyalty_card_templates (name, nameAr, backgroundColor, textColor, accentColor, backgroundPattern, logoUrl) VALUES (${data.name}, ${data.nameAr}, ${data.backgroundColor}, ${data.textColor}, ${data.accentColor}, ${data.backgroundPattern ?? 'gradient'}, ${data.logoUrl ?? null})`);
+  return { id: (result as any)[0]?.insertId, ...data };
 }
 
 // ============ NOTIFICATIONS ============

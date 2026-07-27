@@ -519,11 +519,46 @@ export const loyaltyRewards = mysqlTable("loyalty_rewards", {
   description: text("description"),
   descriptionAr: text("descriptionAr"),
   pointsCost: int("pointsCost").notNull(),
+  category: mysqlEnum("category", ["discount", "free_day", "gift", "upgrade", "custom"]).default("custom"),
+  imageUrl: varchar("imageUrl", { length: 500 }),
+  maxRedemptions: int("maxRedemptions"),
+  currentRedemptions: int("currentRedemptions").default(0),
+  organizationId: int("organizationId").default(1),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type LoyaltyReward = typeof loyaltyRewards.$inferSelect;
+
+// Loyalty settings - configurable earn rules per organization
+export const loyaltySettings = mysqlTable("loyalty_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").default(1).notNull(),
+  // Points earned for various actions
+  pointsPerReferral: int("pointsPerReferral").default(100).notNull(),
+  pointsPerOnTimePayment: int("pointsPerOnTimePayment").default(20).notNull(),
+  pointsPerPerfectAttendanceWeek: int("pointsPerPerfectAttendanceWeek").default(10).notNull(),
+  pointsPerEventParticipation: int("pointsPerEventParticipation").default(15).notNull(),
+  pointsPerSurveyCompletion: int("pointsPerSurveyCompletion").default(5).notNull(),
+  pointsPerEarlyPickup: int("pointsPerEarlyPickup").default(5).notNull(),
+  // Program settings
+  isActive: boolean("isActive").default(true).notNull(),
+  welcomeBonus: int("welcomeBonus").default(50).notNull(),
+  birthdayBonus: int("birthdayBonus").default(25).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+// Loyalty redemptions - track which rewards were redeemed
+export const loyaltyRedemptions = mysqlTable("loyalty_redemptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  rewardId: int("rewardId").notNull(),
+  pointsSpent: int("pointsSpent").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "fulfilled", "rejected"]).default("pending").notNull(),
+  adminNote: text("adminNote"),
+  fulfilledAt: timestamp("fulfilledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
 
 // ============ NOTIFICATIONS ============
 export const notifications = mysqlTable("notifications", {

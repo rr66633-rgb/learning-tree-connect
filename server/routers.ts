@@ -1780,15 +1780,35 @@ export const appRouter = router({
   }),
 
   loyalty: router({
+    // === Parent endpoints ===
     balance: protectedProcedure.query(async ({ ctx }) => {
       return db.getLoyaltyBalance(ctx.user!.id);
     }),
-    transactions: protectedProcedure.query(async ({ ctx }) => {
-      return db.getLoyaltyTransactions(ctx.user!.id);
+    transactions: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+      return db.getLoyaltyTransactions(ctx.user!.id, input?.limit);
     }),
     rewards: protectedProcedure.query(async () => {
       return db.getLoyaltyRewards();
     }),
+    redeem: protectedProcedure.input(z.object({ rewardId: z.number() })).mutation(async ({ ctx, input }) => {
+      const rewards = await db.getLoyaltyRewards();
+      const reward = rewards.find(r => r.id === input.rewardId);
+      if (!reward) throw new TRPCError({ code: 'NOT_FOUND', message: 'المكافأة غير موجودة' });
+      const balance = await db.getLoyaltyBalance(ctx.user!.id);
+      if (balance.points < reward.pointsCost) throw new TRPCError({ code: 'BAD_REQUEST', message: 'رصيد النقاط غير كافٍ' });
+      if (reward.maxRedemptions && (reward.currentRedemptions ?? 0) >= reward.maxRedemptions) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم استنفاد هذه المكافأة' });
+      }
+      await db.addLoyaltyPoints(ctx.user!.id, -reward.pointsCost, "redeemed", `استبدال: ${reward.nameAr}`);
+      await db.createLoyaltyRedemption(ctx.user!.id, reward.id, reward.pointsCost);
+      await db.incrementRewardRedemptions(reward.id);
+      return { success: true };
+    }),
+    myRedemptions: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserRedemptions(ctx.user!.id);
+    }),
+
+    // === Admin endpoints ===
     addPoints: adminProcedure.input(z.object({
       userId: z.number(),
       points: z.number(),
@@ -1797,13 +1817,12 @@ export const appRouter = router({
       await db.addLoyaltyPoints(input.userId, input.points, "earned", input.description);
       return { success: true };
     }),
-    redeem: protectedProcedure.input(z.object({ rewardId: z.number() })).mutation(async ({ ctx, input }) => {
-      const rewards = await db.getLoyaltyRewards();
-      const reward = rewards.find(r => r.id === input.rewardId);
-      if (!reward) throw new TRPCError({ code: 'NOT_FOUND', message: 'Reward not found' });
-      const balance = await db.getLoyaltyBalance(ctx.user!.id);
-      if (balance.points < reward.pointsCost) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Insufficient points' });
-      await db.addLoyaltyPoints(ctx.user!.id, -reward.pointsCost, "redeemed", `Redeemed: ${reward.name}`);
+    deductPoints: adminProcedure.input(z.object({
+      userId: z.number(),
+      points: z.number(),
+      description: z.string(),
+    })).mutation(async ({ input }) => {
+      await db.addLoyaltyPoints(input.userId, -Math.abs(input.points), "adjusted", input.description);
       return { success: true };
     }),
     createReward: adminProcedure.input(z.object({
@@ -1812,8 +1831,137 @@ export const appRouter = router({
       description: z.string().optional(),
       descriptionAr: z.string().optional(),
       pointsCost: z.number(),
+      category: z.enum(["discount", "free_day", "gift", "upgrade", "custom"]).optional(),
+      maxRedemptions: z.number().nullable().optional(),
     })).mutation(async ({ input }) => {
       return db.createLoyaltyReward(input);
+    }),
+    updateReward: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      nameAr: z.string().optional(),
+      description: z.string().optional(),
+      descriptionAr: z.string().optional(),
+      pointsCost: z.number().optional(),
+      category: z.enum(["discount", "free_day", "gift", "upgrade", "custom"]).optional(),
+      isActive: z.boolean().optional(),
+      maxRedemptions: z.number().nullable().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      return db.updateLoyaltyReward(id, data);
+    }),
+    deleteReward: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteLoyaltyReward(input.id);
+    }),
+    // Settings
+    getSettings: adminProcedure.query(async () => {
+      return db.getLoyaltySettings();
+    }),
+    updateSettings: adminProcedure.input(z.object({
+      pointsPerReferral: z.number().optional(),
+      pointsPerOnTimePayment: z.number().optional(),
+      pointsPerPerfectAttendanceWeek: z.number().optional(),
+      pointsPerEventParticipation: z.number().optional(),
+      pointsPerSurveyCompletion: z.number().optional(),
+      pointsPerEarlyPickup: z.number().optional(),
+      isActive: z.boolean().optional(),
+      welcomeBonus: z.number().optional(),
+      birthdayBonus: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      return db.updateLoyaltySettings(input);
+    }),
+    // All parents points (admin view)
+    allParentsPoints: adminProcedure.query(async () => {
+      return db.getAllParentsLoyaltyPoints();
+    }),
+    // All redemptions (admin view)
+    allRedemptions: adminProcedure.query(async () => {
+      return db.getAllRedemptions();
+    }),
+    // Update redemption status
+    updateRedemptionStatus: adminProcedure.input(z.object({
+      id: z.number(),
+      status: z.enum(["approved", "fulfilled", "rejected"]),
+      adminNote: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      return db.updateRedemptionStatus(input.id, input.status, input.adminNote);
+    }),
+
+    // === Partners ===
+    partners: protectedProcedure.query(async () => {
+      return db.getLoyaltyPartners();
+    }),
+    allPartners: adminProcedure.query(async () => {
+      return db.getAllLoyaltyPartners();
+    }),
+    createPartner: adminProcedure.input(z.object({
+      name: z.string(),
+      nameAr: z.string(),
+      logoUrl: z.string().optional(),
+      discountDescription: z.string().optional(),
+      discountDescriptionAr: z.string().optional(),
+      discountPercentage: z.number().optional(),
+      contactInfo: z.string().optional(),
+      website: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      return db.createLoyaltyPartner(input);
+    }),
+    updatePartner: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      nameAr: z.string().optional(),
+      logoUrl: z.string().optional(),
+      discountDescription: z.string().optional(),
+      discountDescriptionAr: z.string().optional(),
+      discountPercentage: z.number().optional(),
+      contactInfo: z.string().optional(),
+      website: z.string().optional(),
+      isActive: z.boolean().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      return db.updateLoyaltyPartner(id, data);
+    }),
+    deletePartner: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteLoyaltyPartner(input.id);
+    }),
+
+    // === Cards ===
+    myCard: protectedProcedure.query(async ({ ctx }) => {
+      return db.getLoyaltyCard(ctx.user!.id);
+    }),
+    generateCard: protectedProcedure.input(z.object({ templateId: z.number().optional() }).optional()).mutation(async ({ ctx, input }) => {
+      // Check if user already has a card
+      const existing = await db.getLoyaltyCard(ctx.user!.id);
+      if (existing) return existing;
+      // Generate unique card number: NSH-XXXX-XXXX-XXXX
+      const rand = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+      const cardNumber = `NSH-${rand()}-${rand()}-${rand()}`;
+      const qrCodeData = JSON.stringify({ type: 'naashah_loyalty', card: cardNumber, userId: ctx.user!.id });
+      const templateId = input?.templateId ?? 1;
+      const expiryDate = new Date();
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+      await db.createLoyaltyCard(ctx.user!.id, cardNumber, qrCodeData, templateId, expiryDate);
+      return db.getLoyaltyCard(ctx.user!.id);
+    }),
+    allCards: adminProcedure.query(async () => {
+      return db.getAllLoyaltyCards();
+    }),
+    validateCard: protectedProcedure.input(z.object({ cardNumber: z.string() })).query(async ({ input }) => {
+      return db.getCardByNumber(input.cardNumber);
+    }),
+    cardTemplates: protectedProcedure.query(async () => {
+      return db.getCardTemplates();
+    }),
+    createCardTemplate: adminProcedure.input(z.object({
+      name: z.string(),
+      nameAr: z.string(),
+      backgroundColor: z.string(),
+      textColor: z.string(),
+      accentColor: z.string(),
+      backgroundPattern: z.enum(["solid", "gradient", "dots", "waves"]).optional(),
+      logoUrl: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      return db.createCardTemplate(input);
     }),
   }),
 

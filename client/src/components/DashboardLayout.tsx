@@ -71,6 +71,7 @@ const parentMenuItems: MenuItem[] = [
   { icon: CalendarDays, label: "الخطة الأسبوعية", labelEn: "Weekly Plan", path: "/weekly-plan", color: "#7C3AED" },
   { icon: Library, label: "مكتبة المناهج", labelEn: "Curriculum", path: "/curriculum", color: "#10B981" },
   { icon: ShoppingBag, label: "المتجر", labelEn: "Store", path: "/store", color: "#10B981" },
+  { icon: Crown, label: "بطاقة الولاء", labelEn: "Loyalty Card", path: "/loyalty", color: "#F59E0B" },
   { icon: Sparkles, label: "المساعد الذكي", labelEn: "AI Assistant", path: "/ai/assistant", color: "#F97316" },
 ];
 
@@ -141,6 +142,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: Shield, label: "سجل المراجعة", labelEn: "Audit Log", path: "/audit-log", color: "#EC4899" },
   { icon: ShoppingBag, label: "المتجر", labelEn: "Store", path: "/store", color: "#10B981" },
   { icon: BarChart3, label: "تقرير المبيعات", labelEn: "Sales Report", path: "/store/reports", color: "#6366F1" },
+  { icon: Crown, label: "برنامج الولاء", labelEn: "Loyalty Program", path: "/loyalty", color: "#F59E0B" },
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
 ];
