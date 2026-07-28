@@ -2528,3 +2528,4 @@ Fix:
 ## Bug Fixes
 - [x] Fix: Clicking "الحضور" tab in staff profile page navigates to child attendance instead of staff attendance
 - [ ] Fix: Staff profile attendance tab should show the selected staff member's attendance records inline, not redirect or show current user's attendance
+- [ ] Fix: Parent PDF download opens print dialog instead of downloading actual PDF file - should generate and download a real PDF

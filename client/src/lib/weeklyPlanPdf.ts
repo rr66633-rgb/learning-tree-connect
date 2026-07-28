@@ -1,26 +1,27 @@
 /**
  * Weekly Plan PDF Generator (Client-side)
- * Opens a new window with clean HTML and uses the browser's native print-to-PDF.
- * This approach works on all devices including iOS Safari without needing
- * any external libraries (no html2canvas, no oklch issues).
+ * Uses jsPDF to generate a real PDF file and download it directly.
+ * Works on all devices including iOS Safari without needing print dialog.
  */
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 // Section colors matching the app UI
-const SECTION_COLORS: Record<string, string> = {
-  theme_overview: "#2E7D32",
-  learning_objectives: "#1565C0",
-  arabic_activities: "#6A1B9A",
-  english_activities: "#00838F",
-  math_activities: "#E65100",
-  science_activities: "#2E7D32",
-  art_activities: "#AD1457",
-  sensory_activities: "#4527A0",
-  physical_activities: "#EF6C00",
-  quran_islamic: "#1B5E20",
-  story_of_week: "#5D4037",
-  song_of_week: "#C62828",
-  home_activity: "#00695C",
-  parent_notes: "#37474F",
+const SECTION_COLORS: Record<string, [number, number, number]> = {
+  theme_overview: [46, 125, 50],
+  learning_objectives: [21, 101, 192],
+  arabic_activities: [106, 27, 154],
+  english_activities: [0, 131, 143],
+  math_activities: [230, 81, 0],
+  science_activities: [46, 125, 50],
+  art_activities: [173, 20, 87],
+  sensory_activities: [69, 39, 160],
+  physical_activities: [239, 108, 0],
+  quran_islamic: [27, 94, 32],
+  story_of_week: [93, 64, 55],
+  song_of_week: [198, 40, 40],
+  home_activity: [0, 105, 92],
+  parent_notes: [55, 71, 79],
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -40,37 +41,12 @@ const SECTION_LABELS: Record<string, string> = {
   parent_notes: "ملاحظات لأولياء الأمور",
 };
 
-const SECTION_ICONS: Record<string, string> = {
-  theme_overview: "🌟",
-  learning_objectives: "🎯",
-  arabic_activities: "📖",
-  english_activities: "🔤",
-  math_activities: "🔢",
-  science_activities: "🔬",
-  art_activities: "🎨",
-  sensory_activities: "🖐️",
-  physical_activities: "⚽",
-  quran_islamic: "🕌",
-  story_of_week: "📚",
-  song_of_week: "🎵",
-  home_activity: "🏠",
-  parent_notes: "💬",
-};
-
 const AGE_GROUP_LABELS: Record<string, string> = {
   nursery: "حضانة (٢-٣ سنوات)",
   kg1: "تمهيدي أول KG1 (٣-٤ سنوات)",
   kg2: "تمهيدي ثاني KG2 (٤-٥ سنوات)",
   kg3: "تمهيدي ثالث KG3 (٥-٦ سنوات)",
 };
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function flattenArrayToText(arr: any[]): string {
   return arr
@@ -104,7 +80,7 @@ function flattenArrayToText(arr: any[]): string {
         if (item.verse) parts.push(item.verse);
         if (item.dua) parts.push(`الدعاء: ${item.dua}`);
         if (item.islamic_value) parts.push(`القيمة الإسلامية: ${item.islamic_value}`);
-        return `${i + 1}. ${parts.join("\n   ")}`;
+        return `${i + 1}. ${parts.join(" | ")}`;
       }
       return `${i + 1}. ${String(item)}`;
     })
@@ -149,220 +125,216 @@ function prepareSections(plan: any): Record<string, string> {
   return result;
 }
 
-function buildHtmlForPdf(plan: any): string {
-  const theme = plan.theme || "";
-  const ageGroup = plan.ageGroup || "";
-  const weekStart = plan.weekStartDate || plan.weekStart || "";
-  const weekEnd = plan.weekEndDate || plan.weekEnd || "";
-  const language = plan.language || "ar";
-  const className = plan.className || "";
-  const sections = prepareSections(plan);
-
-  const ageLabel = AGE_GROUP_LABELS[ageGroup] || ageGroup;
-  const langLabel = language === "ar" ? "عربي" : language === "en" ? "إنجليزي" : "ثنائي اللغة";
-
-  const sectionKeys = Object.keys(SECTION_LABELS);
-
-  // Build table of contents
-  let tocHtml = "";
-  let tocIndex = 0;
-  for (const key of sectionKeys) {
-    if (sections[key]) {
-      tocIndex++;
-      const icon = SECTION_ICONS[key] || "📋";
-      const color = SECTION_COLORS[key] || "#333";
-      tocHtml += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;direction:rtl">
-        <span style="font-size:14px">${icon}</span>
-        <span style="color:${color};font-weight:600">${tocIndex}.</span>
-        <span>${escapeHtml(SECTION_LABELS[key])}</span>
-      </div>`;
-    }
-  }
-
-  // Build section pages
-  let sectionsHtml = "";
-  for (const key of sectionKeys) {
-    const content = sections[key];
-    if (!content) continue;
-
-    const color = SECTION_COLORS[key] || "#333333";
-    const icon = SECTION_ICONS[key] || "📋";
-    const label = SECTION_LABELS[key] || key;
-
-    // Format content - convert newlines to paragraphs/list items
-    const lines = content.split("\n").filter((l: string) => l.trim());
-    let contentHtml = "";
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("•") || trimmed.startsWith("-")) {
-        contentHtml += `<div style="padding:3px 0;padding-right:16px;direction:rtl">${escapeHtml(trimmed)}</div>`;
-      } else if (/^\d+[\.\)]/.test(trimmed)) {
-        contentHtml += `<div style="padding:3px 0;padding-right:16px;direction:rtl">${escapeHtml(trimmed)}</div>`;
-      } else {
-        contentHtml += `<p style="margin:6px 0;line-height:1.9;direction:rtl">${escapeHtml(trimmed)}</p>`;
+/**
+ * Load the Noto Sans Arabic font for jsPDF.
+ * We use the standard font as a fallback if loading fails.
+ */
+async function loadArabicFont(doc: jsPDF): Promise<void> {
+  try {
+    // Try to load Amiri font from CDN (supports Arabic well with jsPDF)
+    const fontUrl = "https://cdn.jsdelivr.net/npm/@fontsource/amiri@5.0.18/files/amiri-arabic-400-normal.woff";
+    const response = await fetch(fontUrl);
+    if (response.ok) {
+      const buffer = await response.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
       }
+      const base64 = btoa(binary);
+      doc.addFileToVFS("Amiri-Regular.ttf", base64);
+      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+      doc.setFont("Amiri");
+      return;
     }
-
-    sectionsHtml += `
-      <div style="page-break-before:always;padding-top:0">
-        <div style="background:${color};color:white;padding:14px 20px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:10px;direction:rtl">
-          <span style="font-size:20px">${icon}</span>
-          <span style="font-size:16px;font-weight:bold">${escapeHtml(label)}</span>
-        </div>
-        <div style="font-size:12px;line-height:1.9;color:#333;padding:0 8px;direction:rtl;text-align:right">
-          ${contentHtml}
-        </div>
-      </div>
-    `;
+  } catch {
+    // Fallback - try another font source
   }
 
-  return `
-<div id="pdf-content" style="font-family:'Noto Sans Arabic','Arial',sans-serif;direction:rtl;text-align:right;color:#1a1a1a;font-size:12px;line-height:1.6;width:100%">
-  <!-- COVER PAGE -->
-  <div style="min-height:90vh;display:flex;flex-direction:column">
-    <div style="background:linear-gradient(135deg,#1B5E20,#2E7D32);color:white;padding:28px;border-radius:12px;text-align:center;margin-bottom:24px">
-      <div style="font-size:14px;opacity:0.9;margin-bottom:6px">مركز شجرة التعلم</div>
-      <div style="font-size:20px;font-weight:bold;margin-bottom:8px">الخطة الأسبوعية</div>
-      <div style="font-size:18px;font-weight:bold;margin-top:10px">${escapeHtml(theme)}</div>
-      <div style="font-size:11px;opacity:0.85;margin-top:6px">${escapeHtml(weekStart)} — ${escapeHtml(weekEnd)}</div>
-    </div>
-
-    <div style="background:#f8faf9;border:1px solid #e5e7eb;border-radius:8px;padding:18px;margin-bottom:20px">
-      <div style="font-size:13px;color:#1B5E20;font-weight:bold;margin-bottom:10px">تفاصيل الخطة</div>
-      <table style="width:100%;font-size:11px;direction:rtl">
-        <tr><td style="padding:5px 0;color:#666;width:100px">الفئة العمرية:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(ageLabel)}</td></tr>
-        <tr><td style="padding:5px 0;color:#666">الأسبوع:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(weekStart)} إلى ${escapeHtml(weekEnd)}</td></tr>
-        <tr><td style="padding:5px 0;color:#666">لغة الخطة:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(langLabel)}</td></tr>
-        ${className ? `<tr><td style="padding:5px 0;color:#666">الفصل:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(className)}</td></tr>` : ""}
-      </table>
-    </div>
-
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:18px">
-      <div style="font-size:13px;color:#1B5E20;font-weight:bold;margin-bottom:10px">أقسام الخطة (${tocIndex} مجالاً)</div>
-      <div style="font-size:11px;line-height:1.8">
-        ${tocHtml}
-      </div>
-    </div>
-
-    <div style="margin-top:auto;text-align:center;font-size:8px;color:#999;padding-top:16px">
-      تم إنشاؤها بواسطة مولد الخطة الأسبوعية الذكي — مركز شجرة التعلم
-      <br>
-      إطار EYFS | القيم السعودية | القيم الإسلامية
-    </div>
-  </div>
-
-  <!-- SECTION PAGES -->
-  ${sectionsHtml}
-
-  <!-- Final Footer -->
-  <div style="text-align:center;font-size:8px;color:#aaa;padding:16px 0;border-top:1px solid #eee;margin-top:16px">
-    شجرة التعلم | ${escapeHtml(theme)} | ${escapeHtml(weekStart)}
-  </div>
-</div>`;
+  try {
+    const fontUrl2 = "https://cdn.jsdelivr.net/gh/nicholasgasior/gfonts-woff2-to-base64/fonts/amiri/amiri-regular.base64.txt";
+    const response2 = await fetch(fontUrl2);
+    if (response2.ok) {
+      const base64Text = await response2.text();
+      doc.addFileToVFS("Amiri-Regular.ttf", base64Text.trim());
+      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+      doc.setFont("Amiri");
+      return;
+    }
+  } catch {
+    // Use default font
+  }
 }
 
 /**
- * Generates and downloads a PDF of the weekly plan.
- * Opens a new browser window with clean HTML (no oklch CSS) and triggers
- * the browser's native print dialog which allows saving as PDF.
- * This approach works on all devices and completely avoids html2canvas/oklch issues.
+ * Generates and downloads a PDF of the weekly plan directly.
+ * No print dialog needed - works on iOS Safari, Android, and desktop.
  */
 export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
-  // Build the HTML content
-  const htmlContent = buildHtmlForPdf(plan);
-
   const theme = plan.theme || "خطة";
+  const ageGroup = plan.ageGroup || "";
   const weekStart = plan.weekStartDate || plan.weekStart || "";
+  const weekEnd = plan.weekEndDate || plan.weekEnd || "";
+  const className = plan.className || "";
+  const sections = prepareSections(plan);
+  const ageLabel = AGE_GROUP_LABELS[ageGroup] || ageGroup;
 
-  // Build a complete standalone HTML page with print styles
-  const fullHtml = `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>خطة-${escapeHtml(theme)}-${escapeHtml(weekStart)}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Noto Sans Arabic', 'Arial', sans-serif;
-      direction: rtl;
-      text-align: right;
-      color: #1a1a1a;
-      background: #ffffff;
-      font-size: 12px;
-      line-height: 1.6;
-      padding: 20px;
-    }
-    @media print {
-      body { padding: 0; margin: 0; }
-      @page { size: A4; margin: 15mm; }
-    }
-    /* Print button styles */
-    .print-controls {
-      position: fixed;
-      top: 16px;
-      left: 16px;
-      z-index: 1000;
-      display: flex;
-      gap: 8px;
-      direction: ltr;
-    }
-    .print-btn {
-      background: #1B5E20;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-family: 'Noto Sans Arabic', sans-serif;
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-    .print-btn:hover { background: #2E7D32; }
-    .close-btn {
-      background: #666;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-family: 'Noto Sans Arabic', sans-serif;
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-    .close-btn:hover { background: #444; }
-    @media print {
-      .print-controls { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  <div class="print-controls">
-    <button class="print-btn" onclick="window.print()">طباعة / حفظ PDF ⬇️</button>
-    <button class="close-btn" onclick="window.close()">إغلاق</button>
-  </div>
-  ${htmlContent}
-</body>
-</html>`;
+  // Create PDF document (A4 size)
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
 
-  // Open a new window with the clean HTML
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    // Fallback: if popup blocked, use a Blob download
-    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `خطة-${theme}-${weekStart}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-    return;
+  // Try to load Arabic font
+  await loadArabicFont(doc);
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const contentWidth = pageWidth - margin * 2;
+
+  // Helper function to add RTL text
+  const addRtlText = (text: string, x: number, y: number, options?: any) => {
+    doc.text(text, x, y, { align: "right", ...options });
+  };
+
+  // ===== COVER PAGE =====
+  // Header background
+  doc.setFillColor(27, 94, 32);
+  doc.roundedRect(margin, 20, contentWidth, 50, 3, 3, "F");
+
+  // Header text
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12);
+  addRtlText("نشأة", pageWidth - margin - 5, 35);
+  doc.setFontSize(20);
+  addRtlText("الخطة الأسبوعية", pageWidth - margin - 5, 48);
+  doc.setFontSize(16);
+  addRtlText(theme, pageWidth - margin - 5, 60);
+  doc.setFontSize(10);
+  addRtlText(`${weekStart} — ${weekEnd}`, pageWidth - margin - 5, 68);
+
+  // Plan details box
+  doc.setTextColor(0, 0, 0);
+  doc.setFillColor(248, 250, 249);
+  doc.setDrawColor(229, 231, 235);
+  doc.roundedRect(margin, 80, contentWidth, 40, 2, 2, "FD");
+
+  doc.setFontSize(12);
+  doc.setTextColor(27, 94, 32);
+  addRtlText("تفاصيل الخطة", pageWidth - margin - 5, 90);
+
+  doc.setFontSize(10);
+  doc.setTextColor(80, 80, 80);
+  let detailY = 100;
+  addRtlText(`الفئة العمرية: ${ageLabel}`, pageWidth - margin - 5, detailY);
+  detailY += 7;
+  addRtlText(`الأسبوع: ${weekStart} إلى ${weekEnd}`, pageWidth - margin - 5, detailY);
+  detailY += 7;
+  if (className) {
+    addRtlText(`الفصل: ${className}`, pageWidth - margin - 5, detailY);
   }
 
-  printWindow.document.open();
-  printWindow.document.write(fullHtml);
-  printWindow.document.close();
+  // Table of contents
+  let tocY = 130;
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(229, 231, 235);
+  doc.roundedRect(margin, tocY - 5, contentWidth, 10, 2, 2, "FD");
+
+  doc.setFontSize(12);
+  doc.setTextColor(27, 94, 32);
+  const sectionKeys = Object.keys(SECTION_LABELS);
+  const activeSections = sectionKeys.filter(k => sections[k]);
+  addRtlText(`أقسام الخطة (${activeSections.length} مجالاً)`, pageWidth - margin - 5, tocY + 2);
+
+  tocY += 12;
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  let tocIndex = 0;
+  for (const key of activeSections) {
+    tocIndex++;
+    const label = SECTION_LABELS[key] || key;
+    const color = SECTION_COLORS[key] || [51, 51, 51];
+    doc.setTextColor(color[0], color[1], color[2]);
+    addRtlText(`${tocIndex}. ${label}`, pageWidth - margin - 5, tocY);
+    tocY += 6;
+    if (tocY > pageHeight - 30) break;
+  }
+
+  // Footer
+  doc.setTextColor(170, 170, 170);
+  doc.setFontSize(7);
+  doc.text("نشأة | الخطة الأسبوعية الذكية", pageWidth / 2, pageHeight - 10, { align: "center" });
+
+  // ===== SECTION PAGES =====
+  for (const key of activeSections) {
+    const content = sections[key];
+    if (!content) continue;
+
+    doc.addPage();
+
+    const color = SECTION_COLORS[key] || [51, 51, 51];
+    const label = SECTION_LABELS[key] || key;
+
+    // Section header
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.roundedRect(margin, 15, contentWidth, 14, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    addRtlText(label, pageWidth - margin - 5, 24);
+
+    // Section content
+    doc.setTextColor(50, 50, 50);
+    doc.setFontSize(10);
+
+    const lines = content.split("\n").filter((l: string) => l.trim());
+    let y = 40;
+    const lineHeight = 6;
+    const maxY = pageHeight - 20;
+
+    for (const line of lines) {
+      if (y > maxY) {
+        doc.addPage();
+        // Re-add section header on continuation
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.roundedRect(margin, 15, contentWidth, 10, 2, 2, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        addRtlText(`${label} (تابع)`, pageWidth - margin - 5, 22);
+        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(10);
+        y = 35;
+      }
+
+      const trimmed = line.trim();
+      // Wrap long lines
+      const splitLines = doc.splitTextToSize(trimmed, contentWidth - 10);
+      for (const splitLine of splitLines) {
+        if (y > maxY) {
+          doc.addPage();
+          doc.setFillColor(color[0], color[1], color[2]);
+          doc.roundedRect(margin, 15, contentWidth, 10, 2, 2, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(11);
+          addRtlText(`${label} (تابع)`, pageWidth - margin - 5, 22);
+          doc.setTextColor(50, 50, 50);
+          doc.setFontSize(10);
+          y = 35;
+        }
+        addRtlText(splitLine, pageWidth - margin - 5, y);
+        y += lineHeight;
+      }
+      y += 1; // Extra spacing between items
+    }
+
+    // Page footer
+    doc.setTextColor(170, 170, 170);
+    doc.setFontSize(7);
+    doc.text(`نشأة | ${theme} | ${weekStart}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  // Download the PDF
+  const fileName = `خطة-${theme}-${weekStart}.pdf`;
+  doc.save(fileName);
 }

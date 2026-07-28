@@ -16,7 +16,7 @@ export function useWeeklyPlanPdf() {
       try {
         const { generateWeeklyPlanPdf } = await import("@/lib/weeklyPlanPdf");
         await generateWeeklyPlanPdf(detail.plan);
-        toast.success(isAr ? "تم فتح صفحة الطباعة. اختر 'حفظ كـ PDF' من خيارات الطابعة." : "Print page opened. Choose 'Save as PDF' from printer options.");
+        toast.success(isAr ? "تم تحميل ملف PDF بنجاح" : "PDF downloaded successfully");
       } catch (err: any) {
         console.error("PDF generation failed:", err);
         const message = err?.message || "فشل في إنشاء ملف PDF. يرجى المحاولة مرة أخرى.";
