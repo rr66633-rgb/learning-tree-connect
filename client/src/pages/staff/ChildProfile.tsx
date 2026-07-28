@@ -281,6 +281,33 @@ export default function ChildProfile() {
         </div>
       </div>
 
+      {/* Allergy/Medical Alert Banner */}
+      {(c.allergies || c.medicalConditions) && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-3">
+          <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-red-800">{isAr ? "تنبيه طبي" : "Medical Alert"}</h4>
+            {c.allergies && (
+              <p className="text-sm text-red-700 mt-0.5">
+                <span className="font-medium">{isAr ? "حساسية:" : "Allergies:"}</span> {c.allergies}
+              </p>
+            )}
+            {c.medicalConditions && (
+              <p className="text-sm text-red-700 mt-0.5">
+                <span className="font-medium">{isAr ? "حالات طبية:" : "Medical Conditions:"}</span> {c.medicalConditions}
+              </p>
+            )}
+            {c.medications && (
+              <p className="text-sm text-red-700 mt-0.5">
+                <span className="font-medium">{isAr ? "أدوية:" : "Medications:"}</span> {c.medications}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="personal">{isAr ? "البيانات الشخصية" : "Personal Data"}</TabsTrigger>

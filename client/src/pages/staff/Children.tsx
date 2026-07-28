@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera, Download } from "lucide-react";
+import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera, Download, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiUrl } from "@/lib/apiBase";
 
@@ -466,6 +466,12 @@ export default function StaffChildren() {
                           </div>
                         )}
                         <span>{child.firstName} {child.lastName}</span>
+                        {child.allergies && (
+                          <span className="inline-flex items-center gap-0.5 bg-red-50 text-red-600 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                            <AlertTriangle className="h-3 w-3" />
+                            {i18n.language === 'ar' ? "حساسية" : "Allergy"}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="p-3">{child.arabicName || "-"}</td>

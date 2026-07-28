@@ -212,7 +212,17 @@ export default function Children() {
             <TableBody>
               {filtered.map(child => (
                 <TableRow key={child.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetail(child)}>
-                  <TableCell className="font-medium">{child.firstName} {child.lastName}</TableCell>
+                  <TableCell className="font-medium">
+                    <span className="flex items-center gap-2">
+                      {child.firstName} {child.lastName}
+                      {child.allergies && (
+                        <span className="inline-flex items-center gap-0.5 bg-red-50 text-red-600 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                          <AlertTriangle className="h-3 w-3" />
+                          {isAr ? "حساسية" : "Allergy"}
+                        </span>
+                      )}
+                    </span>
+                  </TableCell>
                   <TableCell>{child.classId ? `${isAr ? "فصل " : " الفصل"}${child.classId}` : "-"}</TableCell>
                   <TableCell>{child.gender === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}</TableCell>
                   <TableCell>

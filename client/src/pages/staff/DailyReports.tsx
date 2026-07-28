@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { Utensils, Moon, Droplets, Baby, Sun, ThermometerSun, StickyNote } from "lucide-react";
+import { Utensils, Moon, Droplets, Baby, Sun, ThermometerSun, StickyNote, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const iconMap: Record<string, any> = { meal: Utensils, snack: Utensils, nap_start: Moon, nap_end: Moon, diaper: Baby, toilet: Droplets, water: Droplets, medication: ThermometerSun, outdoor_play: Sun, indoor_play: Sun, mood: StickyNote, temperature: ThermometerSun, note: StickyNote };
@@ -50,6 +50,20 @@ export default function StaffDailyReports() {
           ))}
         </SelectContent>
       </Select>
+
+      {/* Allergy Alert for selected child */}
+      {selectedChild && (() => {
+        const child = children?.find((c: any) => c.id === parseInt(selectedChild));
+        return child?.allergies ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-red-800">{isEn ? "Allergy Alert" : "تنبيه حساسية"}</p>
+              <p className="text-xs text-red-700 mt-0.5">{child.firstName} {child.lastName}: <span className="font-medium">{child.allergies}</span></p>
+            </div>
+          </div>
+        ) : null;
+      })()}
 
       {selectedChild && (
         <Card>

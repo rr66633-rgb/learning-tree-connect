@@ -2527,5 +2527,14 @@ Fix:
 
 ## Bug Fixes
 - [x] Fix: Clicking "الحضور" tab in staff profile page navigates to child attendance instead of staff attendance
-- [ ] Fix: Staff profile attendance tab should show the selected staff member's attendance records inline, not redirect or show current user's attendance
-- [ ] Fix: Parent PDF download opens print dialog instead of downloading actual PDF file - should generate and download a real PDF
+- [x] Fix: Staff profile attendance tab should show the selected staff member's attendance records inline, not redirect or show current user's attendance
+- [x] Fix: Parent PDF download opens print dialog instead of downloading actual PDF file - now uses jsPDF for direct download
+
+## Allergy/Medical Alert System
+- [x] Add allergies/medical_alerts field to children table in database (already existed: allergies, medicalConditions, medications, specialNeeds, medicalNotes)
+- [x] Add backend procedures for managing child allergies (CRUD) (already existed in children router - create/update handle all medical fields)
+- [x] Display allergy warning badge next to child name in all lists (attendance, classroom, reports)
+- [x] Show alert banner at top of child profile page (persistent red banner with allergies, medical conditions, medications)
+- [x] Add meal-time allergy warning when teacher logs food in daily report (DailyReports + DailyLog meal activity types)
+- [x] Build per-classroom allergy summary list for teachers (Dashboard allergy card + attendance page badges)
+- [x] Daily morning reminder notification for teachers with allergy children in their class (Dashboard allergy summary card)

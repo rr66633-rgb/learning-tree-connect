@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   Utensils, Moon, Droplets, Baby, Sun, ThermometerSun, StickyNote,
   LogIn, LogOut, Coffee, Apple, Sandwich, Cookie, Smile, BookOpen, TreePine,
-  Search, Clock, User
+  Search, Clock, User, AlertTriangle
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -299,6 +299,21 @@ export default function StaffDailyLog() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Allergy Warning for meal activities */}
+              {selectedChild && ['breakfast', 'morning_snack', 'lunch', 'afternoon_snack'].includes(selectedType) && (() => {
+                const child = children?.find((c: any) => c.id === parseInt(selectedChild));
+                return child?.allergies ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-red-800">{isAr ? "تنبيه حساسية!" : "Allergy Alert!"}</p>
+                      <p className="text-xs text-red-700">{child.firstName} {child.lastName}: <span className="font-medium">{child.allergies}</span></p>
+                      <p className="text-xs text-red-600 mt-0.5">{isAr ? "يرجى التأكد من مكونات الوجبة قبل التقديم" : "Please verify meal ingredients before serving"}</p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
 
               {selectedTypeInfo?.options && selectedTypeInfo.options.length > 0 && (
                 <div className="flex gap-2 flex-wrap">

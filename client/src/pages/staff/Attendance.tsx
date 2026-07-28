@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, X, LogIn, LogOut, Loader2, History, Edit } from "lucide-react";
+import { Check, X, LogIn, LogOut, Loader2, History, Edit, AlertTriangle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -182,8 +183,9 @@ export default function StaffAttendance() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {currentlyInCenter.map((child: any) => (
-                <Badge key={child.id} variant="secondary" className="bg-emerald-100/80 text-emerald-800 rounded-lg px-3 py-1">
+                <Badge key={child.id} variant="secondary" className={`rounded-lg px-3 py-1 ${child.allergies ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-100/80 text-emerald-800'}`}>
                   {child.firstName} {child.lastName}
+                  {child.allergies && <AlertTriangle className="h-3 w-3 mr-1 inline" />}
                 </Badge>
               ))}
             </div>
@@ -222,6 +224,21 @@ export default function StaffAttendance() {
                           </div>
                         )}
                         <span>{childName}</span>
+                        {child.allergies && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {isEn ? "Allergy" : "حساسية"}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[200px]">
+                                <p className="text-xs font-medium">{child.allergies}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, FileText, Loader2, Camera, X, Image as ImageIcon } from "lucide-react";
+import { Plus, FileText, Loader2, Camera, X, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
@@ -169,6 +169,21 @@ export default function DailyReports() {
                   </SelectContent>
                 </Select>
               </div>
+              {/* Allergy Warning */}
+              {form.childId > 0 && (() => {
+                const selectedChild = children?.find((c: any) => c.id === form.childId);
+                return selectedChild?.allergies ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-red-800">{isAr ? "تنبيه حساسية!" : "Allergy Alert!"}</p>
+                      <p className="text-xs text-red-700 mt-0.5">{isAr ? "هذا الطفل لديه حساسية من:" : "This child has allergies to:"} <span className="font-medium">{selectedChild.allergies}</span></p>
+                      <p className="text-xs text-red-600 mt-1">{isAr ? "يرجى التأكد من مكونات الوجبات قبل التقديم" : "Please verify meal ingredients before serving"}</p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
               <div className="space-y-2">
                 <Label className="font-semibold">{isAr ? "الوجبات" : "Meals"}</Label>
                 <Input placeholder={isAr ? "الإفطار" : "Breakfast"} value={form.meals.breakfast} onChange={e => setForm(f => ({ ...f, meals: { ...f.meals, breakfast: e.target.value } }))} />

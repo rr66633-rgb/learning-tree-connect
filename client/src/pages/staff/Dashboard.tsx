@@ -5,7 +5,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Users, CalendarCheck, CreditCard, TrendingUp, Clock, MapPin,
   Sparkles, Bell, BookOpen, MessageCircle, ArrowUpRight, Calendar,
-  Baby, UserCheck, FileText, Megaphone
+  Baby, UserCheck, FileText, Megaphone, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ export default function StaffDashboard() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
   const { data: todayAttendance } = trpc.staffAttendance.today.useQuery();
   const { data: announcements } = trpc.announcements.list.useQuery();
+  const { data: allChildren } = trpc.children.list.useQuery();
   const checkIn = trpc.staffAttendance.checkIn.useMutation({
     onSuccess: () => toast.success(t('staffDashboard.checkInSuccess')),
     onError: (err) => toast.error(err.message),
@@ -397,6 +398,50 @@ export default function StaffDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Daily Allergy Alert - Classroom Summary */}
+      {(() => {
+        const childrenWithAllergies = allChildren?.filter((c: any) => c.allergies && c.status === 'active') || [];
+        if (childrenWithAllergies.length === 0) return null;
+        return (
+          <Card className="border-0 shadow-sm border-l-4 border-l-red-400 bg-gradient-to-l from-red-50/50 to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-700">
+                <div className="h-7 w-7 rounded-lg bg-red-100 flex items-center justify-center">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                </div>
+                {isAr ? `تنبيهات الحساسية (${childrenWithAllergies.length} ${childrenWithAllergies.length === 1 ? 'طفل' : 'أطفال'})` : `Allergy Alerts (${childrenWithAllergies.length} ${childrenWithAllergies.length === 1 ? 'child' : 'children'})`}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {childrenWithAllergies.slice(0, 5).map((child: any) => (
+                  <div key={child.id} className="flex items-center justify-between p-2 bg-white/80 rounded-lg border border-red-100">
+                    <div className="flex items-center gap-2">
+                      {child.photo ? (
+                        <img src={child.photo} alt="" className="h-6 w-6 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-6 w-6 rounded-full bg-red-100 flex items-center justify-center text-[10px] font-bold text-red-600">
+                          {child.firstName?.[0]}{child.lastName?.[0]}
+                        </div>
+                      )}
+                      <span className="text-sm font-medium">{child.firstName} {child.lastName}</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-red-200 text-red-600 bg-red-50">
+                      {child.allergies.length > 30 ? child.allergies.substring(0, 30) + '...' : child.allergies}
+                    </Badge>
+                  </div>
+                ))}
+                {childrenWithAllergies.length > 5 && (
+                  <p className="text-xs text-center text-red-500 mt-1">
+                    {isAr ? `+${childrenWithAllergies.length - 5} أطفال آخرين` : `+${childrenWithAllergies.length - 5} more children`}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Upcoming Events */}
       <Card className="border-0 shadow-sm">
