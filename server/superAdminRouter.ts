@@ -352,6 +352,7 @@ export const superAdminRouter = router({
       organizationId: z.number(),
       planId: z.number(),
       billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
+      discountPercent: z.number().min(0).max(100).default(0),
     }))
     .mutation(async ({ input }) => {
       const db = (await getDb())!;
@@ -363,9 +364,12 @@ export const superAdminRouter = router({
 
       if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "الخطة غير موجودة" });
 
-      const amount = input.billingCycle === "yearly" 
+      const baseAmount = input.billingCycle === "yearly" 
         ? Number(plan.priceYearly) 
         : Number(plan.priceMonthly);
+      const amount = input.discountPercent > 0 
+        ? baseAmount * (1 - input.discountPercent / 100) 
+        : baseAmount;
 
       const now = new Date();
       const periodEnd = new Date(now);

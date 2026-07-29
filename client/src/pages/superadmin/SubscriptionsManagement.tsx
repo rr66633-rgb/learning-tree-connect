@@ -14,6 +14,7 @@ import {
   AlertTriangle, TrendingUp, Building2, CalendarDays, Banknote, Edit
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 type SubStatus = "all" | "active" | "expired" | "cancelled" | "past_due" | "trialing";
 
@@ -63,6 +64,8 @@ export default function SubscriptionsManagement() {
   const [renewCycle, setRenewCycle] = useState<"monthly" | "yearly">("yearly");
   const [changePlanId, setChangePlanId] = useState<string>("");
   const [changeBillingCycle, setChangeBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [changeDiscountEnabled, setChangeDiscountEnabled] = useState(false);
+  const [changeDiscountPercent, setChangeDiscountPercent] = useState<number>(0);
   const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
   const [editDiscount, setEditDiscount] = useState<number>(0);
   const [editDiscountEnabled, setEditDiscountEnabled] = useState(false);
@@ -515,6 +518,37 @@ export default function SubscriptionsManagement() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <Switch checked={changeDiscountEnabled} onCheckedChange={setChangeDiscountEnabled} />
+                <Label>{isAr ? "تطبيق خصم" : "Apply Discount"}</Label>
+              </div>
+              {changeDiscountEnabled && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={changeDiscountPercent}
+                    onChange={(e) => setChangeDiscountPercent(Number(e.target.value))}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                  {changePlanId && (
+                    <span className="text-xs text-muted-foreground">
+                      {isAr ? "السعر بعد الخصم: " : "Price after discount: "}
+                      {(() => {
+                        const selectedPlan = plans?.find((p: any) => p.id.toString() === changePlanId);
+                        if (!selectedPlan) return "-";
+                        const price = changeBillingCycle === "yearly" ? Number(selectedPlan.priceYearly) : Number(selectedPlan.priceMonthly);
+                        const discounted = price * (1 - changeDiscountPercent / 100);
+                        return `${discounted.toFixed(0)} ${isAr ? "ر.س" : "SAR"}`;
+                      })()}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="flex gap-3 justify-end">
               <Button variant="outline" onClick={() => setChangePlanDialogOpen(false)}>
                 {isAr ? "إلغاء" : "Cancel"}
@@ -526,6 +560,7 @@ export default function SubscriptionsManagement() {
                       organizationId: selectedSubOrgId,
                       planId: parseInt(changePlanId),
                       billingCycle: changeBillingCycle,
+                      discountPercent: changeDiscountEnabled ? changeDiscountPercent : 0,
                     });
                   }
                 }}

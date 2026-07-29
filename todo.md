@@ -2559,3 +2559,4 @@ Fix:
 - [x] Add dynamic discount system (discountPercentage, discountEnabled, originalPriceYearly)
 - [x] Add discount management UI in super-admin subscriptions page
 - [x] Fix hardcoded 50% discount in checkout and payment backend to use dynamic pricing
+- [ ] Add discount percentage field in "Change Plan" dialog in SubscriptionsManagement
