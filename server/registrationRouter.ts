@@ -165,20 +165,24 @@ export const registrationRouter = router({
           `يرجى مراجعة الطلب من لوحة تحكم المشرف.`,
       });
 
-      // In-app notification for super admin
+      // In-app notification for super_admin users ONLY (not nursery admins)
       try {
-        const { ENV } = await import('./_core/env');
-        const ownerUser = await db.getUserByOpenId(ENV.ownerOpenId);
-        if (ownerUser) {
-          await db.createNotification({
-            userId: ownerUser.id,
-            title: 'طلب تسجيل حضانة جديدة',
-            titleAr: 'طلب تسجيل حضانة جديدة',
-            body: `${input.nurseryNameAr} - ${input.city} - ${input.ownerName}`,
-            bodyAr: `${input.nurseryNameAr} - ${input.city} - ${input.ownerName}`,
-            type: 'registration',
-            link: '/super-admin/registrations',
-          });
+        const database = await getDb();
+        if (database) {
+          const { users: usersTable } = await import('../drizzle/schema');
+          const { eq } = await import('drizzle-orm');
+          const superAdmins = await database.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.role, 'super_admin'));
+          for (const sa of superAdmins) {
+            await db.createNotification({
+              userId: sa.id,
+              title: 'طلب تسجيل حضانة جديدة',
+              titleAr: 'طلب تسجيل حضانة جديدة',
+              body: `${input.nurseryNameAr} - ${input.city} - ${input.ownerName}`,
+              bodyAr: `${input.nurseryNameAr} - ${input.city} - ${input.ownerName}`,
+              type: 'registration',
+              link: '/super-admin/registrations',
+            });
+          }
         }
       } catch (e) { /* non-critical */ }
 

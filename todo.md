@@ -2538,3 +2538,9 @@ Fix:
 - [x] Add meal-time allergy warning when teacher logs food in daily report (DailyReports + DailyLog meal activity types)
 - [x] Build per-classroom allergy summary list for teachers (Dashboard allergy card + attendance page badges)
 - [x] Daily morning reminder notification for teachers with allergy children in their class (Dashboard allergy summary card)
+
+## Bug Fix: Cross-Tenant Notification Leak
+
+- [x] Fix nursery registration notification going to Learning Tree admin instead of only Super Admin
+- [x] Change in-app notification target from OWNER_OPEN_ID to super_admin role users only
+- [x] Ensure notifyOwner (platform-level) still works for platform owner but in-app notification is role-based
