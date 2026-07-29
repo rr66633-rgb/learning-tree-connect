@@ -2544,3 +2544,15 @@ Fix:
 - [x] Fix nursery registration notification going to Learning Tree admin instead of only Super Admin
 - [x] Change in-app notification target from OWNER_OPEN_ID to super_admin role users only
 - [x] Ensure notifyOwner (platform-level) still works for platform owner but in-app notification is role-based
+
+## Super Admin: Add/Delete Organizations Feature
+
+- [ ] Add backend procedures for creating organizations manually (with admin user)
+- [ ] Add backend procedure for deleting/suspending organizations
+- [x] Add "إضافة حضانة" button and form in super-admin organizations page (already exists)
+- [x] Add delete/suspend action for each organization in the list (already exists)
+- [x] Add "إضافة عضو" (Add Member) feature to organizations in super-admin panel
+- [ ] Fix inaccurate statistics in super-admin dashboard (pending user clarification)
+- [ ] Fix inaccurate statistics in super-admin dashboard
+- [x] Add subscription editing capability for organizations in super-admin (change plan + renew from subscriptions page)
+- [x] Add organization deletion feature in super-admin (delete button in org detail + org list dropdown)

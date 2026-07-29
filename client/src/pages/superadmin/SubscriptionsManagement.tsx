@@ -11,8 +11,9 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Crown, Search, RefreshCw, XCircle, Clock, CheckCircle2,
-  AlertTriangle, TrendingUp, Building2, CalendarDays, Banknote
+  AlertTriangle, TrendingUp, Building2, CalendarDays, Banknote, Edit
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 type SubStatus = "all" | "active" | "expired" | "cancelled" | "past_due" | "trialing";
 
@@ -56,8 +57,23 @@ export default function SubscriptionsManagement() {
   const [statusFilter, setStatusFilter] = useState<SubStatus>("all");
   const [search, setSearch] = useState("");
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
+  const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false);
   const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
+  const [selectedSubOrgId, setSelectedSubOrgId] = useState<number | null>(null);
   const [renewCycle, setRenewCycle] = useState<"monthly" | "yearly">("yearly");
+  const [changePlanId, setChangePlanId] = useState<string>("");
+  const [changeBillingCycle, setChangeBillingCycle] = useState<"monthly" | "yearly">("yearly");
+
+  const { data: plans } = trpc.superAdmin.listPlans.useQuery();
+
+  const changePlanMutation = trpc.superAdmin.assignPlan.useMutation({
+    onSuccess: () => {
+      toast.success(isAr ? "تم تغيير الخطة بنجاح" : "Plan changed successfully");
+      refetch();
+      setChangePlanDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const { data, isLoading, refetch } = trpc.superAdmin.listSubscriptions.useQuery({
     status: statusFilter,
@@ -235,6 +251,19 @@ export default function SubscriptionsManagement() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 shrink-0">
+                      {/* Change Plan */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => {
+                          setSelectedSubOrgId(sub.organizationId);
+                          setChangePlanDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        {isAr ? "تغيير الخطة" : "Change Plan"}
+                      </Button>
                       {(sub.status === "expired" || sub.status === "cancelled" || sub.status === "past_due" || sub.status === "trialing") && (
                         <Button
                           size="sm"
@@ -306,6 +335,64 @@ export default function SubscriptionsManagement() {
               >
                 <RefreshCw className="w-4 h-4 ml-2" />
                 {renewMutation.isPending ? isAr ? "جاري التجديد..." : "Renewing..." : isAr ? "تأكيد التجديد" : "Confirm Renewal"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Plan Dialog */}
+      <Dialog open={changePlanDialogOpen} onOpenChange={setChangePlanDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isAr ? "تغيير خطة الاشتراك" : "Change Subscription Plan"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{isAr ? "الخطة الجديدة" : "New Plan"}</Label>
+              <Select value={changePlanId} onValueChange={setChangePlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isAr ? "اختر الخطة" : "Select Plan"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans?.map((plan: any) => (
+                    <SelectItem key={plan.id} value={plan.id.toString()}>
+                      {plan.nameAr} - {plan.priceYearly} ر.س/سنة
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{isAr ? "دورة الفوترة" : "Billing Cycle"}</Label>
+              <Select value={changeBillingCycle} onValueChange={(v) => setChangeBillingCycle(v as "monthly" | "yearly")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yearly">{isAr ? "سنوي" : "Annual"}</SelectItem>
+                  <SelectItem value="monthly">{isAr ? "شهري" : "Monthly"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setChangePlanDialogOpen(false)}>
+                {isAr ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedSubOrgId && changePlanId) {
+                    changePlanMutation.mutate({
+                      organizationId: selectedSubOrgId,
+                      planId: parseInt(changePlanId),
+                      billingCycle: changeBillingCycle,
+                    });
+                  }
+                }}
+                disabled={!changePlanId || changePlanMutation.isPending}
+              >
+                <Edit className="w-4 h-4 ml-2" />
+                {changePlanMutation.isPending ? (isAr ? "جاري التغيير..." : "Changing...") : (isAr ? "تأكيد التغيير" : "Confirm Change")}
               </Button>
             </div>
           </div>

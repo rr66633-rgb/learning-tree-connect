@@ -28,6 +28,7 @@ import {
   Mail,
   MapPin,
   FileText,
+  Trash2,
 } from "lucide-react";
 
 export default function OrganizationDetail() {
@@ -47,6 +48,14 @@ export default function OrganizationDetail() {
     onSuccess: (data) => {
       toast.success(data.message);
       refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteOrg = trpc.superAdmin.deleteOrganization.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      navigate("/super-admin/organizations");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -133,6 +142,37 @@ export default function OrganizationDetail() {
               </Badge>
             </div>
             <div className="flex items-center gap-2">
+              {/* Delete Organization */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl"
+                  >
+                    <Trash2 className="w-4 h-4 ml-1" />
+                    {isAr ? "حذف" : "Delete"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{isAr ? "تأكيد حذف المنظمة" : "Confirm Delete Organization"}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {isAr ? "هل أنت متأكد من حذف هذه المنظمة نهائياً؟ سيتم حذف جميع البيانات المرتبطة بها ولا يمكن التراجع عن هذا الإجراء." : "Are you sure you want to permanently delete this organization? All associated data will be removed and this action cannot be undone."}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-lg">{isAr ? "إلغاء" : "Cancel"}</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700 rounded-lg"
+                      onClick={() => deleteOrg.mutate({ id: orgId })}
+                    >
+                      {isAr ? "حذف نهائي" : "Delete Permanently"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
               {org.status === "active" ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -142,7 +182,7 @@ export default function OrganizationDetail() {
                       className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl"
                     >
                       <Ban className="w-4 h-4 ml-1" />
-                      {isAr ? "تعليق" : "Comment"}
+                      {isAr ? "تعليق" : "Suspend"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>

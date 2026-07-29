@@ -16,6 +16,8 @@ import {
   invoices,
 } from "../drizzle/schema";
 import { getDb } from "./db";
+import { hashPassword } from "./_core/authService";
+import crypto from "crypto";
 
 // Super Admin procedure - ONLY super_admin role can access (not regular admin)
 const superAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -671,5 +673,188 @@ export const superAdminRouter = router({
         limit: params.limit || 50,
         stats: statsResult[0] || { totalPaid: "0", totalInitiated: "0", totalFailed: "0", countPaid: 0, countFailed: 0, countTotal: 0 },
       };
+    }),
+
+  // ============ DELETE ORGANIZATION ============
+
+  deleteOrganization: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = (await getDb())!;
+
+      const [org] = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, input.id));
+
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "المنظمة غير موجودة" });
+
+      // Delete related data in order (child tables first)
+      await db.delete(organizationMembers).where(eq(organizationMembers.organizationId, input.id));
+      await db.delete(organizationBranding).where(eq(organizationBranding.organizationId, input.id));
+      await db.delete(organizationSubscriptions).where(eq(organizationSubscriptions.organizationId, input.id));
+      await db.delete(children).where(eq(children.organizationId, input.id));
+      await db.delete(classes).where(eq(classes.organizationId, input.id));
+      // Delete users that belong only to this org
+      await db.delete(users).where(eq(users.organizationId, input.id));
+      // Finally delete the organization
+      await db.delete(organizations).where(eq(organizations.id, input.id));
+
+      // Audit log
+      await db.insert(auditLog).values({
+        userId: ctx.user!.id,
+        action: "delete_organization",
+        resource: "organization",
+        resourceId: input.id,
+        details: JSON.stringify({ name: org.name, slug: org.slug }),
+      });
+
+      return { success: true, message: "تم حذف المنظمة نهائياً" };
+    }),
+
+  // ============ MEMBER MANAGEMENT ============
+
+  // Add member to organization (create user if not exists)
+  addMember: superAdminProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string().min(2),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      role: z.enum(["admin", "principal", "teacher", "assistant", "accountant", "receptionist", "parent"]),
+      password: z.string().min(4).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = (await getDb())!;
+
+      // Check org exists
+      const [org] = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, input.organizationId));
+
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "المنظمة غير موجودة" });
+
+      // Check if user already exists by email or phone
+      let existingUser = null;
+      if (input.email) {
+        const [found] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, input.email));
+        existingUser = found || null;
+      }
+      if (!existingUser && input.phone) {
+        const [found] = await db
+          .select()
+          .from(users)
+          .where(eq(users.phone, input.phone));
+        existingUser = found || null;
+      }
+
+      let userId: number;
+
+      if (existingUser) {
+        // Check if already a member of this org
+        const [existingMembership] = await db
+          .select()
+          .from(organizationMembers)
+          .where(and(
+            eq(organizationMembers.organizationId, input.organizationId),
+            eq(organizationMembers.userId, existingUser.id)
+          ));
+
+        if (existingMembership) {
+          throw new TRPCError({ code: "CONFLICT", message: "هذا المستخدم عضو بالفعل في هذه المنظمة" });
+        }
+
+        userId = existingUser.id;
+      } else {
+        // Create new user
+        const openId = crypto.randomUUID();
+        const hashedPw = input.password ? await hashPassword(input.password) : await hashPassword("1234");
+
+        const [result] = await db.insert(users).values({
+          openId,
+          name: input.name,
+          email: input.email || null,
+          phone: input.phone || null,
+          role: input.role,
+          password: hashedPw,
+          organizationId: input.organizationId,
+          isActive: true,
+        });
+
+        userId = result.insertId;
+      }
+
+      // Add to organization_members
+      await db.insert(organizationMembers).values({
+        organizationId: input.organizationId,
+        userId,
+        role: input.role,
+        isActive: true,
+      });
+
+      // Audit log
+      await db.insert(auditLog).values({
+        userId: ctx.user!.id,
+        action: "add_member",
+        resource: "organization_member",
+        resourceId: input.organizationId,
+        details: JSON.stringify({ memberUserId: userId, role: input.role, name: input.name }),
+      });
+
+      return { success: true, userId, message: "تم إضافة العضو بنجاح" };
+    }),
+
+  // Remove member from organization
+  removeMember: superAdminProcedure
+    .input(z.object({
+      membershipId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = (await getDb())!;
+
+      const [membership] = await db
+        .select()
+        .from(organizationMembers)
+        .where(eq(organizationMembers.id, input.membershipId));
+
+      if (!membership) throw new TRPCError({ code: "NOT_FOUND", message: "العضوية غير موجودة" });
+
+      // Deactivate instead of delete
+      await db
+        .update(organizationMembers)
+        .set({ isActive: false })
+        .where(eq(organizationMembers.id, input.membershipId));
+
+      // Audit log
+      await db.insert(auditLog).values({
+        userId: ctx.user!.id,
+        action: "remove_member",
+        resource: "organization_member",
+        resourceId: membership.organizationId,
+        details: JSON.stringify({ membershipId: input.membershipId, memberUserId: membership.userId }),
+      });
+
+      return { success: true, message: "تم إزالة العضو بنجاح" };
+    }),
+
+  // Toggle member active status
+  toggleMemberStatus: superAdminProcedure
+    .input(z.object({
+      membershipId: z.number(),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = (await getDb())!;
+
+      await db
+        .update(organizationMembers)
+        .set({ isActive: input.isActive })
+        .where(eq(organizationMembers.id, input.membershipId));
+
+      return { success: true, message: input.isActive ? "تم تفعيل العضو" : "تم تعطيل العضو" };
     }),
 });

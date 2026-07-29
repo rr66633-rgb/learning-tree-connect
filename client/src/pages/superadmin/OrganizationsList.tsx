@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   Building2, Plus, Search, CheckCircle2, Clock, AlertCircle, Ban,
   ArrowUpRight, Edit, Power, PowerOff, Eye, MoreHorizontal,
-  MapPin, Phone, Mail, Users, GraduationCap, CreditCard,
+  MapPin, Phone, Mail, Users, GraduationCap, CreditCard, Trash2,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -56,6 +56,14 @@ export default function OrganizationsList() {
       toast.success(data.message);
       utils.superAdmin.listOrganizations.invalidate();
       setStatusDialog(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteOrgMutation = trpc.superAdmin.deleteOrganization.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      utils.superAdmin.listOrganizations.invalidate();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -260,6 +268,17 @@ export default function OrganizationsList() {
                                       <span className="text-red-600">{t("superadmin.suspend")}</span>
                                     </>
                                   )}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (confirm(isAr ? `هل أنت متأكد من حذف "${org.nameAr}" نهائياً؟ لا يمكن التراجع عن هذا الإجراء.` : `Are you sure you want to permanently delete "${org.name}"? This cannot be undone.`)) {
+                                      deleteOrgMutation.mutate({ id: org.id });
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 ml-2 text-red-600" />
+                                  <span className="text-red-600">{isAr ? "حذف نهائي" : "Delete"}</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
