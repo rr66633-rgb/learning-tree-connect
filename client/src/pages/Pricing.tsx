@@ -186,10 +186,14 @@ export default function Pricing() {
                 const colors = tierColors[plan.tier] || tierColors.starter;
                 const isProfessional = plan.tier === "professional";
                 
-                const originalPrice = billingCycle === "yearly" 
+                const hasDiscount = plan.discountEnabled && Number(plan.discountPercentage) > 0;
+                const displayPrice = billingCycle === "yearly" 
                   ? Number(plan.priceYearly) 
                   : Number(plan.priceMonthly);
-                const discountedPrice = Math.round(originalPrice * 0.5);
+                const originalPrice = hasDiscount && plan.originalPriceYearly && billingCycle === "yearly"
+                  ? Number(plan.originalPriceYearly)
+                  : displayPrice;
+                const discountPercentage = hasDiscount ? Number(plan.discountPercentage) : 0;
 
                 return (
                   <Card
@@ -217,20 +221,22 @@ export default function Pricing() {
 
                       {/* Price with Discount */}
                       <div className="text-center py-4 border-t border-gray-100">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <span className="text-sm text-gray-400 line-through">{originalPrice.toLocaleString("ar-SA")}</span>
-                          <Badge className="bg-[#FF5CA8]/10 text-[#FF5CA8] text-[10px] font-bold px-2">-50%</Badge>
-                        </div>
+                        {hasDiscount && (
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <span className="text-sm text-gray-400 line-through">{originalPrice.toLocaleString("ar-SA")}</span>
+                            <Badge className="bg-[#FF5CA8]/10 text-[#FF5CA8] text-[10px] font-bold px-2">-{discountPercentage}%</Badge>
+                          </div>
+                        )}
                         <div className="flex items-baseline justify-center gap-1">
                           <span className="text-3xl sm:text-4xl font-extrabold text-slate-800">
-                            {discountedPrice.toLocaleString("ar-SA")}
+                            {displayPrice.toLocaleString("ar-SA")}
                           </span>
                           <span className="text-xs sm:text-sm text-gray-500">
                             ر.س / {billingCycle === "yearly" ? isAr ? "سنة" : "Year" : isAr ? "شهر" : "Month"}
                           </span>
                         </div>
                         <p className="text-[10px] text-gray-400 mt-1">
-                          SAR {discountedPrice.toLocaleString("en")} / {billingCycle === "yearly" ? "Year" : "Month"}
+                          SAR {displayPrice.toLocaleString("en")} / {billingCycle === "yearly" ? "Year" : "Month"}
                         </p>
                       </div>
 

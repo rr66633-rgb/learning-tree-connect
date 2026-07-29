@@ -319,6 +319,33 @@ export const superAdminRouter = router({
       .orderBy(subscriptionPlans.sortOrder);
   }),
 
+  // Update plan pricing and discount
+  updatePlanPricing: superAdminProcedure
+    .input(z.object({
+      planId: z.number(),
+      priceYearly: z.string().optional(),
+      priceMonthly: z.string().optional(),
+      discountPercentage: z.number().min(0).max(100).optional(),
+      discountEnabled: z.boolean().optional(),
+      originalPriceYearly: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = (await getDb())!;
+      const updateData: any = {};
+      if (input.priceYearly !== undefined) updateData.priceYearly = input.priceYearly;
+      if (input.priceMonthly !== undefined) updateData.priceMonthly = input.priceMonthly;
+      if (input.discountPercentage !== undefined) updateData.discountPercentage = input.discountPercentage.toFixed(2);
+      if (input.discountEnabled !== undefined) updateData.discountEnabled = input.discountEnabled;
+      if (input.originalPriceYearly !== undefined) updateData.originalPriceYearly = input.originalPriceYearly;
+
+      await db
+        .update(subscriptionPlans)
+        .set(updateData)
+        .where(eq(subscriptionPlans.id, input.planId));
+
+      return { success: true, message: "تم تحديث الخطة بنجاح" };
+    }),
+
   // Assign plan to organization
   assignPlan: superAdminProcedure
     .input(z.object({

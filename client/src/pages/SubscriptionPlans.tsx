@@ -92,8 +92,14 @@ export default function SubscriptionPlans() {
               <CardContent className="space-y-4">
                 {/* Price */}
                 <div className="text-center py-4">
+                  {plan.discountEnabled && Number(plan.discountPercentage) > 0 && plan.originalPriceYearly && (
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <span className="text-sm text-muted-foreground line-through">{Number(plan.originalPriceYearly).toLocaleString("ar-SA")}</span>
+                      <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">-{plan.discountPercentage}%</span>
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-3xl font-bold text-foreground">{plan.priceYearly}</span>
+                    <span className="text-3xl font-bold text-foreground">{Number(plan.priceYearly).toLocaleString("ar-SA")}</span>
                     <span className="text-muted-foreground text-sm">{isAr ? "ر.س/سنة" : "SAR/year"}</span>
                   </div>
                 </div>

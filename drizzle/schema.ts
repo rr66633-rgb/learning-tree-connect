@@ -966,6 +966,9 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
   prioritySupport: boolean("prioritySupport").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
+  discountPercentage: decimal("discountPercentage", { precision: 5, scale: 2 }).default("0.00"),
+  discountEnabled: boolean("discountEnabled").default(false),
+  originalPriceYearly: decimal("originalPriceYearly", { precision: 10, scale: 2 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

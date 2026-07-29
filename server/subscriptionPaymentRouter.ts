@@ -53,9 +53,10 @@ export const subscriptionPaymentRouter = router({
         periodEnd.setMonth(periodEnd.getMonth() + 1);
       }
 
+      // Price already reflects any admin-configured discount
       const amount = input.billingCycle === "yearly"
-        ? Number(plan.priceYearly) * 0.5 // 50% discount
-        : Number(plan.priceMonthly) * 0.5;
+        ? Number(plan.priceYearly)
+        : Number(plan.priceMonthly);
 
       // Check if organization already has a subscription
       const [existingSub] = await db

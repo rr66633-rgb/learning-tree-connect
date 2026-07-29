@@ -37,18 +37,30 @@ export default function SubscriptionCheckout() {
 
   const amount = useMemo(() => {
     if (!selectedPlan) return 0;
+    // The priceYearly already reflects the discounted price set by admin
     const price = billingCycle === "yearly"
       ? Number(selectedPlan.priceYearly)
       : Number(selectedPlan.priceMonthly);
     return price;
   }, [selectedPlan, billingCycle]);
 
-  // Discounted amount (50% off)
-  const discountedAmount = useMemo(() => {
-    return amount * 0.5;
-  }, [amount]);
+  // Original price before discount (for display)
+  const originalAmount = useMemo(() => {
+    if (!selectedPlan) return 0;
+    const hasDiscount = (selectedPlan as any).discountEnabled && Number((selectedPlan as any).discountPercentage) > 0;
+    if (hasDiscount && (selectedPlan as any).originalPriceYearly && billingCycle === "yearly") {
+      return Number((selectedPlan as any).originalPriceYearly);
+    }
+    return amount;
+  }, [selectedPlan, billingCycle, amount]);
 
-  const amountInHalalas = Math.round(discountedAmount * 100);
+  const discountPercentage = useMemo(() => {
+    if (!selectedPlan) return 0;
+    const hasDiscount = (selectedPlan as any).discountEnabled && Number((selectedPlan as any).discountPercentage) > 0;
+    return hasDiscount ? Number((selectedPlan as any).discountPercentage) : 0;
+  }, [selectedPlan]);
+
+  const amountInHalalas = Math.round(amount * 100);
 
   useEffect(() => {
     if (!selectedPlan || !gatewayStatus?.publishableKey || paymentInitiated) return;
@@ -166,17 +178,21 @@ export default function SubscriptionCheckout() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{isAr ? "السعر الأصلي" : "Original Price"}</span>
-              <span className="text-muted-foreground line-through">{amount.toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-[#FF5CA8] font-medium">{isAr ? "خصم 50% (عرض خاص)" : "50% off (Special offer)"}</span>
-              <span className="text-[#FF5CA8] font-medium">-{(amount - discountedAmount).toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
-            </div>
-            <div className="border-t border-border pt-3 flex items-center justify-between">
+            {discountPercentage > 0 && (
+              <>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{isAr ? "السعر الأصلي" : "Original Price"}</span>
+                  <span className="text-muted-foreground line-through">{originalAmount.toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#FF5CA8] font-medium">{isAr ? `خصم ${discountPercentage}% (عرض خاص)` : `${discountPercentage}% off (Special offer)`}</span>
+                  <span className="text-[#FF5CA8] font-medium">-{(originalAmount - amount).toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
+                </div>
+              </>
+            )}
+            <div className={`${discountPercentage > 0 ? 'border-t border-border pt-3' : ''} flex items-center justify-between`}>
               <span className="font-semibold text-foreground">{isAr ? "المبلغ المطلوب" : "Amount Required"}</span>
-              <span className="text-xl font-bold text-[#00C9B7]">{discountedAmount.toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
+              <span className="text-xl font-bold text-[#00C9B7]">{amount.toLocaleString("ar-SA")} {isAr ? "ر.س" : "SAR"}</span>
             </div>
             <p className="text-xs text-muted-foreground">
               شامل ضريبة القيمة المضافة • {billingCycle === "yearly" ? isAr ? "اشتراك سنوي" : "Annual Subscription" : isAr ? "اشتراك شهري" : "Monthly Subscription"}

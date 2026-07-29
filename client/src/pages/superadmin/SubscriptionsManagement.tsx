@@ -63,8 +63,22 @@ export default function SubscriptionsManagement() {
   const [renewCycle, setRenewCycle] = useState<"monthly" | "yearly">("yearly");
   const [changePlanId, setChangePlanId] = useState<string>("");
   const [changeBillingCycle, setChangeBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
+  const [editDiscount, setEditDiscount] = useState<number>(0);
+  const [editDiscountEnabled, setEditDiscountEnabled] = useState(false);
+  const [editOriginalPrice, setEditOriginalPrice] = useState("");
+  const [editCurrentPrice, setEditCurrentPrice] = useState("");
 
-  const { data: plans } = trpc.superAdmin.listPlans.useQuery();
+  const { data: plans, refetch: refetchPlans } = trpc.superAdmin.listPlans.useQuery();
+
+  const updatePricingMutation = trpc.superAdmin.updatePlanPricing.useMutation({
+    onSuccess: () => {
+      toast.success(isAr ? "تم تحديث التسعير بنجاح" : "Pricing updated successfully");
+      refetchPlans();
+      setEditingPlanId(null);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const changePlanMutation = trpc.superAdmin.assignPlan.useMutation({
     onSuccess: () => {
@@ -154,6 +168,132 @@ export default function SubscriptionsManagement() {
           );
         })}
       </div>
+
+      {/* Plan Pricing & Discount Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-[#10B981]" />
+            {isAr ? "إدارة الأسعار والخصومات" : "Pricing & Discounts"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {plans?.map((plan: any) => (
+              <div key={plan.id} className="border rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-foreground">{plan.nameAr}</h4>
+                  <Badge variant="outline" className="text-xs">{plan.name}</Badge>
+                </div>
+                <div className="text-center py-2">
+                  {plan.discountEnabled && Number(plan.discountPercentage) > 0 && plan.originalPriceYearly && (
+                    <p className="text-sm text-muted-foreground line-through">{Number(plan.originalPriceYearly).toLocaleString("ar-SA")} ر.س</p>
+                  )}
+                  <p className="text-2xl font-bold text-foreground">{Number(plan.priceYearly).toLocaleString("ar-SA")} <span className="text-sm font-normal text-muted-foreground">ر.س/سنة</span></p>
+                  {plan.discountEnabled && Number(plan.discountPercentage) > 0 && (
+                    <Badge className="mt-1 bg-red-100 text-red-600 border-0">خصم {plan.discountPercentage}%</Badge>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setEditingPlanId(plan.id);
+                    setEditDiscount(Number(plan.discountPercentage) || 0);
+                    setEditDiscountEnabled(!!plan.discountEnabled);
+                    setEditOriginalPrice(plan.originalPriceYearly || plan.priceYearly);
+                    setEditCurrentPrice(plan.priceYearly);
+                  }}
+                >
+                  <Edit className="w-4 h-4 ml-2" />
+                  {isAr ? "تعديل السعر والخصم" : "Edit Price & Discount"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Pricing Dialog */}
+      <Dialog open={editingPlanId !== null} onOpenChange={(open) => !open && setEditingPlanId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isAr ? "تعديل السعر والخصم" : "Edit Price & Discount"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{isAr ? "السعر السنوي الحالي (ر.س)" : "Current Yearly Price (SAR)"}</Label>
+              <Input
+                type="number"
+                value={editCurrentPrice}
+                onChange={(e) => setEditCurrentPrice(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="discountEnabled"
+                checked={editDiscountEnabled}
+                onChange={(e) => setEditDiscountEnabled(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <Label htmlFor="discountEnabled">{isAr ? "تفعيل الخصم" : "Enable Discount"}</Label>
+            </div>
+            {editDiscountEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label>{isAr ? "نسبة الخصم (%)" : "Discount Percentage (%)"}</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editDiscount}
+                    onChange={(e) => setEditDiscount(Number(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{isAr ? "السعر الأصلي قبل الخصم (ر.س)" : "Original Price Before Discount (SAR)"}</Label>
+                  <Input
+                    type="number"
+                    value={editOriginalPrice}
+                    onChange={(e) => setEditOriginalPrice(e.target.value)}
+                  />
+                </div>
+                {editDiscount > 0 && editOriginalPrice && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                    <p className="text-sm text-green-700">
+                      {isAr ? "السعر بعد الخصم:" : "Price after discount:"}{" "}
+                      <span className="font-bold text-lg">{Math.round(Number(editOriginalPrice) * (1 - editDiscount / 100)).toLocaleString("ar-SA")}</span> ر.س
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+            <div className="flex gap-3 justify-end pt-2">
+              <Button variant="outline" onClick={() => setEditingPlanId(null)}>
+                {isAr ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                onClick={() => {
+                  if (editingPlanId) {
+                    updatePricingMutation.mutate({
+                      planId: editingPlanId,
+                      priceYearly: editCurrentPrice,
+                      discountPercentage: editDiscount,
+                      discountEnabled: editDiscountEnabled,
+                      originalPriceYearly: editDiscountEnabled ? editOriginalPrice : undefined,
+                    });
+                  }
+                }}
+                disabled={updatePricingMutation.isPending}
+              >
+                {updatePricingMutation.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ التغييرات" : "Save Changes")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Filters */}
       <Card>

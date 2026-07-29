@@ -2552,7 +2552,10 @@ Fix:
 - [x] Add "إضافة حضانة" button and form in super-admin organizations page (already exists)
 - [x] Add delete/suspend action for each organization in the list (already exists)
 - [x] Add "إضافة عضو" (Add Member) feature to organizations in super-admin panel
-- [ ] Fix inaccurate statistics in super-admin dashboard (pending user clarification)
-- [ ] Fix inaccurate statistics in super-admin dashboard
+- [x] Fix inaccurate statistics in super-admin dashboard (removed test data + fixed hardcoded discounts)
 - [x] Add subscription editing capability for organizations in super-admin (change plan + renew from subscriptions page)
 - [x] Add organization deletion feature in super-admin (delete button in org detail + org list dropdown)
+- [x] Update plan prices: Basic 6900, Professional 10900, Enterprise 15900 SAR/year
+- [x] Add dynamic discount system (discountPercentage, discountEnabled, originalPriceYearly)
+- [x] Add discount management UI in super-admin subscriptions page
+- [x] Fix hardcoded 50% discount in checkout and payment backend to use dynamic pricing
