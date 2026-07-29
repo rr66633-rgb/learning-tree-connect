@@ -2547,8 +2547,8 @@ Fix:
 
 ## Super Admin: Add/Delete Organizations Feature
 
-- [ ] Add backend procedures for creating organizations manually (with admin user)
-- [ ] Add backend procedure for deleting/suspending organizations
+- [x] Add backend procedures for creating organizations manually (with admin user) - already implemented in superAdminRouter createOrganization
+- [x] Add backend procedure for deleting/suspending organizations - already implemented in superAdminRouter deleteOrganization
 - [x] Add "إضافة حضانة" button and form in super-admin organizations page (already exists)
 - [x] Add delete/suspend action for each organization in the list (already exists)
 - [x] Add "إضافة عضو" (Add Member) feature to organizations in super-admin panel

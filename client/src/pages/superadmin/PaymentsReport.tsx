@@ -164,11 +164,11 @@ export default function PaymentsReport() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{isAr ? "من تاريخ" : "From Date"}</label>
-              <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} />
+              <Input type="date" lang="en" dir="ltr" placeholder="yyyy/mm/dd" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{isAr ? "إلى تاريخ" : "To Date"}</label>
-              <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} />
+              <Input type="date" lang="en" dir="ltr" placeholder="yyyy/mm/dd" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{isAr ? "حالة الدفع" : "Payment Status"}</label>
