@@ -2896,13 +2896,19 @@ export const appRouter = router({
       priority: z.number().optional(),
     })).mutation(async ({ input }) => {
       return db.createWaitingListEntry({
-        ...input,
+        childName: input.childName,
+        parentName: input.parentName,
+        phone: input.parentPhone,
+        email: input.parentEmail || null,
         dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
+        preferredClass: input.preferredClass || null,
+        notes: input.notes || null,
+        priority: input.priority || 0,
       });
     }),
     update: adminProcedure.input(z.object({
       id: z.number(),
-      status: z.enum(['waiting', 'contacted', 'enrolled', 'declined']).optional(),
+      status: z.enum(['waiting', 'contacted', 'enrolled', 'cancelled']).optional(),
       notes: z.string().optional(),
       priority: z.number().optional(),
     })).mutation(async ({ input }) => {
@@ -2914,6 +2920,34 @@ export const appRouter = router({
       await db.deleteWaitingListEntry(input.id);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_waiting_list', resource: 'waiting_list', resourceId: input.id, details: `Deleted waiting list entry #${input.id}`, ipAddress: '' });
       return { success: true };
+    }),
+    // Public registration - no auth required, for parents to register via shared link
+    publicRegister: publicProcedure.input(z.object({
+      childName: z.string().min(1),
+      parentName: z.string().min(1),
+      phone: z.string().min(1),
+      email: z.string().optional(),
+      dateOfBirth: z.string().optional(),
+      preferredClass: z.string().optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const entry = await db.createWaitingListEntry({
+        childName: input.childName,
+        parentName: input.parentName,
+        phone: input.phone,
+        email: input.email || null,
+        dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
+        preferredClass: input.preferredClass || null,
+        notes: input.notes || null,
+        status: 'waiting',
+        priority: 0,
+      });
+      // Notify admins about new waitlist registration
+      try {
+        const { notifyOwner } = await import('./_core/notification');
+        await notifyOwner({ title: 'تسجيل جديد في قائمة الانتظار', content: `تم تسجيل ${input.childName} (ولي الأمر: ${input.parentName}) في قائمة الانتظار` });
+      } catch {}
+      return { success: true, id: entry.id };
     }),
   }),
 

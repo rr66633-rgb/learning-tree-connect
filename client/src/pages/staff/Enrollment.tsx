@@ -36,6 +36,7 @@ export default function StaffEnrollment() {
   const [wlParentName, setWlParentName] = useState("");
   const [wlPhone, setWlPhone] = useState("");
   const [wlEmail, setWlEmail] = useState("");
+  const [activeTab, setActiveTab] = useState("enrolled");
   const [wlPreferredClass, setWlPreferredClass] = useState("");
   const [wlNotes, setWlNotes] = useState("");
 
@@ -96,7 +97,7 @@ export default function StaffEnrollment() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("enrolled")}>
           <CardContent className="p-4 flex items-center gap-3">
             <Users className="h-8 w-8 text-green-500" />
             <div>
@@ -105,7 +106,7 @@ export default function StaffEnrollment() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("waiting")}>
           <CardContent className="p-4 flex items-center gap-3">
             <Clock className="h-8 w-8 text-amber-500" />
             <div>
@@ -114,7 +115,7 @@ export default function StaffEnrollment() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("enrolled")}>
           <CardContent className="p-4 flex items-center gap-3">
             <UserPlus className="h-8 w-8 text-blue-500" />
             <div>
@@ -125,7 +126,7 @@ export default function StaffEnrollment() {
         </Card>
       </div>
 
-      <Tabs defaultValue="enrolled">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="enrolled">{isAr ? "المسجلون" : "Enrolled"}</TabsTrigger>
           <TabsTrigger value="waiting">{isAr ? "قائمة الانتظار" : "Waiting List"} ({waitingList?.filter((w: any) => w.status === 'waiting').length ?? 0})</TabsTrigger>

@@ -104,6 +104,7 @@ const AIMarketingMediaCaption = lazy(() => import("./pages/ai/AIMarketingMediaCa
 // Legal Pages (public, no auth required)
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PublicWaitlist = lazy(() => import("./pages/PublicWaitlist"));
 
 // Payment Pages
 const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
@@ -407,6 +408,14 @@ function RoleRouter() {
     return (
       <Suspense fallback={<PageLoader />}>
         <Pricing />
+      </Suspense>
+    );
+  }
+  // Public waitlist registration page - shareable link for parents
+  if (location === "/waitlist") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <PublicWaitlist />
       </Suspense>
     );
   }

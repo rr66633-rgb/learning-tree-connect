@@ -69,6 +69,7 @@ export default function StaffPickup() {
     refetchInterval: 10000,
   });
 
+  const [pickupTab, setPickupTab] = useState("active");
   const [pickupDialog, setPickupDialog] = useState<{ open: boolean; requestId: number; childId: number; childName: string } | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<{ name: string; relationship: string } | null>(null);
 
@@ -214,13 +215,13 @@ export default function StaffPickup() {
       {/* Live Status Dashboard */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Card className="border-amber-200 bg-amber-50/50">
+          <Card className="border-amber-200 bg-amber-50/50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setPickupTab("active")}>
             <CardContent className="p-4 text-center">
               <div className="text-3xl font-bold text-amber-700">{stats.pendingCount}</div>
               <p className="text-xs text-amber-600 mt-1">{isAr ? "طلبات معلقة" : "Pending requests"}</p>
             </CardContent>
           </Card>
-          <Card className="border-green-200 bg-green-50/50">
+          <Card className="border-green-200 bg-green-50/50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setPickupTab("history")}>
             <CardContent className="p-4 text-center">
               <div className="text-3xl font-bold text-green-700">{stats.completedToday}</div>
               <p className="text-xs text-green-600 mt-1">{isAr ? "مكتمل اليوم" : "Completed Today"}</p>
@@ -285,7 +286,7 @@ export default function StaffPickup() {
         </div>
       )}
 
-      <Tabs defaultValue="active" className="w-full">
+      <Tabs value={pickupTab} onValueChange={setPickupTab} className="w-full">
         <TabsList className="w-full md:w-auto">
           <TabsTrigger value="active" className="flex-1 md:flex-none">
             {isAr ? "الطلبات النشطة" : "Active Orders"}

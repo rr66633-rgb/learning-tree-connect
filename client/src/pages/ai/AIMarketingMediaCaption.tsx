@@ -27,8 +27,15 @@ export default function AIMarketingMediaCaption() {
 
   const generateMutation = trpc.aiMarketing.generateMediaCaption.useMutation({
     onSuccess: (data) => {
-      setResult(data.content);
-      toast.success(isAr ? "تم إنشاء الكابشن بنجاح!" : "Caption created successfully!");
+      // The backend returns { content: { instagram: {...}, tiktok: {...}, ... } }
+      // or { content: { raw: "..." } } if JSON parsing failed
+      const content = data.content;
+      if (content) {
+        setResult(content);
+        toast.success(isAr ? "تم إنشاء الكابشن بنجاح!" : "Caption created successfully!");
+      } else {
+        toast.error(isAr ? "لم يتم إنشاء محتوى" : "No content generated");
+      }
     },
     onError: (err) => {
       toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
@@ -58,6 +65,7 @@ export default function AIMarketingMediaCaption() {
       return;
     }
     setIsUploading(true);
+    setResult(null);
     try {
       let mediaUrl = "";
       let mediaType: "photo" | "video" = "photo";
@@ -87,7 +95,77 @@ export default function AIMarketingMediaCaption() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${isAr ? "تم نسخ " : "Copied"}${label}`);
+    toast.success(`${isAr ? "تم نسخ " : "Copied "}${label}`);
+  };
+
+  // Extract caption text from the result based on selected platform
+  const getDisplayContent = () => {
+    if (!result) return null;
+
+    // If it's a raw string response (JSON parse failed on backend)
+    if (result.raw) {
+      return { caption: result.raw, hashtags: [] };
+    }
+
+    // The result structure is: { instagram: { caption, hashtags }, tiktok: { caption, hashtags }, ... }
+    const platformData = result[form.platform];
+    if (platformData) {
+      return {
+        caption: platformData.caption || "",
+        hashtags: platformData.hashtags || [],
+      };
+    }
+
+    // Fallback: try to get any available platform data
+    const platforms = ["instagram", "tiktok", "snapchat", "whatsapp"];
+    for (const p of platforms) {
+      if (result[p]?.caption) {
+        return {
+          caption: result[p].caption,
+          hashtags: result[p].hashtags || [],
+        };
+      }
+    }
+
+    // Last fallback: if result has captionAr/captionEn structure (old format)
+    if (result.captionAr || result.captionEn) {
+      return {
+        caption: result.captionAr || result.captionEn || "",
+        hashtags: result.hashtags || [],
+      };
+    }
+
+    return null;
+  };
+
+  // Get all platforms content for "copy all"
+  const getAllContent = () => {
+    if (!result) return "";
+    const parts: string[] = [];
+    const platforms = ["instagram", "tiktok", "snapchat", "whatsapp"];
+    const platformNames: Record<string, string> = {
+      instagram: "انستقرام",
+      tiktok: "تيك توك",
+      snapchat: "سناب شات",
+      whatsapp: "واتساب",
+    };
+    for (const p of platforms) {
+      if (result[p]?.caption) {
+        parts.push(`📱 ${platformNames[p]}:\n${result[p].caption}`);
+        if (result[p].hashtags?.length) {
+          parts.push(result[p].hashtags.join(" "));
+        }
+        parts.push("");
+      }
+    }
+    return parts.join("\n");
+  };
+
+  const platformNames: Record<string, string> = {
+    instagram: "انستقرام",
+    tiktok: "تيك توك",
+    snapchat: "سناب شات",
+    whatsapp: "واتساب",
   };
 
   return (
@@ -98,7 +176,7 @@ export default function AIMarketingMediaCaption() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{isAr ? "كابشن من الصور/الفيديو" : "Caption from Photos/Video"}</h1>
-          <p className="text-sm text-gray-500">{isAr ? "ارفع صورة أو فيديو والذكاء الاصطناعي يكتب الكابشن" : "Upload a photo or video and AI writes the caption"}</p>
+          <p className="text-sm text-gray-500">{isAr ? "ارفع صورة أو فيديو وسيتم كتابة الكابشن تلقائياً" : "Upload a photo or video and the caption will be written automatically"}</p>
         </div>
       </div>
 
@@ -131,7 +209,7 @@ export default function AIMarketingMediaCaption() {
 
           <div className="space-y-2">
             <Label>{isAr ? "سياق إضافي" : "Additional Context"}</Label>
-            <Input placeholder="مثال: صور من رحلة حديقة الحيوان مع أطفال KG1" value={form.context} onChange={(e) => setForm({ ...form, context: e.target.value })} />
+            <Input placeholder={isAr ? "مثال: صور من رحلة حديقة الحيوان مع أطفال KG1" : "Example: Photos from zoo trip with KG1 kids"} value={form.context} onChange={(e) => setForm({ ...form, context: e.target.value })} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -161,32 +239,72 @@ export default function AIMarketingMediaCaption() {
           </div>
 
           <Button onClick={handleGenerate} disabled={generateMutation.isPending || isUploading} className="w-full bg-orange-600 hover:bg-orange-700">
-            {(generateMutation.isPending || isUploading) ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Creating..."}</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء الكابشن</>}
+            {(generateMutation.isPending || isUploading) ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />{isAr ? "جاري الإنشاء..." : "Creating..."}</> : <><Sparkles className="h-4 w-4 ml-2" />{isAr ? "إنشاء الكابشن" : "Generate Caption"}</>}
           </Button>
         </CardContent>
       </Card>
 
+      {/* Display Results */}
       {result && (
         <div className="space-y-4">
-          {result.captionAr && (
+          {/* Show all platforms content */}
+          {["instagram", "tiktok", "snapchat", "whatsapp"].map((platform) => {
+            const platformContent = result[platform];
+            if (!platformContent?.caption) return null;
+            return (
+              <Card key={platform} className={platform === form.platform ? "ring-2 ring-emerald-500" : ""}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <span className="text-lg">
+                        {platform === "instagram" ? "📸" : platform === "tiktok" ? "🎬" : platform === "snapchat" ? "👻" : "💬"}
+                      </span>
+                      {platformNames[platform]}
+                      {platform === form.platform && (
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{isAr ? "المختار" : "Selected"}</span>
+                      )}
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(
+                      platformContent.caption + (platformContent.hashtags?.length ? "\n\n" + platformContent.hashtags.join(" ") : ""),
+                      platformNames[platform]
+                    )}>
+                      <Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">{platformContent.caption}</p>
+                  {platformContent.hashtags?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2 border-t">
+                      {platformContent.hashtags.map((h: string, i: number) => (
+                        <span key={i} className="text-sm bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{h}</span>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {/* Fallback: raw content if no platform structure */}
+          {result.raw && (
             <Card>
-              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">الكابشن (عربي)</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionAr, "الكابشن")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button></div></CardHeader>
-              <CardContent><p className="whitespace-pre-wrap">{result.captionAr}</p></CardContent>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">{isAr ? "الكابشن" : "Caption"}</CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(result.raw, isAr ? "الكابشن" : "Caption")}>
+                    <Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">{result.raw}</p>
+              </CardContent>
             </Card>
           )}
-          {result.captionEn && (
-            <Card>
-              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">Caption (English)</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.captionEn, "Caption")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button></div></CardHeader>
-              <CardContent><p className="whitespace-pre-wrap" dir="ltr">{result.captionEn}</p></CardContent>
-            </Card>
-          )}
-          {result.hashtags && (
-            <Card>
-              <CardHeader className="pb-3"><div className="flex items-center justify-between"><CardTitle className="text-base">الهاشتاقات</CardTitle><Button variant="outline" size="sm" onClick={() => copyToClipboard(result.hashtags.join(" "), "الهاشتاقات")}><Copy className="h-3.5 w-3.5 ml-1" />{isAr ? "نسخ" : "Copy"}</Button></div></CardHeader>
-              <CardContent><div className="flex flex-wrap gap-2">{result.hashtags.map((h: string, i: number) => <span key={i} className="text-sm bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{h}</span>)}</div></CardContent>
-            </Card>
-          )}
-          <Button onClick={() => copyToClipboard(`${result.captionAr || ""}\n\n${result.captionEn || ""}\n\n${result.hashtags?.join(" ") || ""}`, isAr ? "كل المحتوى" : "All Content")} variant="outline" className="w-full">
+
+          {/* Copy all button */}
+          <Button onClick={() => copyToClipboard(getAllContent() || result.raw || "", isAr ? "كل المحتوى" : "All Content")} variant="outline" className="w-full">
             <Copy className="h-4 w-4 ml-2" />{isAr ? "نسخ كل المحتوى" : "Copy All Content"}
           </Button>
         </div>

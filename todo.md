@@ -2631,3 +2631,29 @@ Fix:
 - [x] Create Heartbeat cron job (runs every Sunday at 8:00 AM UTC, task_uid: id889cE9LWTpQmw3tbBxUQ)
 - [x] Notify admin/principal when quarter boundary approaches and employees are not evaluated
 - [x] Notify admin/principal when employees have never been evaluated
+
+## Public Waitlist Registration Page (صفحة تسجيل قائمة الانتظار العامة)
+- [x] Create public-facing waitlist registration page (no login required)
+- [x] Generate shareable link for parents to register their children (/waitlist)
+- [x] Include child name, age, parent info, preferred class fields
+- [x] Add publicRegister mutation with publicProcedure (no auth required)
+- [x] Fix admin create mutation field mapping (parentPhone → phone, parentEmail → email)
+- [x] Notify owner on new waitlist registration
+
+## Bug Fix: Classes Page Buttons (إصلاح أزرار إدارة الفصول)
+- [x] Fix class card buttons (edit/delete/view) not responding
+
+## Bug Fix: Finance Page KPI Cards (إصلاح بطاقات صفحة المالية)
+- [x] Fix "الإيرادات الكلية" card click action
+- [x] Fix "إيرادات الشهر" card click action
+- [x] Fix "معلقة" card click action
+- [x] Fix "متأخرة" card click action
+
+## Bug Fix: Enrollment & Pickup Page Buttons (إصلاح أزرار التسجيل والاستلام)
+- [x] Fix enrollment page KPI cards not clickable
+- [x] Fix pickup page "طلبات معلقة" card not clickable
+
+## Bug Fix: Media Caption Not Displaying (إصلاح عدم ظهور الكابشن)
+- [x] Fix media caption page not showing generated text after success
+- [x] Map LLM response structure (platform-based JSON) to display cards per platform
+- [x] Show all platforms results with copy buttons and hashtags
