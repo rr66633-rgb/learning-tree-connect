@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt, ShoppingBag, BarChart3, Wallet, Award
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt, ShoppingBag, BarChart3, Wallet, Award, Target
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -146,6 +146,8 @@ const adminMenuItems: MenuItem[] = [
   { icon: Wallet, label: "مسيّر الرواتب", labelEn: "Payroll", path: "/payroll", color: "#10B981" },
   { icon: Award, label: "تقييم الأداء", labelEn: "Performance Evaluation", path: "/performance-evaluation", color: "#6366F1" },
   { icon: BarChart3, label: "مقارنة الأداء", labelEn: "Performance Comparison", path: "/performance-comparison", color: "#8B5CF6" },
+  { icon: Target, label: "أهداف الأداء", labelEn: "Performance Goals", path: "/performance-goals", color: "#EC4899" },
+  { icon: BarChart3, label: "لوحة الموارد البشرية", labelEn: "HR Dashboard", path: "/hr-dashboard", color: "#0EA5E9" },
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
 ];
@@ -184,6 +186,8 @@ const principalMenuItems: MenuItem[] = [
   { icon: Wallet, label: "مسيّر الرواتب", labelEn: "Payroll", path: "/payroll" },
   { icon: Award, label: "تقييم الأداء", labelEn: "Performance Evaluation", path: "/performance-evaluation" },
   { icon: BarChart3, label: "مقارنة الأداء", labelEn: "Performance Comparison", path: "/performance-comparison" },
+  { icon: Target, label: "أهداف الأداء", labelEn: "Performance Goals", path: "/performance-goals" },
+  { icon: BarChart3, label: "لوحة الموارد البشرية", labelEn: "HR Dashboard", path: "/hr-dashboard" },
 ];
 
 /**

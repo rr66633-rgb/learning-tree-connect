@@ -287,8 +287,13 @@ export default function StaffSettings() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    if (file.size > 2 * 1024 * 1024) {
-                      toast.error(isAr ? "حجم الصورة يجب أن يكون أقل من 2 ميغابايت" : "Image size must be less than 2 MB");
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+                    if (!allowedTypes.includes(file.type)) {
+                      toast.error(isAr ? "نوع الملف غير مدعوم. يرجى رفع صور PNG أو JPG أو SVG" : "File type not supported. Please upload PNG, JPG, or SVG images");
+                      return;
+                    }
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast.error(isAr ? "حجم الصورة يجب أن يكون أقل من 5 ميغابايت" : "Image size must be less than 5 MB");
                       return;
                     }
                     setUploading(true);
@@ -296,6 +301,11 @@ export default function StaffSettings() {
                       const formData = new FormData();
                       formData.append('file', file);
                       const resp = await fetch(apiUrl('/api/upload-logo'), { method: 'POST', body: formData });
+                      if (!resp.ok) {
+                        const errData = await resp.json().catch(() => ({}));
+                        toast.error(errData.error || (isAr ? "فشل رفع الشعار" : "Failed to Upload Logo"));
+                        return;
+                      }
                       const data = await resp.json();
                       if (data.url) {
                         setLogoUrl(data.url);
@@ -304,7 +314,7 @@ export default function StaffSettings() {
                         toast.error(isAr ? "فشل رفع الشعار" : "Failed to Upload Logo");
                       }
                     } catch {
-                      toast.error(isAr ? "فشل رفع الشعار" : "Failed to Upload Logo");
+                      toast.error(isAr ? "فشل رفع الشعار. تأكد من اتصالك بالإنترنت" : "Failed to Upload Logo. Check your internet connection");
                     } finally {
                       setUploading(false);
                     }
@@ -314,7 +324,7 @@ export default function StaffSettings() {
                   <Upload className="h-4 w-4 ml-1" />
                   {uploading ? (isAr ? "جاري الرفع..." : "Uploading...") : (isAr ? "رفع شعار" : "Upload Logo")}
                 </Button>
-                <p className="text-xs text-muted-foreground mt-1">PNG أو JPG - أقل من 2 ميغا</p>
+                <p className="text-xs text-muted-foreground mt-1">PNG أو JPG أو SVG - أقل من 5 ميغا</p>
               </div>
             </div>
           </div>

@@ -32,6 +32,7 @@ import { storeRouter } from "./storeRouter";
 import { demoRouter } from "./demoRouter";
 import { payrollRouter } from "./payrollRouter";
 import { evaluationRouter } from "./evaluationRouter";
+import { goalsRouter } from "./goalsRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   const allowedRoles = ['super_admin', 'admin', 'principal', 'owner'];
@@ -3562,5 +3563,6 @@ export const appRouter = router({
   payroll: payrollRouter,
   // ============ PERFORMANCE EVALUATION ============
   evaluation: evaluationRouter,
+  goals: goalsRouter,
 });
 export type AppRouter = typeof appRouter;

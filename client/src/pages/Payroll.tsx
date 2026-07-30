@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, Users, CheckCircle, Clock, Plus, Play, Check, X, FileSpreadsheet, FileDown } from "lucide-react";
-import { exportPayrollToExcel, exportPayrollToPdf } from "@/lib/payrollExport";
+import { exportPayrollToExcel, exportPayrollToPdf, exportAnnualPayrollToExcel, exportAnnualPayrollToPdf } from "@/lib/payrollExport";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -175,6 +175,7 @@ export default function Payroll() {
         <TabsList>
           <TabsTrigger value="payroll">{isAr ? "المسيّر الشهري" : "Monthly Payroll"}</TabsTrigger>
           <TabsTrigger value="salaries">{isAr ? "إعداد الرواتب" : "Salary Configuration"}</TabsTrigger>
+          <TabsTrigger value="annual">{isAr ? "التقرير السنوي" : "Annual Report"}</TabsTrigger>
         </TabsList>
 
         {/* Monthly Payroll Tab */}
@@ -432,6 +433,11 @@ export default function Payroll() {
             </Card>
           )}
         </TabsContent>
+
+        {/* Annual Report Tab */}
+        <TabsContent value="annual" className="space-y-4">
+          <AnnualReportTab isAr={isAr} />
+        </TabsContent>
       </Tabs>
 
       {/* Salary Dialog */}
@@ -519,6 +525,175 @@ export default function Payroll() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+
+function AnnualReportTab({ isAr }: { isAr: boolean }) {
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+  const annualQuery = trpc.payroll.getAnnualReport.useQuery({ year: reportYear });
+
+  const monthNames = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ];
+
+  if (annualQuery.isLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  const data = annualQuery.data;
+  if (!data) return null;
+
+  const { records, monthlySummary, annualTotal } = data;
+  const activeMonths = monthlySummary.filter((m: any) => m.employeeCount > 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <Select value={String(reportYear)} onValueChange={(v) => setReportYear(Number(v))}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[2024, 2025, 2026, 2027].map((y) => (
+              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {records.length > 0 && (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                exportAnnualPayrollToExcel(records as any, monthlySummary, annualTotal, reportYear);
+                toast.success(isAr ? "تم تصدير التقرير السنوي Excel" : "Annual report exported");
+              }}
+            >
+              <FileSpreadsheet className="w-4 h-4 me-2" />
+              {isAr ? "تصدير Excel" : "Export Excel"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await exportAnnualPayrollToPdf(monthlySummary, annualTotal, reportYear);
+                toast.success(isAr ? "تم تصدير التقرير السنوي PDF" : "Annual report exported");
+              }}
+            >
+              <FileDown className="w-4 h-4 me-2" />
+              {isAr ? "تصدير PDF" : "Export PDF"}
+            </Button>
+          </>
+        )}
+      </div>
+
+      {/* Annual Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي الرواتب السنوي" : "Annual Total"}</p>
+                <p className="text-xl font-bold">{annualTotal.totalNet.toLocaleString()} <span className="text-sm text-muted-foreground">ر.س</span></p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">{isAr ? "إجمالي السجلات" : "Total Records"}</p>
+                <p className="text-xl font-bold">{annualTotal.totalRecords}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">{isAr ? "الأشهر المسجلة" : "Active Months"}</p>
+                <p className="text-xl font-bold">{activeMonths.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">{isAr ? "متوسط شهري" : "Monthly Avg"}</p>
+                <p className="text-xl font-bold">{activeMonths.length > 0 ? Math.round(annualTotal.totalNet / activeMonths.length).toLocaleString() : 0} <span className="text-sm text-muted-foreground">ر.س</span></p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Monthly Breakdown Table */}
+      {activeMonths.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{isAr ? `ملخص شهري - ${reportYear}` : `Monthly Summary - ${reportYear}`}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{isAr ? "الشهر" : "Month"}</TableHead>
+                    <TableHead className="text-center">{isAr ? "الموظفين" : "Employees"}</TableHead>
+                    <TableHead className="text-center">{isAr ? "الأساسي" : "Basic"}</TableHead>
+                    <TableHead className="text-center">{isAr ? "البدلات" : "Allowances"}</TableHead>
+                    <TableHead className="text-center">{isAr ? "الخصومات" : "Deductions"}</TableHead>
+                    <TableHead className="text-center">{isAr ? "الصافي" : "Net"}</TableHead>
+                    <TableHead className="text-center">{isAr ? "مدفوع" : "Paid"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activeMonths.map((m: any) => (
+                    <TableRow key={m.month}>
+                      <TableCell className="font-medium">{monthNames[m.month - 1]}</TableCell>
+                      <TableCell className="text-center">{m.employeeCount}</TableCell>
+                      <TableCell className="text-center">{m.totalBasic.toLocaleString()}</TableCell>
+                      <TableCell className="text-center">{m.totalAllowances.toLocaleString()}</TableCell>
+                      <TableCell className="text-center">{m.totalDeductions.toLocaleString()}</TableCell>
+                      <TableCell className="text-center font-bold">{m.totalNet.toLocaleString()}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={m.paidCount === m.employeeCount ? "default" : "secondary"}>
+                          {m.paidCount}/{m.employeeCount}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Total Row */}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell>{isAr ? "الإجمالي" : "Total"}</TableCell>
+                    <TableCell className="text-center">{annualTotal.totalRecords}</TableCell>
+                    <TableCell className="text-center">{annualTotal.totalBasic.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">{annualTotal.totalAllowances.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">{annualTotal.totalDeductions.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">{annualTotal.totalNet.toLocaleString()}</TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            {isAr ? `لا توجد بيانات رواتب لعام ${reportYear}` : `No payroll data for ${reportYear}`}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

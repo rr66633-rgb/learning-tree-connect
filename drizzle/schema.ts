@@ -1831,3 +1831,21 @@ export const evaluationScores = mysqlTable("evaluation_scores", {
 });
 export type EvaluationScore = typeof evaluationScores.$inferSelect;
 export type InsertEvaluationScore = typeof evaluationScores.$inferInsert;
+
+export const performanceGoals = mysqlTable("performance_goals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  category: mysqlEnum("category", ["professional", "personal", "training", "project"]).default("professional").notNull(),
+  targetDate: timestamp("targetDate"),
+  progress: int("progress").default(0).notNull(),
+  status: mysqlEnum("status", ["active", "completed", "cancelled", "overdue"]).default("active").notNull(),
+  assignedBy: int("assignedBy"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PerformanceGoal = typeof performanceGoals.$inferSelect;
+export type InsertPerformanceGoal = typeof performanceGoals.$inferInsert;

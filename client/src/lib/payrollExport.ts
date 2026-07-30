@@ -219,3 +219,208 @@ export async function exportPayrollToPdf(records: PayrollRecord[], summary: Payr
 
   doc.save(`مسيّر_الرواتب_${monthName}_${year}.pdf`);
 }
+
+interface MonthlySummary {
+  month: number;
+  employeeCount: number;
+  totalBasic: number;
+  totalAllowances: number;
+  totalDeductions: number;
+  totalNet: number;
+  paidCount: number;
+}
+
+interface AnnualTotal {
+  totalBasic: number;
+  totalAllowances: number;
+  totalDeductions: number;
+  totalNet: number;
+  totalRecords: number;
+}
+
+/**
+ * Export annual payroll report to Excel
+ */
+export function exportAnnualPayrollToExcel(
+  records: PayrollRecord[],
+  monthlySummary: MonthlySummary[],
+  annualTotal: AnnualTotal,
+  year: number
+) {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Monthly Summary
+  const summaryData = monthlySummary
+    .filter(m => m.employeeCount > 0)
+    .map(m => ({
+      "الشهر": monthNames[m.month - 1],
+      "عدد الموظفين": m.employeeCount,
+      "إجمالي الأساسي": m.totalBasic,
+      "إجمالي البدلات": m.totalAllowances,
+      "إجمالي الخصومات": m.totalDeductions,
+      "إجمالي الصافي": m.totalNet,
+      "مدفوع": m.paidCount,
+    }));
+
+  // Add annual total row
+  summaryData.push({
+    "الشهر": "الإجمالي السنوي",
+    "عدد الموظفين": annualTotal.totalRecords,
+    "إجمالي الأساسي": annualTotal.totalBasic,
+    "إجمالي البدلات": annualTotal.totalAllowances,
+    "إجمالي الخصومات": annualTotal.totalDeductions,
+    "إجمالي الصافي": annualTotal.totalNet,
+    "مدفوع": 0,
+  });
+
+  const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+  summaryWs["!cols"] = [
+    { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 8 },
+  ];
+  XLSX.utils.book_append_sheet(wb, summaryWs, `ملخص سنوي ${year}`);
+
+  // Sheet 2: All records detail
+  const detailData = records.map((r, index) => ({
+    "م": index + 1,
+    "اسم الموظف": r.userName,
+    "الشهر": monthNames[r.month - 1],
+    "الراتب الأساسي": Number(r.basicSalary),
+    "البدلات": Number(r.totalAllowances),
+    "الخصومات": Number(r.totalDeductions),
+    "صافي الراتب": Number(r.netSalary),
+    "الحالة": statusLabels[r.status] || r.status,
+  }));
+
+  const detailWs = XLSX.utils.json_to_sheet(detailData);
+  detailWs["!cols"] = [
+    { wch: 5 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 10 },
+  ];
+  XLSX.utils.book_append_sheet(wb, detailWs, "تفاصيل كاملة");
+
+  // Sheet 3: Per-employee annual summary
+  const employeeMap = new Map<number, { name: string; totalBasic: number; totalAllowances: number; totalDeductions: number; totalNet: number; months: number }>();
+  records.forEach(r => {
+    const existing = employeeMap.get(r.userId) || { name: r.userName, totalBasic: 0, totalAllowances: 0, totalDeductions: 0, totalNet: 0, months: 0 };
+    existing.totalBasic += Number(r.basicSalary);
+    existing.totalAllowances += Number(r.totalAllowances);
+    existing.totalDeductions += Number(r.totalDeductions);
+    existing.totalNet += Number(r.netSalary);
+    existing.months += 1;
+    employeeMap.set(r.userId, existing);
+  });
+
+  const empData: any[] = [];
+  let idx = 1;
+  employeeMap.forEach((v) => {
+    empData.push({
+      "م": idx++,
+      "اسم الموظف": v.name,
+      "عدد الأشهر": v.months,
+      "إجمالي الأساسي": v.totalBasic,
+      "إجمالي البدلات": v.totalAllowances,
+      "إجمالي الخصومات": v.totalDeductions,
+      "إجمالي الصافي": v.totalNet,
+    });
+  });
+
+  const empWs = XLSX.utils.json_to_sheet(empData);
+  empWs["!cols"] = [
+    { wch: 5 }, { wch: 25 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+  ];
+  XLSX.utils.book_append_sheet(wb, empWs, "ملخص الموظفين");
+
+  XLSX.writeFile(wb, `التقرير_السنوي_للرواتب_${year}.xlsx`);
+}
+
+/**
+ * Export annual payroll report to PDF
+ */
+export async function exportAnnualPayrollToPdf(
+  monthlySummary: MonthlySummary[],
+  annualTotal: AnnualTotal,
+  year: number,
+  orgName?: string
+) {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  await loadArabicFont(doc);
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Header
+  doc.setFontSize(18);
+  doc.text(`التقرير السنوي للرواتب - ${year}`, pageWidth / 2, 15, { align: "center" });
+
+  if (orgName) {
+    doc.setFontSize(12);
+    doc.text(orgName, pageWidth / 2, 22, { align: "center" });
+  }
+
+  doc.setFontSize(10);
+  doc.text(`تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}`, pageWidth - 15, 30, { align: "right" });
+
+  // Monthly summary table
+  const tableData = monthlySummary
+    .filter(m => m.employeeCount > 0)
+    .map(m => [
+      String(m.paidCount),
+      m.totalNet.toLocaleString(),
+      m.totalDeductions.toLocaleString(),
+      m.totalAllowances.toLocaleString(),
+      m.totalBasic.toLocaleString(),
+      String(m.employeeCount),
+      monthNames[m.month - 1],
+    ]);
+
+  // Annual total row
+  tableData.push([
+    "",
+    annualTotal.totalNet.toLocaleString(),
+    annualTotal.totalDeductions.toLocaleString(),
+    annualTotal.totalAllowances.toLocaleString(),
+    annualTotal.totalBasic.toLocaleString(),
+    String(annualTotal.totalRecords),
+    "الإجمالي",
+  ]);
+
+  autoTable(doc, {
+    startY: 35,
+    head: [["مدفوع", "إجمالي الصافي", "الخصومات", "البدلات", "الراتب الأساسي", "عدد الموظفين", "الشهر"]],
+    body: tableData,
+    styles: {
+      font: "Amiri",
+      fontSize: 10,
+      halign: "center",
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [79, 70, 229],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      halign: "center",
+    },
+    alternateRowStyles: {
+      fillColor: [238, 242, 255],
+    },
+    didParseCell: (data: any) => {
+      if (data.row.index === tableData.length - 1) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fillColor = [199, 210, 254];
+      }
+    },
+    margin: { top: 35, right: 15, bottom: 25, left: 15 },
+  });
+
+  // Footer
+  const finalY = (doc as any).lastAutoTable?.finalY || pageHeight - 40;
+  doc.setFontSize(12);
+  doc.text(`إجمالي الرواتب السنوي: ${annualTotal.totalNet.toLocaleString()} ر.س`, pageWidth / 2, finalY + 12, { align: "center" });
+
+  doc.setFontSize(8);
+  doc.text("وثيقة سرية - للاستخدام الداخلي فقط", pageWidth / 2, pageHeight - 5, { align: "center" });
+
+  doc.save(`التقرير_السنوي_للرواتب_${year}.pdf`);
+}

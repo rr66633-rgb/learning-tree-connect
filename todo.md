@@ -2594,3 +2594,26 @@ Fix:
 - [x] Add chart visualization for performance trends
 - [x] Add ability to filter by employee and period range
 - [x] Add navigation link in sidebar
+
+## Bug Fix: Logo Upload Size Limit
+- [x] Fix logo upload to accept files under 2MB (increased limit to 5MB)
+
+## Annual Payroll Report (تقرير سنوي شامل للرواتب)
+- [x] Create annual payroll report that combines all months in one file
+- [x] Add export as Excel with monthly breakdown
+- [x] Add export as PDF with summary and totals
+- [x] Add annual report tab in Payroll page
+
+## Performance Goals Tracking (أهداف الأداء)
+- [x] Create performance_goals table in database
+- [x] Create backend procedures for goals CRUD
+- [x] Build UI for setting goals per employee
+- [x] Add progress tracking with percentage completion
+- [x] Add navigation link in sidebar
+
+## HR Analytics Dashboard (لوحة تحكم الموارد البشرية)
+- [x] Create HR dashboard page combining payroll, performance, and attendance
+- [x] Add summary cards (total salaries, avg performance, attendance rate)
+- [x] Add monthly payroll trend table
+- [x] Add staff overview table
+- [x] Add navigation link in sidebar

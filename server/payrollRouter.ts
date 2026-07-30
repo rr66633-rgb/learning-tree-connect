@@ -272,6 +272,59 @@ export const payrollRouter = router({
     }),
 
   // Get payroll summary for a month
+  // Annual payroll report - all months for a year
+  getAnnualReport: protectedProcedure
+    .input(z.object({ year: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const orgId = ctx.user.organizationId ?? 1;
+      const db = (await getDb())!;
+      const records = await db
+        .select({
+          id: payrollRecords.id,
+          userId: payrollRecords.userId,
+          userName: users.name,
+          month: payrollRecords.month,
+          year: payrollRecords.year,
+          basicSalary: payrollRecords.basicSalary,
+          totalAllowances: payrollRecords.totalAllowances,
+          totalDeductions: payrollRecords.totalDeductions,
+          netSalary: payrollRecords.netSalary,
+          status: payrollRecords.status,
+          paidAt: payrollRecords.paidAt,
+        })
+        .from(payrollRecords)
+        .innerJoin(users, eq(users.id, payrollRecords.userId))
+        .where(and(
+          eq(payrollRecords.organizationId, orgId),
+          eq(payrollRecords.year, input.year)
+        ))
+        .orderBy(payrollRecords.month, payrollRecords.userId);
+
+      // Group by month for summary
+      const monthlySummary = Array.from({ length: 12 }, (_, i) => {
+        const monthRecords = records.filter((r: any) => r.month === i + 1);
+        return {
+          month: i + 1,
+          employeeCount: monthRecords.length,
+          totalBasic: monthRecords.reduce((s: number, r: any) => s + Number(r.basicSalary), 0),
+          totalAllowances: monthRecords.reduce((s: number, r: any) => s + Number(r.totalAllowances), 0),
+          totalDeductions: monthRecords.reduce((s: number, r: any) => s + Number(r.totalDeductions), 0),
+          totalNet: monthRecords.reduce((s: number, r: any) => s + Number(r.netSalary), 0),
+          paidCount: monthRecords.filter((r: any) => r.status === "paid").length,
+        };
+      });
+
+      const annualTotal = {
+        totalBasic: records.reduce((s: number, r: any) => s + Number(r.basicSalary), 0),
+        totalAllowances: records.reduce((s: number, r: any) => s + Number(r.totalAllowances), 0),
+        totalDeductions: records.reduce((s: number, r: any) => s + Number(r.totalDeductions), 0),
+        totalNet: records.reduce((s: number, r: any) => s + Number(r.netSalary), 0),
+        totalRecords: records.length,
+      };
+
+      return { records, monthlySummary, annualTotal, year: input.year };
+    }),
+
   getPayrollSummary: protectedProcedure
     .input(z.object({ month: z.number(), year: z.number() }))
     .query(async ({ input, ctx }) => {
