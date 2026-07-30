@@ -206,6 +206,7 @@ const receptionistMenuItems: MenuItem[] = [
 const superAdminMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: "لوحة التحكم", labelEn: "Dashboard", path: "", color: "#00C9B7" },
   { icon: Building2, label: "المنظمات", labelEn: "Organizations", path: "/organizations", color: "#7C3AED" },
+  { icon: UserCheck, label: "طلبات التسجيل", labelEn: "Registrations", path: "/registrations", color: "#F59E0B" },
   { icon: Crown, label: "إدارة الاشتراكات", labelEn: "Subscriptions", path: "/plans", color: "#F97316" },
   { icon: Receipt, label: "تقرير المدفوعات", labelEn: "Payments Report", path: "/payments-report", color: "#10B981" },
   { icon: ShoppingBag, label: "المتجر", labelEn: "Store", path: "/store", color: "#10B981" },
