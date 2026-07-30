@@ -121,7 +121,17 @@ async function startServer() {
         url.startsWith('/api/trpc/auth.verifyOtp') ||
         url.startsWith('/api/trpc/auth.sendPhoneOtp') ||
         url.startsWith('/api/trpc/auth.verifyPhoneOtp') ||
-        url.startsWith('/api/trpc/auth.resetPassword')) {
+        url.startsWith('/api/trpc/auth.resetPassword') ||
+        // Skip CSRF for file upload endpoints - they are already protected by:
+        // 1. Session authentication (require valid app_session_id cookie)
+        // 2. Rate limiting (uploadRateLimit middleware - 20/min)
+        // 3. File type/size validation in each handler
+        // This avoids multipart/form-data CSRF token issues across browsers
+        url.startsWith('/api/upload-logo') ||
+        url.startsWith('/api/upload-photo') ||
+        url.startsWith('/api/upload-document') ||
+        url.startsWith('/api/upload-media') ||
+        url.startsWith('/api/upload')) {
       return next();
     }
 

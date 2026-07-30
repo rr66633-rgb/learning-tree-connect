@@ -40,22 +40,15 @@ export function invalidateCsrfToken() {
  */
 export async function fetchWithCsrf(url: string, init?: RequestInit): Promise<Response> {
   const token = await getCsrfToken();
-  const headers: Record<string, string> = {};
   
-  // Copy existing headers
-  if (init?.headers) {
-    if (init.headers instanceof Headers) {
-      init.headers.forEach((value, key) => { headers[key] = value; });
-    } else if (Array.isArray(init.headers)) {
-      init.headers.forEach(([key, value]) => { headers[key] = value; });
-    } else {
-      Object.assign(headers, init.headers);
-    }
-  }
+  // Use Headers object to preserve browser auto-detection of Content-Type for FormData
+  // IMPORTANT: When body is FormData, we must NOT manually set Content-Type.
+  // The browser sets it automatically with the correct multipart boundary.
+  const headers = new Headers(init?.headers as HeadersInit | undefined);
   
   // Add CSRF token
   if (token) {
-    headers['x-csrf-token'] = token;
+    headers.set('x-csrf-token', token);
   }
 
   const response = await fetch(url, {
@@ -72,9 +65,9 @@ export async function fetchWithCsrf(url: string, init?: RequestInit): Promise<Re
       if (body?.code === 'EBADCSRFTOKEN' || body?.error === 'invalid csrf token') {
         invalidateCsrfToken();
         const freshToken = await getCsrfToken();
-        const retryHeaders = { ...headers };
+        const retryHeaders = new Headers(init?.headers as HeadersInit | undefined);
         if (freshToken) {
-          retryHeaders['x-csrf-token'] = freshToken;
+          retryHeaders.set('x-csrf-token', freshToken);
         }
         return fetch(url, {
           ...init,
