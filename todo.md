@@ -2560,3 +2560,21 @@ Fix:
 - [x] Add discount management UI in super-admin subscriptions page
 - [x] Fix hardcoded 50% discount in checkout and payment backend to use dynamic pricing
 - [x] Add discount percentage field in "Change Plan" dialog in SubscriptionsManagement
+
+## Payroll Management (مسيّر الرواتب)
+- [x] Create payroll database tables (employee_salaries, payroll_records, salary_deductions, salary_allowances)
+- [x] Create backend procedures for payroll CRUD operations
+- [x] Build payroll management UI page for admin
+- [x] Add payroll slip generation for each employee (monthly payroll generation)
+- [x] Add monthly payroll summary report
+- [x] Add navigation links in admin and principal sidebars
+- [x] Add routes in App.tsx
+
+## Performance Evaluation (تقييم الأداء)
+- [x] Create performance evaluation database tables (evaluation_criteria, evaluations, evaluation_scores)
+- [x] Create backend procedures for performance evaluation CRUD
+- [x] Build performance evaluation UI page for admin
+- [x] Add evaluation history and reports per employee
+- [x] Add star-based scoring system with criteria management
+- [x] Add navigation links in admin and principal sidebars
+- [x] Add routes in App.tsx

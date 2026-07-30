@@ -164,6 +164,10 @@ const SuperAdminStore = lazy(() => import("./pages/superadmin/Store"));
 const LoyaltyAdmin = lazy(() => import("./pages/LoyaltyAdmin"));
 const LoyaltyCard = lazy(() => import("./pages/LoyaltyCard"));
 
+// Payroll & Performance
+const Payroll = lazy(() => import("./pages/Payroll"));
+const PerformanceEvaluation = lazy(() => import("./pages/PerformanceEvaluation"));
+
 function PageLoader() {
   return (
     <div className="p-6 space-y-4">
@@ -250,6 +254,8 @@ function StaffRouter() {
         <Route path="/staff/store/orders" component={StoreOrders} />
         <Route path="/staff/store" component={StoreProducts} />
         <Route path="/staff/loyalty" component={LoyaltyAdmin} />
+        <Route path="/staff/payroll" component={Payroll} />
+        <Route path="/staff/performance-evaluation" component={PerformanceEvaluation} />
         <Route path="/staff/account-settings" component={AccountSettings} />
         <Route component={NotFound} />
       </Switch>

@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt, ShoppingBag, BarChart3
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt, ShoppingBag, BarChart3, Wallet, Award
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -143,6 +143,8 @@ const adminMenuItems: MenuItem[] = [
   { icon: ShoppingBag, label: "المتجر", labelEn: "Store", path: "/store", color: "#10B981" },
   { icon: BarChart3, label: "تقرير المبيعات", labelEn: "Sales Report", path: "/store/reports", color: "#6366F1" },
   { icon: Crown, label: "برنامج الولاء", labelEn: "Loyalty Program", path: "/loyalty", color: "#F59E0B" },
+  { icon: Wallet, label: "مسيّر الرواتب", labelEn: "Payroll", path: "/payroll", color: "#10B981" },
+  { icon: Award, label: "تقييم الأداء", labelEn: "Performance Evaluation", path: "/performance-evaluation", color: "#6366F1" },
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
 ];
@@ -178,6 +180,8 @@ const principalMenuItems: MenuItem[] = [
   { icon: Library, label: "مكتبة المناهج", labelEn: "Curriculum", path: "/curriculum" },
   { icon: Sparkles, label: "المساعد الذكي", labelEn: "AI Assistant", path: "/ai" },
   { icon: UserCheck, label: "طلبات الموافقة", labelEn: "Pending Approvals", path: "/pending-approvals" },
+  { icon: Wallet, label: "مسيّر الرواتب", labelEn: "Payroll", path: "/payroll" },
+  { icon: Award, label: "تقييم الأداء", labelEn: "Performance Evaluation", path: "/performance-evaluation" },
 ];
 
 /**

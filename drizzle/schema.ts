@@ -1746,3 +1746,88 @@ export const demoRequests = mysqlTable("demo_requests", {
 });
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type InsertDemoRequest = typeof demoRequests.$inferInsert;
+
+
+// ============ PAYROLL (مسيّر الرواتب) ============
+export const employeeSalaries = mysqlTable("employee_salaries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  basicSalary: decimal("basicSalary", { precision: 10, scale: 2 }).notNull(),
+  housingAllowance: decimal("housingAllowance", { precision: 10, scale: 2 }).default("0"),
+  transportAllowance: decimal("transportAllowance", { precision: 10, scale: 2 }).default("0"),
+  otherAllowances: decimal("otherAllowances", { precision: 10, scale: 2 }).default("0"),
+  gosiDeduction: decimal("gosiDeduction", { precision: 10, scale: 2 }).default("0"),
+  otherDeductions: decimal("otherDeductions", { precision: 10, scale: 2 }).default("0"),
+  bankName: varchar("bankName", { length: 100 }),
+  iban: varchar("iban", { length: 34 }),
+  effectiveFrom: timestamp("effectiveFrom").defaultNow().notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EmployeeSalary = typeof employeeSalaries.$inferSelect;
+export type InsertEmployeeSalary = typeof employeeSalaries.$inferInsert;
+
+export const payrollRecords = mysqlTable("payroll_records", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  month: int("month").notNull(),
+  year: int("year").notNull(),
+  basicSalary: decimal("basicSalary", { precision: 10, scale: 2 }).notNull(),
+  totalAllowances: decimal("totalAllowances", { precision: 10, scale: 2 }).default("0"),
+  totalDeductions: decimal("totalDeductions", { precision: 10, scale: 2 }).default("0"),
+  netSalary: decimal("netSalary", { precision: 10, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["draft", "approved", "paid", "cancelled"]).default("draft").notNull(),
+  paidAt: timestamp("paidAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PayrollRecord = typeof payrollRecords.$inferSelect;
+export type InsertPayrollRecord = typeof payrollRecords.$inferInsert;
+
+// ============ PERFORMANCE EVALUATION (تقييم الأداء) ============
+export const evaluationCriteria = mysqlTable("evaluation_criteria", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  nameAr: varchar("nameAr", { length: 200 }),
+  description: text("description"),
+  category: varchar("category", { length: 100 }),
+  maxScore: int("maxScore").default(5).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EvaluationCriterion = typeof evaluationCriteria.$inferSelect;
+export type InsertEvaluationCriterion = typeof evaluationCriteria.$inferInsert;
+
+export const evaluations = mysqlTable("evaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  evaluatorId: int("evaluatorId").notNull(),
+  period: varchar("period", { length: 50 }).notNull(),
+  overallScore: decimal("overallScore", { precision: 4, scale: 2 }),
+  overallRating: mysqlEnum("overallRating", ["excellent", "very_good", "good", "acceptable", "poor"]),
+  strengths: text("strengths"),
+  improvements: text("improvements"),
+  goals: text("goals"),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["draft", "submitted", "reviewed", "acknowledged"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Evaluation = typeof evaluations.$inferSelect;
+export type InsertEvaluation = typeof evaluations.$inferInsert;
+
+export const evaluationScores = mysqlTable("evaluation_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  evaluationId: int("evaluationId").notNull(),
+  criterionId: int("criterionId").notNull(),
+  score: int("score").notNull(),
+  comment: text("comment"),
+});
+export type EvaluationScore = typeof evaluationScores.$inferSelect;
+export type InsertEvaluationScore = typeof evaluationScores.$inferInsert;
