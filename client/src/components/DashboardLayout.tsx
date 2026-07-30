@@ -145,6 +145,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: Crown, label: "برنامج الولاء", labelEn: "Loyalty Program", path: "/loyalty", color: "#F59E0B" },
   { icon: Wallet, label: "مسيّر الرواتب", labelEn: "Payroll", path: "/payroll", color: "#10B981" },
   { icon: Award, label: "تقييم الأداء", labelEn: "Performance Evaluation", path: "/performance-evaluation", color: "#6366F1" },
+  { icon: BarChart3, label: "مقارنة الأداء", labelEn: "Performance Comparison", path: "/performance-comparison", color: "#8B5CF6" },
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
 ];
@@ -182,6 +183,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: UserCheck, label: "طلبات الموافقة", labelEn: "Pending Approvals", path: "/pending-approvals" },
   { icon: Wallet, label: "مسيّر الرواتب", labelEn: "Payroll", path: "/payroll" },
   { icon: Award, label: "تقييم الأداء", labelEn: "Performance Evaluation", path: "/performance-evaluation" },
+  { icon: BarChart3, label: "مقارنة الأداء", labelEn: "Performance Comparison", path: "/performance-comparison" },
 ];
 
 /**

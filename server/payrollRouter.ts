@@ -1,8 +1,40 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
-import { getDb } from "./db";
+import { getDb, createNotification } from "./db";
 import { employeeSalaries, payrollRecords, users } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { sendPushToUser } from "./_core/webPush";
+import { getPushSubscriptionsForUser } from "./db";
+
+const monthNames = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+];
+
+async function sendSalaryPaidNotification(userId: number, netSalary: string, month: number, year: number) {
+  const monthName = monthNames[month - 1];
+  try {
+    await createNotification({
+      userId,
+      title: "Salary Paid",
+      titleAr: "تم صرف الراتب",
+      body: `Your salary for ${monthName} ${year} has been paid. Net amount: ${Number(netSalary).toLocaleString()} SAR`,
+      bodyAr: `تم صرف راتبك عن شهر ${monthName} ${year}. صافي المبلغ: ${Number(netSalary).toLocaleString()} ر.س`,
+      type: "payment",
+      link: "/staff/payroll",
+      metadata: { month, year, netSalary, type: "salary_paid" },
+    });
+    // Send push notification
+    await sendPushToUser(userId, {
+      title: "تم صرف الراتب",
+      body: `تم صرف راتبك عن شهر ${monthName} ${year}. صافي المبلغ: ${Number(netSalary).toLocaleString()} ر.س`,
+      data: { url: "/staff/payroll" },
+    }, getPushSubscriptionsForUser);
+  } catch (e) {
+    // Notification failure shouldn't block the operation
+    console.error("Failed to send salary notification:", e);
+  }
+}
 
 export const payrollRouter = router({
   // Get salary config for an employee
@@ -186,6 +218,14 @@ export const payrollRouter = router({
         updateData.paidAt = new Date();
       }
       await db.update(payrollRecords).set(updateData).where(eq(payrollRecords.id, input.id));
+      
+      // Send notification when status is "paid"
+      if (input.status === "paid") {
+        const [record] = await db.select().from(payrollRecords).where(eq(payrollRecords.id, input.id)).limit(1);
+        if (record) {
+          await sendSalaryPaidNotification(record.userId, record.netSalary, record.month, record.year);
+        }
+      }
       return { success: true };
     }),
 
@@ -203,6 +243,17 @@ export const payrollRouter = router({
       if (input.status === "paid") {
         updateData.paidAt = new Date();
       }
+      
+      // Get records before updating (for notifications)
+      const recordsToUpdate = await db
+        .select()
+        .from(payrollRecords)
+        .where(and(
+          eq(payrollRecords.organizationId, orgId),
+          eq(payrollRecords.month, input.month),
+          eq(payrollRecords.year, input.year)
+        ));
+      
       await db.update(payrollRecords)
         .set(updateData)
         .where(and(
@@ -210,6 +261,13 @@ export const payrollRouter = router({
           eq(payrollRecords.month, input.month),
           eq(payrollRecords.year, input.year)
         ));
+      
+      // Send notifications when status is "paid"
+      if (input.status === "paid") {
+        for (const record of recordsToUpdate) {
+          await sendSalaryPaidNotification(record.userId, record.netSalary, input.month, input.year);
+        }
+      }
       return { success: true };
     }),
 

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, Users, CheckCircle, Clock, Plus, Play, Check, X } from "lucide-react";
+import { DollarSign, Users, CheckCircle, Clock, Plus, Play, Check, X, FileSpreadsheet, FileDown } from "lucide-react";
+import { exportPayrollToExcel, exportPayrollToPdf } from "@/lib/payrollExport";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -224,6 +225,30 @@ export default function Payroll() {
                 >
                   <DollarSign className="w-4 h-4 me-2" />
                   {isAr ? "صرف الكل" : "Pay All"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (payrollQuery.data && summary) {
+                      exportPayrollToExcel(payrollQuery.data as any, summary, selectedMonth, selectedYear);
+                      toast.success(isAr ? "تم تصدير ملف Excel" : "Excel exported");
+                    }
+                  }}
+                >
+                  <FileSpreadsheet className="w-4 h-4 me-2" />
+                  {isAr ? "تصدير Excel" : "Export Excel"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (payrollQuery.data && summary) {
+                      await exportPayrollToPdf(payrollQuery.data as any, summary, selectedMonth, selectedYear);
+                      toast.success(isAr ? "تم تصدير ملف PDF" : "PDF exported");
+                    }
+                  }}
+                >
+                  <FileDown className="w-4 h-4 me-2" />
+                  {isAr ? "تصدير PDF" : "Export PDF"}
                 </Button>
               </>
             )}

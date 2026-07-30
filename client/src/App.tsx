@@ -167,6 +167,7 @@ const LoyaltyCard = lazy(() => import("./pages/LoyaltyCard"));
 // Payroll & Performance
 const Payroll = lazy(() => import("./pages/Payroll"));
 const PerformanceEvaluation = lazy(() => import("./pages/PerformanceEvaluation"));
+const PerformanceComparison = lazy(() => import("./pages/PerformanceComparison"));
 
 function PageLoader() {
   return (
@@ -256,6 +257,7 @@ function StaffRouter() {
         <Route path="/staff/loyalty" component={LoyaltyAdmin} />
         <Route path="/staff/payroll" component={Payroll} />
         <Route path="/staff/performance-evaluation" component={PerformanceEvaluation} />
+        <Route path="/staff/performance-comparison" component={PerformanceComparison} />
         <Route path="/staff/account-settings" component={AccountSettings} />
         <Route component={NotFound} />
       </Switch>

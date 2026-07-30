@@ -2578,3 +2578,19 @@ Fix:
 - [x] Add star-based scoring system with criteria management
 - [x] Add navigation links in admin and principal sidebars
 - [x] Add routes in App.tsx
+
+## Payroll Export (تصدير مسيّر الرواتب)
+- [x] Add Excel export for monthly payroll (with employee details, allowances, deductions, net salary)
+- [x] Add PDF export for monthly payroll (professional layout for bank submission)
+- [x] Add export buttons in the payroll UI
+
+## Auto-Notifications on Salary Payment (إشعارات صرف الرواتب)
+- [x] Send notification to employee when their salary status changes to "paid"
+- [x] Send bulk notifications when "Pay All" is used
+- [x] Include salary amount and month in notification message
+
+## Performance Comparison Report (تقرير مقارنة الأداء)
+- [x] Create comparison report page showing employee performance across periods
+- [x] Add chart visualization for performance trends
+- [x] Add ability to filter by employee and period range
+- [x] Add navigation link in sidebar
