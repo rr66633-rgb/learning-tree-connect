@@ -11,6 +11,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Send, Plus, Paperclip, Check, CheckCheck, MessageCircle, User, FileText, Users } from "lucide-react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 
 export default function StaffMessages() {
   const { t, i18n } = useTranslation();
@@ -33,8 +34,7 @@ export default function StaffMessages() {
         otherUserName: c.participantOneName + " ↔ " + c.participantTwoName,
         otherUserRole: c.participantOneRole,
         otherUserId: c.participantOneId,
-        unreadCount: 0,
-      }));
+        unreadCount: 0 }));
     }
     return userConvs || [];
   }, [isAdmin, adminConvs, userConvs]);
@@ -86,8 +86,7 @@ export default function StaffMessages() {
           setText("");
           utils.messages.list.invalidate();
           utils.messages.conversations.invalidate();
-        },
-      }
+        } }
     );
   };
 
@@ -97,7 +96,7 @@ export default function StaffMessages() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error((isAr ? "فشل الرفع" : "Upload failed"));
       const data = await res.json();
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";
@@ -107,14 +106,12 @@ export default function StaffMessages() {
           content: `📎 ${file.name}`,
           attachmentUrl: data.url,
           attachmentType,
-          attachmentName: file.name,
-        },
+          attachmentName: file.name },
         {
           onSuccess: () => {
             utils.messages.list.invalidate();
             utils.messages.conversations.invalidate();
-          },
-        }
+          } }
       );
     } catch {
       toast.error(isAr ? "فشل رفع الملف" : "Failed to upload file");
@@ -137,8 +134,7 @@ export default function StaffMessages() {
           setSelectedChildForConv("");
           utils.messages.conversations.invalidate();
           setSelectedConv(conv.id);
-        },
-      }
+        } }
     );
   };
 
@@ -368,8 +364,7 @@ export default function StaffMessages() {
                           <span className="text-[10px] opacity-60">
                             {new Date(msg.createdAt).toLocaleTimeString("ar-SA", {
                               hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                              minute: "2-digit" })}
                           </span>
                           {msg.senderId === user?.id && (
                             <span className="opacity-60">

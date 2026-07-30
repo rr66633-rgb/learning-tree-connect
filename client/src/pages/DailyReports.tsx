@@ -12,6 +12,7 @@ import { Plus, FileText, Loader2, Camera, X, Image as ImageIcon, AlertTriangle }
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 const moodColors: Record<string, string> = { happy: "bg-green-100 text-green-700", calm: "bg-blue-100 text-blue-700", tired: "bg-amber-100 text-amber-700", upset: "bg-red-100 text-red-700", excited: "bg-purple-100 text-purple-700" };
@@ -31,8 +32,7 @@ export default function DailyReports() {
 
   const createReport = trpc.dailyReports.create.useMutation({
     onSuccess: () => { utils.dailyReports.list.invalidate(); toast.success(isAr ? "تم إنشاء التقرير بنجاح" : "Report created successfully"); setOpen(false); setPhotos([]); },
-    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred"),
-  });
+    onError: () => toast.error(isAr ? "حدث خطأ" : "An error occurred") });
 
   const [form, setForm] = useState({
     childId: 0,
@@ -41,8 +41,7 @@ export default function DailyReports() {
     activities: "",
     teacherNotes: "",
     meals: { breakfast: "", lunch: "", snack: "" },
-    sleep: { from: "", to: "", quality: "good" },
-  });
+    sleep: { from: "", to: "", quality: "good" } });
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -52,8 +51,7 @@ export default function DailyReports() {
     }
     const newPhotos = files.map(file => ({
       file,
-      preview: URL.createObjectURL(file),
-    }));
+      preview: URL.createObjectURL(file) }));
     setPhotos(prev => [...prev, ...newPhotos]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -71,15 +69,13 @@ export default function DailyReports() {
       reader.onload = async () => {
         try {
           const base64 = (reader.result as string).split(',')[1];
-          const response = await fetch(apiUrl('/api/upload'), {
+          const response = await fetchWithCsrf(apiUrl('/api/upload'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               data: base64,
               fileName: `report-${Date.now()}-${file.name}`,
-              contentType: file.type,
-            }),
-          });
+              contentType: file.type }) });
           if (!response.ok) throw new Error('Upload failed');
           const { url } = await response.json();
           resolve(url);
@@ -112,8 +108,7 @@ export default function DailyReports() {
         meals: form.meals,
         sleep: form.sleep,
         photos: photoUrls.length > 0 ? photoUrls : undefined,
-        isPublished: true,
-      });
+        isPublished: true });
     } catch {
       toast.error(isAr ? "فشل رفع الصور" : "Failed to upload photos");
     } finally {

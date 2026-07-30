@@ -1849,3 +1849,16 @@ export const performanceGoals = mysqlTable("performance_goals", {
 });
 export type PerformanceGoal = typeof performanceGoals.$inferSelect;
 export type InsertPerformanceGoal = typeof performanceGoals.$inferInsert;
+
+
+// ============ INTEGRATION CONFIG (SMS/Email Settings) ============
+export const integrationConfig = mysqlTable("integration_config", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").default(1).notNull(),
+  provider: varchar("provider", { length: 50 }).notNull(), // 'twilio' | 'sendgrid'
+  configKey: varchar("config_key", { length: 100 }).notNull(), // e.g. 'account_sid', 'auth_token', 'phone_number', 'enabled'
+  configValue: text("config_value"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type IntegrationConfig = typeof integrationConfig.$inferSelect;
+export type InsertIntegrationConfig = typeof integrationConfig.$inferInsert;

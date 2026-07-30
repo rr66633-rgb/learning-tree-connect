@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Palette, Save, RotateCcw, Upload, X, Image as ImageIcon } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 interface LogoUploadProps {
@@ -40,10 +41,9 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(apiUrl('/api/upload-logo'), {
+      const res = await fetchWithCsrf(apiUrl('/api/upload-logo'), {
         method: 'POST',
-        body: formData,
-      });
+        body: formData });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || isAr ? 'فشل رفع الشعار' : 'Failed to Upload Logo');
@@ -180,8 +180,7 @@ export default function Branding() {
       toast.success(isAr ? "تم تحديث الهوية البصرية بنجاح" : "Visual identity updated successfully");
       refetch();
     },
-    onError: (err) => toast.error(err.message),
-  });
+    onError: (err) => toast.error(err.message) });
 
   const [form, setForm] = useState({
     primaryColor: "#10b981",
@@ -194,8 +193,7 @@ export default function Branding() {
     appIcon: "",
     fontFamily: "Noto Sans Arabic",
     borderRadius: "0.5rem",
-    sidebarStyle: "dark" as "dark" | "light" | "gradient",
-  });
+    sidebarStyle: "dark" as "dark" | "light" | "gradient" });
 
   useEffect(() => {
     if (branding) {
@@ -210,8 +208,7 @@ export default function Branding() {
         appIcon: branding.appIcon || "",
         fontFamily: branding.fontFamily || "Noto Sans Arabic",
         borderRadius: branding.borderRadius || "0.5rem",
-        sidebarStyle: (branding.sidebarStyle as "dark" | "light" | "gradient") || "dark",
-      });
+        sidebarStyle: (branding.sidebarStyle as "dark" | "light" | "gradient") || "dark" });
     }
   }, [branding]);
 
@@ -240,8 +237,7 @@ export default function Branding() {
       appIcon: form.appIcon || undefined,
       fontFamily: form.fontFamily,
       borderRadius: form.borderRadius,
-      sidebarStyle: form.sidebarStyle,
-    });
+      sidebarStyle: form.sidebarStyle });
   };
 
   if (orgsLoading) {

@@ -14,6 +14,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 
 export default function StaffAnnouncements() {
   const { t, i18n } = useTranslation();
@@ -66,8 +67,7 @@ export default function StaffAnnouncements() {
       setCreateExpiresAt("");
       toast.success(isAr ? "تم نشر الإعلان وإرسال إشعار لأولياء الأمور" : "Announcement published and notification sent to parents");
     },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
 
   const update = trpc.announcements.update.useMutation({
     onSuccess: () => {
@@ -76,8 +76,7 @@ export default function StaffAnnouncements() {
       setEditId(null);
       toast.success(isAr ? "تم تحديث الإعلان" : "Announcement updated");
     },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
 
   const deleteMutation = trpc.announcements.delete.useMutation({
     onSuccess: () => {
@@ -85,16 +84,14 @@ export default function StaffAnnouncements() {
       setDeleteId(null);
       toast.success(isAr ? "تم حذف الإعلان" : "Announcement deleted");
     },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
 
   const togglePin = trpc.announcements.update.useMutation({
     onSuccess: () => {
       utils.announcements.list.invalidate();
       toast.success(isAr ? "تم تحديث حالة التثبيت" : "Pin status updated");
     },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
 
   const handleUploadImage = async (file: File, isEdit = false) => {
     if (isEdit) setEditUploading(true);
@@ -102,7 +99,7 @@ export default function StaffAnnouncements() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
       const data = await res.json();
       if (isEdit) setEditImageUrl(data.url);
@@ -225,8 +222,7 @@ export default function StaffAnnouncements() {
                     content: createContent,
                     audience: createAudience as "all" | "parents" | "staff",
                     imageUrl: createImageUrl,
-                    expiresAt: createExpiresAt || null,
-                  })}
+                    expiresAt: createExpiresAt || null })}
                   disabled={!createTitle || !createContent || create.isPending || uploading}
                 >
                   {create.isPending ? isAr ? "جاري..." : "Processing..." : isAr ? "نشر" : "Publish"}
@@ -431,8 +427,7 @@ export default function StaffAnnouncements() {
                     content: editContent,
                     audience: editAudience as "all" | "parents" | "staff",
                     imageUrl: editImageUrl,
-                    expiresAt: editExpiresAt || null,
-                  });
+                    expiresAt: editExpiresAt || null });
                 }
               }}
               disabled={!editTitle || !editContent || update.isPending || editUploading}

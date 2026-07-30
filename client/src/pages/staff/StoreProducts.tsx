@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, Package, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 
 export default function StoreProducts() {
   const { t, i18n } = useTranslation();
@@ -48,23 +49,19 @@ export default function StoreProducts() {
 
   const createProduct = trpc.store.adminCreateProduct.useMutation({
     onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم إضافة المنتج" : "Product added"); resetForm(); setOpenCreate(false); },
-    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
-  });
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")) });
 
   const updateProduct = trpc.store.adminUpdateProduct.useMutation({
     onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم تحديث المنتج" : "Product updated"); setOpenEdit(false); },
-    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
-  });
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")) });
 
   const deleteProduct = trpc.store.adminDeleteProduct.useMutation({
     onSuccess: () => { utils.store.adminGetProducts.invalidate(); toast.success(isAr ? "تم حذف المنتج" : "Product deleted"); },
-    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
-  });
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")) });
 
   const createCategory = trpc.store.adminCreateCategory.useMutation({
     onSuccess: () => { utils.store.adminGetCategories.invalidate(); toast.success(isAr ? "تم إضافة التصنيف" : "Category added"); setCatName(""); setCatNameAr(""); setOpenCategory(false); },
-    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
-  });
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")) });
 
   function resetForm() {
     setName(""); setNameAr(""); setDescription(""); setDescriptionAr(""); setPrice(""); setCompareAtPrice(""); setCategoryId(""); setType("product"); setImageUrl(""); setStock("");
@@ -75,7 +72,7 @@ export default function StoreProducts() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
       const { url } = await res.json();
       setImageUrl(url);
@@ -94,8 +91,7 @@ export default function StoreProducts() {
       compareAtPrice: compareAtPrice || undefined,
       categoryId: categoryId ? parseInt(categoryId) : undefined,
       type, imageUrl: imageUrl || undefined,
-      stock: stock ? parseInt(stock) : 0,
-    });
+      stock: stock ? parseInt(stock) : 0 });
   }
 
   function handleUpdate() {
@@ -105,8 +101,7 @@ export default function StoreProducts() {
       compareAtPrice: compareAtPrice || undefined,
       categoryId: categoryId ? parseInt(categoryId) : null,
       type, imageUrl: imageUrl || undefined,
-      stock: stock ? parseInt(stock) : 0,
-    });
+      stock: stock ? parseInt(stock) : 0 });
   }
 
   function openEditDialog(product: any) {
@@ -332,8 +327,7 @@ function StoreOrdersTab() {
   const utils = trpc.useUtils();
   const updateStatus = trpc.store.adminUpdateOrderStatus.useMutation({
     onSuccess: () => { utils.store.adminGetOrders.invalidate(); toast.success(isAr ? "تم تحديث حالة الطلب" : "Order status updated"); },
-    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")),
-  });
+    onError: (e: any) => toast.error(e.message || (isAr ? "حدث خطأ" : "An error occurred")) });
 
   const { t } = useTranslation();
   const statusLabels: Record<string, string> = { pending: t("statuses.new"), paid: t("statuses.paid"), processing: t("statuses.processing"), ready: t("statuses.ready"), completed: t("statuses.completed"), cancelled: t("statuses.cancelled"), refunded: t("statuses.refunded") };

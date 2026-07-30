@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { getCsrfToken, invalidateCsrfToken } from "@/lib/csrf";
 import { FileText, Trash2, Upload, BookOpen, Loader2 } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 const getLEVEL_LABELS = (isAr: boolean): Record<string, string>  => ({
@@ -17,8 +18,7 @@ const getLEVEL_LABELS = (isAr: boolean): Record<string, string>  => ({
   kg1: (isAr ? "تمهيدي أول" : "Preschool 1"),
   kg2: (isAr ? "تمهيدي ثاني" : "Preschool 2"),
   kg3: (isAr ? "تمهيدي ثالث" : "Preschool 3"),
-  all: (isAr ? "جميع المستويات" : "All Levels"),
-});
+  all: (isAr ? "جميع المستويات" : "All Levels") });
 
 export default function CurriculumManagement() {
   const { t, i18n } = useTranslation();
@@ -41,15 +41,13 @@ export default function CurriculumManagement() {
       toast.success(isAr ? "تم إضافة المنهج بنجاح" : "Curriculum added successfully");
       resetForm();
     },
-    onError: (err) => toast.error(err.message),
-  });
+    onError: (err) => toast.error(err.message) });
   const deleteMutation = trpc.curriculum.delete.useMutation({
     onSuccess: () => {
       utils.curriculum.list.invalidate();
       toast.success(isAr ? "تم حذف المنهج بنجاح" : "Curriculum deleted successfully");
     },
-    onError: (err) => toast.error(err.message),
-  });
+    onError: (err) => toast.error(err.message) });
 
   function resetForm() {
     setTitle("");
@@ -72,23 +70,21 @@ export default function CurriculumManagement() {
       const formData = new FormData();
       formData.append("file", file);
       const csrfToken = await getCsrfToken();
-      let res = await fetch(apiUrl('/api/upload-curriculum'), {
+      let res = await fetchWithCsrf(apiUrl('/api/upload-curriculum'), {
         method: "POST",
         body: formData,
         credentials: "include",
-        headers: { "x-csrf-token": csrfToken },
-      });
+        headers: { "x-csrf-token": csrfToken } });
 
       // Retry on CSRF error
       if (res.status === 403) {
         invalidateCsrfToken();
         const newToken = await getCsrfToken();
-        res = await fetch(apiUrl('/api/upload-curriculum'), {
+        res = await fetchWithCsrf(apiUrl('/api/upload-curriculum'), {
           method: "POST",
           body: formData,
           credentials: "include",
-          headers: { "x-csrf-token": newToken },
-        });
+          headers: { "x-csrf-token": newToken } });
       }
 
       if (!res.ok) {
@@ -107,8 +103,7 @@ export default function CurriculumManagement() {
         fileUrl,
         fileKey,
         fileName,
-        fileSize,
-      });
+        fileSize });
     } catch (err: any) {
       toast.error(err.message || (isAr ? "حدث خطأ أثناء الرفع" : "An error occurred during upload"));
     } finally {

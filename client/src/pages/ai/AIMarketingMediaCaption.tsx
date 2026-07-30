@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ArrowRight, Copy, Loader2, Sparkles, Upload, Video, X } from "lucide-react";
 import { Link } from "wouter";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 export default function AIMarketingMediaCaption() {
@@ -17,8 +18,7 @@ export default function AIMarketingMediaCaption() {
   const [form, setForm] = useState({
     context: "",
     platform: "instagram" as "instagram" | "tiktok" | "snapchat" | "whatsapp",
-    language: "both" as "ar" | "en" | "both",
-  });
+    language: "both" as "ar" | "en" | "both" });
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [result, setResult] = useState<any>(null);
@@ -39,8 +39,7 @@ export default function AIMarketingMediaCaption() {
     },
     onError: (err) => {
       toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred"));
-    },
-  });
+    } });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -72,7 +71,7 @@ export default function AIMarketingMediaCaption() {
       if (files.length > 0) {
         const formData = new FormData();
         formData.append("files", files[0]);
-        const res = await fetch(apiUrl('/api/upload-media'), { method: "POST", body: formData });
+        const res = await fetchWithCsrf(apiUrl('/api/upload-media'), { method: "POST", body: formData });
         if (res.ok) {
           const data = await res.json();
           mediaUrl = data.urls?.[0] || data.url || "";
@@ -84,8 +83,7 @@ export default function AIMarketingMediaCaption() {
         mediaType,
         context: form.context,
         platform: form.platform,
-        language: form.language,
-      });
+        language: form.language });
     } catch {
       toast.error(isAr ? "فشل رفع الملفات" : "Failed to upload files");
     } finally {
@@ -112,8 +110,7 @@ export default function AIMarketingMediaCaption() {
     if (platformData) {
       return {
         caption: platformData.caption || "",
-        hashtags: platformData.hashtags || [],
-      };
+        hashtags: platformData.hashtags || [] };
     }
 
     // Fallback: try to get any available platform data
@@ -122,8 +119,7 @@ export default function AIMarketingMediaCaption() {
       if (result[p]?.caption) {
         return {
           caption: result[p].caption,
-          hashtags: result[p].hashtags || [],
-        };
+          hashtags: result[p].hashtags || [] };
       }
     }
 
@@ -131,8 +127,7 @@ export default function AIMarketingMediaCaption() {
     if (result.captionAr || result.captionEn) {
       return {
         caption: result.captionAr || result.captionEn || "",
-        hashtags: result.hashtags || [],
-      };
+        hashtags: result.hashtags || [] };
     }
 
     return null;
@@ -147,8 +142,7 @@ export default function AIMarketingMediaCaption() {
       instagram: "انستقرام",
       tiktok: "تيك توك",
       snapchat: "سناب شات",
-      whatsapp: "واتساب",
-    };
+      whatsapp: "واتساب" };
     for (const p of platforms) {
       if (result[p]?.caption) {
         parts.push(`📱 ${platformNames[p]}:\n${result[p].caption}`);
@@ -165,8 +159,7 @@ export default function AIMarketingMediaCaption() {
     instagram: "انستقرام",
     tiktok: "تيك توك",
     snapchat: "سناب شات",
-    whatsapp: "واتساب",
-  };
+    whatsapp: "واتساب" };
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto" dir="rtl">

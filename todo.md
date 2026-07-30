@@ -2657,3 +2657,16 @@ Fix:
 - [x] Fix media caption page not showing generated text after success
 - [x] Map LLM response structure (platform-based JSON) to display cards per platform
 - [x] Show all platforms results with copy buttons and hashtags
+
+## Bug Fix: Invalid CSRF Token (إصلاح خطأ CSRF Token)
+- [x] Fix "invalid csrf token" error on settings page when saving
+- [x] Create fetchWithCsrf helper function in client/src/lib/csrf.ts
+- [x] Update all fetch calls across 18 files to use fetchWithCsrf
+
+## Feature: SMS/Email Settings UI (إعدادات الرسائل)
+- [x] Add integration_config table to database
+- [x] Add getConfig and saveConfig procedures to notifications router
+- [x] Add input fields for Twilio credentials (Account SID, Auth Token, Phone Number)
+- [x] Add input fields for SendGrid credentials (API Key, From Email, From Name)
+- [x] Add enable/disable toggle for each service
+- [x] Save credentials to database and update process.env dynamically

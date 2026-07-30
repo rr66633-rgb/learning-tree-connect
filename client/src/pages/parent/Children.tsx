@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Baby, Heart, Phone, AlertTriangle, Camera, Edit, FileText, Upload, CheckCircle2, Clock, XCircle, Download, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 function ChildEmergencyContacts({ childId }: { childId: number }) {
@@ -45,8 +46,7 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
   const utils = trpc.useUtils();
   const createDoc = trpc.childDocuments.create.useMutation({
     onSuccess: () => { utils.childDocuments.listByChild.invalidate({ childId }); toast.success(isAr ? "تم رفع المستند بنجاح" : "Document uploaded successfully"); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<string>("other");
@@ -60,7 +60,7 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || (isAr ? "فشل الرفع" : "Upload failed")); }
       const { url, mimeType } = await res.json();
       await createDoc.mutateAsync({ childId, type: docType as any, name: docName.trim(), fileUrl: url, mimeType });
@@ -154,12 +154,10 @@ export default function ParentChildren() {
   const utils = trpc.useUtils();
   const updateChild = trpc.children.parentUpdate.useMutation({
     onSuccess: () => { utils.children.list.invalidate(); toast.success(isAr ? "تم تحديث البيانات بنجاح" : "Data updated successfully"); setEditChild(null); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
   const registerChild = trpc.children.parentRegisterChild.useMutation({
     onSuccess: () => { utils.children.list.invalidate(); toast.success(isAr ? "تم تسجيل الطفل بنجاح" : "Child enrolled successfully"); setShowRegister(false); resetRegisterForm(); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
 
   const [editChild, setEditChild] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
@@ -173,8 +171,7 @@ export default function ParentChildren() {
     nationality: "", childNationalId: "", fatherName: "", motherName: "",
     parentEmail: "", parentMobile: "", altPhone: "", homeAddress: "",
     allergies: "", medicalConditions: "", medications: "", specialNeeds: "",
-    doctorName: "", bloodType: "", medicalNotes: "",
-  });
+    doctorName: "", bloodType: "", medicalNotes: "" });
 
   const resetRegisterForm = () => {
     setRegForm({
@@ -182,8 +179,7 @@ export default function ParentChildren() {
       nationality: "", childNationalId: "", fatherName: "", motherName: "",
       parentEmail: "", parentMobile: "", altPhone: "", homeAddress: "",
       allergies: "", medicalConditions: "", medications: "", specialNeeds: "",
-      doctorName: "", bloodType: "", medicalNotes: "",
-    });
+      doctorName: "", bloodType: "", medicalNotes: "" });
   };
 
   const handleRegisterChild = () => {
@@ -217,8 +213,7 @@ export default function ParentChildren() {
       specialNeeds: child.specialNeeds || "",
       doctorName: child.doctorName || "",
       bloodType: child.bloodType || "",
-      medicalNotes: child.medicalNotes || "",
-    });
+      medicalNotes: child.medicalNotes || "" });
   };
 
   const handleSaveEdit = () => {
@@ -238,7 +233,7 @@ export default function ParentChildren() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData });
       if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
       const { url } = await res.json();
       await updateChild.mutateAsync({ id: childId, photo: url });

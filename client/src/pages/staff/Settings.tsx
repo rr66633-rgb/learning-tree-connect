@@ -15,6 +15,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 
 function PickupAlertSettingsSection() {
   const { user } = useAuth();
@@ -300,7 +301,10 @@ export default function StaffSettings() {
                     try {
                       const formData = new FormData();
                       formData.append('file', file);
-                      const resp = await fetch(apiUrl('/api/upload-logo'), { method: 'POST', body: formData });
+                      const resp = await fetchWithCsrf(apiUrl('/api/upload-logo'), {
+                        method: 'POST',
+                        body: formData,
+                      });
                       if (!resp.ok) {
                         const errData = await resp.json().catch(() => ({}));
                         toast.error(errData.error || (isAr ? "فشل رفع الشعار" : "Failed to Upload Logo"));

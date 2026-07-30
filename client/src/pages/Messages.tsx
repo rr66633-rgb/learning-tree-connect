@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 export default function Messages() {
@@ -77,8 +78,7 @@ export default function Messages() {
           utils.messages.list.invalidate();
           if (isAdmin) utils.messages.allConversations.invalidate();
           else utils.messages.conversations.invalidate();
-        },
-      }
+        } }
     );
   };
 
@@ -88,7 +88,7 @@ export default function Messages() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error((isAr ? "فشل الرفع" : "Upload failed"));
       const data = await res.json();
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";
@@ -98,15 +98,13 @@ export default function Messages() {
           content: `📎 ${file.name}`,
           attachmentUrl: data.url,
           attachmentType,
-          attachmentName: file.name,
-        },
+          attachmentName: file.name },
         {
           onSuccess: () => {
             utils.messages.list.invalidate();
             if (isAdmin) utils.messages.allConversations.invalidate();
             else utils.messages.conversations.invalidate();
-          },
-        }
+          } }
       );
     } catch {
       toast.error(isAr ? "فشل رفع الملف" : "Failed to upload file");
@@ -122,8 +120,7 @@ export default function Messages() {
           toast.success(isAr ? "تم أرشفة المحادثة" : "Conversation archived");
           utils.messages.allConversations.invalidate();
           if (selectedConv === convId) setSelectedConv(null);
-        },
-      }
+        } }
     );
   };
 
@@ -134,8 +131,7 @@ export default function Messages() {
         onSuccess: () => {
           toast.success(isAr ? "تم إلغاء الأرشفة" : "Unarchived");
           utils.messages.allConversations.invalidate();
-        },
-      }
+        } }
     );
   };
 
@@ -146,8 +142,7 @@ export default function Messages() {
         onSuccess: () => {
           toast.success(isAr ? "تم حذف الرسالة" : "Message deleted");
           utils.messages.list.invalidate();
-        },
-      }
+        } }
     );
   };
 
@@ -381,8 +376,7 @@ export default function Messages() {
                             <span className="text-[10px] opacity-60">
                               {new Date(msg.createdAt).toLocaleTimeString("ar-SA", {
                                 hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                                minute: "2-digit" })}
                             </span>
                             {msg.senderId === user?.id && (
                               <span className="opacity-60">

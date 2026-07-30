@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Download, ArrowRight, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2, Baby } from "lucide-react";
 import { getCsrfToken } from "@/lib/csrf";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 type ParsedRow = {
@@ -81,12 +82,11 @@ export default function ImportChildren() {
     formData.append("file", file);
     try {
       const csrfToken = await getCsrfToken();
-      const res = await fetch(apiUrl('/api/import-children?mode=preview'), {
+      const res = await fetchWithCsrf(apiUrl('/api/import-children?mode=preview'), {
         method: "POST",
         body: formData,
         credentials: "include",
-        headers: { 'x-csrf-token': csrfToken },
-      });
+        headers: { 'x-csrf-token': csrfToken } });
       if (!res.ok) {
         const err = await res.json();
         toast.error(err.error || isAr ? "فشل تحليل الملف" : "File Analysis Failed");
@@ -110,12 +110,11 @@ export default function ImportChildren() {
     try {
       setImportProgress(30);
       const csrfToken2 = await getCsrfToken();
-      const res = await fetch(apiUrl('/api/import-children'), {
+      const res = await fetchWithCsrf(apiUrl('/api/import-children'), {
         method: "POST",
         body: formData,
         credentials: "include",
-        headers: { 'x-csrf-token': csrfToken2 },
-      });
+        headers: { 'x-csrf-token': csrfToken2 } });
       setImportProgress(80);
       if (!res.ok) {
         const err = await res.json();

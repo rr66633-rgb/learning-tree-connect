@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { trackPurchase } from "@/lib/metaPixel";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { loadMoyasar } from "@/lib/externalResources";
 import { useTranslation } from "react-i18next";
 
@@ -64,8 +65,7 @@ export default function ParentFinance() {
         setOpenPayDialog(false);
       }
     },
-    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء عملية الدفع" : "An error occurred during the payment process"),
-  });
+    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء عملية الدفع" : "An error occurred during the payment process") });
 
   const totalPending = invoices?.filter((inv: any) => inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partially_paid').reduce((sum: number, inv: any) => sum + (Number(inv.total) - Number(inv.paidAmount || 0)), 0) ?? 0;
   const totalPaid = invoices?.filter((inv: any) => inv.status === 'paid').reduce((sum: number, inv: any) => sum + Number(inv.total), 0) ?? 0;
@@ -113,14 +113,12 @@ export default function ParentFinance() {
           label: 'Nashaa',
           validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
           version: 6,
-          supported_countries: ['SA'],
-        },
+          supported_countries: ['SA'] },
         language: 'ar',
         fixed_width: false,
         metadata: {
           invoiceId: String(selectedInvoice.id),
-          invoiceNumber: selectedInvoice.invoiceNumber,
-        },
+          invoiceNumber: selectedInvoice.invoiceNumber },
         on_initiating: async function() {
           trackPurchase(Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0), 'SAR');
           return true;
@@ -128,7 +126,7 @@ export default function ParentFinance() {
         on_completed: async function(payment: any) {
           // Save payment to our server immediately after Moyasar creates it
           try {
-            const response = await fetch(apiUrl('/api/trpc/payments.saveFromMoyasar'), {
+            const response = await fetchWithCsrf(apiUrl('/api/trpc/payments.saveFromMoyasar'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
@@ -141,10 +139,7 @@ export default function ParentFinance() {
                           payment.source?.type === 'stcpay' ? 'stc_pay' :
                           payment.source?.company === 'mada' ? 'mada' :
                           payment.source?.company === 'visa' ? 'visa' : 'mastercard',
-                  status: payment.status,
-                },
-              }),
-            });
+                  status: payment.status } }) });
             console.log('Payment saved to server:', response.status);
           } catch (err) {
             console.error('Failed to save payment to server:', err);
@@ -153,8 +148,7 @@ export default function ParentFinance() {
         on_failure: async function(error: any) {
           console.error('Moyasar payment failed:', error);
           toast.error(isAr ? 'فشلت عملية الدفع: ' : 'Payment Failed:' + (typeof error === 'string' ? error : isAr ? 'يرجى المحاولة مرة أخرى' : 'Please try again'));
-        },
-        });
+        } });
         setMoyasarInitialized(true);
       } catch (err) {
         console.error('Moyasar init error:', err);

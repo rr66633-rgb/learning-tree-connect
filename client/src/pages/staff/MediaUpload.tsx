@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import {
   Camera, Video, Upload, X, Image as ImageIcon, Film, Plus,
   Trash2, Eye, Loader2, CheckCircle2, Sparkles, Wand2, UserCheck
@@ -59,16 +60,14 @@ export default function StaffMediaUpload() {
       setShowUploadDialog(false);
       utils.media.list.invalidate();
     },
-    onError: (e) => toast.error(e.message || t('mediaUpload.uploadError')),
-  });
+    onError: (e) => toast.error(e.message || t('mediaUpload.uploadError')) });
 
   const deleteMedia = trpc.media.delete.useMutation({
     onSuccess: () => {
       toast.success(t('mediaUpload.deleted'));
       utils.media.list.invalidate();
     },
-    onError: (e) => toast.error(e.message || t('mediaUpload.deleteError')),
-  });
+    onError: (e) => toast.error(e.message || t('mediaUpload.deleteError')) });
 
   const aiCaption = trpc.media.aiCaption.useMutation();
   const aiSuggestChildren = trpc.media.aiSuggestChildren.useMutation();
@@ -103,8 +102,7 @@ export default function StaffMediaUpload() {
         type: isVideo ? 'video' : 'photo',
         caption: '',
         uploading: false,
-        uploaded: false,
-      });
+        uploaded: false });
     }
 
     setFiles(prev => [...prev, ...newFiles]);
@@ -140,11 +138,10 @@ export default function StaffMediaUpload() {
       try {
         const formData = new FormData();
         formData.append('file', file);
-        const uploadRes = await fetch(apiUrl('/api/upload-media'), {
+        const uploadRes = await fetchWithCsrf(apiUrl('/api/upload-media'), {
           method: 'POST',
           body: formData,
-          credentials: 'include',
-        });
+          credentials: 'include' });
         if (!uploadRes.ok) {
           const errData = await uploadRes.json().catch(() => ({}));
           throw new Error(errData.error || t('mediaUpload.uploadError'));
@@ -221,8 +218,7 @@ export default function StaffMediaUpload() {
 
       const result = await aiSuggestChildren.mutateAsync({
         imageUrl: imageUrl!,
-        classId: selectedClass ? parseInt(selectedClass) : undefined,
-      });
+        classId: selectedClass ? parseInt(selectedClass) : undefined });
 
       if (result.suggestedChildIds && result.suggestedChildIds.length > 0) {
         setSelectedChildren(result.suggestedChildIds);
@@ -264,8 +260,7 @@ export default function StaffMediaUpload() {
             url: files[i].url!,
             caption: files[i].caption || undefined,
             mimeType: files[i].file.type,
-            fileSize: files[i].file.size,
-          });
+            fileSize: files[i].file.size });
           setFiles(prev => {
             const newFiles = [...prev];
             newFiles[i] = { ...newFiles[i], uploaded: true };
@@ -283,11 +278,10 @@ export default function StaffMediaUpload() {
         const formData = new FormData();
         formData.append('file', files[i].file);
 
-        const response = await fetch(apiUrl('/api/upload-media'), {
+        const response = await fetchWithCsrf(apiUrl('/api/upload-media'), {
           method: 'POST',
           body: formData,
-          credentials: 'include',
-        });
+          credentials: 'include' });
 
         if (!response.ok) {
           const err = await response.json();
@@ -300,8 +294,7 @@ export default function StaffMediaUpload() {
           url: result.url,
           caption: files[i].caption || undefined,
           mimeType: result.mimeType,
-          fileSize: result.fileSize,
-        });
+          fileSize: result.fileSize });
 
         setFiles(prev => {
           const newFiles = [...prev];
@@ -314,8 +307,7 @@ export default function StaffMediaUpload() {
         items: uploadedItems,
         classId: selectedClass ? parseInt(selectedClass) : undefined,
         visibility,
-        childIds: selectedChildren.length > 0 ? selectedChildren : undefined,
-      });
+        childIds: selectedChildren.length > 0 ? selectedChildren : undefined });
     } catch (error: any) {
       toast.error(error.message || t('mediaUpload.uploadError'));
     } finally {

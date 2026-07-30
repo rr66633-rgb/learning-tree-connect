@@ -13,6 +13,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { trackContact } from "@/lib/metaPixel";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 export default function ParentMessages() {
@@ -68,8 +69,7 @@ export default function ParentMessages() {
           trackContact();
           utils.messages.list.invalidate();
           utils.messages.conversations.invalidate();
-        },
-      }
+        } }
     );
   };
 
@@ -79,7 +79,7 @@ export default function ParentMessages() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error((isAr ? "فشل الرفع" : "Upload failed"));
       const data = await res.json();
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";
@@ -89,14 +89,12 @@ export default function ParentMessages() {
           content: `📎 ${file.name}`,
           attachmentUrl: data.url,
           attachmentType,
-          attachmentName: file.name,
-        },
+          attachmentName: file.name },
         {
           onSuccess: () => {
             utils.messages.list.invalidate();
             utils.messages.conversations.invalidate();
-          },
-        }
+          } }
       );
     } catch {
       toast.error(isAr ? "فشل رفع الملف" : "Failed to upload file");
@@ -118,8 +116,7 @@ export default function ParentMessages() {
           setSelectedTeacher("");
           utils.messages.conversations.invalidate();
           setSelectedConv(conv.id);
-        },
-      }
+        } }
     );
   };
 
@@ -312,8 +309,7 @@ export default function ParentMessages() {
                           <span className="text-[10px] opacity-60">
                             {new Date(msg.createdAt).toLocaleTimeString(locale, {
                               hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                              minute: "2-digit" })}
                           </span>
                           {msg.senderId === user?.id && (
                             <span className="opacity-60">

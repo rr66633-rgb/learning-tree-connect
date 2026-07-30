@@ -13,6 +13,7 @@ import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { ArrowRight, Upload, User, Briefcase, GraduationCap, CreditCard, Phone as PhoneIcon, Save } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import { useTranslation } from "react-i18next";
 
 export default function EditStaff() {
@@ -64,8 +65,7 @@ export default function EditStaff() {
         emergencyContactRelation: staff.emergencyContactRelation || "",
         photo: staff.photo || "",
         status: staff.status || "active",
-        notes: staff.notes || "",
-      });
+        notes: staff.notes || "" });
       setPhotoPreview(staff.photo || null);
       setInitialized(true);
     }
@@ -76,8 +76,7 @@ export default function EditStaff() {
       toast.success(isAr ? "تم تحديث بيانات الموظف بنجاح" : "Staff data updated successfully");
       navigate(`/staff/staff-management/${staffId}`);
     },
-    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء التحديث" : "An error occurred during update"),
-  });
+    onError: (err) => toast.error(err.message || isAr ? "حدث خطأ أثناء التحديث" : "An error occurred during update") });
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,7 +86,7 @@ export default function EditStaff() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error();
       const data = await res.json();
       setForm(f => ({ ...f, photo: data.url }));
@@ -109,8 +108,7 @@ export default function EditStaff() {
       yearsOfExperience: form.yearsOfExperience ? parseInt(form.yearsOfExperience) : null,
       dateOfBirth: form.dateOfBirth || null,
       hireDate: form.hireDate || null,
-      contractEndDate: form.contractEndDate || null,
-    } as any);
+      contractEndDate: form.contractEndDate || null } as any);
   };
 
   const updateField = (field: string, value: any) => setForm(f => ({ ...f, [field]: value }));

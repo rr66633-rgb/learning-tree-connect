@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 import {
   ArrowRight, Edit, Trash2, User, Briefcase, Calendar, FileText, MessageSquare,
   FolderOpen, Plus, Phone, Mail, MapPin, Clock, CheckCircle, XCircle, AlertCircle,
@@ -55,8 +56,7 @@ function StaffAttendanceTab({ staffUserId, isAr }: { staffUserId?: number; isAr:
       checked_in: { label: isAr ? "حاضر" : "Present", cls: "bg-emerald-100 text-emerald-800" },
       checked_out: { label: isAr ? "انصرف" : "Left", cls: "bg-blue-100 text-blue-800" },
       absent: { label: isAr ? "غائب" : "Absent", cls: "bg-red-100 text-red-800" },
-      late: { label: isAr ? "متأخر" : "Late", cls: "bg-amber-100 text-amber-800" },
-    };
+      late: { label: isAr ? "متأخر" : "Late", cls: "bg-amber-100 text-amber-800" } };
     const s = map[status] || { label: status, cls: "bg-gray-100 text-gray-800" };
     return <Badge className={s.cls}>{s.label}</Badge>;
   };
@@ -102,28 +102,24 @@ export default function StaffProfile() {
   const JOB_TITLES: Record<string, string> = {
   teacher: isAr ? "معلم/ة" : "Teacher", supervisor: isAr ? "مشرف/ة" : "Supervisor", principal: isAr ? "مدير/ة" : "Manager",
   assistant: isAr ? "مساعد/ة" : "Assistant", admin_staff: isAr ? "إداري/ة" : "Administrator", specialist: isAr ? "أخصائي/ة" : "Specialist",
-  accountant: "محاسب/ة", receptionist: "موظف/ة استقبال", driver: isAr ? "سائق" : "Driver", other: "أخرى",
-  };
+  accountant: "محاسب/ة", receptionist: "موظف/ة استقبال", driver: isAr ? "سائق" : "Driver", other: "أخرى" };
 
   const STATUS_MAP: Record<string, { label: string; color: string }> = {
   active: { label: isAr ? "نشط" : "Active", color: "bg-emerald-100 text-emerald-800" },
   inactive: { label: isAr ? "غير نشط" : "Inactive", color: "bg-gray-100 text-gray-800" },
   on_leave: { label: isAr ? "في إجازة" : "On Leave", color: "bg-amber-100 text-amber-800" },
   terminated: { label: isAr ? "منتهي" : "Expired", color: "bg-red-100 text-red-800" },
-  resigned: { label: isAr ? "مستقيل" : "Resigned", color: "bg-orange-100 text-orange-800" },
-  };
+  resigned: { label: isAr ? "مستقيل" : "Resigned", color: "bg-orange-100 text-orange-800" } };
 
   const LEAVE_TYPES: Record<string, string> = {
   annual: isAr ? "سنوية" : "Annual", sick: "مرضية", emergency: "اضطرارية",
-  unpaid: isAr ? "بدون راتب" : "Unpaid", maternity: "أمومة", other: "أخرى",
-  };
+  unpaid: isAr ? "بدون راتب" : "Unpaid", maternity: "أمومة", other: "أخرى" };
 
   const LEAVE_STATUS: Record<string, { label: string; icon: any; color: string }> = {
   pending: { label: isAr ? "قيد المراجعة" : "Under Review", icon: Clock, color: "text-amber-600" },
   approved: { label: isAr ? "مقبولة" : "Accepted", icon: CheckCircle, color: "text-emerald-600" },
   rejected: { label: isAr ? "مرفوضة" : "Rejected", icon: XCircle, color: "text-red-600" },
-  cancelled: { label: isAr ? "ملغاة" : "Cancelled", icon: AlertCircle, color: "text-gray-500" },
-  };
+  cancelled: { label: isAr ? "ملغاة" : "Cancelled", icon: AlertCircle, color: "text-gray-500" } };
 
   const NOTE_TYPES: Record<string, { label: string; color: string }> = {
   general: { label: isAr ? "عام" : "General", color: "bg-blue-100 text-blue-800" },
@@ -131,13 +127,11 @@ export default function StaffProfile() {
   warning: { label: isAr ? "تنبيه" : "Alert", color: "bg-red-100 text-red-800" },
   appreciation: { label: isAr ? "تقدير" : "Estimate", color: "bg-emerald-100 text-emerald-800" },
   meeting: { label: isAr ? "اجتماع" : "Meeting", color: "bg-amber-100 text-amber-800" },
-  other: { label: isAr ? "أخرى" : "Other", color: "bg-gray-100 text-gray-800" },
-  };
+  other: { label: isAr ? "أخرى" : "Other", color: "bg-gray-100 text-gray-800" } };
 
   const DOC_TYPES: Record<string, string> = {
   contract: isAr ? "عقد عمل" : "Employment Contract", id_copy: isAr ? "صورة هوية" : "ID Photo", certificate: isAr ? "شهادة" : "Certificate",
-  license: "رخصة", medical: isAr ? "تقرير طبي" : "Medical Report", other: "أخرى",
-  };
+  license: "رخصة", medical: isAr ? "تقرير طبي" : "Medical Report", other: "أخرى" };
 
   const params = useParams<{ id: string }>();
   const staffId = parseInt(params.id || "0");
@@ -167,15 +161,13 @@ export default function StaffProfile() {
       setShowNoteDialog(false);
       setNoteForm({ title: "", content: "", type: "general", isPrivate: false });
     },
-    onError: (err) => toast.error(err.message),
-  });
+    onError: (err) => toast.error(err.message) });
 
   const deleteNote = trpc.staffManagement.notes.delete.useMutation({
     onSuccess: () => {
       toast.success(isAr ? "تم حذف الملاحظة" : "Observation deleted");
       utils.staffManagement.notes.list.invalidate({ staffProfileId: staffId });
-    },
-  });
+    } });
 
   const createDocument = trpc.staffManagement.documents.create.useMutation({
     onSuccess: () => {
@@ -184,30 +176,26 @@ export default function StaffProfile() {
       setShowDocDialog(false);
       setDocForm({ name: "", type: "other", expiryDate: "", notes: "" });
     },
-    onError: (err) => toast.error(err.message),
-  });
+    onError: (err) => toast.error(err.message) });
 
   const deleteDocument = trpc.staffManagement.documents.delete.useMutation({
     onSuccess: () => {
       toast.success(isAr ? "تم حذف المستند" : "Document deleted");
       utils.staffManagement.documents.list.invalidate({ staffProfileId: staffId });
-    },
-  });
+    } });
 
   const approveLeave = trpc.staffManagement.leaves.approve.useMutation({
     onSuccess: () => {
       toast.success(isAr ? "تم قبول الإجازة" : "Leave accepted");
       utils.staffManagement.leaves.list.invalidate({ staffProfileId: staffId });
       utils.staffManagement.leaves.getBalance.invalidate({ staffProfileId: staffId });
-    },
-  });
+    } });
 
   const rejectLeave = trpc.staffManagement.leaves.reject.useMutation({
     onSuccess: () => {
       toast.success(isAr ? "تم رفض الإجازة" : "Leave rejected");
       utils.staffManagement.leaves.list.invalidate({ staffProfileId: staffId });
-    },
-  });
+    } });
 
   const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -220,7 +208,7 @@ export default function StaffProfile() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error();
       const data = await res.json();
       createDocument.mutate({
@@ -232,8 +220,7 @@ export default function StaffProfile() {
         mimeType: file.type,
         fileSize: file.size,
         expiryDate: docForm.expiryDate || undefined,
-        notes: docForm.notes || undefined,
-      });
+        notes: docForm.notes || undefined });
     } catch {
       toast.error(isAr ? "فشل رفع المستند" : "Failed to upload document");
     } finally {

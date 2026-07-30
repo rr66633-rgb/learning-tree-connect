@@ -8,7 +8,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { getDb as getSharedDb } from "./db";
 import * as authService from "./_core/authService";
-import { loginAttempts } from "../drizzle/schema";
+import { loginAttempts, integrationConfig } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { sendNewDeviceLoginAlert } from "./services/emailService";
 import { aiRouter } from "./aiRouter";
@@ -2034,6 +2034,49 @@ export const appRouter = router({
       } catch (e: any) {
         return { success: false, message: e.message || 'فشل إرسال الرسالة التجريبية' };
       }
+    }),
+    getConfig: adminProcedure.query(async ({ ctx }) => {
+      const dbConn = await getSharedDb();
+      if (!dbConn) return {};
+      const orgId = ctx.user?.organizationId ?? 1;
+      const rows = await dbConn.select().from(integrationConfig).where(eq(integrationConfig.organizationId, orgId));
+      const config: Record<string, Record<string, string>> = {};
+      for (const row of rows) {
+        if (!config[row.provider]) config[row.provider] = {};
+        config[row.provider][row.configKey] = row.configValue || '';
+      }
+      return config;
+    }),
+    saveConfig: adminProcedure.input(z.object({
+      provider: z.enum(['twilio', 'sendgrid']),
+      settings: z.record(z.string(), z.string()),
+    })).mutation(async ({ ctx, input }) => {
+      const dbConn = await getSharedDb();
+      if (!dbConn) throw new Error('Database connection failed');
+      const orgId = ctx.user?.organizationId ?? 1;
+      for (const [key, value] of Object.entries(input.settings)) {
+        await dbConn.insert(integrationConfig).values({
+          organizationId: orgId,
+          provider: input.provider,
+          configKey: key,
+          configValue: value,
+        }).onDuplicateKeyUpdate({
+          set: { configValue: value },
+        });
+      }
+      // Update process.env so the service picks up new values immediately
+      if (input.provider === 'twilio') {
+        if (input.settings.account_sid) process.env.TWILIO_ACCOUNT_SID = input.settings.account_sid;
+        if (input.settings.auth_token) process.env.TWILIO_AUTH_TOKEN = input.settings.auth_token;
+        if (input.settings.phone_number) process.env.TWILIO_PHONE_NUMBER = input.settings.phone_number;
+        if (input.settings.enabled !== undefined) process.env.SMS_ENABLED = input.settings.enabled;
+      } else if (input.provider === 'sendgrid') {
+        if (input.settings.api_key) process.env.SENDGRID_API_KEY = input.settings.api_key;
+        if (input.settings.from_address) process.env.EMAIL_FROM = input.settings.from_address;
+        if (input.settings.from_name) process.env.EMAIL_FROM_NAME = input.settings.from_name;
+        if (input.settings.enabled !== undefined) process.env.EMAIL_ENABLED = input.settings.enabled;
+      }
+      return { success: true };
     }),
     testEmail: adminProcedure.mutation(async () => {
       const { sendOtpEmail, isEmailConfigured } = await import('./services/emailService');

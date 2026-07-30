@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera, Download, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiUrl } from "@/lib/apiBase";
+import { fetchWithCsrf } from "@/lib/csrf";
 
 
 const initialFormState = {
@@ -43,8 +44,7 @@ const initialFormState = {
   pickupAuthorization: "",
   busRequired: false,
   notes: "",
-  photo: "",
-};
+  photo: "" };
 
 export default function StaffChildren() {
   const { t, i18n } = useTranslation();
@@ -62,24 +62,19 @@ export default function StaffChildren() {
   const { data: classes = [] } = trpc.classes.list.useQuery();
   const createChild = trpc.children.create.useMutation({
     onSuccess: () => { refetch(); setShowAddDialog(false); setForm(initialFormState); toast.success("\u062A\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0637\u0641\u0644 \u0628\u0646\u062C\u0627\u062D"); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
   const updateChild = trpc.children.update.useMutation({
     onSuccess: () => { refetch(); setShowEditDialog(false); setEditingChild(null); toast.success("\u062A\u0645 \u062A\u062D\u062F\u064A\u062B \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0637\u0641\u0644"); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
   const deleteChild = trpc.children.delete.useMutation({
     onSuccess: () => { refetch(); toast.success("\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0637\u0641\u0644"); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
   const archiveChild = trpc.children.archive.useMutation({
     onSuccess: () => { refetch(); toast.success("\u062A\u0645 \u0623\u0631\u0634\u0641\u0629 \u0627\u0644\u0637\u0641\u0644"); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
   const activateChild = trpc.children.activate.useMutation({
     onSuccess: () => { refetch(); toast.success("\u062A\u0645 \u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u0637\u0641\u0644"); },
-    onError: (e) => toast.error(e.message),
-  });
+    onError: (e) => toast.error(e.message) });
 
   const filtered = useMemo(() => {
     return (children as any[]).filter((c: any) => {
@@ -98,8 +93,7 @@ export default function StaffChildren() {
     createChild.mutate({
       ...form,
       classId: form.classId || undefined,
-      busRequired: form.busRequired,
-    });
+      busRequired: form.busRequired });
   };
 
   const handleEdit = (child: any) => {
@@ -129,8 +123,7 @@ export default function StaffChildren() {
       pickupAuthorization: child.pickupAuthorization || "",
       busRequired: child.busRequired || false,
       notes: child.notes || "",
-      photo: child.photo || "",
-    });
+      photo: child.photo || "" });
     setShowEditDialog(true);
   };
 
@@ -139,8 +132,7 @@ export default function StaffChildren() {
     updateChild.mutate({
       id: editingChild.id,
       ...form,
-      classId: form.classId || null,
-    });
+      classId: form.classId || null });
   };
 
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -155,7 +147,7 @@ export default function StaffChildren() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(apiUrl('/api/upload-photo'), { method: 'POST', body: formData, credentials: 'include' });
+      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: 'POST', body: formData, credentials: 'include' });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       setForm(prev => ({ ...prev, photo: data.url }));
