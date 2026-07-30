@@ -38,23 +38,40 @@ export default function PerformanceComparison() {
   const staffQuery = trpc.staffManagement.list.useQuery({});
   const evaluationsQuery = trpc.evaluation.listEvaluations.useQuery({});
 
-  // Get unique periods from evaluations
+  // Get unique periods - combine from evaluations + generate default quarterly/half/annual periods
   const periods = useMemo(() => {
-    if (!evaluationsQuery.data) return [];
-    const periodsSet = new Set(evaluationsQuery.data.map((e: any) => e.period));
-    const uniquePeriods: string[] = [];
-    periodsSet.forEach((p) => uniquePeriods.push(p as string));
-    return uniquePeriods.sort().reverse();
-  }, [evaluationsQuery.data]);
+    const currentYear = new Date().getFullYear();
+    // Generate default periods matching the format used in PerformanceEvaluation page
+    const defaultPeriods: { value: string; label: string }[] = [];
+    for (let year = currentYear; year >= currentYear - 1; year--) {
+      defaultPeriods.push({ value: `Q4-${year}`, label: `${isAr ? "الربع الرابع" : "Q4"} ${year}` });
+      defaultPeriods.push({ value: `Q3-${year}`, label: `${isAr ? "الربع الثالث" : "Q3"} ${year}` });
+      defaultPeriods.push({ value: `Q2-${year}`, label: `${isAr ? "الربع الثاني" : "Q2"} ${year}` });
+      defaultPeriods.push({ value: `Q1-${year}`, label: `${isAr ? "الربع الأول" : "Q1"} ${year}` });
+      defaultPeriods.push({ value: `H2-${year}`, label: `${isAr ? "النصف الثاني" : "H2"} ${year}` });
+      defaultPeriods.push({ value: `H1-${year}`, label: `${isAr ? "النصف الأول" : "H1"} ${year}` });
+      defaultPeriods.push({ value: `Annual-${year}`, label: `${isAr ? "سنوي" : "Annual"} ${year}` });
+    }
+    // Add any custom periods from evaluations that don't match defaults
+    if (evaluationsQuery.data) {
+      const existingValues = defaultPeriods.map(p => p.value);
+      evaluationsQuery.data.forEach((e: any) => {
+        if (e.period && !existingValues.includes(e.period)) {
+          defaultPeriods.push({ value: e.period, label: e.period });
+        }
+      });
+    }
+    return defaultPeriods;
+  }, [evaluationsQuery.data, isAr]);
 
   // Set default periods
   useEffect(() => {
     if (periods.length >= 2 && !period1 && !period2) {
-      setPeriod1(periods[1]); // older period
-      setPeriod2(periods[0]); // newer period
+      setPeriod1(periods[1].value); // older period
+      setPeriod2(periods[0].value); // newer period
     } else if (periods.length === 1 && !period1) {
-      setPeriod1(periods[0]);
-      setPeriod2(periods[0]);
+      setPeriod1(periods[0].value);
+      setPeriod2(periods[0].value);
     }
   }, [periods, period1, period2]);
 
@@ -220,7 +237,7 @@ export default function PerformanceComparison() {
                 </SelectTrigger>
                 <SelectContent>
                   {periods.map((p) => (
-                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -233,7 +250,7 @@ export default function PerformanceComparison() {
                 </SelectTrigger>
                 <SelectContent>
                   {periods.map((p) => (
-                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
