@@ -176,12 +176,16 @@ export const evaluationRouter = router({
           totalMaxScore += criterion.maxScore;
         }
       }
-      const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-      let overallRating: "excellent" | "very_good" | "good" | "acceptable" | "poor" = "poor";
-      if (percentage >= 90) overallRating = "excellent";
-      else if (percentage >= 80) overallRating = "very_good";
-      else if (percentage >= 70) overallRating = "good";
-      else if (percentage >= 60) overallRating = "acceptable";
+      const hasScores = input.scores.length > 0 && totalMaxScore > 0;
+      const percentage = hasScores ? (totalScore / totalMaxScore) * 100 : null;
+      let overallRating: "excellent" | "very_good" | "good" | "acceptable" | "poor" | null = null;
+      if (percentage !== null) {
+        if (percentage >= 90) overallRating = "excellent";
+        else if (percentage >= 80) overallRating = "very_good";
+        else if (percentage >= 70) overallRating = "good";
+        else if (percentage >= 60) overallRating = "acceptable";
+        else overallRating = "poor";
+      }
 
       // Create evaluation
       const [evalResult] = await db.insert(evaluations).values({
@@ -189,7 +193,7 @@ export const evaluationRouter = router({
         organizationId: orgId,
         evaluatorId: ctx.user.id,
         period: input.period,
-        overallScore: String(percentage.toFixed(2)),
+        overallScore: percentage !== null ? String(percentage.toFixed(2)) : null,
         overallRating,
         strengths: input.strengths || null,
         improvements: input.improvements || null,

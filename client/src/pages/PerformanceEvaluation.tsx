@@ -167,19 +167,18 @@ export default function PerformanceEvaluation() {
       toast.error(isAr ? "يرجى اختيار الموظف والفترة" : "Please select employee and period");
       return;
     }
-    const scores = Object.entries(evalScores).map(([criterionId, score]) => ({
-      criterionId: Number(criterionId),
-      score,
-      comment: evalComments[Number(criterionId)] || undefined,
-    }));
-    if (scores.length === 0) {
-      toast.error(isAr ? "يرجى تقييم معيار واحد على الأقل" : "Please rate at least one criterion");
-      return;
-    }
+    const scores = Object.entries(evalScores)
+      .filter(([_, score]) => score > 0)
+      .map(([criterionId, score]) => ({
+        criterionId: Number(criterionId),
+        score,
+        comment: evalComments[Number(criterionId)] || undefined,
+      }));
+    // Allow saving without criteria if criteria don't exist or user hasn't scored any
     createEvaluation.mutate({
       userId: Number(evalUserId),
       period: evalPeriod,
-      scores,
+      scores: scores.length > 0 ? scores : [],
       strengths: evalStrengths || undefined,
       improvements: evalImprovements || undefined,
       goals: evalGoals || undefined,
