@@ -1191,6 +1191,11 @@ async function startServer() {
     await enrollmentExpiryHandler(req, res);
   });
 
+  app.post('/api/scheduled/evaluation-reminder', async (req, res) => {
+    const { evaluationReminderHandler } = await import('../evaluation-reminder-handler');
+    await evaluationReminderHandler(req, res);
+  });
+
   // Email Health Check API
   app.get('/api/email/health', async (req, res) => {
     try {

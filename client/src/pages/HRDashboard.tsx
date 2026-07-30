@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DollarSign, Users, Target, TrendingUp, Clock, CheckCircle, AlertTriangle, Award } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
 
 const monthNames = [
   "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
@@ -17,6 +18,7 @@ const monthNames = [
 export default function HRDashboard() {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const [, navigate] = useLocation();
   const currentDate = new Date();
   const [selectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth] = useState(currentDate.getMonth() + 1);
@@ -79,7 +81,7 @@ export default function HRDashboard() {
 
       {/* Top KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/staff/staff-directory")}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 rounded-lg">
@@ -93,7 +95,7 @@ export default function HRDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-green-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/staff/payroll")}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-50 rounded-lg">
@@ -108,7 +110,7 @@ export default function HRDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-amber-500">
+        <Card className="border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/staff/performance-goals")}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-50 rounded-lg">
@@ -123,7 +125,7 @@ export default function HRDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/staff/performance-evaluation")}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-50 rounded-lg">

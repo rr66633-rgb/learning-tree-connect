@@ -2617,3 +2617,17 @@ Fix:
 - [x] Add monthly payroll trend table
 - [x] Add staff overview table
 - [x] Add navigation link in sidebar
+
+## Bug Fix: HR Dashboard KPI Cards Not Clickable
+- [x] Make "إجمالي الموظفين" card navigate to staff directory
+- [x] Make "رواتب الشهر" card navigate to payroll page
+- [x] Make "أهداف نشطة" card navigate to performance goals page
+- [x] Make "متوسط الإنجاز" card navigate to performance evaluation page
+- [x] Add hover effect and cursor pointer to all KPI cards
+
+## Evaluation Reminder Notification (تنبيه اقتراب موعد التقييم)
+- [x] Create evaluation-reminder-handler.ts with quarterly evaluation logic
+- [x] Register /api/scheduled/evaluation-reminder endpoint
+- [x] Create Heartbeat cron job (runs every Sunday at 8:00 AM UTC, task_uid: id889cE9LWTpQmw3tbBxUQ)
+- [x] Notify admin/principal when quarter boundary approaches and employees are not evaluated
+- [x] Notify admin/principal when employees have never been evaluated
