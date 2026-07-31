@@ -522,10 +522,10 @@ export default function PerformanceEvaluation() {
               </div>
 
               {/* Scores */}
-              {evalDetailQuery.data.scores && evalDetailQuery.data.scores.length > 0 && (
+              {evalDetailQuery.data?.scores && evalDetailQuery.data?.scores.length > 0 && (
                 <div className="space-y-2">
                   <p className="font-semibold">{isAr ? "تفاصيل المعايير" : "Criteria Details"}</p>
-                  {evalDetailQuery.data.scores.map((s: any) => (
+                  {evalDetailQuery.data?.scores.map((s: any) => (
                     <div key={s.id} className="flex items-center justify-between p-2 bg-muted rounded">
                       <span>{s.criterionNameAr || s.criterionName}</span>
                       <div className="flex items-center gap-2">

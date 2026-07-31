@@ -197,7 +197,7 @@ export async function getChildById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(children).where(eq(children.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function createChild(data: InsertChild) {
@@ -267,7 +267,7 @@ export async function getAttendanceById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(attendance).where(eq(attendance.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function getAttendanceForChildOnDate(childId: number, date: string) {
@@ -278,7 +278,7 @@ export async function getAttendanceForChildOnDate(childId: number, date: string)
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
   const result = await db.select().from(attendance).where(and(eq(attendance.childId, childId), gte(attendance.date, startOfDay), lte(attendance.date, endOfDay))).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 // ============ ATTENDANCE AUDIT LOG ============
@@ -325,7 +325,7 @@ export async function getDailyReportById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(dailyReports).where(eq(dailyReports.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function createDailyReport(data: InsertDailyReport) {
@@ -362,33 +362,49 @@ export async function getConversations(userId: number) {
     ))
     .orderBy(desc(conversations.lastMessageAt));
   
-  // Enrich with participant names and unread counts
-  const enriched = [];
-  for (const conv of rows) {
-    const otherUserId = conv.participantOneId === userId ? conv.participantTwoId : conv.participantOneId;
-    const otherUser = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, otherUserId)).limit(1);
-    const unreadResult = await db.select({ count: sql<number>`count(*)` }).from(messages)
+  // Batch fetch all related users and children to avoid N+1 queries
+  if (rows.length === 0) return [];
+  
+  const otherUserIds = Array.from(new Set(rows.map(conv => 
+    conv.participantOneId === userId ? conv.participantTwoId : conv.participantOneId
+  )));
+  const childIds = Array.from(new Set(rows.filter(c => c.childId).map(c => c.childId!)));
+  const convIds = rows.map(c => c.id);
+  
+  // Batch queries instead of N+1
+  const [usersData, childrenData, unreadCounts] = await Promise.all([
+    otherUserIds.length > 0 
+      ? db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(inArray(users.id, otherUserIds))
+      : [],
+    childIds.length > 0
+      ? db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName }).from(children).where(inArray(children.id, childIds))
+      : [],
+    db.select({ conversationId: messages.conversationId, count: sql<number>`count(*)` }).from(messages)
       .where(and(
-        eq(messages.conversationId, conv.id),
+        inArray(messages.conversationId, convIds),
         eq(messages.isRead, false),
         sql`${messages.senderId} != ${userId}`,
         eq(messages.isDeleted, false)
-      ));
-    let childName = null;
-    if (conv.childId) {
-      const child = await db.select({ firstName: children.firstName, lastName: children.lastName }).from(children).where(eq(children.id, conv.childId)).limit(1);
-      childName = child[0] ? `${child[0].firstName} ${child[0].lastName}` : null;
-    }
-    enriched.push({
+      ))
+      .groupBy(messages.conversationId)
+  ]);
+  
+  const userMap = new Map(usersData.map(u => [u.id, u]));
+  const childMap = new Map(childrenData.map(c => [c.id, `${c.firstName} ${c.lastName}`]));
+  const unreadMap = new Map(unreadCounts.map(u => [u.conversationId, u.count]));
+  
+  return rows.map(conv => {
+    const otherUserId = conv.participantOneId === userId ? conv.participantTwoId : conv.participantOneId;
+    const otherUser = userMap.get(otherUserId);
+    return {
       ...conv,
-      otherUserName: otherUser[0]?.name || 'مستخدم',
-      otherUserRole: otherUser[0]?.role || 'user',
+      otherUserName: otherUser?.name || 'مستخدم',
+      otherUserRole: otherUser?.role || 'user',
       otherUserId,
-      unreadCount: unreadResult[0]?.count ?? 0,
-      childName,
-    });
-  }
-  return enriched;
+      unreadCount: unreadMap.get(conv.id) ?? 0,
+      childName: conv.childId ? (childMap.get(conv.childId) || null) : null,
+    };
+  });
 }
 
 export async function getAllConversations(search?: string) {
@@ -407,31 +423,45 @@ export async function getAllConversations(search?: string) {
   }).from(conversations).orderBy(desc(conversations.lastMessageAt));
   
   const rows = await query;
-  const enriched = [];
-  for (const conv of rows) {
-    const user1 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantOneId)).limit(1);
-    const user2 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantTwoId)).limit(1);
-    let childName = null;
-    if (conv.childId) {
-      const child = await db.select({ firstName: children.firstName, lastName: children.lastName }).from(children).where(eq(children.id, conv.childId)).limit(1);
-      childName = child[0] ? `${child[0].firstName} ${child[0].lastName}` : null;
-    }
-    const item = {
+  if (rows.length === 0) return [];
+  
+  // Batch fetch all users and children to avoid N+1
+  const allUserIds = Array.from(new Set(rows.flatMap(c => [c.participantOneId, c.participantTwoId])));
+  const childIds = Array.from(new Set(rows.filter(c => c.childId).map(c => c.childId!)));
+  
+  const [usersData, childrenData] = await Promise.all([
+    allUserIds.length > 0
+      ? db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(inArray(users.id, allUserIds))
+      : [],
+    childIds.length > 0
+      ? db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName }).from(children).where(inArray(children.id, childIds))
+      : [],
+  ]);
+  
+  const userMap = new Map(usersData.map(u => [u.id, u]));
+  const childMap = new Map(childrenData.map(c => [c.id, `${c.firstName} ${c.lastName}`]));
+  
+  const enriched = rows.map(conv => {
+    const u1 = userMap.get(conv.participantOneId);
+    const u2 = userMap.get(conv.participantTwoId);
+    return {
       ...conv,
-      participantOneName: user1[0]?.name || 'مستخدم',
-      participantOneRole: user1[0]?.role || 'user',
-      participantTwoName: user2[0]?.name || 'مستخدم',
-      participantTwoRole: user2[0]?.role || 'user',
-      childName,
+      participantOneName: u1?.name || 'مستخدم',
+      participantOneRole: u1?.role || 'user',
+      participantTwoName: u2?.name || 'مستخدم',
+      participantTwoRole: u2?.role || 'user',
+      childName: conv.childId ? (childMap.get(conv.childId) || null) : null,
     };
-    if (search) {
-      const s = search.toLowerCase();
-      if (item.participantOneName.toLowerCase().includes(s) || item.participantTwoName.toLowerCase().includes(s) || (item.childName && item.childName.toLowerCase().includes(s)) || (item.subject && item.subject.toLowerCase().includes(s))) {
-        enriched.push(item);
-      }
-    } else {
-      enriched.push(item);
-    }
+  });
+  
+  if (search) {
+    const s = search.toLowerCase();
+    return enriched.filter(item =>
+      item.participantOneName.toLowerCase().includes(s) ||
+      item.participantTwoName.toLowerCase().includes(s) ||
+      (item.childName && item.childName.toLowerCase().includes(s)) ||
+      (item.subject && item.subject.toLowerCase().includes(s))
+    );
   }
   return enriched;
 }
@@ -1035,7 +1065,7 @@ export async function getUserById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function createUser(data: { name: string; email: string; phone?: string; role: string; openId: string; nationalId?: string; organizationId?: number }) {
@@ -1195,7 +1225,7 @@ export async function getClassById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(classes).where(eq(classes.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function createClass(data: any) {
@@ -1296,7 +1326,7 @@ export async function getCenterSettings() {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(centerSettings).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function updateCenterSettings(data: any) {
@@ -1577,7 +1607,7 @@ export async function getMedicalInfo(childId: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(medicalInfo).where(eq(medicalInfo.childId, childId)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function upsertMedicalInfo(childId: number, data: any) {
@@ -1833,7 +1863,7 @@ export async function getMediaById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(media).where(eq(media.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function getMediaChildren(mediaId: number) {
@@ -1868,14 +1898,14 @@ export async function getPaymentById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function getPaymentByMoyasarId(moyasarPaymentId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(payments).where(eq(payments.moyasarPaymentId, moyasarPaymentId)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function updatePayment(id: number, data: Partial<{ status: string; paidAt: Date; moyasarPaymentId: string; moyasarPaymentUrl: string; metadata: any; amount: string }>) {
@@ -2058,7 +2088,7 @@ export async function getTuitionPlanById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(tuitionPlans).where(eq(tuitionPlans.id, id)).limit(1);
-  return result[0];
+  return result[0] || null;
 }
 
 export async function updateTuitionPlan(id: number, data: Partial<{ name: string; amount: string; frequency: string; description: string; nextBillingDate: Date; isActive: boolean; endDate: Date }>) {

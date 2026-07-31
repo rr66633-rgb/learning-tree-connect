@@ -50,7 +50,7 @@ export default function HRDashboard() {
   // Monthly payroll trend
   const monthlyTrend = useMemo(() => {
     if (!annualReport.data) return [];
-    return annualReport.data.monthlySummary.filter((m: any) => m.employeeCount > 0);
+    return annualReport.data?.monthlySummary?.filter((m: any) => m.employeeCount > 0);
   }, [annualReport.data]);
 
   const isLoading = staffQuery.isLoading || payrollSummary.isLoading || goalsSummary.isLoading;

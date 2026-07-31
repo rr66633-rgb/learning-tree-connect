@@ -337,7 +337,7 @@ export default function WeeklyPlanPage() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {plansQuery.data.map((plan: any) => (
+            {plansQuery.data?.map((plan: any) => (
               <Card 
                 key={plan.id} 
                 className="cursor-pointer hover:shadow-md transition-shadow border-r-4"

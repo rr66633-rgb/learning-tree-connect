@@ -3472,7 +3472,7 @@ export const appRouter = router({
     }),
 
     // Update alert settings (admin only)
-    updateAlertSettings: protectedProcedure.input(z.object({
+    updateAlertSettings: adminProcedure.input(z.object({
       volume: z.number().min(0).max(100).optional(),
       tone: z.enum(['urgent', 'gentle', 'alarm', 'chime']).optional(),
       repeatIntervalSeconds: z.number().min(2).max(30).optional(),

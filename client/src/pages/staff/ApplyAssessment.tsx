@@ -85,7 +85,7 @@ export default function ApplyAssessment() {
   const filteredChildren = useMemo(() => {
     if (!childrenQuery.data) return [];
     if (assessment?.classId) {
-      const filtered = childrenQuery.data.filter((c: any) => c.classId === assessment.classId);
+      const filtered = childrenQuery.data?.filter((c: any) => c.classId === assessment.classId);
       if (filtered.length > 0) return filtered;
     }
     return childrenQuery.data;

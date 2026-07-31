@@ -455,7 +455,7 @@ export default function CustomAssessments() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {assessmentsQuery.data.map((a: any) => (
+          {assessmentsQuery.data?.map((a: any) => (
             <Card
               key={a.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
