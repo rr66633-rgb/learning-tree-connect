@@ -204,17 +204,51 @@ async function fetchLogoAsDataUrl(logoUrl?: string): Promise<string> {
   if (!logoUrl) return '';
   const absoluteUrl = logoUrl.startsWith('/') ? `${window.location.origin}${logoUrl}` : logoUrl;
   try {
-    const resp = await fetch(absoluteUrl);
-    if (!resp.ok) return '';
+    // Try fetch with credentials to handle same-origin redirects
+    const resp = await fetch(absoluteUrl, { 
+      redirect: 'follow',
+      credentials: 'same-origin',
+      mode: 'cors',
+    });
+    if (!resp.ok) {
+      console.warn('[PDF] Logo fetch failed with status:', resp.status);
+      return '';
+    }
     const blob = await resp.blob();
+    if (!blob.size) return '';
     return await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = () => resolve('');
       reader.readAsDataURL(blob);
     });
-  } catch {
-    return '';
+  } catch (err) {
+    console.warn('[PDF] Logo fetch error:', err);
+    // Try alternative: use Image element to load and convert to canvas
+    try {
+      return await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } else {
+            resolve('');
+          }
+        };
+        img.onerror = () => resolve('');
+        img.src = absoluteUrl;
+        // Timeout after 5 seconds
+        setTimeout(() => resolve(''), 5000);
+      });
+    } catch {
+      return '';
+    }
   }
 }
 
