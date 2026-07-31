@@ -1129,8 +1129,8 @@ export const appRouter = router({
     conversations: protectedProcedure.query(async ({ ctx }) => {
       return db.getConversations(ctx.user!.id);
     }),
-    allConversations: adminProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async ({ input }) => {
-      return db.getAllConversations(input?.search);
+    allConversations: adminProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
+      return db.getAllConversations(input?.search, ctx.user?.organizationId ?? undefined);
     }),
     list: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input, ctx }) => {
       // Verify user is participant or admin
@@ -1244,10 +1244,11 @@ export const appRouter = router({
 
   finance: router({
     invoices: protectedProcedure.input(z.object({ parentId: z.number().optional(), status: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
+      const orgId = ctx.user?.organizationId ?? undefined;
       if (ctx.user?.role === 'parent') {
-        return db.getInvoices(ctx.user.id);
+        return db.getInvoices(ctx.user.id, orgId);
       }
-      return db.getInvoices(input?.parentId);
+      return db.getInvoices(input?.parentId, orgId);
     }),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       const invoice = await db.getInvoiceById(input.id);
@@ -1790,11 +1791,11 @@ export const appRouter = router({
     transactions: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
       return db.getLoyaltyTransactions(ctx.user!.id, input?.limit);
     }),
-    rewards: protectedProcedure.query(async () => {
-      return db.getLoyaltyRewards();
+    rewards: protectedProcedure.query(async ({ ctx }) => {
+      return db.getLoyaltyRewards(ctx.user?.organizationId ?? undefined);
     }),
     redeem: protectedProcedure.input(z.object({ rewardId: z.number() })).mutation(async ({ ctx, input }) => {
-      const rewards = await db.getLoyaltyRewards();
+      const rewards = await db.getLoyaltyRewards(ctx.user?.organizationId ?? undefined);
       const reward = rewards.find(r => r.id === input.rewardId);
       if (!reward) throw new TRPCError({ code: 'NOT_FOUND', message: 'المكافأة غير موجودة' });
       const balance = await db.getLoyaltyBalance(ctx.user!.id);
@@ -1857,8 +1858,8 @@ export const appRouter = router({
       return db.deleteLoyaltyReward(input.id);
     }),
     // Settings
-    getSettings: adminProcedure.query(async () => {
-      return db.getLoyaltySettings();
+    getSettings: adminProcedure.query(async ({ ctx }) => {
+      return db.getLoyaltySettings(ctx.user?.organizationId ?? undefined);
     }),
     updateSettings: adminProcedure.input(z.object({
       pointsPerReferral: z.number().optional(),
@@ -1874,12 +1875,12 @@ export const appRouter = router({
       return db.updateLoyaltySettings(input);
     }),
     // All parents points (admin view)
-    allParentsPoints: adminProcedure.query(async () => {
-      return db.getAllParentsLoyaltyPoints();
+    allParentsPoints: adminProcedure.query(async ({ ctx }) => {
+      return db.getAllParentsLoyaltyPoints(ctx.user?.organizationId ?? undefined);
     }),
     // All redemptions (admin view)
-    allRedemptions: adminProcedure.query(async () => {
-      return db.getAllRedemptions();
+    allRedemptions: adminProcedure.query(async ({ ctx }) => {
+      return db.getAllRedemptions(ctx.user?.organizationId ?? undefined);
     }),
     // Update redemption status
     updateRedemptionStatus: adminProcedure.input(z.object({
@@ -1891,11 +1892,11 @@ export const appRouter = router({
     }),
 
     // === Partners ===
-    partners: protectedProcedure.query(async () => {
-      return db.getLoyaltyPartners();
+    partners: protectedProcedure.query(async ({ ctx }) => {
+      return db.getLoyaltyPartners(ctx.user?.organizationId ?? undefined);
     }),
-    allPartners: adminProcedure.query(async () => {
-      return db.getAllLoyaltyPartners();
+    allPartners: adminProcedure.query(async ({ ctx }) => {
+      return db.getAllLoyaltyPartners(ctx.user?.organizationId ?? undefined);
     }),
     createPartner: adminProcedure.input(z.object({
       name: z.string(),
@@ -1946,8 +1947,8 @@ export const appRouter = router({
       await db.createLoyaltyCard(ctx.user!.id, cardNumber, qrCodeData, templateId, expiryDate);
       return db.getLoyaltyCard(ctx.user!.id);
     }),
-    allCards: adminProcedure.query(async () => {
-      return db.getAllLoyaltyCards();
+    allCards: adminProcedure.query(async ({ ctx }) => {
+      return db.getAllLoyaltyCards(ctx.user?.organizationId ?? undefined);
     }),
     validateCard: protectedProcedure.input(z.object({ cardNumber: z.string() })).query(async ({ input }) => {
       return db.getCardByNumber(input.cardNumber);

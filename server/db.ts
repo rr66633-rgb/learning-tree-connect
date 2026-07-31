@@ -3,7 +3,7 @@ import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, announcementReads, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
-import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses, organizations } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses, organizations, loyaltySettings } from "../drizzle/schema";
 import type { InsertNurseryRegistration } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import type { InsertDevelopmentalAssessment, InsertAssessmentResponse } from "../drizzle/schema";
@@ -407,10 +407,10 @@ export async function getConversations(userId: number) {
   });
 }
 
-export async function getAllConversations(search?: string) {
+export async function getAllConversations(search?: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  let query = db.select({
+  const baseQuery = db.select({
     id: conversations.id,
     participantOneId: conversations.participantOneId,
     participantTwoId: conversations.participantTwoId,
@@ -420,9 +420,11 @@ export async function getAllConversations(search?: string) {
     lastMessagePreview: conversations.lastMessagePreview,
     isArchived: conversations.isArchived,
     createdAt: conversations.createdAt,
-  }).from(conversations).orderBy(desc(conversations.lastMessageAt));
+  }).from(conversations);
   
-  const rows = await query;
+  const rows = organizationId
+    ? await baseQuery.where(eq(conversations.organizationId, organizationId)).orderBy(desc(conversations.lastMessageAt))
+    : await baseQuery.orderBy(desc(conversations.lastMessageAt));
   if (rows.length === 0) return [];
   
   // Batch fetch all users and children to avoid N+1
@@ -623,7 +625,7 @@ export async function getAllActiveStaffAndParents() {
 }
 
 // ============ INVOICES ============
-export async function getInvoices(parentId?: number) {
+export async function getInvoices(parentId?: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   const selectFields = {
@@ -649,16 +651,21 @@ export async function getInvoices(parentId?: number) {
     parentName: users.name,
   };
   if (parentId) {
+    const conditions = [eq(invoices.parentId, parentId)];
+    if (organizationId) conditions.push(eq(invoices.organizationId, organizationId));
     const results = await db.select(selectFields).from(invoices)
       .leftJoin(children, eq(invoices.childId, children.id))
       .leftJoin(users, eq(invoices.parentId, users.id))
-      .where(eq(invoices.parentId, parentId)).orderBy(desc(invoices.createdAt));
+      .where(and(...conditions)).orderBy(desc(invoices.createdAt));
     return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
   }
-  const results = await db.select(selectFields).from(invoices)
+  const conditions = organizationId ? [eq(invoices.organizationId, organizationId)] : [];
+  const query = db.select(selectFields).from(invoices)
     .leftJoin(children, eq(invoices.childId, children.id))
-    .leftJoin(users, eq(invoices.parentId, users.id))
-    .orderBy(desc(invoices.createdAt));
+    .leftJoin(users, eq(invoices.parentId, users.id));
+  const results = conditions.length > 0
+    ? await query.where(and(...conditions)).orderBy(desc(invoices.createdAt))
+    : await query.orderBy(desc(invoices.createdAt));
   return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
 }
 
@@ -766,10 +773,12 @@ export async function addLoyaltyPoints(userId: number, points: number, type: "ea
   }
 }
 
-export async function getLoyaltyRewards() {
+export async function getLoyaltyRewards(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(loyaltyRewards).where(eq(loyaltyRewards.isActive, true));
+  const conditions = [eq(loyaltyRewards.isActive, true)];
+  if (organizationId) conditions.push(eq(loyaltyRewards.organizationId, organizationId));
+  return db.select().from(loyaltyRewards).where(and(...conditions));
 }
 
 export async function createLoyaltyReward(data: { name: string; nameAr: string; description?: string; descriptionAr?: string; pointsCost: number; category?: string; maxRedemptions?: number | null }) {
@@ -815,9 +824,13 @@ export async function getUserRedemptions(userId: number) {
   return db.execute(sql`SELECT r.*, lr.name, lr.nameAr, lr.pointsCost as rewardCost FROM loyalty_redemptions r LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id WHERE r.userId = ${userId} ORDER BY r.createdAt DESC`);
 }
 
-export async function getLoyaltySettings() {
+export async function getLoyaltySettings(organizationId?: number) {
   const db = await getDb();
   if (!db) return null;
+  if (organizationId) {
+    const result = await db.select().from(loyaltySettings).where(eq(loyaltySettings.organizationId, organizationId)).limit(1);
+    return result[0] ?? null;
+  }
   const result = await db.execute(sql`SELECT * FROM loyalty_settings LIMIT 1`);
   return (result as any)[0]?.[0] ?? null;
 }
@@ -832,16 +845,24 @@ export async function updateLoyaltySettings(data: Record<string, any>) {
   return { success: true };
 }
 
-export async function getAllParentsLoyaltyPoints() {
+export async function getAllParentsLoyaltyPoints(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const result = await db.execute(sql`SELECT lp.*, u.name as userName, u.nameAr as userNameAr, u.email FROM loyalty_points lp LEFT JOIN users u ON lp.userId = u.id WHERE u.organizationId = ${organizationId} ORDER BY lp.points DESC`);
+    return (result as any)[0] ?? [];
+  }
   const result = await db.execute(sql`SELECT lp.*, u.name as userName, u.nameAr as userNameAr, u.email FROM loyalty_points lp LEFT JOIN users u ON lp.userId = u.id ORDER BY lp.points DESC`);
   return (result as any)[0] ?? [];
 }
 
-export async function getAllRedemptions() {
+export async function getAllRedemptions(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const result = await db.execute(sql`SELECT r.*, u.name as userName, u.nameAr as userNameAr, lr.name as rewardName, lr.nameAr as rewardNameAr FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id WHERE u.organizationId = ${organizationId} ORDER BY r.createdAt DESC`);
+    return (result as any)[0] ?? [];
+  }
   const result = await db.execute(sql`SELECT r.*, u.name as userName, u.nameAr as userNameAr, lr.name as rewardName, lr.nameAr as rewardNameAr FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id ORDER BY r.createdAt DESC`);
   return (result as any)[0] ?? [];
 }
@@ -858,16 +879,24 @@ export async function updateRedemptionStatus(id: number, status: string, adminNo
 
 // ============ LOYALTY PARTNERS ============
 
-export async function getLoyaltyPartners() {
+export async function getLoyaltyPartners(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const result = await db.execute(sql`SELECT * FROM loyalty_partners WHERE isActive = 1 AND organizationId = ${organizationId} ORDER BY createdAt DESC`);
+    return (result as any)[0] ?? [];
+  }
   const result = await db.execute(sql`SELECT * FROM loyalty_partners WHERE isActive = 1 ORDER BY createdAt DESC`);
   return (result as any)[0] ?? [];
 }
 
-export async function getAllLoyaltyPartners() {
+export async function getAllLoyaltyPartners(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const result = await db.execute(sql`SELECT * FROM loyalty_partners WHERE organizationId = ${organizationId} ORDER BY createdAt DESC`);
+    return (result as any)[0] ?? [];
+  }
   const result = await db.execute(sql`SELECT * FROM loyalty_partners ORDER BY createdAt DESC`);
   return (result as any)[0] ?? [];
 }
@@ -912,9 +941,13 @@ export async function createLoyaltyCard(userId: number, cardNumber: string, qrCo
   return { cardNumber, qrCodeData };
 }
 
-export async function getAllLoyaltyCards() {
+export async function getAllLoyaltyCards(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, u.email, t.name as templateName FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_card_templates t ON c.templateId = t.id WHERE c.organizationId = ${organizationId} ORDER BY c.createdAt DESC`);
+    return (result as any)[0] ?? [];
+  }
   const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, u.email, t.name as templateName FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_card_templates t ON c.templateId = t.id ORDER BY c.createdAt DESC`);
   return (result as any)[0] ?? [];
 }

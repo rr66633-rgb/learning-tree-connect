@@ -2694,3 +2694,25 @@ Fix:
 
 ## Bug Fix - Invoice PDF Generation
 - [x] Fix "حدث خطأ أثناء توليد الفاتورة" error when downloading invoice PDF
+
+## Security & Data Isolation Improvements
+- [ ] Implement multi-tenancy data isolation (organizationId filtering in all db queries)
+- [ ] Add global error handling middleware for tRPC procedures
+- [ ] Add rate limiting for login and OTP endpoints
+
+## Security Improvements - Multi-Tenancy Data Isolation Enhancement
+- [x] Add organizationId filtering to getInvoices() in db.ts
+- [x] Add organizationId filtering to getAllConversations() in db.ts
+- [x] Add organizationId filtering to getLoyaltyRewards() in db.ts
+- [x] Add organizationId filtering to getLoyaltySettings() in db.ts
+- [x] Add organizationId filtering to getAllParentsLoyaltyPoints() in db.ts
+- [x] Add organizationId filtering to getAllRedemptions() in db.ts
+- [x] Add organizationId filtering to getLoyaltyPartners() in db.ts
+- [x] Add organizationId filtering to getAllLoyaltyPartners() in db.ts
+- [x] Add organizationId filtering to getAllLoyaltyCards() in db.ts
+- [x] Update router calls to pass ctx.user.organizationId to all above functions
+- [x] Add global tRPC error formatter with Arabic error messages
+- [x] Add rate limiting for auth.forgotPassword endpoint
+- [x] Add rate limiting for auth.sendPhoneOtp endpoint
+- [x] Add rate limiting for auth.verifyRegistration endpoint
+- [x] Add rate limiting for auth.verifyResetOtp endpoint

@@ -222,7 +222,11 @@ async function startServer() {
   app.use('/api/trpc/auth.login', authRateLimit);
   app.use('/api/trpc/auth.register', authRateLimit);
   app.use('/api/trpc/auth.requestPasswordReset', authRateLimit);
+  app.use('/api/trpc/auth.forgotPassword', authRateLimit);
+  app.use('/api/trpc/auth.sendPhoneOtp', otpRateLimit);
   app.use('/api/trpc/auth.verifyOtp', otpRateLimit);
+  app.use('/api/trpc/auth.verifyRegistration', otpRateLimit);
+  app.use('/api/trpc/auth.verifyResetOtp', otpRateLimit);
   app.use('/api/trpc/auth.changePassword', authRateLimit);
 
   // Apply rate limits to upload endpoints
