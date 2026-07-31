@@ -2675,3 +2675,7 @@ Fix:
 - [x] Fix logo not displaying in invoice print template header (make URL absolute)
 - [x] Ensure logo URL is properly loaded and rendered in print view (wait for images before print)
 - [x] Fix both PDF generation and direct print functions
+- [x] Pre-fetch logo as data URL to avoid CORS/redirect issues with html2canvas
+
+## Bug Fix: Waitlist Page Shows Landing (صفحة قائمة الانتظار تفتح صفحة الهبوط)
+- [x] Skip splash screen for public pages (/waitlist, /pricing, /privacy, /terms)

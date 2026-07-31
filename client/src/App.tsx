@@ -632,8 +632,12 @@ function RoleRouter() {
 }
 
 function App() {
+  const [location] = useLocation();
+  const isPublicPage = location === "/waitlist" || location === "/pricing" || location === "/privacy" || location === "/terms" || location.startsWith("/waitlist/");
   const [showSplash, setShowSplash] = useState(() => {
     // Show splash only on first load (not on HMR or navigation)
+    // Skip splash for public pages
+    if (isPublicPage) return false;
     const hasShown = sessionStorage.getItem('splash_shown');
     return !hasShown;
   });

@@ -153,9 +153,26 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   const centerName = centerInfo?.centerName || 'نشأة';
   const vatNumber = centerInfo?.vatNumber || '';
   const commercialRegister = centerInfo?.commercialRegister || '';
-  // Make logo URL absolute so it works in about:blank print windows and html2canvas
+  // Make logo URL absolute and pre-fetch as data URL to avoid CORS/redirect issues with html2canvas
   const rawLogoUrl = centerInfo?.logoUrl || '';
-  const logoUrl = rawLogoUrl && rawLogoUrl.startsWith('/') ? `${window.location.origin}${rawLogoUrl}` : rawLogoUrl;
+  const absoluteLogoUrl = rawLogoUrl && rawLogoUrl.startsWith('/') ? `${window.location.origin}${rawLogoUrl}` : rawLogoUrl;
+  let logoUrl = absoluteLogoUrl;
+  if (absoluteLogoUrl) {
+    try {
+      const logoResp = await fetch(absoluteLogoUrl);
+      const logoBlob = await logoResp.blob();
+      logoUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(absoluteLogoUrl);
+        reader.readAsDataURL(logoBlob);
+      });
+      console.log('[PDF] Logo pre-fetched as data URL');
+    } catch (err) {
+      console.warn('[PDF] Failed to pre-fetch logo:', err);
+      logoUrl = absoluteLogoUrl;
+    }
+  }
   const statusLabel = STATUS_LABELS[invoice.status] || invoice.status;
   const statusColor = STATUS_COLORS[invoice.status] || '#333';
   const subtotal = Number(invoice.subtotal || 0);
@@ -345,9 +362,24 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
   const centerName = centerInfo?.centerName || 'نشأة';
   const vatNumber = centerInfo?.vatNumber || '';
   const commercialRegister = centerInfo?.commercialRegister || '';
-  // Make logo URL absolute so it works in about:blank print windows
+  // Make logo URL absolute and pre-fetch as data URL for about:blank print windows
   const rawLogoUrl = centerInfo?.logoUrl || '';
-  const logoUrl = rawLogoUrl && rawLogoUrl.startsWith('/') ? `${window.location.origin}${rawLogoUrl}` : rawLogoUrl;
+  const absoluteLogoUrl = rawLogoUrl && rawLogoUrl.startsWith('/') ? `${window.location.origin}${rawLogoUrl}` : rawLogoUrl;
+  let logoUrl = absoluteLogoUrl;
+  if (absoluteLogoUrl) {
+    try {
+      const logoResp = await fetch(absoluteLogoUrl);
+      const logoBlob = await logoResp.blob();
+      logoUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(absoluteLogoUrl);
+        reader.readAsDataURL(logoBlob);
+      });
+    } catch {
+      logoUrl = absoluteLogoUrl;
+    }
+  }
   const statusLabel = STATUS_LABELS[invoice.status] || invoice.status;
   const statusColor = STATUS_COLORS[invoice.status] || '#333';
   const subtotal = Number(invoice.subtotal || 0);
