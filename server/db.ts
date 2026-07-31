@@ -172,6 +172,12 @@ export async function getAllUsers(organizationId?: number) {
 export async function getChildIdsForParent(parentId: number): Promise<number[]> {
   const db = await getDb();
   if (!db) return [];
+  // Use parent_children junction table (primary) with fallback to legacy children.parentId
+  const links = await db.select({ childId: parentChildren.childId }).from(parentChildren).where(eq(parentChildren.parentId, parentId));
+  if (links.length > 0) {
+    return links.map(r => r.childId);
+  }
+  // Fallback to legacy parentId column
   const result = await db.select({ id: children.id }).from(children).where(eq(children.parentId, parentId));
   return result.map(r => r.id);
 }

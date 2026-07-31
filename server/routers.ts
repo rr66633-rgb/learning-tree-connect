@@ -663,7 +663,7 @@ export const appRouter = router({
     list: protectedProcedure.input(z.object({ parentId: z.number().optional(), classId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
       // Parents can only see their own children
       if (ctx.user?.role === 'parent') {
-        return db.getChildren(ctx.user.id);
+        return db.getChildrenForParent(ctx.user.id);
       }
       // If classId filter is provided, return children for that class
       if (input?.classId) {
