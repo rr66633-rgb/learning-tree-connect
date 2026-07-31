@@ -345,6 +345,7 @@ export const waitingList = mysqlTable("waiting_list", {
   dateOfBirth: timestamp("dateOfBirth"),
   preferredClass: varchar("preferredClass", { length: 100 }),
   notes: text("notes"),
+  organizationId: int("organizationId"),
   status: mysqlEnum("status", ["waiting", "contacted", "enrolled", "cancelled"]).default("waiting").notNull(),
   priority: int("priority").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

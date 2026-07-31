@@ -2679,3 +2679,10 @@ Fix:
 
 ## Bug Fix: Waitlist Page Shows Landing (صفحة قائمة الانتظار تفتح صفحة الهبوط)
 - [x] Skip splash screen for public pages (/waitlist, /pricing, /privacy, /terms)
+
+## Standalone Public Waitlist Page
+- [x] Add organizationId column to waiting_list table
+- [x] Create public REST API endpoint to list active organizations (for waitlist page)
+- [x] Update publicRegister to accept organizationId
+- [x] Create standalone public waitlist HTML page (bypasses OAuth gate)
+- [x] Add nursery selection dropdown to waitlist form

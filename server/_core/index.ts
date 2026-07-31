@@ -131,7 +131,9 @@ async function startServer() {
         url.startsWith('/api/upload-photo') ||
         url.startsWith('/api/upload-document') ||
         url.startsWith('/api/upload-media') ||
-        url.startsWith('/api/upload')) {
+        url.startsWith('/api/upload') ||
+        // Skip CSRF for public API endpoints (waitlist form from external page)
+        url.startsWith('/api/public/')) {
       return next();
     }
 
@@ -1218,6 +1220,74 @@ async function startServer() {
       return res.json({ status: result.connected ? 'connected' : 'error', ...result });
     } catch (err: any) {
       return res.status(500).json({ status: 'error', error: err.message });
+    }
+  });
+
+  // ============ PUBLIC REST API (no OAuth required) ============
+  // Allow any origin for public API endpoints (standalone waitlist page)
+  app.use('/api/public', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
+    next();
+  });
+
+  // List active organizations for public waitlist form
+  app.get('/api/public/organizations', async (req, res) => {
+    try {
+      const { getDb } = await import('../db');
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: 'Database not available' });
+      const { organizations } = await import('../../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      const orgs = await db.select({
+        id: organizations.id,
+        name: organizations.name,
+        nameAr: organizations.nameAr,
+        city: organizations.city,
+        logoUrl: organizations.logoUrl,
+      }).from(organizations).where(eq(organizations.status, 'active'));
+      res.json({ organizations: orgs });
+    } catch (err: any) {
+      console.error('[Public API] Error fetching organizations:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Public waitlist registration
+  app.post('/api/public/waitlist', async (req, res) => {
+    try {
+      const { childName, parentName, phone, email, dateOfBirth, preferredClass, notes, organizationId } = req.body;
+      if (!childName || !parentName || !phone) {
+        return res.status(400).json({ error: 'يرجى تعبئة الحقول المطلوبة (اسم الطفل، اسم ولي الأمر، رقم الجوال)' });
+      }
+      const { getDb } = await import('../db');
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: 'Database not available' });
+      const { waitingList } = await import('../../drizzle/schema');
+      const result = await db.insert(waitingList).values({
+        childName,
+        parentName,
+        phone,
+        email: email || null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        preferredClass: preferredClass || null,
+        notes: notes || null,
+        organizationId: organizationId ? parseInt(organizationId) : null,
+        status: 'waiting',
+        priority: 0,
+      });
+      // Notify owner
+      try {
+        const { notifyOwner } = await import('./notification');
+        const orgName = organizationId ? ` (حضانة #${organizationId})` : '';
+        await notifyOwner({ title: 'تسجيل جديد في قائمة الانتظار', content: `تم تسجيل ${childName} (ولي الأمر: ${parentName})${orgName} في قائمة الانتظار` });
+      } catch {}
+      res.json({ success: true, id: result[0].insertId });
+    } catch (err: any) {
+      console.error('[Public API] Error registering waitlist:', err);
+      res.status(500).json({ error: 'حدث خطأ أثناء التسجيل' });
     }
   });
 
