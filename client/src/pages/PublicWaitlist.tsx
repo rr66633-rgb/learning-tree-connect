@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, TreePine, Baby, User, Phone, Mail, Calendar, BookOpen, StickyNote } from "lucide-react";
+import { CheckCircle2, Loader2, TreePine, Baby, User, Phone, Mail, Calendar, BookOpen, StickyNote, Building2 } from "lucide-react";
 
 export default function PublicWaitlist() {
   const [submitted, setSubmitted] = useState(false);
@@ -19,7 +19,11 @@ export default function PublicWaitlist() {
     dateOfBirth: "",
     preferredClass: "",
     notes: "",
+    organizationId: "",
   });
+
+  // Fetch organizations for the dropdown
+  const { data: organizations, isLoading: orgsLoading } = trpc.waitingList.publicOrganizations.useQuery();
 
   const registerMutation = trpc.waitingList.publicRegister.useMutation({
     onSuccess: () => {
@@ -45,6 +49,7 @@ export default function PublicWaitlist() {
       dateOfBirth: form.dateOfBirth || undefined,
       preferredClass: form.preferredClass || undefined,
       notes: form.notes.trim() || undefined,
+      organizationId: form.organizationId ? Number(form.organizationId) : undefined,
     });
   };
 
@@ -62,7 +67,7 @@ export default function PublicWaitlist() {
                 شكراً لتسجيلكم في قائمة الانتظار. سيتم التواصل معكم قريباً لتأكيد التسجيل.
               </p>
             </div>
-            <Button onClick={() => { setSubmitted(false); setForm({ childName: "", parentName: "", phone: "", email: "", dateOfBirth: "", preferredClass: "", notes: "" }); }} variant="outline" className="w-full">
+            <Button onClick={() => { setSubmitted(false); setForm({ childName: "", parentName: "", phone: "", email: "", dateOfBirth: "", preferredClass: "", notes: "", organizationId: "" }); }} variant="outline" className="w-full">
               تسجيل طفل آخر
             </Button>
           </CardContent>
@@ -87,6 +92,26 @@ export default function PublicWaitlist() {
         <Card className="shadow-lg border-0">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Organization/Nursery Selection */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Building2 className="h-4 w-4 text-emerald-600" />
+                  الحضانة <span className="text-red-500">*</span>
+                </Label>
+                <Select value={form.organizationId} onValueChange={(v) => setForm({ ...form, organizationId: v })}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder={orgsLoading ? "جاري تحميل الحضانات..." : "اختر الحضانة"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations?.map((org) => (
+                      <SelectItem key={org.id} value={String(org.id)}>
+                        {org.nameAr || org.name}{org.city ? ` - ${org.city}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Child Name */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-medium">

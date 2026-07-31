@@ -3,7 +3,7 @@ import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, announcementReads, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
 import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
-import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses, organizations } from "../drizzle/schema";
 import type { InsertNurseryRegistration } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import type { InsertDevelopmentalAssessment, InsertAssessmentResponse } from "../drizzle/schema";
@@ -2906,4 +2906,20 @@ export async function deleteDevelopmentalAssessment(id: number) {
   if (!database) throw new Error('Database not available');
   await database.delete(assessmentResponses).where(eq(assessmentResponses.assessmentId, id));
   await database.delete(developmentalAssessments).where(eq(developmentalAssessments.id, id));
+}
+
+
+// ============ PUBLIC ORGANIZATIONS ============
+export async function getActiveOrganizations() {
+  const database = await getDb();
+  if (!database) return [];
+  const rows = await database.select({
+    id: organizations.id,
+    name: organizations.name,
+    nameAr: organizations.nameAr,
+    city: organizations.city,
+    logoUrl: organizations.logoUrl,
+  }).from(organizations)
+    .where(eq(organizations.status, 'active'));
+  return rows;
 }

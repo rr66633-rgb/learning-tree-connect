@@ -2686,3 +2686,8 @@ Fix:
 - [x] Update publicRegister to accept organizationId
 - [x] Create standalone public waitlist HTML page (bypasses OAuth gate)
 - [x] Add nursery selection dropdown to waitlist form
+
+## Waitlist Page - Add Nursery Dropdown
+- [x] Add tRPC publicProcedure to list organizations for waitlist
+- [x] Add nursery selection dropdown to PublicWaitlist component
+- [x] Update publicRegister mutation to send organizationId

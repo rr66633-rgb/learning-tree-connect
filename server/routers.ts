@@ -2964,6 +2964,10 @@ export const appRouter = router({
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_waiting_list', resource: 'waiting_list', resourceId: input.id, details: `Deleted waiting list entry #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
+    // Public: list active organizations for nursery selection dropdown
+    publicOrganizations: publicProcedure.query(async () => {
+      return db.getActiveOrganizations();
+    }),
     // Public registration - no auth required, for parents to register via shared link
     publicRegister: publicProcedure.input(z.object({
       childName: z.string().min(1),
@@ -2973,6 +2977,7 @@ export const appRouter = router({
       dateOfBirth: z.string().optional(),
       preferredClass: z.string().optional(),
       notes: z.string().optional(),
+      organizationId: z.number().optional(),
     })).mutation(async ({ input }) => {
       const entry = await db.createWaitingListEntry({
         childName: input.childName,
@@ -2982,6 +2987,7 @@ export const appRouter = router({
         dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
         preferredClass: input.preferredClass || null,
         notes: input.notes || null,
+        organizationId: input.organizationId || null,
         status: 'waiting',
         priority: 0,
       });
