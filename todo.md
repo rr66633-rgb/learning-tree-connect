@@ -2691,3 +2691,6 @@ Fix:
 - [x] Add tRPC publicProcedure to list organizations for waitlist
 - [x] Add nursery selection dropdown to PublicWaitlist component
 - [x] Update publicRegister mutation to send organizationId
+
+## Bug Fix - Invoice PDF Generation
+- [x] Fix "حدث خطأ أثناء توليد الفاتورة" error when downloading invoice PDF
