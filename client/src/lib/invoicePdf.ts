@@ -153,7 +153,9 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
   const centerName = centerInfo?.centerName || 'نشأة';
   const vatNumber = centerInfo?.vatNumber || '';
   const commercialRegister = centerInfo?.commercialRegister || '';
-  const logoUrl = centerInfo?.logoUrl || '';
+  // Make logo URL absolute so it works in about:blank print windows and html2canvas
+  const rawLogoUrl = centerInfo?.logoUrl || '';
+  const logoUrl = rawLogoUrl && rawLogoUrl.startsWith('/') ? `${window.location.origin}${rawLogoUrl}` : rawLogoUrl;
   const statusLabel = STATUS_LABELS[invoice.status] || invoice.status;
   const statusColor = STATUS_COLORS[invoice.status] || '#333';
   const subtotal = Number(invoice.subtotal || 0);
@@ -343,7 +345,9 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
   const centerName = centerInfo?.centerName || 'نشأة';
   const vatNumber = centerInfo?.vatNumber || '';
   const commercialRegister = centerInfo?.commercialRegister || '';
-  const logoUrl = centerInfo?.logoUrl || '';
+  // Make logo URL absolute so it works in about:blank print windows
+  const rawLogoUrl = centerInfo?.logoUrl || '';
+  const logoUrl = rawLogoUrl && rawLogoUrl.startsWith('/') ? `${window.location.origin}${rawLogoUrl}` : rawLogoUrl;
   const statusLabel = STATUS_LABELS[invoice.status] || invoice.status;
   const statusColor = STATUS_COLORS[invoice.status] || '#333';
   const subtotal = Number(invoice.subtotal || 0);
@@ -476,10 +480,31 @@ export async function printInvoice(invoice: InvoiceData, centerInfo?: CenterInfo
       ${invoiceHtml}
       <script>
         window.onload = function() {
-          setTimeout(function() {
-            window.print();
-            window.onafterprint = function() { window.close(); };
-          }, 500);
+          // Wait for all images to load before printing
+          var images = document.querySelectorAll('img');
+          var loaded = 0;
+          var total = images.length;
+          function tryPrint() {
+            setTimeout(function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            }, 300);
+          }
+          if (total === 0) {
+            tryPrint();
+          } else {
+            images.forEach(function(img) {
+              if (img.complete) {
+                loaded++;
+                if (loaded >= total) tryPrint();
+              } else {
+                img.onload = function() { loaded++; if (loaded >= total) tryPrint(); };
+                img.onerror = function() { loaded++; if (loaded >= total) tryPrint(); };
+              }
+            });
+            // Fallback: print after 3 seconds even if images haven't loaded
+            setTimeout(tryPrint, 3000);
+          }
         };
       </script>
     </body>

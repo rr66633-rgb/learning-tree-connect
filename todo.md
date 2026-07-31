@@ -2670,3 +2670,8 @@ Fix:
 - [x] Add input fields for SendGrid credentials (API Key, From Email, From Name)
 - [x] Add enable/disable toggle for each service
 - [x] Save credentials to database and update process.env dynamically
+
+## Bug Fix: Logo Not Showing in Invoice Print (الشعار لا يظهر في الفاتورة)
+- [x] Fix logo not displaying in invoice print template header (make URL absolute)
+- [x] Ensure logo URL is properly loaded and rendered in print view (wait for images before print)
+- [x] Fix both PDF generation and direct print functions
