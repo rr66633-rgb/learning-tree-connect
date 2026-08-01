@@ -2735,4 +2735,4 @@ Fix:
 - [x] Set FIREBASE_PRIVATE_KEY environment variable
 - [x] Replace all old webPush/pushTriggers with Firebase Admin sendPushToUser/sendPushToUsers
 - [x] Unit tests for Firebase push notification system (7 tests passing)
-- [ ] Build TWA Android app for Google Play
+- [x] Build TWA Android app for Google Play (APK + AAB built, assetlinks.json deployed, keystore generated)

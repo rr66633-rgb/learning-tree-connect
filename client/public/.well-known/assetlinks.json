@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.naashah.app",
+      "sha256_cert_fingerprints": [
+        "CC:C5:D1:D0:8C:C7:2F:A4:F6:1A:4F:7F:20:2B:5B:B2:90:E8:28:9C:FE:46:B5:A2:CB:79:75:04:CF:49:71:90"
+      ]
+    }
+  }
+]
