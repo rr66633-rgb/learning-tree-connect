@@ -1,26 +1,26 @@
 /**
  * Weekly Plan PDF Generator (Client-side)
- * Uses html2canvas + jsPDF to render Arabic text correctly.
- * Creates a hidden HTML element, renders it to canvas, then converts to PDF.
- * Works on all devices including iOS Safari.
+ * Opens a new window with clean HTML and uses the browser's native print-to-PDF.
+ * This approach works on all devices including iOS Safari without needing
+ * any external libraries (no html2canvas, no oklch issues).
  */
 
 // Section colors matching the app UI
 const SECTION_COLORS: Record<string, string> = {
-  theme_overview: "#2e7d32",
-  learning_objectives: "#1565c0",
-  arabic_activities: "#6a1b9a",
-  english_activities: "#00838f",
-  math_activities: "#e65100",
-  science_activities: "#2e7d32",
-  art_activities: "#ad1457",
-  sensory_activities: "#4527a0",
-  physical_activities: "#ef6c00",
-  quran_islamic: "#1b5e20",
-  story_of_week: "#5d4037",
-  song_of_week: "#c62828",
-  home_activity: "#00695c",
-  parent_notes: "#37474f",
+  theme_overview: "#2E7D32",
+  learning_objectives: "#1565C0",
+  arabic_activities: "#6A1B9A",
+  english_activities: "#00838F",
+  math_activities: "#E65100",
+  science_activities: "#2E7D32",
+  art_activities: "#AD1457",
+  sensory_activities: "#4527A0",
+  physical_activities: "#EF6C00",
+  quran_islamic: "#1B5E20",
+  story_of_week: "#5D4037",
+  song_of_week: "#C62828",
+  home_activity: "#00695C",
+  parent_notes: "#37474F",
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -40,69 +40,29 @@ const SECTION_LABELS: Record<string, string> = {
   parent_notes: "ملاحظات لأولياء الأمور",
 };
 
+const SECTION_ICONS: Record<string, string> = {
+  theme_overview: "🌟",
+  learning_objectives: "🎯",
+  arabic_activities: "📖",
+  english_activities: "🔤",
+  math_activities: "🔢",
+  science_activities: "🔬",
+  art_activities: "🎨",
+  sensory_activities: "🖐️",
+  physical_activities: "⚽",
+  quran_islamic: "🕌",
+  story_of_week: "📚",
+  song_of_week: "🎵",
+  home_activity: "🏠",
+  parent_notes: "💬",
+};
+
 const AGE_GROUP_LABELS: Record<string, string> = {
   nursery: "حضانة (٢-٣ سنوات)",
   kg1: "تمهيدي أول KG1 (٣-٤ سنوات)",
   kg2: "تمهيدي ثاني KG2 (٤-٥ سنوات)",
   kg3: "تمهيدي ثالث KG3 (٥-٦ سنوات)",
 };
-
-function flattenArrayToHtml(arr: any[]): string {
-  return arr
-    .map((item, i) => {
-      if (typeof item === "string") return `<div class="plan-item"><span class="item-num">${i + 1}.</span> ${escapeHtml(item)}</div>`;
-      if (typeof item === "object" && item !== null) {
-        const parts: string[] = [];
-        if (item.title || item.name) parts.push(`<strong>${escapeHtml(item.title || item.name)}</strong>`);
-        if (item.description) parts.push(escapeHtml(item.description));
-        if (item.implementation) parts.push(escapeHtml(item.implementation));
-        if (item.materials) {
-          const mats = Array.isArray(item.materials) ? item.materials.join("، ") : item.materials;
-          parts.push(`<span class="label">المواد:</span> ${escapeHtml(mats)}`);
-        }
-        if (item.duration) parts.push(`<span class="label">المدة:</span> ${escapeHtml(item.duration)}`);
-        if (item.steps) {
-          const steps = Array.isArray(item.steps) ? item.steps.join(" ← ") : item.steps;
-          parts.push(`<span class="label">الخطوات:</span> ${escapeHtml(steps)}`);
-        }
-        if (item.concept || item.math_concept) parts.push(escapeHtml(item.concept || item.math_concept));
-        if (item.experiment) parts.push(escapeHtml(item.experiment));
-        if (item.targeted_senses) {
-          const senses = Array.isArray(item.targeted_senses) ? item.targeted_senses.join("، ") : item.targeted_senses;
-          parts.push(`<span class="label">الحواس المستهدفة:</span> ${escapeHtml(senses)}`);
-        }
-        if (item.targeted_skills) {
-          const skills = Array.isArray(item.targeted_skills) ? item.targeted_skills.join("، ") : item.targeted_skills;
-          parts.push(`<span class="label">المهارات المستهدفة:</span> ${escapeHtml(skills)}`);
-        }
-        if (item.surah) parts.push(`<span class="label">السورة:</span> ${escapeHtml(item.surah)}`);
-        if (item.verse) parts.push(escapeHtml(item.verse));
-        if (item.dua) parts.push(`<span class="label">الدعاء:</span> ${escapeHtml(item.dua)}`);
-        if (item.islamic_value) parts.push(`<span class="label">القيمة الإسلامية:</span> ${escapeHtml(item.islamic_value)}`);
-        return `<div class="plan-item"><span class="item-num">${i + 1}.</span> ${parts.join(" <span class='sep'>|</span> ")}</div>`;
-      }
-      return `<div class="plan-item"><span class="item-num">${i + 1}.</span> ${escapeHtml(String(item))}</div>`;
-    })
-    .join("");
-}
-
-function flattenObjectToHtml(obj: Record<string, any>): string {
-  const lines: string[] = [];
-  for (const [key, value] of Object.entries(obj)) {
-    if (!value) continue;
-    const label = key.replace(/_/g, " ");
-    if (typeof value === "string") {
-      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`);
-    } else if (Array.isArray(value)) {
-      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${escapeHtml(value.join("، "))}</div>`);
-    } else if (typeof value === "object") {
-      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${flattenObjectToHtml(value)}</div>`);
-    } else {
-      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${escapeHtml(String(value))}</div>`);
-    }
-  }
-  return lines.join("");
-}
 
 function escapeHtml(text: string): string {
   return text
@@ -112,322 +72,297 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function prepareSectionsHtml(plan: any): Record<string, string> {
+function flattenArrayToText(arr: any[]): string {
+  return arr
+    .map((item, i) => {
+      if (typeof item === "string") return `${i + 1}. ${item}`;
+      if (typeof item === "object" && item !== null) {
+        const parts: string[] = [];
+        if (item.title || item.name) parts.push(item.title || item.name);
+        if (item.description) parts.push(item.description);
+        if (item.implementation) parts.push(item.implementation);
+        if (item.materials) {
+          const mats = Array.isArray(item.materials) ? item.materials.join("، ") : item.materials;
+          parts.push(`المواد: ${mats}`);
+        }
+        if (item.duration) parts.push(`المدة: ${item.duration}`);
+        if (item.steps) {
+          const steps = Array.isArray(item.steps) ? item.steps.join(" ← ") : item.steps;
+          parts.push(`الخطوات: ${steps}`);
+        }
+        if (item.concept || item.math_concept) parts.push(item.concept || item.math_concept);
+        if (item.experiment) parts.push(item.experiment);
+        if (item.targeted_senses) {
+          const senses = Array.isArray(item.targeted_senses) ? item.targeted_senses.join("، ") : item.targeted_senses;
+          parts.push(`الحواس المستهدفة: ${senses}`);
+        }
+        if (item.targeted_skills) {
+          const skills = Array.isArray(item.targeted_skills) ? item.targeted_skills.join("، ") : item.targeted_skills;
+          parts.push(`المهارات المستهدفة: ${skills}`);
+        }
+        if (item.surah) parts.push(`السورة: ${item.surah}`);
+        if (item.verse) parts.push(item.verse);
+        if (item.dua) parts.push(`الدعاء: ${item.dua}`);
+        if (item.islamic_value) parts.push(`القيمة الإسلامية: ${item.islamic_value}`);
+        return `${i + 1}. ${parts.join("\n   ")}`;
+      }
+      return `${i + 1}. ${String(item)}`;
+    })
+    .join("\n");
+}
+
+function flattenObjectToText(obj: Record<string, any>): string {
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(obj)) {
+    if (!value) continue;
+    const label = key.replace(/_/g, " ");
+    if (typeof value === "string") {
+      lines.push(`${label}: ${value}`);
+    } else if (Array.isArray(value)) {
+      lines.push(`${label}: ${value.join("، ")}`);
+    } else if (typeof value === "object") {
+      lines.push(`${label}: ${flattenObjectToText(value)}`);
+    } else {
+      lines.push(`${label}: ${String(value)}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+function prepareSections(plan: any): Record<string, string> {
   const result: Record<string, string> = {};
   const sections = plan.sections as Record<string, any>;
   if (sections) {
     for (const [key, value] of Object.entries(sections)) {
       if (!value) continue;
       if (typeof value === "string") {
-        result[key] = `<div class="plan-item">${escapeHtml(value)}</div>`;
+        result[key] = value;
       } else if (Array.isArray(value)) {
-        result[key] = flattenArrayToHtml(value);
+        result[key] = flattenArrayToText(value);
       } else if (typeof value === "object") {
-        result[key] = flattenObjectToHtml(value);
+        result[key] = flattenObjectToText(value);
       } else {
-        result[key] = `<div class="plan-item">${escapeHtml(String(value))}</div>`;
+        result[key] = String(value);
       }
     }
   }
   return result;
 }
 
-/**
- * Build the full HTML document for the weekly plan
- */
-function buildPlanHtml(plan: any): string {
-  const theme = plan.theme || "خطة";
+function buildHtmlForPdf(plan: any): string {
+  const theme = plan.theme || "";
   const ageGroup = plan.ageGroup || "";
   const weekStart = plan.weekStartDate || plan.weekStart || "";
   const weekEnd = plan.weekEndDate || plan.weekEnd || "";
+  const language = plan.language || "ar";
   const className = plan.className || "";
-  const sections = prepareSectionsHtml(plan);
+  const sections = prepareSections(plan);
+
   const ageLabel = AGE_GROUP_LABELS[ageGroup] || ageGroup;
+  const langLabel = language === "ar" ? "عربي" : language === "en" ? "إنجليزي" : "ثنائي اللغة";
 
   const sectionKeys = Object.keys(SECTION_LABELS);
-  const activeSections = sectionKeys.filter(k => sections[k]);
 
   // Build table of contents
-  const tocHtml = activeSections
-    .map((key, i) => {
-      const label = SECTION_LABELS[key] || key;
+  let tocHtml = "";
+  let tocIndex = 0;
+  for (const key of sectionKeys) {
+    if (sections[key]) {
+      tocIndex++;
+      const icon = SECTION_ICONS[key] || "📋";
       const color = SECTION_COLORS[key] || "#333";
-      return `<div class="toc-item" style="color: ${color}">${i + 1}. ${label}</div>`;
-    })
-    .join("");
+      tocHtml += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;direction:rtl">
+        <span style="font-size:14px">${icon}</span>
+        <span style="color:${color};font-weight:600">${tocIndex}.</span>
+        <span>${escapeHtml(SECTION_LABELS[key])}</span>
+      </div>`;
+    }
+  }
 
   // Build section pages
-  const sectionPages = activeSections
-    .map(key => {
-      const content = sections[key];
-      if (!content) return "";
-      const color = SECTION_COLORS[key] || "#333";
-      const label = SECTION_LABELS[key] || key;
-      return `
-        <div class="page section-page">
-          <div class="section-header" style="background-color: ${color}">
-            <h2>${label}</h2>
-          </div>
-          <div class="section-content">
-            ${content}
-          </div>
-          <div class="page-footer">نشأة | ${escapeHtml(theme)} | ${escapeHtml(weekStart)}</div>
+  let sectionsHtml = "";
+  for (const key of sectionKeys) {
+    const content = sections[key];
+    if (!content) continue;
+
+    const color = SECTION_COLORS[key] || "#333333";
+    const icon = SECTION_ICONS[key] || "📋";
+    const label = SECTION_LABELS[key] || key;
+
+    // Format content - convert newlines to paragraphs/list items
+    const lines = content.split("\n").filter((l: string) => l.trim());
+    let contentHtml = "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("•") || trimmed.startsWith("-")) {
+        contentHtml += `<div style="padding:3px 0;padding-right:16px;direction:rtl">${escapeHtml(trimmed)}</div>`;
+      } else if (/^\d+[\.\)]/.test(trimmed)) {
+        contentHtml += `<div style="padding:3px 0;padding-right:16px;direction:rtl">${escapeHtml(trimmed)}</div>`;
+      } else {
+        contentHtml += `<p style="margin:6px 0;line-height:1.9;direction:rtl">${escapeHtml(trimmed)}</p>`;
+      }
+    }
+
+    sectionsHtml += `
+      <div style="page-break-before:always;padding-top:0">
+        <div style="background:${color};color:white;padding:14px 20px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:10px;direction:rtl">
+          <span style="font-size:20px">${icon}</span>
+          <span style="font-size:16px;font-weight:bold">${escapeHtml(label)}</span>
         </div>
-      `;
-    })
-    .join("");
+        <div style="font-size:12px;line-height:1.9;color:#333;padding:0 8px;direction:rtl;text-align:right">
+          ${contentHtml}
+        </div>
+      </div>
+    `;
+  }
 
   return `
-    <div id="weekly-plan-pdf-container" dir="rtl" style="font-family: 'Noto Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; width: 794px; background: white; color: #333;">
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
-        
-        #weekly-plan-pdf-container * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-        #weekly-plan-pdf-container {
-          font-size: 14px;
-          line-height: 1.6;
-        }
-        .page {
-          width: 794px;
-          min-height: 1123px;
-          padding: 40px;
-          position: relative;
-          page-break-after: always;
-          background: white;
-        }
-        .cover-header {
-          background-color: #1b5e20;
-          border-radius: 8px;
-          padding: 30px 25px;
-          color: white;
-          margin-bottom: 25px;
-        }
-        .cover-header .brand {
-          font-size: 14px;
-          opacity: 0.9;
-          margin-bottom: 8px;
-        }
-        .cover-header h1 {
-          font-size: 26px;
-          font-weight: 700;
-          margin-bottom: 6px;
-        }
-        .cover-header .theme-name {
-          font-size: 20px;
-          font-weight: 600;
-          margin-bottom: 8px;
-        }
-        .cover-header .dates {
-          font-size: 13px;
-          opacity: 0.85;
-        }
-        .details-box {
-          background: #f8faf9;
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          padding: 20px 25px;
-          margin-bottom: 25px;
-        }
-        .details-box h3 {
-          color: #1b5e20;
-          font-size: 15px;
-          margin-bottom: 12px;
-        }
-        .details-box .detail-line {
-          color: #555;
-          font-size: 13px;
-          margin-bottom: 6px;
-        }
-        .toc-box {
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          padding: 20px 25px;
-        }
-        .toc-box h3 {
-          color: #1b5e20;
-          font-size: 15px;
-          margin-bottom: 12px;
-        }
-        .toc-item {
-          font-size: 13px;
-          padding: 3px 0;
-          font-weight: 600;
-        }
-        .section-header {
-          border-radius: 6px;
-          padding: 12px 20px;
-          color: white;
-          margin-bottom: 20px;
-        }
-        .section-header h2 {
-          font-size: 18px;
-          font-weight: 700;
-        }
-        .section-content {
-          padding: 0 5px;
-        }
-        .plan-item {
-          margin-bottom: 10px;
-          font-size: 13px;
-          line-height: 1.7;
-          padding: 6px 10px;
-          border-radius: 4px;
-          background: #fafafa;
-          border-right: 3px solid #e0e0e0;
-        }
-        .plan-item .item-num {
-          font-weight: 700;
-          color: #1b5e20;
-          margin-left: 4px;
-        }
-        .plan-item .label {
-          font-weight: 600;
-          color: #444;
-        }
-        .plan-item .sep {
-          color: #ccc;
-          margin: 0 4px;
-        }
-        .page-footer {
-          position: absolute;
-          bottom: 20px;
-          left: 40px;
-          right: 40px;
-          text-align: center;
-          font-size: 10px;
-          color: #aaa;
-        }
-      </style>
-
-      <!-- Cover Page -->
-      <div class="page cover-page">
-        <div class="cover-header">
-          <div class="brand">نشأة</div>
-          <h1>الخطة الأسبوعية</h1>
-          <div class="theme-name">${escapeHtml(theme)}</div>
-          <div class="dates">${escapeHtml(weekStart)} — ${escapeHtml(weekEnd)}</div>
-        </div>
-
-        <div class="details-box">
-          <h3>تفاصيل الخطة</h3>
-          <div class="detail-line">الفئة العمرية: ${escapeHtml(ageLabel)}</div>
-          <div class="detail-line">الأسبوع: ${escapeHtml(weekStart)} إلى ${escapeHtml(weekEnd)}</div>
-          ${className ? `<div class="detail-line">الفصل: ${escapeHtml(className)}</div>` : ""}
-        </div>
-
-        <div class="toc-box">
-          <h3>أقسام الخطة (${activeSections.length} مجالاً)</h3>
-          ${tocHtml}
-        </div>
-
-        <div class="page-footer">نشأة | الخطة الأسبوعية</div>
-      </div>
-
-      <!-- Section Pages -->
-      ${sectionPages}
+<div id="pdf-content" style="font-family:'Noto Sans Arabic','Arial',sans-serif;direction:rtl;text-align:right;color:#1a1a1a;font-size:12px;line-height:1.6;width:100%">
+  <!-- COVER PAGE -->
+  <div style="min-height:90vh;display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#1B5E20,#2E7D32);color:white;padding:28px;border-radius:12px;text-align:center;margin-bottom:24px">
+      <div style="font-size:14px;opacity:0.9;margin-bottom:6px">مركز شجرة التعلم</div>
+      <div style="font-size:20px;font-weight:bold;margin-bottom:8px">الخطة الأسبوعية</div>
+      <div style="font-size:18px;font-weight:bold;margin-top:10px">${escapeHtml(theme)}</div>
+      <div style="font-size:11px;opacity:0.85;margin-top:6px">${escapeHtml(weekStart)} — ${escapeHtml(weekEnd)}</div>
     </div>
-  `;
+
+    <div style="background:#f8faf9;border:1px solid #e5e7eb;border-radius:8px;padding:18px;margin-bottom:20px">
+      <div style="font-size:13px;color:#1B5E20;font-weight:bold;margin-bottom:10px">تفاصيل الخطة</div>
+      <table style="width:100%;font-size:11px;direction:rtl">
+        <tr><td style="padding:5px 0;color:#666;width:100px">الفئة العمرية:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(ageLabel)}</td></tr>
+        <tr><td style="padding:5px 0;color:#666">الأسبوع:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(weekStart)} إلى ${escapeHtml(weekEnd)}</td></tr>
+        <tr><td style="padding:5px 0;color:#666">لغة الخطة:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(langLabel)}</td></tr>
+        ${className ? `<tr><td style="padding:5px 0;color:#666">الفصل:</td><td style="padding:5px 0;font-weight:500">${escapeHtml(className)}</td></tr>` : ""}
+      </table>
+    </div>
+
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:18px">
+      <div style="font-size:13px;color:#1B5E20;font-weight:bold;margin-bottom:10px">أقسام الخطة (${tocIndex} مجالاً)</div>
+      <div style="font-size:11px;line-height:1.8">
+        ${tocHtml}
+      </div>
+    </div>
+
+    <div style="margin-top:auto;text-align:center;font-size:8px;color:#999;padding-top:16px">
+      تم إنشاؤها بواسطة مولد الخطة الأسبوعية الذكي — مركز شجرة التعلم
+      <br>
+      إطار EYFS | القيم السعودية | القيم الإسلامية
+    </div>
+  </div>
+
+  <!-- SECTION PAGES -->
+  ${sectionsHtml}
+
+  <!-- Final Footer -->
+  <div style="text-align:center;font-size:8px;color:#aaa;padding:16px 0;border-top:1px solid #eee;margin-top:16px">
+    شجرة التعلم | ${escapeHtml(theme)} | ${escapeHtml(weekStart)}
+  </div>
+</div>`;
 }
 
 /**
- * Generates and downloads a PDF of the weekly plan directly.
- * Uses html2canvas to render HTML with proper Arabic text, then converts to PDF.
- * Works on all devices including iOS Safari without needing print dialog.
+ * Generates and downloads a PDF of the weekly plan.
+ * Opens a new browser window with clean HTML (no oklch CSS) and triggers
+ * the browser's native print dialog which allows saving as PDF.
+ * This approach works on all devices and completely avoids html2canvas/oklch issues.
  */
 export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
-  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-    import("jspdf"),
-    import("html2canvas"),
-  ]);
+  // Build the HTML content
+  const htmlContent = buildHtmlForPdf(plan);
 
   const theme = plan.theme || "خطة";
   const weekStart = plan.weekStartDate || plan.weekStart || "";
 
-  // Create an iframe to isolate from page CSS (avoids oklch color parsing errors)
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.top = "-99999px";
-  iframe.style.left = "-99999px";
-  iframe.style.width = "794px";
-  iframe.style.height = "20000px";
-  iframe.style.border = "none";
-  iframe.style.opacity = "0";
-  iframe.style.pointerEvents = "none";
-  document.body.appendChild(iframe);
-
-  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    throw new Error("Failed to create iframe for PDF rendering");
-  }
-
-  // Write the HTML content into the iframe (completely isolated from page CSS)
-  const htmlContent = buildPlanHtml(plan);
-  iframeDoc.open();
-  iframeDoc.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;padding:0;background:white;">${htmlContent}</body></html>`);
-  iframeDoc.close();
-
-  // Wait for fonts to load in iframe
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  try {
-    await iframeDoc.fonts?.ready;
-  } catch {
-    // fonts.ready may not be available in all contexts
-  }
-  // Extra delay for font rendering
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  const pdfContainer = iframeDoc.querySelector("#weekly-plan-pdf-container") as HTMLElement;
-  if (!pdfContainer) {
-    document.body.removeChild(iframe);
-    throw new Error("Failed to find PDF container");
-  }
-
-  const pages = pdfContainer.querySelectorAll(".page");
-
-  // Create PDF (A4 size)
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
-
-  const pdfWidth = 210; // A4 width in mm
-  const pdfHeight = 297; // A4 height in mm
-
-  for (let i = 0; i < pages.length; i++) {
-    const page = pages[i] as HTMLElement;
-
-    if (i > 0) {
-      doc.addPage();
+  // Build a complete standalone HTML page with print styles
+  const fullHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خطة-${escapeHtml(theme)}-${escapeHtml(weekStart)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans Arabic', 'Arial', sans-serif;
+      direction: rtl;
+      text-align: right;
+      color: #1a1a1a;
+      background: #ffffff;
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 20px;
     }
+    @media print {
+      body { padding: 0; margin: 0; }
+      @page { size: A4; margin: 15mm; }
+    }
+    /* Print button styles */
+    .print-controls {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1000;
+      display: flex;
+      gap: 8px;
+      direction: ltr;
+    }
+    .print-btn {
+      background: #1B5E20;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Noto Sans Arabic', sans-serif;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .print-btn:hover { background: #2E7D32; }
+    .close-btn {
+      background: #666;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Noto Sans Arabic', sans-serif;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .close-btn:hover { background: #444; }
+    @media print {
+      .print-controls { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-controls">
+    <button class="print-btn" onclick="window.print()">طباعة / حفظ PDF ⬇️</button>
+    <button class="close-btn" onclick="window.close()">إغلاق</button>
+  </div>
+  ${htmlContent}
+</body>
+</html>`;
 
-    // Render page to canvas using html2canvas
-    const canvas = await html2canvas(page, {
-      scale: 2, // Higher quality
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: "#ffffff",
-      width: 794,
-      height: 1123,
-      logging: false,
-      windowWidth: 794,
-      windowHeight: 1123,
-    });
-
-    // Convert canvas to image and add to PDF
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
-    doc.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+  // Open a new window with the clean HTML
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    // Fallback: if popup blocked, use a Blob download
+    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `خطة-${theme}-${weekStart}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
   }
 
-  // Clean up
-  document.body.removeChild(iframe);
-
-  // Download the PDF
-  const fileName = `خطة-${theme}-${weekStart}.pdf`;
-  doc.save(fileName);
+  printWindow.document.open();
+  printWindow.document.write(fullHtml);
+  printWindow.document.close();
 }
