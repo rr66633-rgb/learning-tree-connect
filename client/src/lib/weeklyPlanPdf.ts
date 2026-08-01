@@ -347,22 +347,46 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
   const theme = plan.theme || "خطة";
   const weekStart = plan.weekStartDate || plan.weekStart || "";
 
-  // Create hidden container for rendering
-  const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.top = "-99999px";
-  container.style.left = "-99999px";
-  container.style.width = "794px";
-  container.style.zIndex = "-1";
-  container.innerHTML = buildPlanHtml(plan);
-  document.body.appendChild(container);
+  // Create an iframe to isolate from page CSS (avoids oklch color parsing errors)
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.top = "-99999px";
+  iframe.style.left = "-99999px";
+  iframe.style.width = "794px";
+  iframe.style.height = "20000px";
+  iframe.style.border = "none";
+  iframe.style.opacity = "0";
+  iframe.style.pointerEvents = "none";
+  document.body.appendChild(iframe);
 
-  // Wait for fonts to load
-  await document.fonts.ready;
-  // Small delay to ensure rendering is complete
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    throw new Error("Failed to create iframe for PDF rendering");
+  }
+
+  // Write the HTML content into the iframe (completely isolated from page CSS)
+  const htmlContent = buildPlanHtml(plan);
+  iframeDoc.open();
+  iframeDoc.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;padding:0;background:white;">${htmlContent}</body></html>`);
+  iframeDoc.close();
+
+  // Wait for fonts to load in iframe
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  try {
+    await iframeDoc.fonts?.ready;
+  } catch {
+    // fonts.ready may not be available in all contexts
+  }
+  // Extra delay for font rendering
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  const pdfContainer = container.querySelector("#weekly-plan-pdf-container") as HTMLElement;
+  const pdfContainer = iframeDoc.querySelector("#weekly-plan-pdf-container") as HTMLElement;
+  if (!pdfContainer) {
+    document.body.removeChild(iframe);
+    throw new Error("Failed to find PDF container");
+  }
+
   const pages = pdfContainer.querySelectorAll(".page");
 
   // Create PDF (A4 size)
@@ -382,7 +406,7 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
       doc.addPage();
     }
 
-    // Render page to canvas
+    // Render page to canvas using html2canvas
     const canvas = await html2canvas(page, {
       scale: 2, // Higher quality
       useCORS: true,
@@ -391,6 +415,8 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
       width: 794,
       height: 1123,
       logging: false,
+      windowWidth: 794,
+      windowHeight: 1123,
     });
 
     // Convert canvas to image and add to PDF
@@ -399,7 +425,7 @@ export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
   }
 
   // Clean up
-  document.body.removeChild(container);
+  document.body.removeChild(iframe);
 
   // Download the PDF
   const fileName = `خطة-${theme}-${weekStart}.pdf`;
