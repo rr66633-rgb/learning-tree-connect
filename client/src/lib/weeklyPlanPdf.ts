@@ -1,27 +1,26 @@
 /**
  * Weekly Plan PDF Generator (Client-side)
- * Uses jsPDF to generate a real PDF file and download it directly.
- * Works on all devices including iOS Safari without needing print dialog.
+ * Uses html2canvas + jsPDF to render Arabic text correctly.
+ * Creates a hidden HTML element, renders it to canvas, then converts to PDF.
+ * Works on all devices including iOS Safari.
  */
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 // Section colors matching the app UI
-const SECTION_COLORS: Record<string, [number, number, number]> = {
-  theme_overview: [46, 125, 50],
-  learning_objectives: [21, 101, 192],
-  arabic_activities: [106, 27, 154],
-  english_activities: [0, 131, 143],
-  math_activities: [230, 81, 0],
-  science_activities: [46, 125, 50],
-  art_activities: [173, 20, 87],
-  sensory_activities: [69, 39, 160],
-  physical_activities: [239, 108, 0],
-  quran_islamic: [27, 94, 32],
-  story_of_week: [93, 64, 55],
-  song_of_week: [198, 40, 40],
-  home_activity: [0, 105, 92],
-  parent_notes: [55, 71, 79],
+const SECTION_COLORS: Record<string, string> = {
+  theme_overview: "#2e7d32",
+  learning_objectives: "#1565c0",
+  arabic_activities: "#6a1b9a",
+  english_activities: "#00838f",
+  math_activities: "#e65100",
+  science_activities: "#2e7d32",
+  art_activities: "#ad1457",
+  sensory_activities: "#4527a0",
+  physical_activities: "#ef6c00",
+  quran_islamic: "#1b5e20",
+  story_of_week: "#5d4037",
+  song_of_week: "#c62828",
+  home_activity: "#00695c",
+  parent_notes: "#37474f",
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -48,77 +47,85 @@ const AGE_GROUP_LABELS: Record<string, string> = {
   kg3: "تمهيدي ثالث KG3 (٥-٦ سنوات)",
 };
 
-function flattenArrayToText(arr: any[]): string {
+function flattenArrayToHtml(arr: any[]): string {
   return arr
     .map((item, i) => {
-      if (typeof item === "string") return `${i + 1}. ${item}`;
+      if (typeof item === "string") return `<div class="plan-item"><span class="item-num">${i + 1}.</span> ${escapeHtml(item)}</div>`;
       if (typeof item === "object" && item !== null) {
         const parts: string[] = [];
-        if (item.title || item.name) parts.push(item.title || item.name);
-        if (item.description) parts.push(item.description);
-        if (item.implementation) parts.push(item.implementation);
+        if (item.title || item.name) parts.push(`<strong>${escapeHtml(item.title || item.name)}</strong>`);
+        if (item.description) parts.push(escapeHtml(item.description));
+        if (item.implementation) parts.push(escapeHtml(item.implementation));
         if (item.materials) {
           const mats = Array.isArray(item.materials) ? item.materials.join("، ") : item.materials;
-          parts.push(`المواد: ${mats}`);
+          parts.push(`<span class="label">المواد:</span> ${escapeHtml(mats)}`);
         }
-        if (item.duration) parts.push(`المدة: ${item.duration}`);
+        if (item.duration) parts.push(`<span class="label">المدة:</span> ${escapeHtml(item.duration)}`);
         if (item.steps) {
           const steps = Array.isArray(item.steps) ? item.steps.join(" ← ") : item.steps;
-          parts.push(`الخطوات: ${steps}`);
+          parts.push(`<span class="label">الخطوات:</span> ${escapeHtml(steps)}`);
         }
-        if (item.concept || item.math_concept) parts.push(item.concept || item.math_concept);
-        if (item.experiment) parts.push(item.experiment);
+        if (item.concept || item.math_concept) parts.push(escapeHtml(item.concept || item.math_concept));
+        if (item.experiment) parts.push(escapeHtml(item.experiment));
         if (item.targeted_senses) {
           const senses = Array.isArray(item.targeted_senses) ? item.targeted_senses.join("، ") : item.targeted_senses;
-          parts.push(`الحواس المستهدفة: ${senses}`);
+          parts.push(`<span class="label">الحواس المستهدفة:</span> ${escapeHtml(senses)}`);
         }
         if (item.targeted_skills) {
           const skills = Array.isArray(item.targeted_skills) ? item.targeted_skills.join("، ") : item.targeted_skills;
-          parts.push(`المهارات المستهدفة: ${skills}`);
+          parts.push(`<span class="label">المهارات المستهدفة:</span> ${escapeHtml(skills)}`);
         }
-        if (item.surah) parts.push(`السورة: ${item.surah}`);
-        if (item.verse) parts.push(item.verse);
-        if (item.dua) parts.push(`الدعاء: ${item.dua}`);
-        if (item.islamic_value) parts.push(`القيمة الإسلامية: ${item.islamic_value}`);
-        return `${i + 1}. ${parts.join(" | ")}`;
+        if (item.surah) parts.push(`<span class="label">السورة:</span> ${escapeHtml(item.surah)}`);
+        if (item.verse) parts.push(escapeHtml(item.verse));
+        if (item.dua) parts.push(`<span class="label">الدعاء:</span> ${escapeHtml(item.dua)}`);
+        if (item.islamic_value) parts.push(`<span class="label">القيمة الإسلامية:</span> ${escapeHtml(item.islamic_value)}`);
+        return `<div class="plan-item"><span class="item-num">${i + 1}.</span> ${parts.join(" <span class='sep'>|</span> ")}</div>`;
       }
-      return `${i + 1}. ${String(item)}`;
+      return `<div class="plan-item"><span class="item-num">${i + 1}.</span> ${escapeHtml(String(item))}</div>`;
     })
-    .join("\n");
+    .join("");
 }
 
-function flattenObjectToText(obj: Record<string, any>): string {
+function flattenObjectToHtml(obj: Record<string, any>): string {
   const lines: string[] = [];
   for (const [key, value] of Object.entries(obj)) {
     if (!value) continue;
     const label = key.replace(/_/g, " ");
     if (typeof value === "string") {
-      lines.push(`${label}: ${value}`);
+      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`);
     } else if (Array.isArray(value)) {
-      lines.push(`${label}: ${value.join("، ")}`);
+      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${escapeHtml(value.join("، "))}</div>`);
     } else if (typeof value === "object") {
-      lines.push(`${label}: ${flattenObjectToText(value)}`);
+      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${flattenObjectToHtml(value)}</div>`);
     } else {
-      lines.push(`${label}: ${String(value)}`);
+      lines.push(`<div class="plan-item"><span class="label">${escapeHtml(label)}:</span> ${escapeHtml(String(value))}</div>`);
     }
   }
-  return lines.join("\n");
+  return lines.join("");
 }
 
-function prepareSections(plan: any): Record<string, string> {
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function prepareSectionsHtml(plan: any): Record<string, string> {
   const result: Record<string, string> = {};
   const sections = plan.sections as Record<string, any>;
   if (sections) {
     for (const [key, value] of Object.entries(sections)) {
       if (!value) continue;
       if (typeof value === "string") {
-        result[key] = value;
+        result[key] = `<div class="plan-item">${escapeHtml(value)}</div>`;
       } else if (Array.isArray(value)) {
-        result[key] = flattenArrayToText(value);
+        result[key] = flattenArrayToHtml(value);
       } else if (typeof value === "object") {
-        result[key] = flattenObjectToText(value);
+        result[key] = flattenObjectToHtml(value);
       } else {
-        result[key] = String(value);
+        result[key] = `<div class="plan-item">${escapeHtml(String(value))}</div>`;
       }
     }
   }
@@ -126,228 +133,273 @@ function prepareSections(plan: any): Record<string, string> {
 }
 
 /**
- * Load the Noto Sans Arabic font for jsPDF.
- * Uses the uploaded TTF font from storage for reliable Arabic rendering.
+ * Build the full HTML document for the weekly plan
  */
-async function loadArabicFont(doc: jsPDF): Promise<void> {
-  const fontUrls = [
-    { url: "/manus-storage/NotoSansArabic-Regular_e1f3d88c.ttf", name: "NotoSansArabic-Regular.ttf", family: "NotoSansArabic", style: "normal" },
-    { url: "/manus-storage/NotoSansArabic-Bold_d29d5a95.ttf", name: "NotoSansArabic-Bold.ttf", family: "NotoSansArabic", style: "bold" },
-  ];
-
-  let fontLoaded = false;
-
-  for (const font of fontUrls) {
-    try {
-      const response = await fetch(font.url);
-      if (response.ok) {
-        const buffer = await response.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        // Convert to binary string in chunks to avoid stack overflow
-        const chunkSize = 8192;
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-          binary += String.fromCharCode.apply(null, Array.from(chunk));
-        }
-        const base64 = btoa(binary);
-        doc.addFileToVFS(font.name, base64);
-        doc.addFont(font.name, font.family, font.style);
-        if (!fontLoaded) {
-          doc.setFont(font.family, font.style);
-          fontLoaded = true;
-        }
-      }
-    } catch (e) {
-      console.warn(`[WeeklyPlanPDF] Failed to load font ${font.name}:`, e);
-    }
-  }
-
-  // Fallback: try CDN Amiri font if storage fonts failed
-  if (!fontLoaded) {
-    try {
-      const cdnUrl = "https://cdn.jsdelivr.net/gh/nicholasgasior/gfonts-woff2-to-base64/fonts/amiri/amiri-regular.base64.txt";
-      const response = await fetch(cdnUrl);
-      if (response.ok) {
-        const base64Text = await response.text();
-        doc.addFileToVFS("Amiri-Regular.ttf", base64Text.trim());
-        doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
-        doc.setFont("Amiri");
-        fontLoaded = true;
-      }
-    } catch {
-      console.warn("[WeeklyPlanPDF] All font loading attempts failed, using default font");
-    }
-  }
-}
-
-/**
- * Generates and downloads a PDF of the weekly plan directly.
- * No print dialog needed - works on iOS Safari, Android, and desktop.
- */
-export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
+function buildPlanHtml(plan: any): string {
   const theme = plan.theme || "خطة";
   const ageGroup = plan.ageGroup || "";
   const weekStart = plan.weekStartDate || plan.weekStart || "";
   const weekEnd = plan.weekEndDate || plan.weekEnd || "";
   const className = plan.className || "";
-  const sections = prepareSections(plan);
+  const sections = prepareSectionsHtml(plan);
   const ageLabel = AGE_GROUP_LABELS[ageGroup] || ageGroup;
 
-  // Create PDF document (A4 size)
+  const sectionKeys = Object.keys(SECTION_LABELS);
+  const activeSections = sectionKeys.filter(k => sections[k]);
+
+  // Build table of contents
+  const tocHtml = activeSections
+    .map((key, i) => {
+      const label = SECTION_LABELS[key] || key;
+      const color = SECTION_COLORS[key] || "#333";
+      return `<div class="toc-item" style="color: ${color}">${i + 1}. ${label}</div>`;
+    })
+    .join("");
+
+  // Build section pages
+  const sectionPages = activeSections
+    .map(key => {
+      const content = sections[key];
+      if (!content) return "";
+      const color = SECTION_COLORS[key] || "#333";
+      const label = SECTION_LABELS[key] || key;
+      return `
+        <div class="page section-page">
+          <div class="section-header" style="background-color: ${color}">
+            <h2>${label}</h2>
+          </div>
+          <div class="section-content">
+            ${content}
+          </div>
+          <div class="page-footer">نشأة | ${escapeHtml(theme)} | ${escapeHtml(weekStart)}</div>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `
+    <div id="weekly-plan-pdf-container" dir="rtl" style="font-family: 'Noto Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; width: 794px; background: white; color: #333;">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+        
+        #weekly-plan-pdf-container * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+        #weekly-plan-pdf-container {
+          font-size: 14px;
+          line-height: 1.6;
+        }
+        .page {
+          width: 794px;
+          min-height: 1123px;
+          padding: 40px;
+          position: relative;
+          page-break-after: always;
+          background: white;
+        }
+        .cover-header {
+          background-color: #1b5e20;
+          border-radius: 8px;
+          padding: 30px 25px;
+          color: white;
+          margin-bottom: 25px;
+        }
+        .cover-header .brand {
+          font-size: 14px;
+          opacity: 0.9;
+          margin-bottom: 8px;
+        }
+        .cover-header h1 {
+          font-size: 26px;
+          font-weight: 700;
+          margin-bottom: 6px;
+        }
+        .cover-header .theme-name {
+          font-size: 20px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+        .cover-header .dates {
+          font-size: 13px;
+          opacity: 0.85;
+        }
+        .details-box {
+          background: #f8faf9;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 20px 25px;
+          margin-bottom: 25px;
+        }
+        .details-box h3 {
+          color: #1b5e20;
+          font-size: 15px;
+          margin-bottom: 12px;
+        }
+        .details-box .detail-line {
+          color: #555;
+          font-size: 13px;
+          margin-bottom: 6px;
+        }
+        .toc-box {
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 20px 25px;
+        }
+        .toc-box h3 {
+          color: #1b5e20;
+          font-size: 15px;
+          margin-bottom: 12px;
+        }
+        .toc-item {
+          font-size: 13px;
+          padding: 3px 0;
+          font-weight: 600;
+        }
+        .section-header {
+          border-radius: 6px;
+          padding: 12px 20px;
+          color: white;
+          margin-bottom: 20px;
+        }
+        .section-header h2 {
+          font-size: 18px;
+          font-weight: 700;
+        }
+        .section-content {
+          padding: 0 5px;
+        }
+        .plan-item {
+          margin-bottom: 10px;
+          font-size: 13px;
+          line-height: 1.7;
+          padding: 6px 10px;
+          border-radius: 4px;
+          background: #fafafa;
+          border-right: 3px solid #e0e0e0;
+        }
+        .plan-item .item-num {
+          font-weight: 700;
+          color: #1b5e20;
+          margin-left: 4px;
+        }
+        .plan-item .label {
+          font-weight: 600;
+          color: #444;
+        }
+        .plan-item .sep {
+          color: #ccc;
+          margin: 0 4px;
+        }
+        .page-footer {
+          position: absolute;
+          bottom: 20px;
+          left: 40px;
+          right: 40px;
+          text-align: center;
+          font-size: 10px;
+          color: #aaa;
+        }
+      </style>
+
+      <!-- Cover Page -->
+      <div class="page cover-page">
+        <div class="cover-header">
+          <div class="brand">نشأة</div>
+          <h1>الخطة الأسبوعية</h1>
+          <div class="theme-name">${escapeHtml(theme)}</div>
+          <div class="dates">${escapeHtml(weekStart)} — ${escapeHtml(weekEnd)}</div>
+        </div>
+
+        <div class="details-box">
+          <h3>تفاصيل الخطة</h3>
+          <div class="detail-line">الفئة العمرية: ${escapeHtml(ageLabel)}</div>
+          <div class="detail-line">الأسبوع: ${escapeHtml(weekStart)} إلى ${escapeHtml(weekEnd)}</div>
+          ${className ? `<div class="detail-line">الفصل: ${escapeHtml(className)}</div>` : ""}
+        </div>
+
+        <div class="toc-box">
+          <h3>أقسام الخطة (${activeSections.length} مجالاً)</h3>
+          ${tocHtml}
+        </div>
+
+        <div class="page-footer">نشأة | الخطة الأسبوعية</div>
+      </div>
+
+      <!-- Section Pages -->
+      ${sectionPages}
+    </div>
+  `;
+}
+
+/**
+ * Generates and downloads a PDF of the weekly plan directly.
+ * Uses html2canvas to render HTML with proper Arabic text, then converts to PDF.
+ * Works on all devices including iOS Safari without needing print dialog.
+ */
+export async function generateWeeklyPlanPdf(plan: any): Promise<void> {
+  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas"),
+  ]);
+
+  const theme = plan.theme || "خطة";
+  const weekStart = plan.weekStartDate || plan.weekStart || "";
+
+  // Create hidden container for rendering
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.top = "-99999px";
+  container.style.left = "-99999px";
+  container.style.width = "794px";
+  container.style.zIndex = "-1";
+  container.innerHTML = buildPlanHtml(plan);
+  document.body.appendChild(container);
+
+  // Wait for fonts to load
+  await document.fonts.ready;
+  // Small delay to ensure rendering is complete
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const pdfContainer = container.querySelector("#weekly-plan-pdf-container") as HTMLElement;
+  const pages = pdfContainer.querySelectorAll(".page");
+
+  // Create PDF (A4 size)
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "a4",
   });
 
-  // Try to load Arabic font
-  await loadArabicFont(doc);
+  const pdfWidth = 210; // A4 width in mm
+  const pdfHeight = 297; // A4 height in mm
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
-  const contentWidth = pageWidth - margin * 2;
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i] as HTMLElement;
 
-  // Helper function to add RTL text
-  const addRtlText = (text: string, x: number, y: number, options?: any) => {
-    doc.text(text, x, y, { align: "right", ...options });
-  };
-
-  // ===== COVER PAGE =====
-  // Header background
-  doc.setFillColor(27, 94, 32);
-  doc.roundedRect(margin, 20, contentWidth, 50, 3, 3, "F");
-
-  // Header text
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  addRtlText("نشأة", pageWidth - margin - 5, 35);
-  doc.setFontSize(20);
-  addRtlText("الخطة الأسبوعية", pageWidth - margin - 5, 48);
-  doc.setFontSize(16);
-  addRtlText(theme, pageWidth - margin - 5, 60);
-  doc.setFontSize(10);
-  addRtlText(`${weekStart} — ${weekEnd}`, pageWidth - margin - 5, 68);
-
-  // Plan details box
-  doc.setTextColor(0, 0, 0);
-  doc.setFillColor(248, 250, 249);
-  doc.setDrawColor(229, 231, 235);
-  doc.roundedRect(margin, 80, contentWidth, 40, 2, 2, "FD");
-
-  doc.setFontSize(12);
-  doc.setTextColor(27, 94, 32);
-  addRtlText("تفاصيل الخطة", pageWidth - margin - 5, 90);
-
-  doc.setFontSize(10);
-  doc.setTextColor(80, 80, 80);
-  let detailY = 100;
-  addRtlText(`الفئة العمرية: ${ageLabel}`, pageWidth - margin - 5, detailY);
-  detailY += 7;
-  addRtlText(`الأسبوع: ${weekStart} إلى ${weekEnd}`, pageWidth - margin - 5, detailY);
-  detailY += 7;
-  if (className) {
-    addRtlText(`الفصل: ${className}`, pageWidth - margin - 5, detailY);
-  }
-
-  // Table of contents
-  let tocY = 130;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(229, 231, 235);
-  doc.roundedRect(margin, tocY - 5, contentWidth, 10, 2, 2, "FD");
-
-  doc.setFontSize(12);
-  doc.setTextColor(27, 94, 32);
-  const sectionKeys = Object.keys(SECTION_LABELS);
-  const activeSections = sectionKeys.filter(k => sections[k]);
-  addRtlText(`أقسام الخطة (${activeSections.length} مجالاً)`, pageWidth - margin - 5, tocY + 2);
-
-  tocY += 12;
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-  let tocIndex = 0;
-  for (const key of activeSections) {
-    tocIndex++;
-    const label = SECTION_LABELS[key] || key;
-    const color = SECTION_COLORS[key] || [51, 51, 51];
-    doc.setTextColor(color[0], color[1], color[2]);
-    addRtlText(`${tocIndex}. ${label}`, pageWidth - margin - 5, tocY);
-    tocY += 6;
-    if (tocY > pageHeight - 30) break;
-  }
-
-  // Footer
-  doc.setTextColor(170, 170, 170);
-  doc.setFontSize(7);
-  doc.text("نشأة | الخطة الأسبوعية الذكية", pageWidth / 2, pageHeight - 10, { align: "center" });
-
-  // ===== SECTION PAGES =====
-  for (const key of activeSections) {
-    const content = sections[key];
-    if (!content) continue;
-
-    doc.addPage();
-
-    const color = SECTION_COLORS[key] || [51, 51, 51];
-    const label = SECTION_LABELS[key] || key;
-
-    // Section header
-    doc.setFillColor(color[0], color[1], color[2]);
-    doc.roundedRect(margin, 15, contentWidth, 14, 2, 2, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    addRtlText(label, pageWidth - margin - 5, 24);
-
-    // Section content
-    doc.setTextColor(50, 50, 50);
-    doc.setFontSize(10);
-
-    const lines = content.split("\n").filter((l: string) => l.trim());
-    let y = 40;
-    const lineHeight = 6;
-    const maxY = pageHeight - 20;
-
-    for (const line of lines) {
-      if (y > maxY) {
-        doc.addPage();
-        // Re-add section header on continuation
-        doc.setFillColor(color[0], color[1], color[2]);
-        doc.roundedRect(margin, 15, contentWidth, 10, 2, 2, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(11);
-        addRtlText(`${label} (تابع)`, pageWidth - margin - 5, 22);
-        doc.setTextColor(50, 50, 50);
-        doc.setFontSize(10);
-        y = 35;
-      }
-
-      const trimmed = line.trim();
-      // Wrap long lines
-      const splitLines = doc.splitTextToSize(trimmed, contentWidth - 10);
-      for (const splitLine of splitLines) {
-        if (y > maxY) {
-          doc.addPage();
-          doc.setFillColor(color[0], color[1], color[2]);
-          doc.roundedRect(margin, 15, contentWidth, 10, 2, 2, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(11);
-          addRtlText(`${label} (تابع)`, pageWidth - margin - 5, 22);
-          doc.setTextColor(50, 50, 50);
-          doc.setFontSize(10);
-          y = 35;
-        }
-        addRtlText(splitLine, pageWidth - margin - 5, y);
-        y += lineHeight;
-      }
-      y += 1; // Extra spacing between items
+    if (i > 0) {
+      doc.addPage();
     }
 
-    // Page footer
-    doc.setTextColor(170, 170, 170);
-    doc.setFontSize(7);
-    doc.text(`نشأة | ${theme} | ${weekStart}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    // Render page to canvas
+    const canvas = await html2canvas(page, {
+      scale: 2, // Higher quality
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      width: 794,
+      height: 1123,
+      logging: false,
+    });
+
+    // Convert canvas to image and add to PDF
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    doc.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
   }
+
+  // Clean up
+  document.body.removeChild(container);
 
   // Download the PDF
   const fileName = `خطة-${theme}-${weekStart}.pdf`;
