@@ -2736,3 +2736,8 @@ Fix:
 - [x] Replace all old webPush/pushTriggers with Firebase Admin sendPushToUser/sendPushToUsers
 - [x] Unit tests for Firebase push notification system (7 tests passing)
 - [x] Build TWA Android app for Google Play (APK + AAB built, assetlinks.json deployed, keystore generated)
+
+## إصلاحات أغسطس 2026
+- [x] إصلاح مشكلة الخطة الأسبوعية التي تظهر بالإنجليزية عند اختيار العربية (فصل البرومبت العربي عن الثنائي في weeklyPlanRouter.ts)
+- [x] إنشاء نسخة احتياطية لقاعدة البيانات (naashah_backup_2026-08-01.sql - 105 جداول، 2.2MB)
+- [x] إنشاء نسخة احتياطية لملفات المشروع (naashah_project_backup_2026-08-01.zip - 15MB، 1514 ملف)

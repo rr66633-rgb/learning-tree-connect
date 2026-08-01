@@ -96,7 +96,54 @@ function buildGenerationPrompt(input: { ageGroup: string; theme: string; languag
     return `"${s}": "${label}"`;
   }).join("\n  ");
 
-  if (isArabic || isBilingual) {
+  if (isArabic) {
+    return `أنتِ خبيرة مناهج رياض أطفال في المملكة العربية السعودية متخصصة في إطار EYFS (المرحلة التأسيسية للسنوات المبكرة).
+
+مهمتك: إنشاء خطة أسبوعية كاملة ومفصلة وجاهزة للاستخدام باللغة العربية فقط.
+
+المعلومات:
+- الفئة العمرية: ${ageLabel.ar}
+- الموضوع الأسبوعي: ${input.theme}
+- الأسبوع: من ${input.weekStart} إلى ${input.weekEnd}
+- اللغة: العربية فقط - يجب كتابة كل المحتوى بالعربية بالكامل بدون أي كلمة إنجليزية
+
+${CULTURAL_GUIDELINES}
+
+متطلبات الجودة:
+- الأنشطة يجب أن تكون مناسبة للعمر ومتوافقة مع إطار EYFS
+- كل قسم يجب أن يكون مفصلاً وعملياً وجاهزاً للتطبيق المباشر
+- يجب تضمين القيم الإسلامية والثقافة السعودية
+- الأنشطة يجب أن تكون متنوعة وممتعة وتفاعلية
+- كل نشاط يتضمن: الوصف، المواد المطلوبة، الخطوات، المدة، طريقة التقييم
+- مهم جداً: اكتبي كل شيء بالعربية فقط. لا تستخدمي أي كلمات إنجليزية نهائياً
+
+أنشئي خطة أسبوعية كاملة بصيغة JSON تحتوي على الأقسام الـ 14 التالية:
+
+{
+  ${sectionsList}
+}
+
+لكل قسم، اكتبي محتوى مفصلاً وعملياً. التفاصيل المطلوبة لكل قسم:
+
+1. theme_overview: نظرة شاملة عن الموضوع وأهميته وكيف سيتم استكشافه خلال الأسبوع (3-5 جمل)
+2. learning_objectives: قائمة بـ 5-7 أهداف تعليمية محددة وقابلة للقياس مرتبطة بمجالات EYFS
+3. arabic_activities: 3-4 أنشطة لغة عربية (كل نشاط يشمل: العنوان، الوصف، المواد، المدة، طريقة التنفيذ)
+4. english_activities: 3-4 أنشطة لغة إنجليزية (كل نشاط يشمل: العنوان، الوصف، المواد، المدة، طريقة التنفيذ) - اكتبي الوصف بالعربية
+5. math_activities: 3-4 أنشطة رياضيات (كل نشاط يشمل: العنوان، الوصف، المواد، المدة، المفهوم الرياضي)
+6. science_activities: 2-3 أنشطة علوم واستكشاف (كل نشاط يشمل: العنوان، التجربة، المواد، الملاحظات المتوقعة)
+7. art_activities: 3-4 أنشطة فنية وإبداعية (كل نشاط يشمل: العنوان، الوصف، المواد، الخطوات)
+8. sensory_activities: 2-3 أنشطة حسية (كل نشاط يشمل: العنوان، الوصف، المواد، الحواس المستهدفة)
+9. physical_activities: 3-4 أنشطة بدنية وحركية (كل نشاط يشمل: العنوان، الوصف، المهارات المستهدفة)
+10. quran_islamic: سورة للحفظ، دعاء، قيمة إسلامية، نشاط ديني (مع التفاصيل)
+11. story_of_week: قصة مرتبطة بالموضوع (العنوان، الملخص، أسئلة المناقشة، الدروس المستفادة)
+12. song_of_week: نشيد أو أنشودة مرتبطة بالموضوع (العنوان، الكلمات أو وصف النشيد، الحركات المصاحبة)
+13. home_activity: 2-3 أنشطة منزلية يمكن للأهل تنفيذها مع أطفالهم (الوصف، المواد البسيطة المتاحة)
+14. parent_notes: ملاحظات وإرشادات لأولياء الأمور حول الموضوع وكيفية دعم تعلم الطفل في المنزل
+
+تذكير مهم: اكتبي كل المحتوى بالعربية فقط. لا تضيفي أي ترجمة إنجليزية. كل العناوين والأوصاف والتفاصيل يجب أن تكون بالعربية بالكامل.
+
+أعيدي الرد بصيغة JSON فقط. لا تكتبي أي نص خارج JSON.`;
+  } else if (isBilingual) {
     return `أنتِ خبيرة مناهج رياض أطفال في المملكة العربية السعودية متخصصة في إطار EYFS (المرحلة التأسيسية للسنوات المبكرة).
 
 مهمتك: إنشاء خطة أسبوعية كاملة ومفصلة وجاهزة للاستخدام.
@@ -219,7 +266,9 @@ export const weeklyPlanRouter = router({
           console.log(`[WeeklyPlan] Generate attempt ${attempts}/3 for theme: ${input.theme}, ageGroup: ${input.ageGroup}`);
           const response = await invokeLLM({
             messages: [
-              { role: "system", content: "You are an expert curriculum planner for kindergartens in Saudi Arabia. You MUST respond with valid JSON only. No markdown, no code fences, no text outside JSON. The JSON object must contain all 14 required section keys as string values." },
+              { role: "system", content: input.language === "ar" 
+                ? "أنتِ خبيرة مناهج رياض أطفال في السعودية. يجب الرد بصيغة JSON صالحة فقط. بدون markdown أو code fences. يجب أن يحتوي JSON على جميع المفاتيح الـ 14 المطلوبة. مهم جداً: اكتبي كل المحتوى بالعربية فقط بدون أي كلمة إنجليزية."
+                : "You are an expert curriculum planner for kindergartens in Saudi Arabia. You MUST respond with valid JSON only. No markdown, no code fences, no text outside JSON. The JSON object must contain all 14 required section keys as string values." },
               { role: "user", content: prompt }
             ],
             response_format: { type: "json_object" },
