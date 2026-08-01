@@ -127,42 +127,57 @@ function prepareSections(plan: any): Record<string, string> {
 
 /**
  * Load the Noto Sans Arabic font for jsPDF.
- * We use the standard font as a fallback if loading fails.
+ * Uses the uploaded TTF font from storage for reliable Arabic rendering.
  */
 async function loadArabicFont(doc: jsPDF): Promise<void> {
-  try {
-    // Try to load Amiri font from CDN (supports Arabic well with jsPDF)
-    const fontUrl = "https://cdn.jsdelivr.net/npm/@fontsource/amiri@5.0.18/files/amiri-arabic-400-normal.woff";
-    const response = await fetch(fontUrl);
-    if (response.ok) {
-      const buffer = await response.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
+  const fontUrls = [
+    { url: "/manus-storage/NotoSansArabic-Regular_e1f3d88c.ttf", name: "NotoSansArabic-Regular.ttf", family: "NotoSansArabic", style: "normal" },
+    { url: "/manus-storage/NotoSansArabic-Bold_d29d5a95.ttf", name: "NotoSansArabic-Bold.ttf", family: "NotoSansArabic", style: "bold" },
+  ];
+
+  let fontLoaded = false;
+
+  for (const font of fontUrls) {
+    try {
+      const response = await fetch(font.url);
+      if (response.ok) {
+        const buffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        // Convert to binary string in chunks to avoid stack overflow
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+          binary += String.fromCharCode.apply(null, Array.from(chunk));
+        }
+        const base64 = btoa(binary);
+        doc.addFileToVFS(font.name, base64);
+        doc.addFont(font.name, font.family, font.style);
+        if (!fontLoaded) {
+          doc.setFont(font.family, font.style);
+          fontLoaded = true;
+        }
       }
-      const base64 = btoa(binary);
-      doc.addFileToVFS("Amiri-Regular.ttf", base64);
-      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
-      doc.setFont("Amiri");
-      return;
+    } catch (e) {
+      console.warn(`[WeeklyPlanPDF] Failed to load font ${font.name}:`, e);
     }
-  } catch {
-    // Fallback - try another font source
   }
 
-  try {
-    const fontUrl2 = "https://cdn.jsdelivr.net/gh/nicholasgasior/gfonts-woff2-to-base64/fonts/amiri/amiri-regular.base64.txt";
-    const response2 = await fetch(fontUrl2);
-    if (response2.ok) {
-      const base64Text = await response2.text();
-      doc.addFileToVFS("Amiri-Regular.ttf", base64Text.trim());
-      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
-      doc.setFont("Amiri");
-      return;
+  // Fallback: try CDN Amiri font if storage fonts failed
+  if (!fontLoaded) {
+    try {
+      const cdnUrl = "https://cdn.jsdelivr.net/gh/nicholasgasior/gfonts-woff2-to-base64/fonts/amiri/amiri-regular.base64.txt";
+      const response = await fetch(cdnUrl);
+      if (response.ok) {
+        const base64Text = await response.text();
+        doc.addFileToVFS("Amiri-Regular.ttf", base64Text.trim());
+        doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+        doc.setFont("Amiri");
+        fontLoaded = true;
+      }
+    } catch {
+      console.warn("[WeeklyPlanPDF] All font loading attempts failed, using default font");
     }
-  } catch {
-    // Use default font
   }
 }
 

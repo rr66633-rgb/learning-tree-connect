@@ -108,19 +108,20 @@ export function exportPayrollToExcel(records: PayrollRecord[], summary: PayrollS
  */
 async function loadArabicFont(doc: jsPDF): Promise<void> {
   try {
-    const fontUrl = "https://cdn.jsdelivr.net/npm/@fontsource/amiri@5.0.18/files/amiri-arabic-400-normal.woff";
-    const response = await fetch(fontUrl);
+    const response = await fetch("/manus-storage/NotoSansArabic-Regular_e1f3d88c.ttf");
     if (response.ok) {
       const buffer = await response.arrayBuffer();
       const bytes = new Uint8Array(buffer);
       let binary = '';
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+        binary += String.fromCharCode.apply(null, Array.from(chunk));
       }
       const base64 = btoa(binary);
-      doc.addFileToVFS("Amiri-Regular.ttf", base64);
-      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
-      doc.setFont("Amiri");
+      doc.addFileToVFS("NotoSansArabic-Regular.ttf", base64);
+      doc.addFont("NotoSansArabic-Regular.ttf", "NotoSansArabic", "normal");
+      doc.setFont("NotoSansArabic");
       return;
     }
   } catch {
@@ -183,7 +184,7 @@ export async function exportPayrollToPdf(records: PayrollRecord[], summary: Payr
     head: [["الحالة", "صافي الراتب", "الخصومات", "البدلات", "الراتب الأساسي", "اسم الموظف", "م"]],
     body: tableData,
     styles: {
-      font: "Amiri",
+      font: "NotoSansArabic",
       fontSize: 10,
       halign: "center",
       cellPadding: 3,
@@ -391,7 +392,7 @@ export async function exportAnnualPayrollToPdf(
     head: [["مدفوع", "إجمالي الصافي", "الخصومات", "البدلات", "الراتب الأساسي", "عدد الموظفين", "الشهر"]],
     body: tableData,
     styles: {
-      font: "Amiri",
+      font: "NotoSansArabic",
       fontSize: 10,
       halign: "center",
       cellPadding: 3,
