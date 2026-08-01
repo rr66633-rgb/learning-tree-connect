@@ -883,10 +883,14 @@ export const appRouter = router({
           link: '/parent/attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkin' },
         });
-        // Send push notification
+        // Send Firebase push notification
         try {
-          const { notifyParentCheckIn } = await import('./_core/pushTriggers');
-          await notifyParentCheckIn(child.parentId, `${child.firstName} ${child.lastName}`, input.childId);
+          const { sendPushToUser } = await import('./firebase-admin');
+          await sendPushToUser(child.parentId, {
+            title: 'تسجيل حضور ✅',
+            body: `وصل ${child.firstName} ${child.lastName} إلى المركز`,
+            data: { type: 'attendance', childId: String(input.childId), url: '/parent/attendance' },
+          });
         } catch (e) { /* push failure shouldn't block */ }
       }
       return result;
@@ -924,10 +928,14 @@ export const appRouter = router({
           link: '/parent/attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkout', pickedUpBy: input.pickedUpBy },
         });
-        // Send push notification
+        // Send Firebase push notification
         try {
-          const { notifyParentCheckOut } = await import('./_core/pushTriggers');
-          await notifyParentCheckOut(child.parentId, `${child.firstName} ${child.lastName}`, input.childId, input.pickedUpBy);
+          const { sendPushToUser } = await import('./firebase-admin');
+          await sendPushToUser(child.parentId, {
+            title: 'مغادرة الطفل 👋',
+            body: `غادر ${child.firstName} ${child.lastName} المركز مع ${input.pickedUpBy}`,
+            data: { type: 'attendance', childId: String(input.childId), url: '/parent/attendance' },
+          });
         } catch (e) { /* push failure shouldn't block */ }
       }
       return { success: true };
@@ -1096,15 +1104,13 @@ export const appRouter = router({
             type: 'report',
             link: '/parent/daily-report',
           });
-          // Push notification to parent
-          const { sendPushToUser } = await import('./_core/webPush');
-          const pushResult = await sendPushToUser(child.parentId, {
+          // Firebase push notification to parent
+          const { sendPushToUser } = await import('./firebase-admin');
+          await sendPushToUser(child.parentId, {
             title: 'تقرير يومي جديد 📝',
             body: `تم إضافة تقرير يومي جديد لـ ${child.firstName}`,
-            tag: 'daily_report',
-            data: { type: 'daily_report', childId: input.childId, url: '/parent/daily-report' },
-          }, db.getPushSubscriptionsForUser);
-          if (pushResult.expired.length > 0) await db.removeExpiredSubscriptions(pushResult.expired);
+            data: { type: 'daily_report', childId: String(input.childId), url: '/parent/daily-report' },
+          });
         }
       } catch (e) { /* non-critical */ }
       return report;
@@ -1180,18 +1186,14 @@ export const appRouter = router({
           link: '/messages',
         });
       } catch (e) { /* non-critical */ }
-      // Web push notification
+      // Firebase push notification
       try {
-        const { sendPushToUser } = await import('./_core/webPush');
-        const result = await sendPushToUser(recipientId, {
-          title: 'رسالة جديدة',
+        const { sendPushToUser } = await import('./firebase-admin');
+        await sendPushToUser(recipientId, {
+          title: 'رسالة جديدة ✉️',
           body: `${ctx.user!.name || 'مستخدم'}: ${input.content.slice(0, 80)}`,
-          tag: 'new_message',
-          data: { type: 'new_message', conversationId: input.conversationId },
-        }, db.getPushSubscriptionsForUser);
-        if (result.expired.length > 0) {
-          await db.removeExpiredSubscriptions(result.expired);
-        }
+          data: { type: 'message', conversationId: String(input.conversationId), url: '/messages' },
+        });
       } catch (e) { /* push notification failure is non-critical */ }
       return message;
     }),
@@ -2367,14 +2369,12 @@ export const appRouter = router({
               type: 'activity',
               link: '/parent/daily-report',
             });
-            const { sendPushToUser } = await import('./_core/webPush');
-            const pushResult = await sendPushToUser(child.parentId, {
+            const { sendPushToUser } = await import('./firebase-admin');
+            await sendPushToUser(child.parentId, {
               title: `${label} - ${child.firstName}`,
               body: input.title || `تم تسجيل ${label} لـ ${child.firstName}`,
-              tag: `activity_${input.type}`,
-              data: { type: 'activity', childId: input.childId, url: '/parent/daily-report' },
-            }, db.getPushSubscriptionsForUser);
-            if (pushResult.expired.length > 0) await db.removeExpiredSubscriptions(pushResult.expired);
+              data: { type: 'activity', childId: String(input.childId), url: '/parent/daily-report' },
+            });
           }
         } catch (e) { /* non-critical */ }
       }
@@ -2433,7 +2433,7 @@ export const appRouter = router({
       // Push notification to parents of tagged children
       if (input.childIds && input.childIds.length > 0) {
         try {
-          const { sendPushToUser } = await import('./_core/webPush');
+          const { sendPushToUser } = await import('./firebase-admin');
           const notifiedParents = new Set<number>();
           for (const childId of input.childIds) {
             const child = await db.getChildById(childId);
@@ -2452,9 +2452,8 @@ export const appRouter = router({
               await sendPushToUser(child.parentId, {
                 title: `${mediaLabel} 📷`,
                 body: input.caption || `تم إضافة ${mediaLabel} لـ ${child.firstName}`,
-                tag: 'new_media',
-                data: { type: 'media', childId, url: '/parent/photos' },
-              }, db.getPushSubscriptionsForUser);
+                data: { type: 'media', childId: String(childId), url: '/parent/photos' },
+              });
             }
           }
         } catch (e) { /* non-critical */ }
@@ -2488,7 +2487,7 @@ export const appRouter = router({
       // Push notification to parents of tagged children (batch)
       if (input.childIds && input.childIds.length > 0) {
         try {
-          const { sendPushToUser } = await import('./_core/webPush');
+          const { sendPushToUser } = await import('./firebase-admin');
           const notifiedParents = new Set<number>();
           for (const childId of input.childIds) {
             const child = await db.getChildById(childId);
@@ -2506,9 +2505,8 @@ export const appRouter = router({
               await sendPushToUser(child.parentId, {
                 title: 'صور جديدة 📷',
                 body: `تم إضافة ${input.items.length} صور/فيديو جديدة لـ ${child.firstName}`,
-                tag: 'new_media_batch',
-                data: { type: 'media', childId, url: '/parent/photos' },
-              }, db.getPushSubscriptionsForUser);
+                data: { type: 'media', childId: String(childId), url: '/parent/photos' },
+              });
             }
           }
         } catch (e) { /* non-critical */ }
@@ -3266,9 +3264,18 @@ export const appRouter = router({
             });
           }
         }
-        // Push notifications to on-duty staff only
-        const { notifyStaffPickupRequest } = await import('./_core/pushTriggers');
-        await notifyStaffPickupRequest(childName, id, input.childId);
+        // Firebase push notifications to on-duty staff
+        try {
+          const { sendPushToUsers } = await import('./firebase-admin');
+          const onDutyStaffIds = await db.getOnDutyStaffIds();
+          if (onDutyStaffIds.length > 0) {
+            await sendPushToUsers(onDutyStaffIds, {
+              title: '⚠️ طلب استلام عاجل',
+              body: `ولي أمر ${childName} وصل لاستلامه`,
+              data: { type: 'pickup', childId: String(input.childId), url: '/staff/pickup' },
+            });
+          }
+        } catch (e) { /* non-critical */ }
       } catch (e) { /* notification failure shouldn't block */ }
       return { id, status: 'waiting_teacher' };
     }),
@@ -3312,9 +3319,13 @@ export const appRouter = router({
               metadata: JSON.stringify({ pickupRequestId: input.id, step: 'sent_to_reception' }),
             });
           }
-          // Push notification to parent
-          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
-          await notifyParentPickupStatus(req.parentId, childName, 'sent_to_reception', input.id);
+          // Firebase push notification to parent
+          const { sendPushToUser: sendPush1 } = await import('./firebase-admin');
+          await sendPush1(req.parentId, {
+            title: 'تحديث طلب الاستلام',
+            body: `تم إرسال ${childName} إلى الاستقبال`,
+            data: { type: 'pickup', url: '/parent/pickup' },
+          });
         }
       } catch (e) { /* notification failure shouldn't block */ }
       return { success: true };
@@ -3375,9 +3386,13 @@ export const appRouter = router({
               metadata: JSON.stringify({ pickupRequestId: input.id, step: 'picked_up' }),
             });
           }
-          // Push notification
-          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
-          await notifyParentPickupStatus(req.parentId, childName, 'picked_up', input.id);
+          // Firebase push notification
+          const { sendPushToUser: sendPush2 } = await import('./firebase-admin');
+          await sendPush2(req.parentId, {
+            title: 'تم الاستلام بنجاح ✅',
+            body: `تم تسليم ${childName} بنجاح`,
+            data: { type: 'pickup', url: '/parent/pickup' },
+          });
         }
       } catch (e) { /* notification failure shouldn't block */ }
       return { success: true };
@@ -3491,25 +3506,14 @@ export const appRouter = router({
       if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
-      // Send a test operational alert push to all on-duty staff
-      const { sendPushToUser } = await import('./_core/webPush');
+      // Send a test operational alert push to all on-duty staff via Firebase
+      const { sendPushToUsers } = await import('./firebase-admin');
       const onDutyIds = await db.getOnDutyStaffIds();
-      let sent = 0;
-      for (const userId of onDutyIds) {
-        try {
-          const result = await sendPushToUser(
-            userId,
-            {
-              title: '\u062a\u062c\u0631\u0628\u0629 \u062a\u0646\u0628\u064a\u0647 \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645',
-              body: '\u0647\u0630\u0627 \u062a\u0646\u0628\u064a\u0647 \u062a\u062c\u0631\u064a\u0628\u064a - \u0627\u0644\u0635\u0648\u062a \u0648\u0627\u0644\u0627\u0647\u062a\u0632\u0627\u0632 \u064a\u0639\u0645\u0644\u0627\u0646',
-              tag: 'test-pickup-alert',
-              data: { url: '/staff/pickup', type: 'pickup_alert', priority: 'urgent', isTest: true },
-            },
-            db.getPushSubscriptionsForUser
-          );
-          sent += result.sent;
-        } catch {}
-      }
+      const sent = await sendPushToUsers(onDutyIds, {
+        title: 'تجربة تنبيه الاستلام',
+        body: 'هذا تنبيه تجريبي - الصوت والاهتزاز يعملان',
+        data: { url: '/staff/pickup', type: 'pickup_alert' },
+      });
       return { sent, onDutyCount: onDutyIds.length };
     }),
 
@@ -3530,79 +3534,68 @@ export const appRouter = router({
     }),
   }),
 
-  // ============ PUSH NOTIFICATIONS ============
+  // ============ PUSH NOTIFICATIONS (Firebase FCM) ============
   push: router({
-    getVapidPublicKey: publicProcedure.query(async () => {
-      const { getVapidPublicKey } = await import('./_core/webPush');
-      return { publicKey: getVapidPublicKey() };
-    }),
-    subscribe: protectedProcedure.input(z.object({
-      endpoint: z.string().url(),
-      p256dh: z.string(),
-      auth: z.string(),
-      userAgent: z.string().optional(),
+    // Register FCM token for the current user
+    registerToken: protectedProcedure.input(z.object({
+      token: z.string().min(1),
+      platform: z.enum(['web', 'android', 'ios']).default('web'),
+      device: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      await db.savePushSubscription({
-        userId: ctx.user!.id,
-        endpoint: input.endpoint,
-        p256dh: input.p256dh,
-        auth: input.auth,
-        userAgent: input.userAgent,
-      });
+      const { registerFcmToken } = await import('./firebase-admin');
+      await registerFcmToken(ctx.user!.id, input.token, input.platform, input.device);
       return { success: true };
     }),
-    unsubscribe: protectedProcedure.input(z.object({
-      endpoint: z.string(),
-    })).mutation(async ({ input, ctx }) => {
-      await db.removePushSubscription(input.endpoint, ctx.user!.id);
+    // Remove FCM token (on logout or unsubscribe)
+    removeToken: protectedProcedure.input(z.object({
+      token: z.string().min(1),
+    })).mutation(async ({ input }) => {
+      const { removeFcmToken } = await import('./firebase-admin');
+      await removeFcmToken(input.token);
       return { success: true };
     }),
     // Test push notification (for debugging)
     test: protectedProcedure.input(z.object({
       targetUserId: z.number().optional(),
     }).optional()).mutation(async ({ ctx, input }) => {
-      const { sendPushToUser } = await import('./_core/webPush');
+      const { sendPushToUser } = await import('./firebase-admin');
       const targetId = input?.targetUserId || ctx.user!.id;
-      const result = await sendPushToUser(
-        targetId,
-        {
-          title: '\u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',
-          body: '\u0645\u0631\u062d\u0628\u0627\u064b! \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u062f\u0641\u0639 \u062a\u0639\u0645\u0644 \u0628\u0646\u062c\u0627\u062d. \u0627\u0644\u0635\u0648\u062a \u0648\u0627\u0644\u0627\u0647\u062a\u0632\u0627\u0632 \u064a\u0639\u0645\u0644\u0627\u0646 \u0628\u0634\u0643\u0644 \u0635\u062d\u064a\u062d.',
-          tag: 'test',
-          data: { url: '/', type: 'parent_arrival', priority: 'urgent' },
-        },
-        db.getPushSubscriptionsForUser
-      );
-      // Clean up expired subscriptions
-      if (result.expired.length > 0) {
-        await db.removeExpiredSubscriptions(result.expired);
-      }
+      const sent = await sendPushToUser(targetId, {
+        title: 'تجربة الإشعارات',
+        body: 'مرحباً! إشعارات الدفع تعمل بنجاح.',
+        data: { url: '/', type: 'test' },
+      });
       // Log the test notification event
       try {
         await db.createNotification({
           userId: targetId,
-          title: '\u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',
-          body: '\u0625\u0634\u0639\u0627\u0631 \u062a\u062c\u0631\u064a\u0628\u064a \u0645\u0646 \u0627\u0644\u0625\u062f\u0627\u0631\u0629',
+          title: 'تجربة الإشعارات',
+          body: 'إشعار تجريبي من الإدارة',
           type: 'general',
         });
       } catch {}
-      return { sent: result.sent, failed: result.failed, targetUserId: targetId };
+      return { sent, targetUserId: targetId };
     }),
     // Get push subscription status for all staff (admin only)
     staffStatus: protectedProcedure.query(async ({ ctx }) => {
       if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
+      const dbConn = await getSharedDb();
+      if (!dbConn) return [];
+      const { fcmTokens } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
       const staffUsers = await db.getUsersByRoles(['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'super_admin']);
       const statuses = await Promise.all(
         staffUsers.map(async (u) => {
-          const subs = await db.getPushSubscriptionsForUser(u.id);
+          const tokens = await dbConn.select().from(fcmTokens).where(eq(fcmTokens.userId, u.id));
+          const activeTokens = tokens.filter((t: any) => t.active);
           return {
             userId: u.id,
             name: u.name || '',
             role: u.role,
-            subscriptionCount: subs.length,
-            hasActiveSubscription: subs.length > 0,
+            subscriptionCount: activeTokens.length,
+            hasActiveSubscription: activeTokens.length > 0,
           };
         })
       );

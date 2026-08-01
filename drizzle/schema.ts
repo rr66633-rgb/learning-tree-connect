@@ -1863,3 +1863,17 @@ export const integrationConfig = mysqlTable("integration_config", {
 });
 export type IntegrationConfig = typeof integrationConfig.$inferSelect;
 export type InsertIntegrationConfig = typeof integrationConfig.$inferInsert;
+
+// ============ FCM PUSH NOTIFICATION TOKENS ============
+export const fcmTokens = mysqlTable("fcm_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: text("token").notNull(),
+  device: varchar("device", { length: 100 }),
+  platform: mysqlEnum("platform", ["web", "android", "ios"]).default("web").notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FcmToken = typeof fcmTokens.$inferSelect;
+export type InsertFcmToken = typeof fcmTokens.$inferInsert;

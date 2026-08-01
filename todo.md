@@ -2724,3 +2724,15 @@ Fix:
 - [x] Fix any discovered bugs
 - [x] Load/performance testing
 - [x] Database backup
+
+## Firebase Push Notifications & Android App
+- [x] Install Firebase SDK (firebase, firebase-admin, firebase-messaging)
+- [x] Create firebase config and service worker for push notifications
+- [x] Add push notification permission request in frontend (usePushNotifications hook rewritten for FCM)
+- [x] Store FCM tokens in database for each user (fcm_tokens table + registerToken/removeToken tRPC procedures)
+- [x] Server-side FCM notification sending via firebase-admin (v14 modular API)
+- [x] Integrate with existing notification triggers (attendance check-in/out, daily reports, messages, media uploads, pickup requests)
+- [x] Set FIREBASE_PRIVATE_KEY environment variable
+- [x] Replace all old webPush/pushTriggers with Firebase Admin sendPushToUser/sendPushToUsers
+- [x] Unit tests for Firebase push notification system (7 tests passing)
+- [ ] Build TWA Android app for Google Play
