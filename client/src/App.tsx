@@ -25,6 +25,7 @@ const NurseriesLanding = lazy(() => import("./pages/NurseriesLanding"));
 const StaffDashboard = lazy(() => import("./pages/staff/Dashboard"));
 const StaffChildren = lazy(() => import("./pages/staff/Children"));
 const StaffClasses = lazy(() => import("./pages/staff/Classes"));
+const StaffClassDetail = lazy(() => import("./pages/staff/ClassDetail"));
 const StaffAttendance = lazy(() => import("./pages/staff/Attendance"));
 const StaffStaffAttendance = lazy(() => import("./pages/staff/StaffAttendance"));
 const StaffDailyLog = lazy(() => import("./pages/staff/DailyLog"));
@@ -215,6 +216,7 @@ function StaffRouter() {
         <Route path="/staff" component={StaffDashboard} />
         <Route path="/staff/children/:id" component={ChildProfile} />
         <Route path="/staff/children" component={StaffChildren} />
+        <Route path="/staff/classes/:id" component={StaffClassDetail} />
         <Route path="/staff/classes" component={StaffClasses} />
         <Route path="/staff/attendance" component={StaffAttendance} />
         <Route path="/staff/staff-attendance" component={StaffStaffAttendance} />
