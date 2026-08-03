@@ -216,7 +216,7 @@ function StaffRouter() {
         <Route path="/staff" component={StaffDashboard} />
         <Route path="/staff/children/:id" component={ChildProfile} />
         <Route path="/staff/children" component={StaffChildren} />
-        <Route path="/staff/classes/:id" component={StaffClassDetail} />
+        <Route path="/staff/classes/:id" component={ClassDetail} />
         <Route path="/staff/classes" component={StaffClasses} />
         <Route path="/staff/attendance" component={StaffAttendance} />
         <Route path="/staff/staff-attendance" component={StaffStaffAttendance} />
