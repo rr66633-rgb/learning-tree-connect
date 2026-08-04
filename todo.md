@@ -2761,3 +2761,12 @@ Fix:
 - [x] Fix storageProxy to stream files instead of 307 redirect (fixes cross-origin image display)
 - [x] Clear old broken logo URL from organization_branding table
 - [x] Images now return proper 404 for missing files instead of broken redirects
+
+## Self-Hosted Migration Preparation (Aug 5, 2026)
+- [x] Create standalone S3 storage module (server/storage-standalone.ts)
+- [x] Create standalone storage proxy (server/storageProxy-standalone.ts)
+- [x] Create environment variables documentation (docs/environment-variables.md)
+- [x] Create database migration script (scripts/db-setup.mjs)
+- [x] Create deployment guide for Railway/Render (docs/DEPLOYMENT.md)
+- [x] Create migration guide (docs/MIGRATION-GUIDE.md)
+- [x] Create standalone Dockerfile (Dockerfile.standalone)
