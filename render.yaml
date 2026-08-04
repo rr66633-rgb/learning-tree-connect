@@ -1,0 +1,87 @@
+# Render Blueprint for Nashaa (learning-tree-connect).
+#
+# IMPORTANT: this app uses MySQL (drizzle-orm/mysql2), and Render's own
+# managed database product is PostgreSQL only -- Render does not offer
+# managed MySQL. This blueprint therefore only defines the web service.
+# Provision MySQL separately (PlanetScale, a Render private-service MySQL
+# container with a persistent disk, or any other MySQL host) and paste its
+# connection string into DATABASE_URL below. See DEPLOYMENT.md for details.
+
+services:
+  - type: web
+    name: nashaa
+    runtime: docker
+    plan: starter
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: APP_URL
+        value: https://naashah.com
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_FORCE_PATH_STYLE
+        sync: false
+      - key: EMAIL_ENABLED
+        value: "true"
+      - key: EMAIL_PROVIDER
+        value: smtp
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Nashaa
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SMS_ENABLED
+        value: "false"
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: MOYASAR_API_KEY
+        sync: false
+      - key: MOYASAR_SECRET_KEY
+        sync: false
+      - key: VITE_MOYASAR_PUBLISHABLE_KEY
+        sync: false
+      - key: META_CAPI_ACCESS_TOKEN
+        sync: false
+      - key: ADMIN_NOTIFICATION_EMAIL
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_API_URL
+        value: https://api.openai.com
+      - key: OPENAI_DEFAULT_MODEL
+        value: gpt-4o-mini
