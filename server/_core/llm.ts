@@ -212,14 +212,28 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+// Prefer a real OpenAI-compatible key (OPENAI_API_KEY) once running outside
+// Manus. Falls back to the legacy Manus "Forge" proxy so this keeps working
+// unchanged during a gradual transition.
+const usingRealOpenAI = () => !!ENV.openaiApiKey;
+
+const resolveApiKey = () =>
+  usingRealOpenAI() ? ENV.openaiApiKey : ENV.forgeApiKey;
+
+const resolveApiUrl = () => {
+  if (usingRealOpenAI()) {
+    return `${ENV.openaiApiUrl.replace(/\/$/, "")}/v1/chat/completions`;
+  }
+  return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
+};
 
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+  if (!resolveApiKey()) {
+    throw new Error(
+      "No LLM API key configured: set OPENAI_API_KEY (recommended once running outside Manus) or BUILT_IN_FORGE_API_KEY"
+    );
   }
 };
 
@@ -364,6 +378,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   if (model) {
     payload.model = model;
+  } else if (usingRealOpenAI()) {
+    // Forge picks a default model server-side when none is given; real
+    // OpenAI's API requires one explicitly.
+    payload.model = ENV.openaiDefaultModel;
   }
 
   if (tools && tools.length > 0) {
@@ -405,7 +423,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${resolveApiKey()}`,
     },
     body: JSON.stringify(payload),
   });
@@ -435,12 +453,14 @@ export type ModelsResponse = {
 export async function listLLMModels(): Promise<ModelsResponse> {
   assertApiKey();
 
-  const url = ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
-    : "https://forge.manus.im/v1/models";
+  const url = usingRealOpenAI()
+    ? `${ENV.openaiApiUrl.replace(/\/$/, "")}/v1/models`
+    : ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+      ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
+      : "https://forge.manus.im/v1/models";
 
   const response = await fetchWithBackoff(url, {
-    headers: { authorization: `Bearer ${ENV.forgeApiKey}` },
+    headers: { authorization: `Bearer ${resolveApiKey()}` },
   });
 
   if (!response.ok) {

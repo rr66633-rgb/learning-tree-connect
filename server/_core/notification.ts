@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
+import { isEmailConfigured, sendNotificationEmail } from "../services/emailService";
 
 export type NotificationPayload = {
   title: string;
@@ -58,28 +59,50 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
 };
 
 /**
- * Dispatches a project-owner notification through the Manus Notification Service.
- * Returns `true` if the request was accepted, `false` when the upstream service
- * cannot be reached (callers can fall back to email/slack). Validation errors
- * bubble up as TRPC errors so callers can fix the payload.
+ * Best-effort fallback used when the Manus "Forge" owner-notification
+ * service isn't configured (e.g. running outside Manus): emails
+ * ADMIN_NOTIFICATION_EMAIL instead, if both an address and email sending
+ * are configured. Never throws -- returns whether the email actually went
+ * out.
+ */
+async function notifyOwnerByEmail(
+  payload: NotificationPayload
+): Promise<boolean> {
+  if (!ENV.adminNotificationEmail || !isEmailConfigured()) {
+    return false;
+  }
+  try {
+    const result = await sendNotificationEmail(
+      ENV.adminNotificationEmail,
+      "Owner",
+      payload.title,
+      payload.content
+    );
+    return result.success !== false;
+  } catch (error) {
+    console.warn("[Notification] Email fallback failed:", error);
+    return false;
+  }
+}
+
+/**
+ * Dispatches a project-owner notification through the Manus Notification
+ * Service, falling back to ADMIN_NOTIFICATION_EMAIL (see env.ts) when Forge
+ * isn't configured -- this is the normal case once running outside Manus.
+ * Returns `true` if the request was accepted, `false` when neither channel
+ * is available or reachable. Never throws for missing configuration:
+ * callers rely on this staying best-effort so a notification failure never
+ * blocks the registration/demo-request flow that triggered it. Validation
+ * errors (bad payload) still bubble up as TRPC errors so callers can fix
+ * the payload.
  */
 export async function notifyOwner(
   payload: NotificationPayload
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
-  if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service URL is not configured.",
-    });
-  }
-
-  if (!ENV.forgeApiKey) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service API key is not configured.",
-    });
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+    return notifyOwnerByEmail({ title, content });
   }
 
   const endpoint = buildEndpointUrl(ENV.forgeApiUrl);

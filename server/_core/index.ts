@@ -10,6 +10,7 @@ import cookieParser from "cookie-parser";
 import { doubleCsrf } from "csrf-csrf";
 // OAuth removed - using independent auth system
 import { registerStorageProxy } from "./storageProxy";
+import { ENV } from "./env";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -264,6 +265,11 @@ async function startServer() {
 
   registerStorageProxy(app);
   // OAuth routes removed - independent auth only
+
+  // Health check endpoint for Railway/Render deploy health checks and uptime monitors.
+  app.get('/api/health', (_req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
 
   // File upload endpoint - handles base64 JSON uploads (requires authentication)
   app.post('/api/upload', async (req, res) => {
@@ -1231,33 +1237,53 @@ async function startServer() {
     }
   });
 
-  // Scheduled tasks (Heartbeat cron callbacks)
-  app.post('/api/scheduled/daily-backup', async (req, res) => {
+  // Scheduled tasks (cron callbacks). While hosted on Manus, only Manus's
+  // own internal heartbeat scheduler could reach these routes; outside
+  // Manus they're exposed on the public domain, so require a shared secret
+  // if one is configured. Set CRON_SECRET and have your external cron
+  // (Railway/Render cron job, cron-job.org, etc) send
+  // `Authorization: Bearer <CRON_SECRET>`. If CRON_SECRET isn't set, the
+  // routes stay open (matching the old behavior) but log a warning --
+  // strongly recommended to set it once running outside Manus.
+  const requireCronSecret = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!ENV.cronSecret) {
+      console.warn(`[Scheduled] CRON_SECRET is not set -- ${req.path} is unauthenticated. Set CRON_SECRET once running outside Manus.`);
+      return next();
+    }
+    const authHeader = req.headers.authorization || '';
+    if (authHeader !== `Bearer ${ENV.cronSecret}`) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    next();
+  };
+
+  app.post('/api/scheduled/daily-backup', requireCronSecret, async (req, res) => {
     const { dailyBackupHandler } = await import('../backup');
     await dailyBackupHandler(req, res);
   });
 
-  app.post('/api/scheduled/pickup-escalation', async (req, res) => {
+  app.post('/api/scheduled/pickup-escalation', requireCronSecret, async (req, res) => {
     const { pickupEscalationHandler } = await import('../pickup-escalation');
     await pickupEscalationHandler(req, res);
   });
 
-  app.post('/api/scheduled/event-reminders', async (req, res) => {
+  app.post('/api/scheduled/event-reminders', requireCronSecret, async (req, res) => {
     const { eventRemindersHandler } = await import('../event-reminders-handler');
     await eventRemindersHandler(req, res);
   });
 
-  app.post('/api/scheduled/account-cleanup', async (req, res) => {
+  app.post('/api/scheduled/account-cleanup', requireCronSecret, async (req, res) => {
     const { accountCleanupHandler } = await import('../account-cleanup');
     await accountCleanupHandler(req, res);
   });
 
-  app.post('/api/scheduled/enrollment-expiry', async (req, res) => {
+  app.post('/api/scheduled/enrollment-expiry', requireCronSecret, async (req, res) => {
     const { enrollmentExpiryHandler } = await import('../enrollment-expiry-handler');
     await enrollmentExpiryHandler(req, res);
   });
 
-  app.post('/api/scheduled/evaluation-reminder', async (req, res) => {
+  app.post('/api/scheduled/evaluation-reminder', requireCronSecret, async (req, res) => {
     const { evaluationReminderHandler } = await import('../evaluation-reminder-handler');
     await evaluationReminderHandler(req, res);
   });
