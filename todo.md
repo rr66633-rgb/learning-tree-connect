@@ -2756,3 +2756,8 @@ Fix:
 - [x] Fix bulk-import cross-tenant write vulnerability
 - [x] Fix payment status spoofing (Moyasar)
 - [x] Fix registration privilege escalation
+
+## Image Display Fix (Aug 5, 2026)
+- [x] Fix storageProxy to stream files instead of 307 redirect (fixes cross-origin image display)
+- [x] Clear old broken logo URL from organization_branding table
+- [x] Images now return proper 404 for missing files instead of broken redirects

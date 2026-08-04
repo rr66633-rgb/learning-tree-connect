@@ -38,11 +38,57 @@ export function registerStorageProxy(app: Express) {
         return;
       }
 
-      res.set("Cache-Control", "no-store");
-      res.redirect(307, url);
+      // Stream the file directly instead of 307 redirect
+      // This avoids cross-origin issues with CloudFront signed URLs
+      const fileResp = await fetch(url);
+      if (!fileResp.ok) {
+        console.error(`[StorageProxy] S3/CloudFront error: ${fileResp.status} for key: ${key}`);
+        res.status(404).send("File not found");
+        return;
+      }
+
+      // Forward content-type and cache headers
+      const contentType = fileResp.headers.get("content-type");
+      if (contentType) {
+        res.set("Content-Type", contentType);
+      }
+      const contentLength = fileResp.headers.get("content-length");
+      if (contentLength) {
+        res.set("Content-Length", contentLength);
+      }
+      // Cache for 1 hour on the client, revalidate after
+      res.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+      res.set("Access-Control-Allow-Origin", "*");
+
+      // Pipe the response body to the client
+      if (fileResp.body) {
+        const reader = fileResp.body.getReader();
+        const pump = async () => {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value);
+          }
+          res.end();
+        };
+        pump().catch((err) => {
+          console.error("[StorageProxy] stream error:", err);
+          if (!res.headersSent) {
+            res.status(500).send("Stream error");
+          } else {
+            res.end();
+          }
+        });
+      } else {
+        // Fallback: read as buffer
+        const buffer = await fileResp.arrayBuffer();
+        res.send(Buffer.from(buffer));
+      }
     } catch (err) {
       console.error("[StorageProxy] failed:", err);
-      res.status(502).send("Storage proxy error");
+      if (!res.headersSent) {
+        res.status(502).send("Storage proxy error");
+      }
     }
   });
 }
