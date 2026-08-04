@@ -895,6 +895,20 @@ export const pushSubscriptions = mysqlTable("push_subscriptions", {
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
 
+// ============ FCM TOKENS (Firebase Cloud Messaging) ============
+export const fcmTokens = mysqlTable("fcm_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: text("token").notNull(),
+  platform: mysqlEnum("platform", ["web", "android", "ios"]).default("web").notNull(),
+  device: varchar("device", { length: 255 }),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FcmToken = typeof fcmTokens.$inferSelect;
+export type InsertFcmToken = typeof fcmTokens.$inferInsert;
+
 // ============ AI GENERATED CONTENT ============
 export const aiGeneratedContent = mysqlTable("ai_generated_content", {
   id: int("id").autoincrement().primaryKey(),

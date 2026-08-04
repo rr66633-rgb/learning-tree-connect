@@ -20,11 +20,11 @@ async function setup() {
 
   // ============ LOYALTY REWARDS CATALOG ============
   const rewardsData = [
-    { name: "Free Day", nameAr: "يوم مجاني", description: "One free day of attendance", descriptionAr: "يوم حضور مجاني للطفل", pointsCost: 500 },
-    { name: "Activity Kit", nameAr: "حقيبة أنشطة", description: "Educational activity kit", descriptionAr: "حقيبة أنشطة تعليمية منزلية", pointsCost: 300 },
-    { name: "Photo Album", nameAr: "ألبوم صور", description: "Monthly photo album", descriptionAr: "ألبوم صور شهري للطفل", pointsCost: 200 },
-    { name: "10% Discount", nameAr: "خصم 10%", description: "10% off next month fees", descriptionAr: "خصم 10% على رسوم الشهر القادم", pointsCost: 1000 },
-    { name: "Extra Class", nameAr: "حصة إضافية", description: "One extra enrichment class", descriptionAr: "حصة إثرائية إضافية مجانية", pointsCost: 400 },
+    { name: "Free Day", nameAr: "يوم مجاني", description: "One free day of attendance", descriptionAr: "يوم حضور مجاني للطفل", pointsCost: 500, organizationId: 1 },
+    { name: "Activity Kit", nameAr: "حقيبة أنشطة", description: "Educational activity kit", descriptionAr: "حقيبة أنشطة تعليمية منزلية", pointsCost: 300, organizationId: 1 },
+    { name: "Photo Album", nameAr: "ألبوم صور", description: "Monthly photo album", descriptionAr: "ألبوم صور شهري للطفل", pointsCost: 200, organizationId: 1 },
+    { name: "10% Discount", nameAr: "خصم 10%", description: "10% off next month fees", descriptionAr: "خصم 10% على رسوم الشهر القادم", pointsCost: 1000, organizationId: 1 },
+    { name: "Extra Class", nameAr: "حصة إضافية", description: "One extra enrichment class", descriptionAr: "حصة إثرائية إضافية مجانية", pointsCost: 400, organizationId: 1 },
   ];
 
   for (const reward of rewardsData) {

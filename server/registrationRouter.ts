@@ -248,7 +248,7 @@ export const registrationRouter = router({
       await db.updateNurseryRegistrationStatus(
         input.id,
         input.status,
-        ctx.user.id,
+        ctx.user!.id,
         input.notes,
         input.rejectionReason
       );

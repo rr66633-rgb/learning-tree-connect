@@ -90,7 +90,7 @@ export async function pickupEscalationHandler(req: Request, res: Response) {
     let totalEscalated = 0;
     const perOrgResults: any[] = [];
 
-    for (const [orgId, escalatedDetails] of escalatedByOrg) {
+    for (const [orgId, escalatedDetails] of Array.from(escalatedByOrg)) {
       // Send notification to this organization's admins/principals/owner only
       // (exclude super_admin - manages all nurseries, handled separately if needed)
       const orgFilter = orgId ? [eq(users.organizationId, orgId)] : [];
@@ -98,7 +98,7 @@ export async function pickupEscalationHandler(req: Request, res: Response) {
         .from(users)
         .where(and(inArray(users.role, ['admin', 'owner', 'principal'] as any), ...orgFilter));
 
-      const childNames = escalatedDetails.map(d => d.childName).join("، ");
+      const childNames = escalatedDetails.map((d: any) => d.childName).join("، ");
       const message = escalatedDetails.length === 1
         ? `تنبيه تصعيدي: طلب استلام ${escalatedDetails[0].childName} لم يُستجب له منذ ${escalatedDetails[0].waitMinutes} دقيقة`
         : `تنبيه تصعيدي: ${escalatedDetails.length} طلبات استلام لم يُستجب لها (${childNames})`;
