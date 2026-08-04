@@ -12,6 +12,7 @@ WORKDIR /app
 # Install dependencies first (this layer is cached as long as these two
 # files don't change, so code edits don't force a full reinstall).
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 
 # Now copy the rest of the source and build.
