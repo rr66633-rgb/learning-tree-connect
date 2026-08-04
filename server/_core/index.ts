@@ -76,9 +76,22 @@ async function startServer() {
   // Cookie parser (required for CSRF double-submit cookie)
   app.use(cookieParser());
 
+  // SECURITY FIX (C6): previously fell back to a hardcoded literal
+  // ('csrf-secret-fallback') if JWT_SECRET was unset, which would make CSRF tokens
+  // forgeable by anyone who has read this (public) source. Fail fast instead of
+  // silently degrading security -- a misconfigured deployment should refuse to
+  // start, not run with a known-to-everyone signing secret.
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16) {
+    throw new Error(
+      "FATAL: JWT_SECRET environment variable is missing or too short (must be set, 16+ chars). " +
+      "This secret is used to sign CSRF tokens; refusing to start with no secret or a weak one " +
+      "rather than silently falling back to a hardcoded value."
+    );
+  }
+
   // CSRF Protection using Double Submit Cookie pattern
   const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
-    getSecret: () => process.env.JWT_SECRET || 'csrf-secret-fallback',
+    getSecret: () => process.env.JWT_SECRET!,
     // Use a stable identifier instead of IP - mobile users frequently switch between WiFi/cellular
     // The double-submit cookie pattern is already secure without IP binding
     getSessionIdentifier: (req) => req.cookies?.['app_session_id'] || req.headers['user-agent'] || 'anonymous',
@@ -131,9 +144,7 @@ async function startServer() {
         url.startsWith('/api/upload-photo') ||
         url.startsWith('/api/upload-document') ||
         url.startsWith('/api/upload-media') ||
-        url.startsWith('/api/upload') ||
-        // Skip CSRF for public API endpoints (waitlist form from external page)
-        url.startsWith('/api/public/')) {
+        url.startsWith('/api/upload')) {
       return next();
     }
 
@@ -222,11 +233,7 @@ async function startServer() {
   app.use('/api/trpc/auth.login', authRateLimit);
   app.use('/api/trpc/auth.register', authRateLimit);
   app.use('/api/trpc/auth.requestPasswordReset', authRateLimit);
-  app.use('/api/trpc/auth.forgotPassword', authRateLimit);
-  app.use('/api/trpc/auth.sendPhoneOtp', otpRateLimit);
   app.use('/api/trpc/auth.verifyOtp', otpRateLimit);
-  app.use('/api/trpc/auth.verifyRegistration', otpRateLimit);
-  app.use('/api/trpc/auth.verifyResetOtp', otpRateLimit);
   app.use('/api/trpc/auth.changePassword', authRateLimit);
 
   // Apply rate limits to upload endpoints
@@ -576,7 +583,15 @@ async function startServer() {
       const bcrypt = await import('bcryptjs');
       let imported = 0;
       const errors: { row: number; error: string }[] = [];
-      const orgId = user.organizationId || 1;
+      // SECURITY FIX: previously `user.organizationId || 1` -- silently
+      // imported every staff member into organization #1 if the
+      // authenticated user's organizationId was ever falsy, instead of
+      // rejecting.
+      if (!user.organizationId) {
+        res.status(403).json({ error: 'لا يوجد حساب مرتبط بمنظمة صالحة' });
+        return;
+      }
+      const orgId = user.organizationId;
 
       for (const item of results) {
         if (item.errors.length > 0) { errors.push({ row: item.row, error: item.errors.join(', ') }); continue; }
@@ -739,17 +754,27 @@ async function startServer() {
       const db = await getDb();
       if (!db) { res.status(500).json({ error: 'فشل الاتصال بقاعدة البيانات' }); return; }
       const { children: childrenTable, classes, users: usersTable, parentChildren } = await import('../../drizzle/schema');
-      const { eq, sql } = await import('drizzle-orm');
+      const { eq, sql, and } = await import('drizzle-orm');
       const { hashPassword } = await import('./authService');
       const { sendParentWelcomeWithCredentials } = await import('../services/emailService');
       let imported = 0;
       let parentsCreated = 0;
       let welcomeEmailsSent = 0;
       const importErrors: { row: number; error: string }[] = [];
-      const orgId = user.organizationId || 1;
+      // SECURITY FIX: previously `user.organizationId || 1` -- silently
+      // imported every child into organization #1 if the authenticated
+      // user's organizationId was ever falsy, instead of rejecting.
+      if (!user.organizationId) {
+        res.status(403).json({ error: 'لا يوجد حساب مرتبط بمنظمة صالحة' });
+        return;
+      }
+      const orgId = user.organizationId;
 
-      // Get classes for mapping
-      const allClasses: any[] = await db.select().from(classes);
+      // SECURITY FIX: previously fetched with no organizationId filter --
+      // if another organization happened to have a class with the same
+      // name (e.g. "Class A", "KG1"), an imported child could silently be
+      // assigned to that OTHER organization's class row.
+      const allClasses: any[] = await db.select().from(classes).where(eq(classes.organizationId, orgId));
 
       for (const item of results) {
         if (item.errors.length > 0) { importErrors.push({ row: item.row, error: item.errors.join(', ') }); continue; }
@@ -809,13 +834,21 @@ async function startServer() {
               const relation = d.parentRelation || 'أب';
 
               // Check if parent already exists by email or phone
+              // SECURITY FIX: previously matched by email/phone alone with
+              // no organizationId filter -- if a user with the same email
+              // or phone existed in a DIFFERENT organization (e.g. a
+              // coincidental match, or the same family enrolled at a
+              // sister nursery under a different tenant), that OTHER
+              // organization's user account would silently be linked as
+              // the parent of a new child in THIS organization, handing
+              // them access to this organization's child data.
               let existingParent: any = null;
               if (parentEmail) {
-                const found = await db.select().from(usersTable).where(sql`LOWER(${usersTable.email}) = ${parentEmail}`).limit(1);
+                const found = await db.select().from(usersTable).where(sql`LOWER(${usersTable.email}) = ${parentEmail} AND ${usersTable.organizationId} = ${orgId}`).limit(1);
                 if (found.length > 0) existingParent = found[0];
               }
               if (!existingParent && parentPhone) {
-                const found = await db.select().from(usersTable).where(eq(usersTable.phone, parentPhone)).limit(1);
+                const found = await db.select().from(usersTable).where(and(eq(usersTable.phone, parentPhone), eq(usersTable.organizationId, orgId))).limit(1);
                 if (found.length > 0) existingParent = found[0];
               }
 
@@ -1012,8 +1045,16 @@ async function startServer() {
       const { staffProfiles, users: usersTable } = await import('../../drizzle/schema');
       const { eq, and, like } = await import('drizzle-orm');
 
+      // SECURITY FIX: previously `user.organizationId || 1` -- if the
+      // authenticated user's organizationId was ever falsy, this endpoint
+      // would export organization #1's ENTIRE staff roster (national IDs,
+      // salaries, IBANs, phone numbers) instead of rejecting the request.
+      if (!user.organizationId) {
+        res.status(403).json({ error: 'لا يوجد حساب مرتبط بمنظمة صالحة' });
+        return;
+      }
       // Build filter conditions
-      const conditions: any[] = [eq(staffProfiles.organizationId, user.organizationId || 1)];
+      const conditions: any[] = [eq(staffProfiles.organizationId, user.organizationId)];
       const { status, jobTitle, contractType, department } = req.query as any;
       if (status) conditions.push(eq(staffProfiles.status, status));
       if (jobTitle) conditions.push(eq(staffProfiles.jobTitle, jobTitle));
@@ -1112,15 +1153,24 @@ async function startServer() {
       const { children, classes } = await import('../../drizzle/schema');
       const { eq, and, like } = await import('drizzle-orm');
 
+      // SECURITY FIX: previously `user.organizationId || 1` -- if the
+      // authenticated user's organizationId was ever falsy, this endpoint
+      // would export organization #1's ENTIRE children roster (national
+      // IDs, medical conditions, medications, parent contact info) instead
+      // of rejecting the request.
+      if (!user.organizationId) {
+        res.status(403).json({ error: 'لا يوجد حساب مرتبط بمنظمة صالحة' });
+        return;
+      }
       // Build filter conditions
-      const conditions: any[] = [eq(children.organizationId, user.organizationId || 1)];
+      const conditions: any[] = [eq(children.organizationId, user.organizationId)];
       const { status: statusFilter, classId, gender: genderFilter, ageGroup } = req.query as any;
       if (statusFilter) conditions.push(eq(children.status, statusFilter));
       if (classId) conditions.push(eq(children.classId, parseInt(classId)));
       if (genderFilter) conditions.push(eq(children.gender, genderFilter));
 
-      // Get classes for name mapping
-      const allClasses = await db.select({ id: classes.id, name: classes.name, nameAr: classes.nameAr }).from(classes);
+      // Get classes for name mapping (scoped to the same organization)
+      const allClasses = await db.select({ id: classes.id, name: classes.name, nameAr: classes.nameAr }).from(classes).where(eq(classes.organizationId, user.organizationId));
       const classMap = new Map(allClasses.map(c => [c.id, c.nameAr || c.name]));
 
       const childrenData = await db.select().from(children).where(and(...conditions));
@@ -1224,74 +1274,6 @@ async function startServer() {
       return res.json({ status: result.connected ? 'connected' : 'error', ...result });
     } catch (err: any) {
       return res.status(500).json({ status: 'error', error: err.message });
-    }
-  });
-
-  // ============ PUBLIC REST API (no OAuth required) ============
-  // Allow any origin for public API endpoints (standalone waitlist page)
-  app.use('/api/public', (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') return res.sendStatus(200);
-    next();
-  });
-
-  // List active organizations for public waitlist form
-  app.get('/api/public/organizations', async (req, res) => {
-    try {
-      const { getDb } = await import('../db');
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: 'Database not available' });
-      const { organizations } = await import('../../drizzle/schema');
-      const { eq } = await import('drizzle-orm');
-      const orgs = await db.select({
-        id: organizations.id,
-        name: organizations.name,
-        nameAr: organizations.nameAr,
-        city: organizations.city,
-        logoUrl: organizations.logoUrl,
-      }).from(organizations).where(eq(organizations.status, 'active'));
-      res.json({ organizations: orgs });
-    } catch (err: any) {
-      console.error('[Public API] Error fetching organizations:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  // Public waitlist registration
-  app.post('/api/public/waitlist', async (req, res) => {
-    try {
-      const { childName, parentName, phone, email, dateOfBirth, preferredClass, notes, organizationId } = req.body;
-      if (!childName || !parentName || !phone) {
-        return res.status(400).json({ error: 'يرجى تعبئة الحقول المطلوبة (اسم الطفل، اسم ولي الأمر، رقم الجوال)' });
-      }
-      const { getDb } = await import('../db');
-      const db = await getDb();
-      if (!db) return res.status(500).json({ error: 'Database not available' });
-      const { waitingList } = await import('../../drizzle/schema');
-      const result = await db.insert(waitingList).values({
-        childName,
-        parentName,
-        phone,
-        email: email || null,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        preferredClass: preferredClass || null,
-        notes: notes || null,
-        organizationId: organizationId ? parseInt(organizationId) : null,
-        status: 'waiting',
-        priority: 0,
-      });
-      // Notify owner
-      try {
-        const { notifyOwner } = await import('./notification');
-        const orgName = organizationId ? ` (حضانة #${organizationId})` : '';
-        await notifyOwner({ title: 'تسجيل جديد في قائمة الانتظار', content: `تم تسجيل ${childName} (ولي الأمر: ${parentName})${orgName} في قائمة الانتظار` });
-      } catch {}
-      res.json({ success: true, id: result[0].insertId });
-    } catch (err: any) {
-      console.error('[Public API] Error registering waitlist:', err);
-      res.status(500).json({ error: 'حدث خطأ أثناء التسجيل' });
     }
   });
 

@@ -1,10 +1,17 @@
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, tenantProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import { sendPushToUser, sendPushToUsers, PushPayload } from "./_core/webPush";
 
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+// SECURITY FIX (calendar regression after C2/C3): these two procedures now build
+// on `tenantProcedure` instead of `protectedProcedure`, matching the same fix
+// already applied to routers.ts's local adminProcedure/teacherProcedure/parentProcedure.
+// Without this, ctx.organizationId could still be null/undefined here even for an
+// authenticated admin, which is exactly how calendar event creation silently fell
+// back to the schema's organizationId default(1) once the old ctx-level default
+// (`user?.organizationId ?? 1`) was removed in C2.
+const adminProcedure = tenantProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
   if (role !== "admin" && role !== "super_admin" && role !== "principal" && role !== "owner") {
     throw new TRPCError({ code: "FORBIDDEN", message: "صلاحية الإدارة مطلوبة" });
@@ -12,7 +19,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
-const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
+const staffProcedure = tenantProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
   if (role !== "admin" && role !== "super_admin" && role !== "principal" && role !== "owner" && role !== "teacher") {
     throw new TRPCError({ code: "FORBIDDEN", message: "صلاحية الموظفين مطلوبة" });
@@ -98,7 +105,13 @@ async function autoScheduleReminders(eventId: number, eventDate: string, eventTi
 }
 
 // Helper: send notification to users by audience
-async function sendEventNotification(audience: string, message: string, eventId: number, silent: boolean = true) {
+// SECURITY FIX: previously called db.getUsersByRoles() with no
+// organizationId at all -- every event reminder (parent/staff/all audience)
+// was broadcast to every matching-role user across EVERY organization in the
+// database, not just the organization that owns this event. organizationId
+// is now a required parameter, sourced from the (already org-verified)
+// calendar event at every call site below.
+async function sendEventNotification(audience: string, message: string, eventId: number, organizationId: number, silent: boolean = true) {
   const payload: PushPayload = {
     title: "تذكير حدث 📅",
     body: message,
@@ -114,11 +127,11 @@ async function sendEventNotification(audience: string, message: string, eventId:
   let targetUserIds: number[] = [];
 
   if (audience === "parents" || audience === "all") {
-    const parents = await db.getUsersByRoles(["parent"]);
+    const parents = await db.getUsersByRoles(["parent"], organizationId);
     targetUserIds.push(...parents.map((u: any) => u.id));
   }
   if (audience === "staff" || audience === "all") {
-    const staff = await db.getUsersByRoles(["admin", "super_admin", "principal", "teacher"]);
+    const staff = await db.getUsersByRoles(["admin", "super_admin", "principal", "teacher"], organizationId);
     targetUserIds.push(...staff.map((u: any) => u.id));
   }
 
@@ -137,6 +150,7 @@ async function sendEventNotification(audience: string, message: string, eventId:
   for (const userId of targetUserIds) {
     await db.createNotification({
       userId,
+      organizationId,
       title: "تذكير حدث",
       titleAr: "تذكير حدث",
       body: message,
@@ -151,7 +165,13 @@ async function sendEventNotification(audience: string, message: string, eventId:
 
 export const calendarRouter = router({
   // List events with filters (admin/staff see all, parents see published only)
-  list: protectedProcedure
+  // SECURITY FIX (calendar read-side leak): upgraded from `protectedProcedure` to
+  // `tenantProcedure` so ctx.organizationId is guaranteed a non-null integer, and
+  // db.getCalendarEvents now requires that organizationId as a mandatory
+  // parameter -- previously this query had no organization scoping at all, so
+  // any authenticated user (including parents) could list every organization's
+  // calendar events.
+  list: tenantProcedure
     .input(z.object({
       month: z.number().min(1).max(12).optional(),
       year: z.number().optional(),
@@ -161,11 +181,11 @@ export const calendarRouter = router({
     .query(async ({ ctx, input }) => {
       const role = ctx.user?.role;
       const isStaff = role === "admin" || role === "super_admin" || role === "principal" || role === "owner" || role === "teacher";
-      
+
       const filters: any = {};
       if (input?.month) filters.month = input.month;
       if (input?.year) filters.year = input.year;
-      
+
       // Parents only see published events
       if (!isStaff) {
         filters.status = "published";
@@ -173,31 +193,37 @@ export const calendarRouter = router({
       } else if (input?.status) {
         filters.status = input.status;
       }
-      
-      const events = await db.getCalendarEvents(filters);
-      
+
+      const events = await db.getCalendarEvents(ctx.organizationId, filters);
+
       // Filter by category in-memory if needed
       if (input?.category) {
         return events.filter((e: any) => e.category === input.category);
       }
-      
+
       return events;
     }),
 
   // Get single event with full details
-  get: protectedProcedure
+  // SECURITY FIX (calendar read-side leak): upgraded to `tenantProcedure` and now
+  // checks event.organizationId === ctx.organizationId before returning anything
+  // -- previously any authenticated user could fetch any other organization's
+  // event by id (only a published/staff role check existed, no org check at all).
+  get: tenantProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const event = await db.getCalendarEvent(input.id);
-      if (!event) throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
-      
+      if (!event || event.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
+
       // Parents can only see published events
       const role = ctx.user?.role;
       const isStaff = role === "admin" || role === "super_admin" || role === "principal" || role === "owner" || role === "teacher";
       if (!isStaff && event.status !== "published") {
         throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
       }
-      
+
       return event;
     }),
 
@@ -230,6 +256,12 @@ export const calendarRouter = router({
         dressCode: eventData.dressCode || null,
         description: eventData.description || null,
         createdBy: ctx.user!.id,
+        // SECURITY FIX: previously omitted entirely, silently relying on the
+        // calendar_events.organizationId schema default(1) -- meant every event
+        // created by any organization landed in org #1 once the ctx-level default
+        // (user?.organizationId ?? 1) was removed. ctx.organizationId is guaranteed
+        // non-null here because adminProcedure now builds on tenantProcedure.
+        organizationId: ctx.organizationId,
       });
 
       // Auto-schedule reminders if event is published and autoReminders is true
@@ -266,8 +298,15 @@ export const calendarRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       const existing = await db.getCalendarEvent(id);
-      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
-      
+      // SECURITY FIX: previously matched on id alone with no organization check,
+      // letting any admin/staff user in ANY organization update ANY other
+      // organization's calendar event by guessing/enumerating ids. NOT_FOUND
+      // (rather than FORBIDDEN) is used for the cross-org case so the response
+      // doesn't confirm that an out-of-org event id exists.
+      if (!existing || existing.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
+
       const result = await db.updateCalendarEvent(id, data);
 
       // If date changed, reschedule reminders
@@ -288,6 +327,7 @@ export const calendarRouter = router({
           "parents",
           `تم تغيير موعد ${existing.titleAr} إلى ${data.eventDate}`,
           id,
+          ctx.organizationId,
           true
         );
       }
@@ -300,8 +340,12 @@ export const calendarRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const existing = await db.getCalendarEvent(input.id);
-      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
-      
+      // SECURITY FIX: same cross-org check as `update` -- previously any
+      // admin/staff user could delete any organization's event by id.
+      if (!existing || existing.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
+
       // Cancel all pending reminders before deleting
       await db.cancelEventReminders(input.id);
 
@@ -311,6 +355,7 @@ export const calendarRouter = router({
           "all",
           `تم إلغاء: ${existing.titleAr}`,
           input.id,
+          ctx.organizationId,
           true
         );
       }
@@ -327,8 +372,12 @@ export const calendarRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const existing = await db.getCalendarEvent(input.id);
-      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
-      
+      // SECURITY FIX: same cross-org check as `update`/`delete` -- previously any
+      // admin/staff user could publish/unpublish any organization's event by id.
+      if (!existing || existing.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
+
       const status = input.published ? "published" : "draft";
       await db.updateCalendarEvent(input.id, { status });
 
@@ -360,7 +409,11 @@ export const calendarRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const event = await db.getCalendarEvent(input.eventId);
-      if (!event) throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      // SECURITY FIX: previously only checked existence, letting an admin send a
+      // reminder against any other organization's event id.
+      if (!event || event.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
 
       // Create a manual reminder record
       const reminder = await db.createEventReminder({
@@ -376,7 +429,7 @@ export const calendarRouter = router({
       });
 
       // Send the notification immediately
-      const result = await sendEventNotification(input.audience, input.message, input.eventId, true);
+      const result = await sendEventNotification(input.audience, input.message, input.eventId, ctx.organizationId, true);
 
       return { success: true, sentTo: result.sent, reminderId: reminder.id };
     }),
@@ -392,7 +445,11 @@ export const calendarRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const event = await db.getCalendarEvent(input.eventId);
-      if (!event) throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      // SECURITY FIX: previously only checked existence, letting an admin
+      // schedule a reminder against any other organization's event id.
+      if (!event || event.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
 
       const scheduledDate = new Date(input.scheduledAt);
       if (scheduledDate <= new Date()) {
@@ -420,8 +477,19 @@ export const calendarRouter = router({
       reminderId: z.number().optional(), // Cancel specific or all
     }))
     .mutation(async ({ ctx, input }) => {
+      const event = await db.getCalendarEvent(input.eventId);
+      // SECURITY FIX: previously cancelled reminders by eventId/reminderId with
+      // no organization check at all, letting an admin cancel any other
+      // organization's event reminders (or, via reminderId, an arbitrary
+      // reminder regardless of which event/organization it belonged to).
+      if (!event || event.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
+
       if (input.reminderId) {
-        await db.cancelSingleReminder(input.reminderId);
+        // eventId is passed through so the update is also pinned to this
+        // (now org-verified) event, not just the bare reminderId.
+        await db.cancelSingleReminder(input.reminderId, input.eventId);
       } else {
         await db.cancelEventReminders(input.eventId);
       }
@@ -431,15 +499,42 @@ export const calendarRouter = router({
   // Get reminder history for an event (admin only)
   reminderHistory: adminProcedure
     .input(z.object({ eventId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const event = await db.getCalendarEvent(input.eventId);
+      // SECURITY FIX: previously returned reminder history for any eventId with
+      // no organization check, letting an admin read another organization's
+      // reminder history (messages, audiences, schedules).
+      if (!event || event.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الحدث غير موجود" });
+      }
+
       const reminders = await db.getEventReminders(input.eventId);
       return reminders;
     }),
 
   // Process pending reminders (called by heartbeat job)
+  // SECURITY FIX: this was a `publicProcedure` with an unused `secret` input
+  // field (never actually checked) -- meaning literally anyone, unauthenticated,
+  // could call this mutation over the network and trigger a platform-wide
+  // notification send (every organization's pending reminders) repeatedly.
+  // It doesn't leak organization data back to the caller, but it is an
+  // unauthenticated cross-organization write with no rate limit of its own.
+  // Now requires the same cron-or-super_admin gate used by the equivalent
+  // /api/scheduled/* Express handlers elsewhere in this codebase.
   processPendingReminders: publicProcedure
     .input(z.object({ secret: z.string() }).optional())
-    .mutation(async () => {
+    .mutation(async ({ ctx }) => {
+      const { sdk } = await import('./_core/sdk');
+      let authedUser: Awaited<ReturnType<typeof sdk.authenticateRequest>> | null = null;
+      try {
+        authedUser = await sdk.authenticateRequest(ctx.req);
+      } catch {
+        authedUser = null;
+      }
+      if (!authedUser?.isCron && authedUser?.role !== 'super_admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'cron-only or super_admin' });
+      }
+
       const pendingReminders = await db.getPendingReminders();
       let processed = 0;
 
@@ -454,7 +549,7 @@ export const calendarRouter = router({
 
           // Send the notification
           const message = reminder.message || generateReminderMessage(event.titleAr, reminder.daysBefore, (event as any).eventTime);
-          await sendEventNotification(reminder.audience, message, reminder.eventId, true);
+          await sendEventNotification(reminder.audience, message, reminder.eventId, event.organizationId, true);
           await db.markReminderSent(reminder.id);
           processed++;
         } catch (error) {

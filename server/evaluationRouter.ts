@@ -1,13 +1,14 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "./_core/trpc";
+import { tenantProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { evaluationCriteria, evaluations, evaluationScores, users } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export const evaluationRouter = router({
   // ============ CRITERIA MANAGEMENT ============
-  listCriteria: protectedProcedure.query(async ({ ctx }) => {
-    const orgId = ctx.user.organizationId ?? 1;
+  listCriteria: tenantProcedure.query(async ({ ctx }) => {
+    const orgId = ctx.organizationId;
     const db = (await getDb())!;
     const criteria = await db
       .select()
@@ -17,7 +18,7 @@ export const evaluationRouter = router({
     return criteria;
   }),
 
-  upsertCriterion: protectedProcedure
+  upsertCriterion: tenantProcedure
     .input(z.object({
       id: z.number().optional(),
       name: z.string().min(1),
@@ -27,9 +28,15 @@ export const evaluationRouter = router({
       maxScore: z.number().min(1).max(10).default(5),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       if (input.id) {
+        // SECURITY FIX: previously updated by id alone -- any user could edit
+        // another organization's evaluation criterion.
+        const [existing] = await db.select({ organizationId: evaluationCriteria.organizationId }).from(evaluationCriteria).where(eq(evaluationCriteria.id, input.id)).limit(1);
+        if (!existing || existing.organizationId !== orgId) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
         await db.update(evaluationCriteria)
           .set({
             name: input.name,
@@ -53,10 +60,16 @@ export const evaluationRouter = router({
       }
     }),
 
-  deleteCriterion: protectedProcedure
+  deleteCriterion: tenantProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
+      // SECURITY FIX: previously updated by id alone -- any user could
+      // deactivate another organization's evaluation criterion.
+      const [existing] = await db.select({ organizationId: evaluationCriteria.organizationId }).from(evaluationCriteria).where(eq(evaluationCriteria.id, input.id)).limit(1);
+      if (!existing || existing.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       await db.update(evaluationCriteria)
         .set({ isActive: false })
         .where(eq(evaluationCriteria.id, input.id));
@@ -64,10 +77,10 @@ export const evaluationRouter = router({
     }),
 
   // ============ EVALUATIONS ============
-  listEvaluations: protectedProcedure
+  listEvaluations: tenantProcedure
     .input(z.object({ userId: z.number().optional(), period: z.string().optional() }))
     .query(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       let conditions: any[] = [eq(evaluations.organizationId, orgId)];
       if (input.userId) conditions.push(eq(evaluations.userId, input.userId));
@@ -97,9 +110,9 @@ export const evaluationRouter = router({
       return evals;
     }),
 
-  getEvaluation: protectedProcedure
+  getEvaluation: tenantProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const [evaluation] = await db
         .select({
@@ -117,12 +130,16 @@ export const evaluationRouter = router({
           status: evaluations.status,
           createdAt: evaluations.createdAt,
           updatedAt: evaluations.updatedAt,
+          organizationId: evaluations.organizationId,
         })
         .from(evaluations)
         .innerJoin(users, eq(users.id, evaluations.userId))
         .where(eq(evaluations.id, input.id));
 
-      if (!evaluation) return null;
+      // SECURITY FIX: previously had NO organization filter/check at all --
+      // full cross-tenant read of any organization's evaluation (scores,
+      // strengths, improvements, goals, notes) by id.
+      if (!evaluation || evaluation.organizationId !== ctx.organizationId) return null;
 
       // Get scores
       const scores = await db
@@ -143,7 +160,7 @@ export const evaluationRouter = router({
       return { ...evaluation, scores };
     }),
 
-  createEvaluation: protectedProcedure
+  createEvaluation: tenantProcedure
     .input(z.object({
       userId: z.number(),
       period: z.string().min(1),
@@ -158,8 +175,17 @@ export const evaluationRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
+
+      // SECURITY FIX: input.userId was previously trusted with no check that
+      // the target user belongs to the evaluator's own organization -- an
+      // evaluator could create an evaluation record pointed at a user from a
+      // different organization.
+      const [targetUser] = await db.select({ organizationId: users.organizationId }).from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!targetUser || targetUser.organizationId !== orgId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+      }
 
       // Calculate overall score
       const criteria = await db
@@ -203,6 +229,10 @@ export const evaluationRouter = router({
       });
 
       // Insert scores
+      // SECURITY FIX: previously omitted organizationId entirely --
+      // evaluationScores.organizationId is NOT NULL with no default, so
+      // this would fail outright; now stamped with orgId (already used to
+      // create the parent evaluation above).
       if (input.scores.length > 0) {
         await db.insert(evaluationScores).values(
           input.scores.map((s: any) => ({
@@ -210,6 +240,7 @@ export const evaluationRouter = router({
             criterionId: s.criterionId,
             score: s.score,
             comment: s.comment || null,
+            organizationId: orgId,
           }))
         );
       }
@@ -217,7 +248,7 @@ export const evaluationRouter = router({
       return { id: evalResult.insertId };
     }),
 
-  updateEvaluation: protectedProcedure
+  updateEvaluation: tenantProcedure
     .input(z.object({
       id: z.number(),
       scores: z.array(z.object({
@@ -231,8 +262,15 @@ export const evaluationRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
+
+      // SECURITY FIX: previously updated by id alone -- any user could edit
+      // another organization's evaluation.
+      const [existingEval] = await db.select({ organizationId: evaluations.organizationId }).from(evaluations).where(eq(evaluations.id, input.id)).limit(1);
+      if (!existingEval || existingEval.organizationId !== orgId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
 
       // Update text fields
       await db.update(evaluations)
@@ -249,12 +287,15 @@ export const evaluationRouter = router({
         // Delete old scores
         await db.delete(evaluationScores).where(eq(evaluationScores.evaluationId, input.id));
         // Insert new scores
+        // SECURITY FIX: previously omitted organizationId -- now stamped
+        // with orgId (already verified above to match this evaluation).
         await db.insert(evaluationScores).values(
           input.scores.map((s: any) => ({
             evaluationId: input.id,
             criterionId: s.criterionId,
             score: s.score,
             comment: s.comment || null,
+            organizationId: orgId,
           }))
         );
 
@@ -288,20 +329,32 @@ export const evaluationRouter = router({
       return { success: true };
     }),
 
-  submitEvaluation: protectedProcedure
+  submitEvaluation: tenantProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
+      // SECURITY FIX: previously updated by id alone -- any user could change
+      // another organization's evaluation status.
+      const [existingEval] = await db.select({ organizationId: evaluations.organizationId }).from(evaluations).where(eq(evaluations.id, input.id)).limit(1);
+      if (!existingEval || existingEval.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       await db.update(evaluations)
         .set({ status: "submitted" })
         .where(eq(evaluations.id, input.id));
       return { success: true };
     }),
 
-  acknowledgeEvaluation: protectedProcedure
+  acknowledgeEvaluation: tenantProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
+      // SECURITY FIX: previously updated by id alone -- any user could change
+      // another organization's evaluation status.
+      const [existingEval] = await db.select({ organizationId: evaluations.organizationId }).from(evaluations).where(eq(evaluations.id, input.id)).limit(1);
+      if (!existingEval || existingEval.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       await db.update(evaluations)
         .set({ status: "acknowledged" })
         .where(eq(evaluations.id, input.id));

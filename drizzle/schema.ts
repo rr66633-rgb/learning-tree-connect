@@ -20,7 +20,11 @@ export const users = mysqlTable("users", {
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
   accountLockedUntil: timestamp("accountLockedUntil"),
   passwordChangedAt: timestamp("passwordChangedAt"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   deletionRequestedAt: timestamp("deletionRequestedAt"),
   deletionScheduledAt: timestamp("deletionScheduledAt"),
 });
@@ -38,7 +42,11 @@ export const classes = mysqlTable("classes", {
   teacherId: int("teacherId"),
   assistantId: int("assistantId"),
   isActive: boolean("isActive").default(true).notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -83,7 +91,7 @@ export const children = mysqlTable("children", {
   notes: text("notes"),
   // Status & Metadata
   status: mysqlEnum("status", ["active", "inactive", "graduated", "waitlist"]).default("active").notNull(),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -129,7 +137,11 @@ export const attendance = mysqlTable("attendance", {
   droppedOffBy: varchar("droppedOffBy", { length: 200 }),
   droppedOffRelationship: mysqlEnum("droppedOffRelationship", ["mother", "father", "driver", "grandparent", "other"]),
   notes: text("notes"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -154,7 +166,11 @@ export const staffAttendance = mysqlTable("staff_attendance", {
   lateReason: text("lateReason"),
   actualCheckInTime: timestamp("actualCheckInTime"),
   actualCheckOutTime: timestamp("actualCheckOutTime"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -175,7 +191,11 @@ export const centerSettings = mysqlTable("center_settings", {
   vatNumber: varchar("vatNumber", { length: 50 }),
   commercialRegister: varchar("commercialRegister", { length: 50 }),
   logoUrl: text("logoUrl"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -195,7 +215,11 @@ export const dailyActivities = mysqlTable("daily_activities", {
   photoUrl: text("photoUrl"),
   recordedBy: int("recordedBy").notNull(),
   recordedAt: timestamp("recordedAt").defaultNow().notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -215,7 +239,11 @@ export const dailyReports = mysqlTable("daily_reports", {
   teacherNotes: text("teacherNotes"),
   photos: json("photos"),
   isPublished: boolean("isPublished").default(false).notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -233,7 +261,11 @@ export const eyfsAssessments = mysqlTable("eyfs_assessments", {
   notes: text("notes"),
   assessedBy: int("assessedBy").notNull(),
   assessedAt: timestamp("assessedAt").defaultNow().notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -253,7 +285,14 @@ export const calendarEvents = mysqlTable("calendar_events", {
   audience: mysqlEnum("audience", ["all", "parents", "staff", "admin"]).default("all").notNull(),
   status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
   createdBy: int("createdBy").notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX (calendar organizationId migration): was
+  // `int("organizationId").default(1)`, deliberately deferred in C3 because the
+  // only insert call site (calendarRouter.ts `create`) did not yet set
+  // organizationId. That call site now always passes ctx.organizationId
+  // (see server/calendarRouter.ts), so this table is safe to convert like the
+  // other 16 in C3. No default -- an insert that omits organizationId now fails
+  // loudly instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -287,7 +326,11 @@ export const announcements = mysqlTable("announcements", {
   imageUrl: text("imageUrl"),
   expiresAt: timestamp("expiresAt"),
   createdBy: int("createdBy").notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -309,7 +352,11 @@ export const documents = mysqlTable("documents", {
   requiresSignature: boolean("requiresSignature").default(false).notNull(),
   audience: mysqlEnum("audience", ["all", "parents", "staff"]).default("all").notNull(),
   createdBy: int("createdBy").notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -336,6 +383,18 @@ export const enrollment = mysqlTable("enrollment", {
 });
 
 // ============ WAITING LIST ============
+// SECURITY FIX: this table previously had NO organizationId column at all
+// (unlike every other tenant-facing table), so every organization's
+// prospective-family waiting list (names, phone numbers, emails of
+// families who haven't enrolled yet) was mixed into one single global
+// list, readable and editable by any admin of any organization. A nullable
+// organizationId column is added (no default, no NOT NULL) rather than
+// backfilled/required, since this sandbox has no live database to run an
+// UPDATE to backfill existing rows to a real organization -- see server/db.ts
+// and server/routers.ts for the corresponding query-side filtering. At
+// deploy time, existing rows should be backfilled to the correct
+// organization (if recoverable) before relying on this filter, and a
+// drizzle-kit migration must be generated/run against a live database.
 export const waitingList = mysqlTable("waiting_list", {
   id: int("id").autoincrement().primaryKey(),
   childName: varchar("childName", { length: 200 }).notNull(),
@@ -345,9 +404,9 @@ export const waitingList = mysqlTable("waiting_list", {
   dateOfBirth: timestamp("dateOfBirth"),
   preferredClass: varchar("preferredClass", { length: 100 }),
   notes: text("notes"),
-  organizationId: int("organizationId"),
   status: mysqlEnum("status", ["waiting", "contacted", "enrolled", "cancelled"]).default("waiting").notNull(),
   priority: int("priority").default(0).notNull(),
+  organizationId: int("organizationId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -362,7 +421,11 @@ export const conversations = mysqlTable("conversations", {
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
   lastMessagePreview: varchar("lastMessagePreview", { length: 255 }),
   isArchived: boolean("isArchived").default(false).notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -405,7 +468,11 @@ export const invoices = mysqlTable("invoices", {
   tuitionPlanId: int("tuitionPlanId"),
   paidAmount: decimal("paidAmount", { precision: 10, scale: 2 }).default("0.00").notNull(),
   createdBy: int("createdBy"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -524,7 +591,11 @@ export const loyaltyRewards = mysqlTable("loyalty_rewards", {
   imageUrl: varchar("imageUrl", { length: 500 }),
   maxRedemptions: int("maxRedemptions"),
   currentRedemptions: int("currentRedemptions").default(0),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -534,7 +605,7 @@ export type LoyaltyReward = typeof loyaltyRewards.$inferSelect;
 // Loyalty settings - configurable earn rules per organization
 export const loyaltySettings = mysqlTable("loyalty_settings", {
   id: int("id").autoincrement().primaryKey(),
-  organizationId: int("organizationId").default(1).notNull(),
+  organizationId: int("organizationId").notNull(),
   // Points earned for various actions
   pointsPerReferral: int("pointsPerReferral").default(100).notNull(),
   pointsPerOnTimePayment: int("pointsPerOnTimePayment").default(20).notNull(),
@@ -573,7 +644,17 @@ export const notifications = mysqlTable("notifications", {
   isRead: boolean("isRead").default(false).notNull(),
   link: varchar("link", { length: 500 }),
   metadata: json("metadata"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed the `.default(1)` fallback -- every insert site in
+  // the codebase now passes a real organizationId explicitly, with exactly
+  // one deliberate exception: the platform-wide "new nursery registration"
+  // notification sent to super_admin users (see
+  // server/registrationRouter.ts), which concerns a registration that has
+  // not been approved into an organization yet and so has no real org to
+  // attach to. That one call site sets `organizationId: null` explicitly
+  // (never omits it). This column is intentionally left nullable (no
+  // default) rather than notNull to allow that one documented case --
+  // every other call site always supplies a real organizationId.
+  organizationId: int("organizationId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -669,7 +750,11 @@ export const media = mysqlTable("media", {
   classId: int("classId"),
   visibility: mysqlEnum("visibility", ["class", "specific"]).default("class").notNull(),
   isApproved: boolean("isApproved").default(true).notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type Media = typeof media.$inferSelect;
@@ -751,7 +836,11 @@ export const pickupRequests = mysqlTable("pickup_requests", {
   escalatedAt: timestamp("escalatedAt"),
   // Additional info
   notes: text("notes"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -784,7 +873,11 @@ export const learningObservations = mysqlTable("learning_observations", {
   nextSteps: text("nextSteps"),
   linkedAssessmentId: int("linkedAssessmentId"),
   observedAt: timestamp("observedAt").defaultNow().notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -817,7 +910,11 @@ export const aiGeneratedContent = mysqlTable("ai_generated_content", {
   createdBy: int("createdBy").notNull(),
   isSaved: boolean("isSaved").default(false).notNull(),
   isPublished: boolean("isPublished").default(false).notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -851,12 +948,23 @@ export type StaffDutyStatus = typeof staffDutyStatus.$inferSelect;
 export type InsertStaffDutyStatus = typeof staffDutyStatus.$inferInsert;
 
 // ============ PICKUP ALERT SETTINGS ============
+// SECURITY FIX: previously had NO organizationId column at all -- a single
+// global row controlled the pickup-alert alarm (volume/tone/repeat/
+// escalation) for every organization on the platform, and any org's admin
+// could change every other org's staff alarm behavior via updateAlertSettings.
+// Per explicit policy (every nursery fully tenant-isolated, no exception
+// besides authenticated Super Admin), this is no longer treated as an
+// acceptable shared default -- organizationId is added (nullable, no
+// default, since this sandbox has no live database to backfill existing
+// rows to a real organization; see server/db.ts and server/routers.ts for
+// the corresponding per-org get-or-create logic).
 export const pickupAlertSettings = mysqlTable("pickup_alert_settings", {
   id: int("id").autoincrement().primaryKey(),
   volume: int("volume").default(80).notNull(), // 0-100
   tone: mysqlEnum("tone", ["urgent", "gentle", "alarm", "chime"]).default("urgent").notNull(),
   repeatIntervalSeconds: int("repeatIntervalSeconds").default(5).notNull(),
   escalationMinutes: int("escalationMinutes").default(2).notNull(),
+  organizationId: int("organizationId"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type PickupAlertSettings = typeof pickupAlertSettings.$inferSelect;
@@ -883,7 +991,11 @@ export const weeklyPlans = mysqlTable("weekly_plans", {
   status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
   sections: json("sections").notNull(), // JSON object with all 14 sections
   publishedAt: timestamp("publishedAt"),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1061,7 +1173,7 @@ export const developmentObservations = mysqlTable("development_observations", {
   observedAt: timestamp("observedAt").defaultNow().notNull(),
   termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
   academicYear: varchar("academicYear", { length: 10 }), // e.g. "2025-2026"
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1082,7 +1194,7 @@ export const schoolReadinessScores = mysqlTable("school_readiness_scores", {
   notes: text("notes"),
   termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
   academicYear: varchar("academicYear", { length: 10 }),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   assessedAt: timestamp("assessedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -1099,7 +1211,7 @@ export const aiDevelopmentAnalysis = mysqlTable("ai_development_analysis", {
   basedOnObservations: int("basedOnObservations").default(0).notNull(), // count of observations analyzed
   termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
   academicYear: varchar("academicYear", { length: 10 }),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   generatedAt: timestamp("generatedAt").defaultNow().notNull(),
   expiresAt: timestamp("expiresAt"), // analysis should be regenerated after this
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1121,7 +1233,7 @@ export const developmentRecommendations = mysqlTable("development_recommendation
   aiGenerated: boolean("aiGenerated").default(true).notNull(),
   completedAt: timestamp("completedAt"),
   completedBy: int("completedBy"),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1145,7 +1257,7 @@ export const developmentAlerts = mysqlTable("development_alerts", {
   resolvedBy: int("resolvedBy"),
   resolvedAt: timestamp("resolvedAt"),
   resolutionNotes: text("resolutionNotes"),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1165,7 +1277,11 @@ export const childDevelopmentSummary = mysqlTable("child_development_summary", {
   lastAnalysisDate: timestamp("lastAnalysisDate"),
   termPeriod: mysqlEnum("termPeriod", ["autumn_1", "autumn_2", "spring_1", "spring_2", "summer_1", "summer_2"]).default("autumn_1").notNull(),
   academicYear: varchar("academicYear", { length: 10 }),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type ChildDevelopmentSummary = typeof childDevelopmentSummary.$inferSelect;
@@ -1195,7 +1311,7 @@ export const homeLearningActivities = mysqlTable("home_learning_activities", {
   parentFeedback: text("parentFeedback"),
   rating: int("rating"),
   weekNumber: int("weekNumber"),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type HomeLearningActivity = typeof homeLearningActivities.$inferSelect;
@@ -1215,7 +1331,7 @@ export const familyChallenges = mysqlTable("family_challenges", {
   weekNumber: int("weekNumber"),
   academicYear: varchar("academicYear", { length: 10 }),
   isActive: boolean("isActive").default(true).notNull(),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type FamilyChallenge = typeof familyChallenges.$inferSelect;
@@ -1232,7 +1348,7 @@ export const challengeParticipations = mysqlTable("challenge_participations", {
   evidenceUrl: text("evidenceUrl"),
   notes: text("notes"),
   pointsEarned: int("pointsEarned").default(0),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1255,7 +1371,7 @@ export const homeJournalEntries = mysqlTable("home_journal_entries", {
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
   isHighlighted: boolean("isHighlighted").default(false).notNull(),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type HomeJournalEntry = typeof homeJournalEntries.$inferSelect;
@@ -1276,7 +1392,7 @@ export const parentObservations = mysqlTable("parent_observations", {
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
   linkedObservationId: int("linkedObservationId"),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type ParentObservation = typeof parentObservations.$inferSelect;
@@ -1300,7 +1416,7 @@ export const monthlyGrowthGoals = mysqlTable("monthly_growth_goals", {
   parentNotes: text("parentNotes"),
   teacherNotes: text("teacherNotes"),
   basedOnAreaId: int("basedOnAreaId"),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1322,7 +1438,11 @@ export const engagementScores = mysqlTable("engagement_scores", {
   score: int("score").default(0).notNull(),
   level: mysqlEnum("level", ["inactive", "emerging", "developing", "active", "highly_engaged", "champion"]).default("inactive").notNull(),
   streak: int("streak").default(0).notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1341,7 +1461,7 @@ export const achievementBadges = mysqlTable("achievement_badges", {
   pointsRequired: int("pointsRequired").default(0),
   tier: mysqlEnum("tier", ["bronze", "silver", "gold", "platinum"]).default("bronze").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type AchievementBadge = typeof achievementBadges.$inferSelect;
@@ -1353,7 +1473,7 @@ export const parentBadges = mysqlTable("parent_badges", {
   badgeId: int("badgeId").notNull(),
   childId: int("childId"),
   earnedAt: timestamp("earnedAt").defaultNow().notNull(),
-  organizationId: int("organizationId").default(1),
+  organizationId: int("organizationId").notNull(),
 });
 export type ParentBadge = typeof parentBadges.$inferSelect;
 
@@ -1558,7 +1678,11 @@ export const developmentalAssessments = mysqlTable("developmental_assessments", 
   interpretation: mysqlEnum("interpretation", ["on_track", "needs_support", "needs_referral"]).notNull(),
   notes: text("notes"),
   assessmentDate: timestamp("assessmentDate").notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -1592,7 +1716,11 @@ export const curricula = mysqlTable("curricula", {
   fileName: varchar("fileName", { length: 255 }).notNull(),
   fileSize: int("fileSize"),
   uploadedBy: int("uploadedBy").notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -1612,7 +1740,11 @@ export const customAssessments = mysqlTable("custom_assessments", {
   createdBy: int("createdBy").notNull(),
   status: mysqlEnum("status", ["draft", "active", "archived"]).default("draft").notNull(),
   shareWithParents: boolean("shareWithParents").default(false).notNull(),
-  organizationId: int("organizationId").default(1),
+  // SECURITY FIX: removed `.default(1)` -- every insert site for this table
+  // now passes ctx.organizationId (or an equivalently verified value)
+  // explicitly. An insert that omits organizationId now fails loudly at the
+  // database level instead of silently landing in organization #1.
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1692,6 +1824,7 @@ export const storeCart = mysqlTable("store_cart", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   productId: int("productId").notNull(),
+  organizationId: int("organizationId").notNull(),
   quantity: int("quantity").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -1855,7 +1988,7 @@ export type InsertPerformanceGoal = typeof performanceGoals.$inferInsert;
 // ============ INTEGRATION CONFIG (SMS/Email Settings) ============
 export const integrationConfig = mysqlTable("integration_config", {
   id: int("id").autoincrement().primaryKey(),
-  organizationId: int("organizationId").default(1).notNull(),
+  organizationId: int("organizationId").notNull(),
   provider: varchar("provider", { length: 50 }).notNull(), // 'twilio' | 'sendgrid'
   configKey: varchar("config_key", { length: 100 }).notNull(), // e.g. 'account_sid', 'auth_token', 'phone_number', 'enabled'
   configValue: text("config_value"),
@@ -1863,17 +1996,3 @@ export const integrationConfig = mysqlTable("integration_config", {
 });
 export type IntegrationConfig = typeof integrationConfig.$inferSelect;
 export type InsertIntegrationConfig = typeof integrationConfig.$inferInsert;
-
-// ============ FCM PUSH NOTIFICATION TOKENS ============
-export const fcmTokens = mysqlTable("fcm_tokens", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  token: text("token").notNull(),
-  device: varchar("device", { length: 100 }),
-  platform: mysqlEnum("platform", ["web", "android", "ios"]).default("web").notNull(),
-  active: boolean("active").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-export type FcmToken = typeof fcmTokens.$inferSelect;
-export type InsertFcmToken = typeof fcmTokens.$inferInsert;

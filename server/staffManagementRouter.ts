@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, adminProcedure } from "./_core/trpc";
+import { router, tenantProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { staffProfiles, staffLeaves, staffLeaveBalances, staffNotes, staffDocuments, users } from "../drizzle/schema";
@@ -12,11 +12,22 @@ function assertAdminOrPrincipal(role: string) {
   }
 }
 
+// SECURITY FIX helper: staffNotes/staffDocuments have their own organizationId
+// column but are always reached via a staffProfileId, so notes/documents
+// routes must verify the *profile* belongs to the caller's organization before
+// touching any note/document tied to it.
+async function assertStaffProfileInOrg(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, staffProfileId: number, organizationId: number) {
+  const [profile] = await db.select({ id: staffProfiles.id }).from(staffProfiles)
+    .where(and(eq(staffProfiles.id, staffProfileId), eq(staffProfiles.organizationId, organizationId)))
+    .limit(1);
+  if (!profile) throw new TRPCError({ code: 'NOT_FOUND', message: 'الموظف غير موجود' });
+}
+
 export const staffManagementRouter = router({
   // ============ STAFF PROFILES ============
   
   // List all staff with filters, search, sorting, pagination
-  list: protectedProcedure.input(z.object({
+  list: tenantProcedure.input(z.object({
     search: z.string().optional(),
     jobTitle: z.string().optional(),
     department: z.string().optional(),
@@ -31,7 +42,7 @@ export const staffManagementRouter = router({
     const db = await getDb();
     if (!db) return { items: [], total: 0 };
     
-    const orgId = ctx.user!.organizationId ?? 1;
+    const orgId = ctx.organizationId;
     const conditions: any[] = [eq(staffProfiles.organizationId, orgId)];
     
     if (input?.search) {
@@ -87,18 +98,22 @@ export const staffManagementRouter = router({
   }),
   
   // Get single staff profile by ID
-  getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
+  getById: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
     assertAdminOrPrincipal(ctx.user!.role);
     const db = await getDb();
     if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
     
     const result = await db.select().from(staffProfiles).where(eq(staffProfiles.id, input.id)).limit(1);
-    if (!result[0]) throw new TRPCError({ code: 'NOT_FOUND', message: 'الموظف غير موجود' });
+    // SECURITY FIX: previously fetched by id alone -- any admin/principal from
+    // any organization could view any other organization's staff profile.
+    if (!result[0] || result[0].organizationId !== ctx.organizationId) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'الموظف غير موجود' });
+    }
     return result[0];
   }),
   
   // Create new staff profile
-  create: protectedProcedure.input(z.object({
+  create: tenantProcedure.input(z.object({
     fullNameAr: z.string().min(1, "الاسم بالعربي مطلوب"),
     fullNameEn: z.string().optional(),
     nationalId: z.string().optional(),
@@ -136,7 +151,7 @@ export const staffManagementRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
     
-    const orgId = ctx.user!.organizationId ?? 1;
+    const orgId = ctx.organizationId;
     
     // Create a user account for this staff member
     const openId = `staff_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -219,7 +234,7 @@ export const staffManagementRouter = router({
   }),
   
   // Update staff profile
-  update: protectedProcedure.input(z.object({
+  update: tenantProcedure.input(z.object({
     id: z.number(),
     fullNameAr: z.string().optional(),
     fullNameEn: z.string().optional(),
@@ -260,10 +275,18 @@ export const staffManagementRouter = router({
     assertAdminOrPrincipal(ctx.user!.role);
     const db = await getDb();
     if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-    
+
+    // SECURITY FIX: previously updated by id alone with no organization check
+    // -- any admin/principal from any organization could edit any other
+    // organization's staff profile (and cascade into their linked user record).
+    const existing = await db.select().from(staffProfiles).where(eq(staffProfiles.id, input.id)).limit(1);
+    if (!existing[0] || existing[0].organizationId !== ctx.organizationId) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'الموظف غير موجود' });
+    }
+
     const { id, ...data } = input;
     const updateData: Record<string, any> = {};
-    
+
     for (const [key, value] of Object.entries(data)) {
       if (value !== undefined) {
         if (['dateOfBirth', 'hireDate', 'contractEndDate', 'terminationDate'].includes(key)) {
@@ -273,7 +296,7 @@ export const staffManagementRouter = router({
         }
       }
     }
-    
+
     if (Object.keys(updateData).length > 0) {
       await db.update(staffProfiles).set(updateData).where(eq(staffProfiles.id, id));
     }
@@ -296,15 +319,21 @@ export const staffManagementRouter = router({
   }),
   
   // Delete staff profile
-  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+  delete: tenantProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
     assertAdminOrPrincipal(ctx.user!.role);
     const db = await getDb();
     if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
     
     // Get the profile to find linked user
     const profile = await db.select().from(staffProfiles).where(eq(staffProfiles.id, input.id)).limit(1);
-    if (!profile[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-    
+    // SECURITY FIX: previously deleted by id alone -- any admin/principal from
+    // any organization could delete any other organization's staff profile
+    // (cascading into their leaves/balances/notes/documents and deactivating
+    // their user account).
+    if (!profile[0] || profile[0].organizationId !== ctx.organizationId) {
+      throw new TRPCError({ code: 'NOT_FOUND' });
+    }
+
     // Delete related records
     await db.delete(staffLeaves).where(eq(staffLeaves.staffProfileId, input.id));
     await db.delete(staffLeaveBalances).where(eq(staffLeaveBalances.staffProfileId, input.id));
@@ -319,10 +348,10 @@ export const staffManagementRouter = router({
   }),
   
   // Get departments list for filters
-  getDepartments: protectedProcedure.query(async ({ ctx }) => {
+  getDepartments: tenantProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return [];
-    const orgId = ctx.user!.organizationId ?? 1;
+    const orgId = ctx.organizationId;
     const result = await db.selectDistinct({ department: staffProfiles.department })
       .from(staffProfiles)
       .where(and(eq(staffProfiles.organizationId, orgId), sql`${staffProfiles.department} IS NOT NULL AND ${staffProfiles.department} != ''`));
@@ -330,10 +359,10 @@ export const staffManagementRouter = router({
   }),
   
   // Get branches list for filters
-  getBranches: protectedProcedure.query(async ({ ctx }) => {
+  getBranches: tenantProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return [];
-    const orgId = ctx.user!.organizationId ?? 1;
+    const orgId = ctx.organizationId;
     const result = await db.selectDistinct({ branch: staffProfiles.branch })
       .from(staffProfiles)
       .where(and(eq(staffProfiles.organizationId, orgId), sql`${staffProfiles.branch} IS NOT NULL AND ${staffProfiles.branch} != ''`));
@@ -341,12 +370,12 @@ export const staffManagementRouter = router({
   }),
   
   // Get staff stats
-  getStats: protectedProcedure.query(async ({ ctx }) => {
+  getStats: tenantProcedure.query(async ({ ctx }) => {
     assertAdminOrPrincipal(ctx.user!.role);
     const db = await getDb();
     if (!db) return { total: 0, active: 0, onLeave: 0, inactive: 0, byJobTitle: {} };
     
-    const orgId = ctx.user!.organizationId ?? 1;
+    const orgId = ctx.organizationId;
     const all = await db.select().from(staffProfiles).where(eq(staffProfiles.organizationId, orgId));
     
     const stats = {
@@ -368,7 +397,7 @@ export const staffManagementRouter = router({
   
   // List leaves with filters
   leaves: router({
-    list: protectedProcedure.input(z.object({
+    list: tenantProcedure.input(z.object({
       staffProfileId: z.number().optional(),
       status: z.string().optional(),
       type: z.string().optional(),
@@ -379,7 +408,7 @@ export const staffManagementRouter = router({
       const db = await getDb();
       if (!db) return { items: [], total: 0 };
       
-      const orgId = ctx.user!.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const conditions: any[] = [eq(staffLeaves.organizationId, orgId)];
       
       if (input?.staffProfileId) conditions.push(eq(staffLeaves.staffProfileId, input.staffProfileId));
@@ -411,7 +440,7 @@ export const staffManagementRouter = router({
     }),
     
     // Request leave (by staff themselves)
-    request: protectedProcedure.input(z.object({
+    request: tenantProcedure.input(z.object({
       type: z.enum(["annual", "sick", "emergency", "unpaid", "maternity", "other"]),
       startDate: z.string(),
       endDate: z.string(),
@@ -422,7 +451,7 @@ export const staffManagementRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       
-      const orgId = ctx.user!.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       
       // Find staff profile for this user
       const profile = await db.select().from(staffProfiles)
@@ -450,14 +479,19 @@ export const staffManagementRouter = router({
     }),
     
     // Approve leave
-    approve: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    approve: tenantProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       
       const leave = await db.select().from(staffLeaves).where(eq(staffLeaves.id, input.id)).limit(1);
-      if (!leave[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-      
+      // SECURITY FIX: previously fetched by id alone -- any admin/principal
+      // from any organization could approve another organization's leave
+      // request, which also mutated that organization's leave balances below.
+      if (!leave[0] || leave[0].organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
       await db.update(staffLeaves).set({
         status: 'approved',
         approvedBy: ctx.user!.id,
@@ -490,43 +524,60 @@ export const staffManagementRouter = router({
     }),
     
     // Reject leave
-    reject: protectedProcedure.input(z.object({
+    reject: tenantProcedure.input(z.object({
       id: z.number(),
       reason: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-      
+
+      // SECURITY FIX: previously updated by id alone with no existence or
+      // organization check at all -- any admin/principal from any organization
+      // could reject another organization's leave request.
+      const leave = await db.select().from(staffLeaves).where(eq(staffLeaves.id, input.id)).limit(1);
+      if (!leave[0] || leave[0].organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
       await db.update(staffLeaves).set({
         status: 'rejected',
         approvedBy: ctx.user!.id,
         rejectionReason: input.reason || null,
       }).where(eq(staffLeaves.id, input.id));
-      
+
       return { success: true };
     }),
-    
+
     // Get leave balance for a staff member
-    getBalance: protectedProcedure.input(z.object({
+    getBalance: tenantProcedure.input(z.object({
       staffProfileId: z.number(),
       year: z.number().optional(),
     })).query(async ({ ctx, input }) => {
+      assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) return null;
-      
+
+      // SECURITY FIX: previously had NO role check and NO organization check --
+      // any authenticated user could read any staff member's leave balance
+      // across organizations by staffProfileId.
+      const profile = await db.select().from(staffProfiles).where(eq(staffProfiles.id, input.staffProfileId)).limit(1);
+      if (!profile[0] || profile[0].organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الموظف غير موجود' });
+      }
+
       const year = input.year ?? new Date().getFullYear();
       const result = await db.select().from(staffLeaveBalances)
         .where(and(
           eq(staffLeaveBalances.staffProfileId, input.staffProfileId),
           eq(staffLeaveBalances.year, year)
         )).limit(1);
-      
+
       return result[0] || null;
     }),
     
     // Get my leave balance (for staff themselves)
-    myBalance: protectedProcedure.query(async ({ ctx }) => {
+    myBalance: tenantProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return null;
       
@@ -545,7 +596,7 @@ export const staffManagementRouter = router({
     }),
     
     // Get my leaves history
-    myLeaves: protectedProcedure.query(async ({ ctx }) => {
+    myLeaves: tenantProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
       
@@ -557,13 +608,18 @@ export const staffManagementRouter = router({
 
   // ============ STAFF NOTES ============
   notes: router({
-    list: protectedProcedure.input(z.object({
+    list: tenantProcedure.input(z.object({
       staffProfileId: z.number(),
     })).query(async ({ ctx, input }) => {
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) return [];
-      
+
+      // SECURITY FIX: previously listed by staffProfileId alone with no
+      // organization check -- any admin/principal could read another
+      // organization's staff notes by supplying a foreign staffProfileId.
+      await assertStaffProfileInOrg(db, input.staffProfileId, ctx.organizationId);
+
       return db.select({
         note: staffNotes,
         authorName: users.name,
@@ -573,8 +629,8 @@ export const staffManagementRouter = router({
         .where(eq(staffNotes.staffProfileId, input.staffProfileId))
         .orderBy(desc(staffNotes.createdAt));
     }),
-    
-    create: protectedProcedure.input(z.object({
+
+    create: tenantProcedure.input(z.object({
       staffProfileId: z.number(),
       title: z.string().min(1),
       content: z.string().min(1),
@@ -584,8 +640,12 @@ export const staffManagementRouter = router({
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-      
-      const orgId = ctx.user!.organizationId ?? 1;
+
+      const orgId = ctx.organizationId;
+      // SECURITY FIX: previously tagged the note with the caller's own org but
+      // never verified staffProfileId belonged to it -- a note could be
+      // attached to a foreign organization's staff profile.
+      await assertStaffProfileInOrg(db, input.staffProfileId, orgId);
       const result = await db.insert(staffNotes).values({
         staffProfileId: input.staffProfileId,
         organizationId: orgId,
@@ -599,7 +659,7 @@ export const staffManagementRouter = router({
       return { id: result[0].insertId };
     }),
     
-    update: protectedProcedure.input(z.object({
+    update: tenantProcedure.input(z.object({
       id: z.number(),
       title: z.string().optional(),
       content: z.string().optional(),
@@ -609,23 +669,37 @@ export const staffManagementRouter = router({
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-      
+
+      // SECURITY FIX: previously updated by id alone -- any admin/principal
+      // could edit another organization's staff note.
+      const [existingNote] = await db.select({ organizationId: staffNotes.organizationId }).from(staffNotes).where(eq(staffNotes.id, input.id)).limit(1);
+      if (!existingNote || existingNote.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
       const { id, ...data } = input;
       const updateData: Record<string, any> = {};
       if (data.title !== undefined) updateData.title = data.title;
       if (data.content !== undefined) updateData.content = data.content;
       if (data.type !== undefined) updateData.type = data.type;
       if (data.isPrivate !== undefined) updateData.isPrivate = data.isPrivate;
-      
+
       await db.update(staffNotes).set(updateData).where(eq(staffNotes.id, id));
       return { success: true };
     }),
-    
-    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+
+    delete: tenantProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-      
+
+      // SECURITY FIX: previously deleted by id alone -- any admin/principal
+      // could delete another organization's staff note.
+      const [existingNote] = await db.select({ organizationId: staffNotes.organizationId }).from(staffNotes).where(eq(staffNotes.id, input.id)).limit(1);
+      if (!existingNote || existingNote.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
       await db.delete(staffNotes).where(eq(staffNotes.id, input.id));
       return { success: true };
     }),
@@ -633,20 +707,24 @@ export const staffManagementRouter = router({
 
   // ============ STAFF DOCUMENTS ============
   documents: router({
-    list: protectedProcedure.input(z.object({
+    list: tenantProcedure.input(z.object({
       staffProfileId: z.number(),
     })).query(async ({ ctx, input }) => {
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) return [];
-      
+
+      // SECURITY FIX: previously listed by staffProfileId alone with no
+      // organization check.
+      await assertStaffProfileInOrg(db, input.staffProfileId, ctx.organizationId);
+
       return db.select()
         .from(staffDocuments)
         .where(eq(staffDocuments.staffProfileId, input.staffProfileId))
         .orderBy(desc(staffDocuments.createdAt));
     }),
-    
-    create: protectedProcedure.input(z.object({
+
+    create: tenantProcedure.input(z.object({
       staffProfileId: z.number(),
       name: z.string().min(1),
       type: z.enum(["contract", "id_copy", "certificate", "license", "medical", "other"]).optional(),
@@ -660,8 +738,11 @@ export const staffManagementRouter = router({
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-      
-      const orgId = ctx.user!.organizationId ?? 1;
+
+      const orgId = ctx.organizationId;
+      // SECURITY FIX: previously tagged the document with the caller's own org
+      // but never verified staffProfileId belonged to it.
+      await assertStaffProfileInOrg(db, input.staffProfileId, orgId);
       const result = await db.insert(staffDocuments).values({
         staffProfileId: input.staffProfileId,
         organizationId: orgId,
@@ -679,11 +760,18 @@ export const staffManagementRouter = router({
       return { id: result[0].insertId };
     }),
     
-    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    delete: tenantProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
       assertAdminOrPrincipal(ctx.user!.role);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
-      
+
+      // SECURITY FIX: previously deleted by id alone -- any admin/principal
+      // could delete another organization's staff document.
+      const [existingDoc] = await db.select({ organizationId: staffDocuments.organizationId }).from(staffDocuments).where(eq(staffDocuments.id, input.id)).limit(1);
+      if (!existingDoc || existingDoc.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
       await db.delete(staffDocuments).where(eq(staffDocuments.id, input.id));
       return { success: true };
     }),

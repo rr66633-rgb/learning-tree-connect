@@ -61,7 +61,7 @@ describe("Dashboard", () => {
     const caller = appRouter.createCaller(createAdminContext());
     const stats = await caller.dashboard.stats();
     expect(stats).toBeDefined();
-    expect(stats.totalChildren).toBeGreaterThanOrEqual(1);
+    expect(stats.totalChildren).toBeGreaterThanOrEqual(20);
     expect(stats.totalStaff).toBeGreaterThanOrEqual(5);
     expect(stats.presentToday).toBeGreaterThanOrEqual(0);
   });
@@ -71,7 +71,7 @@ describe("Children Management", () => {
   it("lists all children", async () => {
     const caller = appRouter.createCaller(createAdminContext());
     const children = await caller.children.list();
-    expect(children.length).toBeGreaterThanOrEqual(1);
+    expect(children.length).toBeGreaterThanOrEqual(20);
     expect(children[0]).toHaveProperty("firstName");
     expect(children[0]).toHaveProperty("lastName");
     expect(children[0]).toHaveProperty("classId");
@@ -208,7 +208,7 @@ describe("Finance & Invoices", () => {
     const caller = appRouter.createCaller(createAdminContext());
     const invoices = await caller.finance.invoices();
     expect(invoices).toBeDefined();
-    expect(invoices.length).toBeGreaterThanOrEqual(1);
+    expect(invoices.length).toBeGreaterThanOrEqual(60);
   });
 
   it("gets financial summary", async () => {

@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, tenantProcedure, router } from "./_core/trpc";
 import { safeJsonParse } from "./jsonParser";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -9,8 +9,15 @@ import { ENV } from "./_core/env";
 import { sendPushToUsers } from "./_core/webPush";
 import { getDb } from "./db";
 
-// Middleware: only teachers and admins can use weekly plan features
-const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
+// SECURITY FIX (cross-tenant weekly-plan access): this file never referenced
+// organizationId at all -- generated plans were inserted with no
+// organizationId (silently defaulting to the schema's default(1)), and every
+// by-id lookup (save/get/update/publish/duplicate/delete) had no organization
+// check whatsoever, so staff from ANY organization could read, edit, publish,
+// duplicate, or delete ANY other organization's weekly plans. `staffProcedure`
+// now builds on `tenantProcedure` so ctx.organizationId is guaranteed non-null,
+// and every route below scopes its query/insert to it.
+const staffProcedure = tenantProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
   if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'owner' && role !== 'teacher' && role !== 'assistant') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Weekly plan features are restricted to staff members' });
@@ -96,54 +103,7 @@ function buildGenerationPrompt(input: { ageGroup: string; theme: string; languag
     return `"${s}": "${label}"`;
   }).join("\n  ");
 
-  if (isArabic) {
-    return `أنتِ خبيرة مناهج رياض أطفال في المملكة العربية السعودية متخصصة في إطار EYFS (المرحلة التأسيسية للسنوات المبكرة).
-
-مهمتك: إنشاء خطة أسبوعية كاملة ومفصلة وجاهزة للاستخدام باللغة العربية فقط.
-
-المعلومات:
-- الفئة العمرية: ${ageLabel.ar}
-- الموضوع الأسبوعي: ${input.theme}
-- الأسبوع: من ${input.weekStart} إلى ${input.weekEnd}
-- اللغة: العربية فقط - يجب كتابة كل المحتوى بالعربية بالكامل بدون أي كلمة إنجليزية
-
-${CULTURAL_GUIDELINES}
-
-متطلبات الجودة:
-- الأنشطة يجب أن تكون مناسبة للعمر ومتوافقة مع إطار EYFS
-- كل قسم يجب أن يكون مفصلاً وعملياً وجاهزاً للتطبيق المباشر
-- يجب تضمين القيم الإسلامية والثقافة السعودية
-- الأنشطة يجب أن تكون متنوعة وممتعة وتفاعلية
-- كل نشاط يتضمن: الوصف، المواد المطلوبة، الخطوات، المدة، طريقة التقييم
-- مهم جداً: اكتبي كل شيء بالعربية فقط. لا تستخدمي أي كلمات إنجليزية نهائياً
-
-أنشئي خطة أسبوعية كاملة بصيغة JSON تحتوي على الأقسام الـ 14 التالية:
-
-{
-  ${sectionsList}
-}
-
-لكل قسم، اكتبي محتوى مفصلاً وعملياً. التفاصيل المطلوبة لكل قسم:
-
-1. theme_overview: نظرة شاملة عن الموضوع وأهميته وكيف سيتم استكشافه خلال الأسبوع (3-5 جمل)
-2. learning_objectives: قائمة بـ 5-7 أهداف تعليمية محددة وقابلة للقياس مرتبطة بمجالات EYFS
-3. arabic_activities: 3-4 أنشطة لغة عربية (كل نشاط يشمل: العنوان، الوصف، المواد، المدة، طريقة التنفيذ)
-4. english_activities: 3-4 أنشطة لغة إنجليزية (كل نشاط يشمل: العنوان، الوصف، المواد، المدة، طريقة التنفيذ) - اكتبي الوصف بالعربية
-5. math_activities: 3-4 أنشطة رياضيات (كل نشاط يشمل: العنوان، الوصف، المواد، المدة، المفهوم الرياضي)
-6. science_activities: 2-3 أنشطة علوم واستكشاف (كل نشاط يشمل: العنوان، التجربة، المواد، الملاحظات المتوقعة)
-7. art_activities: 3-4 أنشطة فنية وإبداعية (كل نشاط يشمل: العنوان، الوصف، المواد، الخطوات)
-8. sensory_activities: 2-3 أنشطة حسية (كل نشاط يشمل: العنوان، الوصف، المواد، الحواس المستهدفة)
-9. physical_activities: 3-4 أنشطة بدنية وحركية (كل نشاط يشمل: العنوان، الوصف، المهارات المستهدفة)
-10. quran_islamic: سورة للحفظ، دعاء، قيمة إسلامية، نشاط ديني (مع التفاصيل)
-11. story_of_week: قصة مرتبطة بالموضوع (العنوان، الملخص، أسئلة المناقشة، الدروس المستفادة)
-12. song_of_week: نشيد أو أنشودة مرتبطة بالموضوع (العنوان، الكلمات أو وصف النشيد، الحركات المصاحبة)
-13. home_activity: 2-3 أنشطة منزلية يمكن للأهل تنفيذها مع أطفالهم (الوصف، المواد البسيطة المتاحة)
-14. parent_notes: ملاحظات وإرشادات لأولياء الأمور حول الموضوع وكيفية دعم تعلم الطفل في المنزل
-
-تذكير مهم: اكتبي كل المحتوى بالعربية فقط. لا تضيفي أي ترجمة إنجليزية. كل العناوين والأوصاف والتفاصيل يجب أن تكون بالعربية بالكامل.
-
-أعيدي الرد بصيغة JSON فقط. لا تكتبي أي نص خارج JSON.`;
-  } else if (isBilingual) {
+  if (isArabic || isBilingual) {
     return `أنتِ خبيرة مناهج رياض أطفال في المملكة العربية السعودية متخصصة في إطار EYFS (المرحلة التأسيسية للسنوات المبكرة).
 
 مهمتك: إنشاء خطة أسبوعية كاملة ومفصلة وجاهزة للاستخدام.
@@ -248,6 +208,19 @@ export const weeklyPlanRouter = router({
       language: z.enum(["ar", "en", "bilingual"]).default("ar"),
     }))
     .mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously trusted input.classId with no check that it
+      // belongs to the caller's organization -- a saved/published plan with a
+      // foreign classId would then be matched by parentList's classId-based
+      // join (see below), leaking this organization's weekly plan content
+      // into another organization's parent view.
+      if (input.classId) {
+        const db0 = (await getDb())!;
+        const [cls] = await db0.select({ id: classes.id }).from(classes)
+          .where(and(eq(classes.id, input.classId), eq(classes.organizationId, ctx.organizationId)))
+          .limit(1);
+        if (!cls) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفصل غير موجود' });
+      }
+
       const prompt = buildGenerationPrompt({
         ageGroup: input.ageGroup,
         theme: input.theme,
@@ -266,9 +239,7 @@ export const weeklyPlanRouter = router({
           console.log(`[WeeklyPlan] Generate attempt ${attempts}/3 for theme: ${input.theme}, ageGroup: ${input.ageGroup}`);
           const response = await invokeLLM({
             messages: [
-              { role: "system", content: input.language === "ar" 
-                ? "أنتِ خبيرة مناهج رياض أطفال في السعودية. يجب الرد بصيغة JSON صالحة فقط. بدون markdown أو code fences. يجب أن يحتوي JSON على جميع المفاتيح الـ 14 المطلوبة. مهم جداً: اكتبي كل المحتوى بالعربية فقط بدون أي كلمة إنجليزية."
-                : "You are an expert curriculum planner for kindergartens in Saudi Arabia. You MUST respond with valid JSON only. No markdown, no code fences, no text outside JSON. The JSON object must contain all 14 required section keys as string values." },
+              { role: "system", content: "You are an expert curriculum planner for kindergartens in Saudi Arabia. You MUST respond with valid JSON only. No markdown, no code fences, no text outside JSON. The JSON object must contain all 14 required section keys as string values." },
               { role: "user", content: prompt }
             ],
             response_format: { type: "json_object" },
@@ -319,6 +290,7 @@ export const weeklyPlanRouter = router({
       const [saved] = await db.insert(weeklyPlans).values({
         classId: input.classId || null,
         teacherId: ctx.user!.id,
+        organizationId: ctx.organizationId,
         ageGroup: input.ageGroup,
         weekStartDate: input.weekStartDate,
         weekEndDate: input.weekEndDate,
@@ -350,7 +322,12 @@ export const weeklyPlanRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
-      if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
+      // SECURITY FIX: previously fetched/authorized by id alone -- an
+      // admin/principal/super_admin from ANY organization could bypass the
+      // teacherId-ownership check entirely since there was no org boundary.
+      if (!plan || plan.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       if (plan.teacherId !== ctx.user!.id && !['admin', 'super_admin', 'principal'].includes(ctx.user!.role || '')) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
@@ -372,9 +349,13 @@ export const weeklyPlanRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const conditions: any[] = [];
-      
-      // Teachers see their own plans, admins see all
+      // SECURITY FIX: previously admins/principals/super_admins got NO filter at
+      // all here and saw every organization's weekly plans. organizationId is
+      // now always applied first, regardless of role; the teacherId filter is
+      // then layered on top only for non-privileged roles.
+      const conditions: any[] = [eq(weeklyPlans.organizationId, ctx.organizationId)];
+
+      // Teachers see their own plans, admins see all (within their own org)
       if (!['admin', 'super_admin', 'principal'].includes(ctx.user!.role || '')) {
         conditions.push(eq(weeklyPlans.teacherId, ctx.user!.id));
       }
@@ -404,12 +385,17 @@ export const weeklyPlanRouter = router({
     }),
 
   // ============ GET SINGLE PLAN ============
-  get: protectedProcedure
+  // SECURITY FIX: upgraded from plain protectedProcedure (any authenticated
+  // user, any role, any organization) to tenantProcedure + explicit org check
+  // -- previously any user could fetch any organization's plan by id.
+  get: tenantProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
-      if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (!plan || plan.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       return plan;
     }),
 
@@ -422,7 +408,11 @@ export const weeklyPlanRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
-      if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
+      // SECURITY FIX: same cross-org bypass as `save` -- admin-role check no
+      // longer overrides the organization boundary.
+      if (!plan || plan.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       if (plan.status === 'published') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot edit a published plan. Duplicate it first.' });
       }
@@ -440,7 +430,13 @@ export const weeklyPlanRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
-      if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
+      // SECURITY FIX: previously had NO ownership/role/org check before
+      // publishing -- any staff member from any organization could publish
+      // another organization's plan by id, which then fired real notifications
+      // to that other organization's parents.
+      if (!plan || plan.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       if (plan.status === 'published') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Plan is already published.' });
       }
@@ -480,6 +476,7 @@ export const weeklyPlanRouter = router({
           for (const parentId of allParentIds) {
             await db.insert(notifications).values({
               userId: parentId,
+              organizationId: ctx.organizationId,
               title: "Weekly Plan Published",
               titleAr: "تم نشر الخطة الأسبوعية",
               body: `A new weekly plan "${plan.theme}" has been published for your child's class.`,
@@ -523,11 +520,16 @@ export const weeklyPlanRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
-      if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
+      // SECURITY FIX: previously had NO ownership/role/org check -- any staff
+      // member could clone another organization's plan content into their own.
+      if (!plan || plan.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
 
       const [newPlan] = await db.insert(weeklyPlans).values({
         classId: plan.classId,
         teacherId: ctx.user!.id,
+        organizationId: ctx.organizationId,
         ageGroup: plan.ageGroup,
         weekStartDate: plan.weekStartDate,
         weekEndDate: plan.weekEndDate,
@@ -546,7 +548,11 @@ export const weeklyPlanRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, input.id)).limit(1);
-      if (!plan) throw new TRPCError({ code: 'NOT_FOUND' });
+      // SECURITY FIX: same cross-org bypass as save/update -- admin-role check
+      // no longer overrides the organization boundary.
+      if (!plan || plan.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND' });
+      }
       if (plan.teacherId !== ctx.user!.id && !['admin', 'super_admin', 'principal'].includes(ctx.user!.role || '')) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
@@ -590,6 +596,16 @@ export const weeklyPlanRouter = router({
 
       if (classIds.length === 0) return [];
 
+      // SECURITY FIX: previously resolved shared plans by matching classId
+      // alone, with no organizationId filter -- as defense in depth on top of
+      // the classId-ownership check added to `generate` above (in case any
+      // plan created before that fix still has a mismatched classId), the
+      // caller's own organizationId is now required to match too. ctx.user is
+      // guaranteed non-null by protectedProcedure, and organizationId is a
+      // NOT NULL column on users, so this is a real, trustworthy value here.
+      const orgId = ctx.organizationId;
+      if (!orgId) return [];
+
       // Get published plans for these classes
       const plans = await db.select({
         id: weeklyPlans.id,
@@ -606,6 +622,7 @@ export const weeklyPlanRouter = router({
       .from(weeklyPlans)
       .where(and(
         inArray(weeklyPlans.classId, classIds),
+        eq(weeklyPlans.organizationId, orgId),
         eq(weeklyPlans.status, "published")
       ))
       .orderBy(desc(weeklyPlans.publishedAt))

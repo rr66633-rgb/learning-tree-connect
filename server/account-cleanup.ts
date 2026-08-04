@@ -15,8 +15,17 @@ export async function accountCleanupHandler(req: Request, res: Response) {
   try {
     const { sdk } = await import("./_core/sdk");
     const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && user.role !== "admin") {
-      res.status(403).json({ error: "cron-only or admin" });
+    // SECURITY FIX: this handler permanently deletes expired accounts
+    // across EVERY organization on the platform with no per-org filtering
+    // (deleteUser is called for every expired account regardless of which
+    // org it belongs to) -- this is deliberately a platform-wide operation,
+    // but was previously gated by `role !== "admin"`, meaning ANY single
+    // organization's own regular admin could manually trigger a permanent,
+    // cross-organization deletion sweep. Per policy, the only allowed
+    // cross-organization actor is the authenticated Super Admin (or the
+    // automated cron system itself).
+    if (!user.isCron && user.role !== "super_admin") {
+      res.status(403).json({ error: "cron-only or super_admin" });
       return;
     }
 

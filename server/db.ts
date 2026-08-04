@@ -1,9 +1,9 @@
 import { eq, desc, and, sql, gte, lte, gt, inArray, like, or, isNull } from "drizzle-orm";
 import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
-import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, announcementReads, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
-import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest } from "../drizzle/schema";
-import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses, organizations, loyaltySettings } from "../drizzle/schema";
+import { InsertUser, users, children, attendance, dailyReports, conversations, messages, invoices, loyaltyPoints, loyaltyTransactions, loyaltyRewards, loyaltySettings, notifications, classes, staffAttendance, centerSettings, dailyActivities, calendarEvents, announcements, announcementReads, documents, signatures, medicalInfo, emergencyContacts, enrollment, waitingList, eyfsAssessments, auditLog, childDepartures, attendanceAuditLog, childDocuments, payments, transactions, refunds, tuitionPlans, pickupRequests, learningObservations, pushSubscriptions, eventReminders } from "../drizzle/schema";
+import type { InsertChild, InsertAttendance, InsertDailyReport, InsertMessage, InsertInvoice, InsertNotification, InsertAttendanceAuditLog, InsertPayment, InsertTransaction, InsertRefund, InsertTuitionPlan, InsertPickupRequest, InsertCalendarEvent } from "../drizzle/schema";
+import { parentChildren, media, mediaChildren, authorizedPickupPersons, staffDutyStatus, pickupAlertSettings, pickupAlertAcknowledgments, nurseryRegistrations, developmentalAssessments, assessmentResponses, organizations } from "../drizzle/schema";
 import type { InsertNurseryRegistration } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import type { InsertDevelopmentalAssessment, InsertAssessmentResponse } from "../drizzle/schema";
@@ -159,6 +159,26 @@ export async function updateUserOpenId(userId: number, newOpenId: string) {
   await db.update(users).set({ openId: newOpenId, lastSignedIn: new Date() }).where(eq(users.id, userId));
 }
 
+// Added for the bulk-import authorization fix: lets a super_admin-only code path
+// verify a client-supplied target organizationId actually exists before using it,
+// rather than trusting an arbitrary client-supplied ID outright.
+export async function getOrganizationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [org] = await db.select().from(organizations).where(eq(organizations.id, id)).limit(1);
+  return org;
+}
+
+// Used to resolve a public, unauthenticated per-nursery link (e.g. the
+// waiting-list shareable URL) to a real organization -- the slug is
+// treated as an opaque public identifier, never as a trusted numeric id.
+export async function getOrganizationBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [org] = await db.select().from(organizations).where(eq(organizations.slug, slug)).limit(1);
+  return org;
+}
+
 export async function getAllUsers(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
@@ -172,12 +192,6 @@ export async function getAllUsers(organizationId?: number) {
 export async function getChildIdsForParent(parentId: number): Promise<number[]> {
   const db = await getDb();
   if (!db) return [];
-  // Use parent_children junction table (primary) with fallback to legacy children.parentId
-  const links = await db.select({ childId: parentChildren.childId }).from(parentChildren).where(eq(parentChildren.parentId, parentId));
-  if (links.length > 0) {
-    return links.map(r => r.childId);
-  }
-  // Fallback to legacy parentId column
   const result = await db.select({ id: children.id }).from(children).where(eq(children.parentId, parentId));
   return result.map(r => r.id);
 }
@@ -199,11 +213,21 @@ export async function getChildren(parentId?: number, organizationId?: number, li
   return query;
 }
 
-export async function getChildById(id: number) {
+// SECURITY FIX: previously took no organizationId at all. This function is
+// used throughout the codebase (attendance, daily reports, notifications,
+// etc.) as an implicit authorization check ("does this child exist"), so
+// its lack of org filtering silently let any authenticated staff member of
+// ANY organization read, and act on behalf of, another organization's
+// child by id. organizationId is now optional-but-should-always-be-passed;
+// callers doing an authorization check MUST pass it and treat a missing
+// result as NOT_FOUND/FORBIDDEN.
+export async function getChildById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(children).where(eq(children.id, id)).limit(1);
-  return result[0] || null;
+  const conditions = [eq(children.id, id)];
+  if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  const result = await db.select().from(children).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
 export async function createChild(data: InsertChild) {
@@ -213,17 +237,21 @@ export async function createChild(data: InsertChild) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateChild(id: number, data: Partial<InsertChild>) {
+export async function updateChild(id: number, data: Partial<InsertChild>, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(children).set(data).where(eq(children.id, id));
-  return getChildById(id);
+  const conditions = [eq(children.id, id)];
+  if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  await db.update(children).set(data).where(and(...conditions));
+  return getChildById(id, organizationId);
 }
 
-export async function deleteChild(id: number) {
+export async function deleteChild(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(children).where(eq(children.id, id));
+  const conditions = [eq(children.id, id)];
+  if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  await db.delete(children).where(and(...conditions));
 }
 
 // ============ ATTENDANCE ============
@@ -239,10 +267,18 @@ export async function getAttendanceByDate(date: string, organizationId?: number)
   return db.select().from(attendance).where(and(...conditions));
 }
 
-export async function getAttendanceByChild(childId: number) {
+// SECURITY FIX: previously took no organizationId -- any authenticated
+// staff member of ANY organization who knew/guessed a childId belonging to
+// a DIFFERENT organization could read that child's full attendance
+// history. Callers MUST pass organizationId for authorization purposes;
+// see also getChildById, which routers now use to verify childId ownership
+// before calling this.
+export async function getAttendanceByChild(childId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(attendance).where(eq(attendance.childId, childId)).orderBy(desc(attendance.date));
+  const conditions = [eq(attendance.childId, childId)];
+  if (organizationId) conditions.push(eq(attendance.organizationId, organizationId));
+  return db.select().from(attendance).where(and(...conditions)).orderBy(desc(attendance.date));
 }
 
 export async function getAttendanceByDateForChildren(date: string, childIds: number[]) {
@@ -263,28 +299,39 @@ export async function createAttendance(data: InsertAttendance) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateAttendance(id: number, data: Partial<InsertAttendance>) {
+// SECURITY FIX: previously took no organizationId -- combined with
+// updateStatus/checkOut/markAbsent in routers.ts trusting a client-supplied
+// attendance id with no ownership check, this meant any teacher/admin
+// could edit another organization's attendance record by id. organizationId
+// is now optional-but-should-be-passed for a fetch-and-verify update.
+export async function updateAttendance(id: number, data: Partial<InsertAttendance>, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(attendance).set(data).where(eq(attendance.id, id));
+  const conditions = [eq(attendance.id, id)];
+  if (organizationId) conditions.push(eq(attendance.organizationId, organizationId));
+  await db.update(attendance).set(data).where(and(...conditions));
 }
 
-export async function getAttendanceById(id: number) {
+export async function getAttendanceById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(attendance).where(eq(attendance.id, id)).limit(1);
-  return result[0] || null;
+  const conditions = [eq(attendance.id, id)];
+  if (organizationId) conditions.push(eq(attendance.organizationId, organizationId));
+  const result = await db.select().from(attendance).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
-export async function getAttendanceForChildOnDate(childId: number, date: string) {
+export async function getAttendanceForChildOnDate(childId: number, date: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
-  const result = await db.select().from(attendance).where(and(eq(attendance.childId, childId), gte(attendance.date, startOfDay), lte(attendance.date, endOfDay))).limit(1);
-  return result[0] || null;
+  const conditions = [eq(attendance.childId, childId), gte(attendance.date, startOfDay), lte(attendance.date, endOfDay)];
+  if (organizationId) conditions.push(eq(attendance.organizationId, organizationId));
+  const result = await db.select().from(attendance).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
 // ============ ATTENDANCE AUDIT LOG ============
@@ -327,11 +374,15 @@ export async function getDailyReportsForChildren(childIds: number[]) {
   return db.select().from(dailyReports).where(inArray(dailyReports.childId, childIds)).orderBy(desc(dailyReports.date));
 }
 
-export async function getDailyReportById(id: number) {
+// SECURITY FIX: previously took no organizationId -- any teacher/admin
+// could read another organization's daily report by id.
+export async function getDailyReportById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(dailyReports).where(eq(dailyReports.id, id)).limit(1);
-  return result[0] || null;
+  const conditions = [eq(dailyReports.id, id)];
+  if (organizationId) conditions.push(eq(dailyReports.organizationId, organizationId));
+  const result = await db.select().from(dailyReports).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
 export async function createDailyReport(data: InsertDailyReport) {
@@ -341,10 +392,14 @@ export async function createDailyReport(data: InsertDailyReport) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateDailyReport(id: number, data: Partial<InsertDailyReport>) {
+// SECURITY FIX: previously took no organizationId -- any teacher/admin
+// could edit another organization's daily report by id.
+export async function updateDailyReport(id: number, data: Partial<InsertDailyReport>, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(dailyReports).set(data).where(eq(dailyReports.id, id));
+  const conditions = [eq(dailyReports.id, id)];
+  if (organizationId) conditions.push(eq(dailyReports.organizationId, organizationId));
+  await db.update(dailyReports).set(data).where(and(...conditions));
 }
 
 // ============ MESSAGES ============
@@ -368,51 +423,39 @@ export async function getConversations(userId: number) {
     ))
     .orderBy(desc(conversations.lastMessageAt));
   
-  // Batch fetch all related users and children to avoid N+1 queries
-  if (rows.length === 0) return [];
-  
-  const otherUserIds = Array.from(new Set(rows.map(conv => 
-    conv.participantOneId === userId ? conv.participantTwoId : conv.participantOneId
-  )));
-  const childIds = Array.from(new Set(rows.filter(c => c.childId).map(c => c.childId!)));
-  const convIds = rows.map(c => c.id);
-  
-  // Batch queries instead of N+1
-  const [usersData, childrenData, unreadCounts] = await Promise.all([
-    otherUserIds.length > 0 
-      ? db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(inArray(users.id, otherUserIds))
-      : [],
-    childIds.length > 0
-      ? db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName }).from(children).where(inArray(children.id, childIds))
-      : [],
-    db.select({ conversationId: messages.conversationId, count: sql<number>`count(*)` }).from(messages)
+  // Enrich with participant names and unread counts
+  const enriched = [];
+  for (const conv of rows) {
+    const otherUserId = conv.participantOneId === userId ? conv.participantTwoId : conv.participantOneId;
+    const otherUser = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, otherUserId)).limit(1);
+    const unreadResult = await db.select({ count: sql<number>`count(*)` }).from(messages)
       .where(and(
-        inArray(messages.conversationId, convIds),
+        eq(messages.conversationId, conv.id),
         eq(messages.isRead, false),
         sql`${messages.senderId} != ${userId}`,
         eq(messages.isDeleted, false)
-      ))
-      .groupBy(messages.conversationId)
-  ]);
-  
-  const userMap = new Map(usersData.map(u => [u.id, u]));
-  const childMap = new Map(childrenData.map(c => [c.id, `${c.firstName} ${c.lastName}`]));
-  const unreadMap = new Map(unreadCounts.map(u => [u.conversationId, u.count]));
-  
-  return rows.map(conv => {
-    const otherUserId = conv.participantOneId === userId ? conv.participantTwoId : conv.participantOneId;
-    const otherUser = userMap.get(otherUserId);
-    return {
+      ));
+    let childName = null;
+    if (conv.childId) {
+      const child = await db.select({ firstName: children.firstName, lastName: children.lastName }).from(children).where(eq(children.id, conv.childId)).limit(1);
+      childName = child[0] ? `${child[0].firstName} ${child[0].lastName}` : null;
+    }
+    enriched.push({
       ...conv,
-      otherUserName: otherUser?.name || 'مستخدم',
-      otherUserRole: otherUser?.role || 'user',
+      otherUserName: otherUser[0]?.name || 'مستخدم',
+      otherUserRole: otherUser[0]?.role || 'user',
       otherUserId,
-      unreadCount: unreadMap.get(conv.id) ?? 0,
-      childName: conv.childId ? (childMap.get(conv.childId) || null) : null,
-    };
-  });
+      unreadCount: unreadResult[0]?.count ?? 0,
+      childName,
+    });
+  }
+  return enriched;
 }
 
+// SECURITY FIX: previously took no organizationId at all -- adminProcedure
+// only requires being an admin of SOME organization, so any admin could
+// list every organization's conversations (and, combined with the
+// no-org-check `list`/`send` handlers below, read or send into them).
 export async function getAllConversations(search?: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
@@ -427,49 +470,36 @@ export async function getAllConversations(search?: string, organizationId?: numb
     isArchived: conversations.isArchived,
     createdAt: conversations.createdAt,
   }).from(conversations);
-  
-  const rows = organizationId
-    ? await baseQuery.where(eq(conversations.organizationId, organizationId)).orderBy(desc(conversations.lastMessageAt))
-    : await baseQuery.orderBy(desc(conversations.lastMessageAt));
-  if (rows.length === 0) return [];
-  
-  // Batch fetch all users and children to avoid N+1
-  const allUserIds = Array.from(new Set(rows.flatMap(c => [c.participantOneId, c.participantTwoId])));
-  const childIds = Array.from(new Set(rows.filter(c => c.childId).map(c => c.childId!)));
-  
-  const [usersData, childrenData] = await Promise.all([
-    allUserIds.length > 0
-      ? db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(inArray(users.id, allUserIds))
-      : [],
-    childIds.length > 0
-      ? db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName }).from(children).where(inArray(children.id, childIds))
-      : [],
-  ]);
-  
-  const userMap = new Map(usersData.map(u => [u.id, u]));
-  const childMap = new Map(childrenData.map(c => [c.id, `${c.firstName} ${c.lastName}`]));
-  
-  const enriched = rows.map(conv => {
-    const u1 = userMap.get(conv.participantOneId);
-    const u2 = userMap.get(conv.participantTwoId);
-    return {
+  const query = organizationId
+    ? baseQuery.where(eq(conversations.organizationId, organizationId)).orderBy(desc(conversations.lastMessageAt))
+    : baseQuery.orderBy(desc(conversations.lastMessageAt));
+
+  const rows = await query;
+  const enriched = [];
+  for (const conv of rows) {
+    const user1 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantOneId)).limit(1);
+    const user2 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantTwoId)).limit(1);
+    let childName = null;
+    if (conv.childId) {
+      const child = await db.select({ firstName: children.firstName, lastName: children.lastName }).from(children).where(eq(children.id, conv.childId)).limit(1);
+      childName = child[0] ? `${child[0].firstName} ${child[0].lastName}` : null;
+    }
+    const item = {
       ...conv,
-      participantOneName: u1?.name || 'مستخدم',
-      participantOneRole: u1?.role || 'user',
-      participantTwoName: u2?.name || 'مستخدم',
-      participantTwoRole: u2?.role || 'user',
-      childName: conv.childId ? (childMap.get(conv.childId) || null) : null,
+      participantOneName: user1[0]?.name || 'مستخدم',
+      participantOneRole: user1[0]?.role || 'user',
+      participantTwoName: user2[0]?.name || 'مستخدم',
+      participantTwoRole: user2[0]?.role || 'user',
+      childName,
     };
-  });
-  
-  if (search) {
-    const s = search.toLowerCase();
-    return enriched.filter(item =>
-      item.participantOneName.toLowerCase().includes(s) ||
-      item.participantTwoName.toLowerCase().includes(s) ||
-      (item.childName && item.childName.toLowerCase().includes(s)) ||
-      (item.subject && item.subject.toLowerCase().includes(s))
-    );
+    if (search) {
+      const s = search.toLowerCase();
+      if (item.participantOneName.toLowerCase().includes(s) || item.participantTwoName.toLowerCase().includes(s) || (item.childName && item.childName.toLowerCase().includes(s)) || (item.subject && item.subject.toLowerCase().includes(s))) {
+        enriched.push(item);
+      }
+    } else {
+      enriched.push(item);
+    }
   }
   return enriched;
 }
@@ -520,7 +550,11 @@ export async function createMessage(data: { conversationId: number; senderId: nu
   return { id: result[0].insertId, ...data };
 }
 
-export async function createConversation(participantOneId: number, participantTwoId: number, childId?: number | null, subject?: string | null) {
+// SECURITY FIX: previously never stamped organizationId on the new
+// conversation row (silently defaulted at the schema level), which is what
+// made the isAdmin-bypass cross-tenant read/write in the `list`/`send`
+// handlers possible in the first place.
+export async function createConversation(participantOneId: number, participantTwoId: number, childId?: number | null, subject?: string | null, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   // Check if conversation already exists between these two for this child
@@ -529,8 +563,8 @@ export async function createConversation(participantOneId: number, participantTw
     childId ? eq(conversations.childId, childId) : sql`${conversations.childId} IS NULL`
   )).limit(1);
   if (existing.length > 0) return existing[0];
-  const result = await db.insert(conversations).values({ participantOneId, participantTwoId, childId: childId || null, subject: subject || null });
-  return { id: result[0].insertId, participantOneId, participantTwoId, childId, subject };
+  const result = await db.insert(conversations).values({ participantOneId, participantTwoId, childId: childId || null, subject: subject || null, organizationId });
+  return { id: result[0].insertId, participantOneId, participantTwoId, childId, subject, organizationId };
 }
 
 export async function markMessagesAsRead(conversationId: number, userId: number) {
@@ -557,36 +591,74 @@ export async function getUnreadMessageCount(userId: number) {
   return result[0]?.count ?? 0;
 }
 
-export async function archiveConversation(conversationId: number) {
+// SECURITY FIX: archiveConversation/unarchiveConversation previously took no
+// organizationId -- combined with the adminProcedure-only check in
+// routers.ts (no per-conversation ownership check at all), any admin of ANY
+// organization could archive/unarchive any other organization's
+// conversation by id.
+export async function archiveConversation(conversationId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return;
-  await db.update(conversations).set({ isArchived: true }).where(eq(conversations.id, conversationId));
+  const conditions = [eq(conversations.id, conversationId)];
+  if (organizationId) conditions.push(eq(conversations.organizationId, organizationId));
+  await db.update(conversations).set({ isArchived: true }).where(and(...conditions));
 }
 
-export async function unarchiveConversation(conversationId: number) {
+export async function unarchiveConversation(conversationId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return;
-  await db.update(conversations).set({ isArchived: false }).where(eq(conversations.id, conversationId));
+  const conditions = [eq(conversations.id, conversationId)];
+  if (organizationId) conditions.push(eq(conversations.organizationId, organizationId));
+  await db.update(conversations).set({ isArchived: false }).where(and(...conditions));
 }
 
-export async function deleteMessage(messageId: number) {
+export async function getMessageById(messageId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
+  return result[0];
+}
+
+// SECURITY FIX: previously took no organizationId. The messages table has
+// no organizationId column of its own, so ownership is now verified via the
+// parent conversation (which does have organizationId) before deleting --
+// previously any admin of ANY organization could soft-delete any other
+// organization's message by id.
+export async function deleteMessage(messageId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return;
+  if (organizationId) {
+    const msg = await getMessageById(messageId);
+    if (!msg) return;
+    const conv = await getConversationById(msg.conversationId, organizationId);
+    if (!conv) return; // message's conversation does not belong to this organization
+  }
   await db.update(messages).set({ isDeleted: true }).where(eq(messages.id, messageId));
 }
 
-export async function getConversationById(conversationId: number) {
+// SECURITY FIX: previously took no organizationId -- combined with the
+// isAdmin-bypasses-participant-check logic in routers.ts `list`/`send`, any
+// admin of ANY organization could read or send messages into any other
+// organization's conversation by id.
+export async function getConversationById(conversationId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(conversations).where(eq(conversations.id, conversationId)).limit(1);
+  const conditions = [eq(conversations.id, conversationId)];
+  if (organizationId) conditions.push(eq(conversations.organizationId, organizationId));
+  const result = await db.select().from(conversations).where(and(...conditions)).limit(1);
   return result[0] || null;
 }
 
-export async function getTeachersForChild(childId: number) {
+// SECURITY FIX: previously took no organizationId -- a parent could pass
+// an arbitrary childId (belonging to a different parent, or a different
+// organization) and get that child's teacher contacts back.
+export async function getTeachersForChild(childId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   // Get the child's class, then find teachers assigned to that class via classes table
-  const child = await db.select({ classId: children.classId }).from(children).where(eq(children.id, childId)).limit(1);
+  const childConditions = [eq(children.id, childId)];
+  if (organizationId) childConditions.push(eq(children.organizationId, organizationId));
+  const child = await db.select({ classId: children.classId }).from(children).where(and(...childConditions)).limit(1);
   if (!child[0]?.classId) return [];
   const classInfo = await db.select({ teacherId: classes.teacherId, assistantId: classes.assistantId }).from(classes).where(eq(classes.id, child[0].classId)).limit(1);
   if (!classInfo[0]) return [];
@@ -597,12 +669,14 @@ export async function getTeachersForChild(childId: number) {
     .where(inArray(users.id, teacherIds));
 }
 
-export async function getParentsForTeacher(teacherId: number) {
+export async function getParentsForTeacher(teacherId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   // Get classes where this teacher is assigned, then find children in those classes, then their parents
+  const classConditions = [sql`(${classes.teacherId} = ${teacherId} OR ${classes.assistantId} = ${teacherId})`];
+  if (organizationId) classConditions.push(eq(classes.organizationId, organizationId));
   const teacherClasses = await db.select({ id: classes.id }).from(classes)
-    .where(sql`${classes.teacherId} = ${teacherId} OR ${classes.assistantId} = ${teacherId}`);
+    .where(and(...classConditions));
   if (teacherClasses.length === 0) return [];
   const classIds = teacherClasses.map(c => c.id);
   const childrenInClasses = await db.select({ id: children.id, firstName: children.firstName, lastName: children.lastName, parentId: children.parentId })
@@ -619,19 +693,28 @@ export async function getParentsForTeacher(teacherId: number) {
   }));
 }
 
-export async function getAllActiveStaffAndParents() {
+// SECURITY FIX: previously took no organizationId -- any admin's message
+// "contacts" fallback list would include every active staff member and
+// parent across ALL organizations on the platform, not just their own.
+export async function getAllActiveStaffAndParents(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const conditions = [eq(users.isActive, true), sql`${users.role} != 'user'`];
+  if (organizationId) conditions.push(eq(users.organizationId, organizationId));
   return db.select({ id: users.id, name: users.name, role: users.role })
     .from(users)
-    .where(and(
-      eq(users.isActive, true),
-      sql`${users.role} != 'user'`
-    ));
+    .where(and(...conditions));
 }
 
 // ============ INVOICES ============
-export async function getInvoices(parentId?: number, organizationId?: number) {
+// SECURITY FIX: getInvoices/getInvoiceById/updateInvoice/deleteInvoice previously
+// took no organizationId at all, despite the invoices table having an
+// organizationId column -- any staff/admin caller could list, read, update, or
+// delete ANY organization's invoices by id, since the route handlers in
+// routers.ts only ever checked "is this caller the owning parent", never "does
+// this invoice belong to the caller's organization". organizationId is now
+// accepted and enforced (when provided) at the query layer as well.
+export async function getInvoices(organizationId?: number, parentId?: number) {
   const db = await getDb();
   if (!db) return [];
   const selectFields = {
@@ -656,28 +739,22 @@ export async function getInvoices(parentId?: number, organizationId?: number) {
     childLastName: children.lastName,
     parentName: users.name,
   };
-  if (parentId) {
-    const conditions = [eq(invoices.parentId, parentId)];
-    if (organizationId) conditions.push(eq(invoices.organizationId, organizationId));
-    const results = await db.select(selectFields).from(invoices)
-      .leftJoin(children, eq(invoices.childId, children.id))
-      .leftJoin(users, eq(invoices.parentId, users.id))
-      .where(and(...conditions)).orderBy(desc(invoices.createdAt));
-    return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
-  }
-  const conditions = organizationId ? [eq(invoices.organizationId, organizationId)] : [];
-  const query = db.select(selectFields).from(invoices)
+  const conditions = [];
+  if (organizationId) conditions.push(eq(invoices.organizationId, organizationId));
+  if (parentId) conditions.push(eq(invoices.parentId, parentId));
+  const results = await db.select(selectFields).from(invoices)
     .leftJoin(children, eq(invoices.childId, children.id))
-    .leftJoin(users, eq(invoices.parentId, users.id));
-  const results = conditions.length > 0
-    ? await query.where(and(...conditions)).orderBy(desc(invoices.createdAt))
-    : await query.orderBy(desc(invoices.createdAt));
+    .leftJoin(users, eq(invoices.parentId, users.id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(invoices.createdAt));
   return results.map(r => ({ ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() }));
 }
 
-export async function getInvoiceById(id: number) {
+export async function getInvoiceById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return null;
+  const conditions = [eq(invoices.id, id)];
+  if (organizationId) conditions.push(eq(invoices.organizationId, organizationId));
   const results = await db.select({
     id: invoices.id,
     childId: invoices.childId,
@@ -697,6 +774,7 @@ export async function getInvoiceById(id: number) {
     paymentMethod: invoices.paymentMethod,
     receiptUrl: invoices.receiptUrl,
     createdAt: invoices.createdAt,
+    organizationId: invoices.organizationId,
     childFirstName: children.firstName,
     childLastName: children.lastName,
     parentName: users.name,
@@ -705,22 +783,26 @@ export async function getInvoiceById(id: number) {
   }).from(invoices)
     .leftJoin(children, eq(invoices.childId, children.id))
     .leftJoin(users, eq(invoices.parentId, users.id))
-    .where(eq(invoices.id, id));
+    .where(and(...conditions));
   if (!results.length) return null;
   const r = results[0];
   return { ...r, childName: `${r.childFirstName || ''} ${r.childLastName || ''}`.trim() };
 }
 
-export async function updateInvoice(id: number, data: Partial<{ description: string; subtotal: string; vatAmount: string; total: string; dueDate: Date; status: string; paymentMethod: string; paidAt: Date | null; paidAmount: string; invoiceType: string }>) {
+export async function updateInvoice(id: number, data: Partial<{ description: string; subtotal: string; vatAmount: string; total: string; dueDate: Date; status: string; paymentMethod: string; paidAt: Date | null; paidAmount: string; invoiceType: string }>, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(invoices).set(data as any).where(eq(invoices.id, id));
+  const conditions = [eq(invoices.id, id)];
+  if (organizationId) conditions.push(eq(invoices.organizationId, organizationId));
+  await db.update(invoices).set(data as any).where(and(...conditions));
 }
 
-export async function deleteInvoice(id: number) {
+export async function deleteInvoice(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(invoices).where(eq(invoices.id, id));
+  const conditions = [eq(invoices.id, id)];
+  if (organizationId) conditions.push(eq(invoices.organizationId, organizationId));
+  await db.delete(invoices).where(and(...conditions));
 }
 
 export async function createInvoice(data: InsertInvoice) {
@@ -779,6 +861,11 @@ export async function addLoyaltyPoints(userId: number, points: number, type: "ea
   }
 }
 
+// SECURITY FIX: loyalty_rewards has an organizationId column, but
+// getLoyaltyRewards/createLoyaltyReward/updateLoyaltyReward/
+// deleteLoyaltyReward previously ignored it entirely -- every
+// organization shared one single reward catalog, and any admin could
+// edit/deactivate any other organization's rewards by id.
 export async function getLoyaltyRewards(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
@@ -787,24 +874,37 @@ export async function getLoyaltyRewards(organizationId?: number) {
   return db.select().from(loyaltyRewards).where(and(...conditions));
 }
 
-export async function createLoyaltyReward(data: { name: string; nameAr: string; description?: string; descriptionAr?: string; pointsCost: number; category?: string; maxRedemptions?: number | null }) {
+export async function createLoyaltyReward(data: { name: string; nameAr: string; description?: string; descriptionAr?: string; pointsCost: number; category?: string; maxRedemptions?: number | null; organizationId?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(loyaltyRewards).values(data as any);
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateLoyaltyReward(id: number, data: Record<string, any>) {
+export async function getLoyaltyRewardById(id: number, organizationId?: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const conditions = [eq(loyaltyRewards.id, id)];
+  if (organizationId) conditions.push(eq(loyaltyRewards.organizationId, organizationId));
+  const result = await db.select().from(loyaltyRewards).where(and(...conditions)).limit(1);
+  return result[0];
+}
+
+export async function updateLoyaltyReward(id: number, data: Record<string, any>, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(loyaltyRewards).set(data).where(eq(loyaltyRewards.id, id));
+  const conditions = [eq(loyaltyRewards.id, id)];
+  if (organizationId) conditions.push(eq(loyaltyRewards.organizationId, organizationId));
+  await db.update(loyaltyRewards).set(data).where(and(...conditions));
   return { success: true };
 }
 
-export async function deleteLoyaltyReward(id: number) {
+export async function deleteLoyaltyReward(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(loyaltyRewards).set({ isActive: false }).where(eq(loyaltyRewards.id, id));
+  const conditions = [eq(loyaltyRewards.id, id)];
+  if (organizationId) conditions.push(eq(loyaltyRewards.organizationId, organizationId));
+  await db.update(loyaltyRewards).set({ isActive: false }).where(and(...conditions));
   return { success: true };
 }
 
@@ -830,79 +930,92 @@ export async function getUserRedemptions(userId: number) {
   return db.execute(sql`SELECT r.*, lr.name, lr.nameAr, lr.pointsCost as rewardCost FROM loyalty_redemptions r LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id WHERE r.userId = ${userId} ORDER BY r.createdAt DESC`);
 }
 
-export async function getLoyaltySettings(organizationId?: number) {
+// SECURITY FIX: loyalty_settings.organizationId is NOT NULL and the schema
+// comment explicitly says "configurable earn rules per organization" -- yet
+// getLoyaltySettings selected an arbitrary row with LIMIT 1 (no WHERE at
+// all) and updateLoyaltySettings hardcoded `WHERE id = 1`. In practice
+// every organization's loyalty program (points-per-referral,
+// points-per-payment, welcome/birthday bonus, on/off switch) was reading
+// from and writing to the exact same single row -- the same class of bug
+// fixed earlier for center_settings. Now properly scoped per organization,
+// with a get-or-create path since a given organization may not have a
+// settings row yet.
+export async function getLoyaltySettings(organizationId: number) {
   const db = await getDb();
   if (!db) return null;
-  if (organizationId) {
-    const result = await db.select().from(loyaltySettings).where(eq(loyaltySettings.organizationId, organizationId)).limit(1);
-    return result[0] ?? null;
-  }
-  const result = await db.execute(sql`SELECT * FROM loyalty_settings LIMIT 1`);
-  return (result as any)[0]?.[0] ?? null;
+  const result = await db.select().from(loyaltySettings).where(eq(loyaltySettings.organizationId, organizationId)).limit(1);
+  return result[0] ?? null;
 }
 
-export async function updateLoyaltySettings(data: Record<string, any>) {
+export async function updateLoyaltySettings(data: Partial<typeof loyaltySettings.$inferInsert>, organizationId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const sets = Object.entries(data).filter(([_, v]) => v !== undefined).map(([k, v]) => `${k} = ${typeof v === 'boolean' ? (v ? 1 : 0) : v}`).join(', ');
-  if (sets) {
-    await db.execute(sql.raw(`UPDATE loyalty_settings SET ${sets} WHERE id = 1`));
+  const updates = Object.fromEntries(
+    Object.entries(data).filter(([_, v]) => v !== undefined)
+  ) as Partial<typeof loyaltySettings.$inferInsert>;
+  const existing = await getLoyaltySettings(organizationId);
+  if (existing) {
+    if (Object.keys(updates).length > 0) {
+      await db.update(loyaltySettings).set(updates).where(eq(loyaltySettings.id, existing.id));
+    }
+  } else {
+    await db.insert(loyaltySettings).values({ ...updates, organizationId } as any);
   }
   return { success: true };
 }
 
+// SECURITY FIX: previously joined against ALL users with no organization
+// filter -- any admin could see every parent's loyalty point balance
+// (name, email, points) across every organization on the platform, not
+// just their own.
 export async function getAllParentsLoyaltyPoints(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  if (organizationId) {
-    const result = await db.execute(sql`SELECT lp.*, u.name as userName, u.nameAr as userNameAr, u.email FROM loyalty_points lp LEFT JOIN users u ON lp.userId = u.id WHERE u.organizationId = ${organizationId} ORDER BY lp.points DESC`);
-    return (result as any)[0] ?? [];
-  }
-  const result = await db.execute(sql`SELECT lp.*, u.name as userName, u.nameAr as userNameAr, u.email FROM loyalty_points lp LEFT JOIN users u ON lp.userId = u.id ORDER BY lp.points DESC`);
+  const result = organizationId
+    ? await db.execute(sql`SELECT lp.*, u.name as userName, u.nameAr as userNameAr, u.email FROM loyalty_points lp LEFT JOIN users u ON lp.userId = u.id WHERE u.organizationId = ${organizationId} ORDER BY lp.points DESC`)
+    : await db.execute(sql`SELECT lp.*, u.name as userName, u.nameAr as userNameAr, u.email FROM loyalty_points lp LEFT JOIN users u ON lp.userId = u.id ORDER BY lp.points DESC`);
   return (result as any)[0] ?? [];
 }
 
+// SECURITY FIX: previously had no organization filter -- any admin could
+// see (and, via updateRedemptionStatus below, approve/reject) every
+// organization's reward redemptions.
 export async function getAllRedemptions(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  if (organizationId) {
-    const result = await db.execute(sql`SELECT r.*, u.name as userName, u.nameAr as userNameAr, lr.name as rewardName, lr.nameAr as rewardNameAr FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id WHERE u.organizationId = ${organizationId} ORDER BY r.createdAt DESC`);
-    return (result as any)[0] ?? [];
-  }
-  const result = await db.execute(sql`SELECT r.*, u.name as userName, u.nameAr as userNameAr, lr.name as rewardName, lr.nameAr as rewardNameAr FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id ORDER BY r.createdAt DESC`);
+  const result = organizationId
+    ? await db.execute(sql`SELECT r.*, u.name as userName, u.nameAr as userNameAr, lr.name as rewardName, lr.nameAr as rewardNameAr FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id WHERE u.organizationId = ${organizationId} ORDER BY r.createdAt DESC`)
+    : await db.execute(sql`SELECT r.*, u.name as userName, u.nameAr as userNameAr, lr.name as rewardName, lr.nameAr as rewardNameAr FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id LEFT JOIN loyalty_rewards lr ON r.rewardId = lr.id ORDER BY r.createdAt DESC`);
   return (result as any)[0] ?? [];
 }
 
-export async function updateRedemptionStatus(id: number, status: string, adminNote?: string) {
+// SECURITY FIX: previously updated by id with no check that the
+// redemption's user even belongs to the caller's organization -- any admin
+// could approve/reject/fulfill any other organization's redemption by id.
+export async function updateRedemptionStatus(id: number, status: string, adminNote?: string, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const updates: any = { status };
-  if (adminNote) updates.adminNote = adminNote;
-  if (status === 'fulfilled') updates.fulfilledAt = new Date();
+  if (organizationId) {
+    const owned = await db.execute(sql`SELECT r.id FROM loyalty_redemptions r LEFT JOIN users u ON r.userId = u.id WHERE r.id = ${id} AND u.organizationId = ${organizationId} LIMIT 1`);
+    const rows = (owned as any)[0] ?? [];
+    if (rows.length === 0) return { success: false };
+  }
   await db.execute(sql`UPDATE loyalty_redemptions SET status = ${status}, adminNote = ${adminNote ?? null}, fulfilledAt = ${status === 'fulfilled' ? new Date() : null} WHERE id = ${id}`);
   return { success: true };
 }
 
 // ============ LOYALTY PARTNERS ============
 
-export async function getLoyaltyPartners(organizationId?: number) {
+export async function getLoyaltyPartners() {
   const db = await getDb();
   if (!db) return [];
-  if (organizationId) {
-    const result = await db.execute(sql`SELECT * FROM loyalty_partners WHERE isActive = 1 AND organizationId = ${organizationId} ORDER BY createdAt DESC`);
-    return (result as any)[0] ?? [];
-  }
   const result = await db.execute(sql`SELECT * FROM loyalty_partners WHERE isActive = 1 ORDER BY createdAt DESC`);
   return (result as any)[0] ?? [];
 }
 
-export async function getAllLoyaltyPartners(organizationId?: number) {
+export async function getAllLoyaltyPartners() {
   const db = await getDb();
   if (!db) return [];
-  if (organizationId) {
-    const result = await db.execute(sql`SELECT * FROM loyalty_partners WHERE organizationId = ${organizationId} ORDER BY createdAt DESC`);
-    return (result as any)[0] ?? [];
-  }
   const result = await db.execute(sql`SELECT * FROM loyalty_partners ORDER BY createdAt DESC`);
   return (result as any)[0] ?? [];
 }
@@ -914,13 +1027,34 @@ export async function createLoyaltyPartner(data: { name: string; nameAr: string;
   return { id: (result as any)[0]?.insertId, ...data };
 }
 
+// `loyalty_partners` has no Drizzle schema definition in this codebase (it's managed
+// entirely via raw SQL) -- adding one is recommended as a follow-up for full type
+// safety, but is out of scope for this fix since guessing at its exact column set
+// without a live DB to verify against would itself be risky. Column names can never
+// be SQL bind parameters in any dialect, so this allowlist is mandatory regardless.
+const LOYALTY_PARTNER_ALLOWED_COLUMNS = [
+  'name', 'nameAr', 'logoUrl', 'discountDescription', 'discountDescriptionAr',
+  'discountPercentage', 'contactInfo', 'website', 'isActive',
+] as const;
+
 export async function updateLoyaltyPartner(id: number, data: Record<string, any>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const fields = Object.entries(data).filter(([_, v]) => v !== undefined);
+  // SECURITY FIX (C4): previously built `UPDATE loyalty_partners SET \`${k}\` = ${v} ...`
+  // via raw string concatenation (sql.raw) -- both the column name (k) and, for
+  // non-string values, the value itself were interpolated with no validation, a SQL
+  // injection vector (CWE-89). Fix: validate every key against a static allowlist of
+  // real columns, and pass every value through Drizzle's `sql` tagged template so it
+  // is bound as a parameter rather than concatenated into the query string.
+  const fields = Object.entries(data).filter(([k, v]) => v !== undefined && (LOYALTY_PARTNER_ALLOWED_COLUMNS as readonly string[]).includes(k));
   if (fields.length === 0) return { success: true };
-  const setClause = fields.map(([k, v]) => `\`${k}\` = ${v === null ? 'NULL' : typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v}`).join(', ');
-  await db.execute(sql.raw(`UPDATE loyalty_partners SET ${setClause} WHERE id = ${id}`));
+  // `k` here is guaranteed (by the .filter above) to be one of the 9 fixed literal
+  // strings in LOYALTY_PARTNER_ALLOWED_COLUMNS -- never attacker-supplied text -- so
+  // backtick-wrapping it directly is safe. Only `v` (the value) is genuinely
+  // caller-controlled, and it is passed through the `sql` tagged template below,
+  // which binds it as a parameter rather than concatenating it into the query string.
+  const setFragments = fields.map(([k, v]) => sql`${sql.raw(`\`${k}\``)} = ${v}`);
+  await db.execute(sql`UPDATE loyalty_partners SET ${sql.join(setFragments, sql.raw(', '))} WHERE id = ${id}`);
   return { success: true };
 }
 
@@ -947,13 +1081,9 @@ export async function createLoyaltyCard(userId: number, cardNumber: string, qrCo
   return { cardNumber, qrCodeData };
 }
 
-export async function getAllLoyaltyCards(organizationId?: number) {
+export async function getAllLoyaltyCards() {
   const db = await getDb();
   if (!db) return [];
-  if (organizationId) {
-    const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, u.email, t.name as templateName FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_card_templates t ON c.templateId = t.id WHERE c.organizationId = ${organizationId} ORDER BY c.createdAt DESC`);
-    return (result as any)[0] ?? [];
-  }
   const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, u.email, t.name as templateName FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_card_templates t ON c.templateId = t.id ORDER BY c.createdAt DESC`);
   return (result as any)[0] ?? [];
 }
@@ -961,7 +1091,14 @@ export async function getAllLoyaltyCards(organizationId?: number) {
 export async function getCardByNumber(cardNumber: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, lp.points FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_points lp ON c.userId = lp.userId WHERE c.cardNumber = ${cardNumber} AND c.isActive = 1 LIMIT 1`);
+  // SECURITY FIX: added u.organizationId (aliased userOrganizationId) so the
+  // caller (server/routers.ts loyalty.validateCard) can enforce that a
+  // non-super-admin can only validate/scan a card belonging to a user in
+  // their own organization -- otherwise any authenticated staff member could
+  // scan/validate any other nursery's parent's loyalty card by guessing or
+  // observing its number, leaking that parent's name and points balance
+  // across tenants.
+  const result = await db.execute(sql`SELECT c.*, u.name as userName, u.nameAr as userNameAr, u.organizationId as userOrganizationId, lp.points FROM loyalty_cards c LEFT JOIN users u ON c.userId = u.id LEFT JOIN loyalty_points lp ON c.userId = lp.userId WHERE c.cardNumber = ${cardNumber} AND c.isActive = 1 LIMIT 1`);
   return (result as any)[0]?.[0] ?? null;
 }
 
@@ -1001,10 +1138,15 @@ export async function createNotification(data: InsertNotification) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function markNotificationRead(id: number) {
+// SECURITY FIX: previously had no ownership check at all -- any
+// authenticated user (from any organization) could mark any other user's
+// notification as read just by guessing/enumerating its id. Now scoped to
+// the calling user's own notifications, matching the pattern already used
+// by deleteNotification below.
+export async function markNotificationRead(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, id));
+  await db.update(notifications).set({ isRead: true }).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
 }
 
 export async function markAllNotificationsRead(userId: number) {
@@ -1081,35 +1223,72 @@ export async function getUsersByRole(role?: string, search?: string, organizatio
   return query;
 }
 
-export async function getPendingParents() {
+// SECURITY FIX: previously took no organizationId at all -- any
+// organization's admin calling `users.pending` saw every pending
+// self-registered parent from every organization on the platform (name,
+// phone, email). organizationId is now required and filtered on.
+export async function getPendingParents(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(users).where(and(eq(users.role, 'parent'), eq(users.isActive, false))).orderBy(desc(users.createdAt));
+  return db.select().from(users).where(and(eq(users.role, 'parent'), eq(users.isActive, false), eq(users.organizationId, organizationId))).orderBy(desc(users.createdAt));
 }
 
-export async function approveParent(userId: number) {
+// SECURITY FIX: previously updated by userId alone with no ownership check
+// -- any organization's admin could approve (activate) a pending parent
+// belonging to a different organization. Now fetch-and-verify: the target
+// user must exist, have role 'parent', and belong to the caller's
+// organization, or this throws instead of silently no-op'ing or acting
+// cross-tenant.
+export async function approveParent(userId: number, organizationId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const [target] = await db.select().from(users).where(and(eq(users.id, userId), eq(users.organizationId, organizationId), eq(users.role, 'parent'))).limit(1);
+  if (!target) throw new Error("approveParent: user not found in this organization");
   await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
 }
 
-export async function rejectParent(userId: number) {
+// SECURITY FIX: same ownership issue as approveParent -- previously any
+// organization's admin could reject/lock any other organization's pending
+// parent by id. Now fetch-and-verify against organizationId.
+export async function rejectParent(userId: number, organizationId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const [target] = await db.select().from(users).where(and(eq(users.id, userId), eq(users.organizationId, organizationId), eq(users.role, 'parent'))).limit(1);
+  if (!target) throw new Error("rejectParent: user not found in this organization");
   // Set role to 'user' and keep isActive=false to mark as rejected
   await db.update(users).set({ role: 'user', isActive: false }).where(eq(users.id, userId));
 }
 
-export async function getUserById(id: number) {
+// SECURITY FIX: previously took no organizationId at all -- any
+// organization's admin calling `users.getById` could read any other
+// organization's user's full profile (name, email, phone, nationalId,
+// role) by id. organizationId is now an optional filter; callers that have
+// a real org context (e.g. the admin-facing `users.getById` endpoint) must
+// pass it. Left optional (not required) because this is also used
+// internally by auth/session code paths that intentionally look up a user
+// before any org context is established (e.g. right after login).
+export async function getUserById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  return result[0] || null;
+  const conditions = [eq(users.id, id)];
+  if (organizationId) conditions.push(eq(users.organizationId, organizationId));
+  const result = await db.select().from(users).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
-export async function createUser(data: { name: string; email: string; phone?: string; role: string; openId: string; nationalId?: string; organizationId?: number }) {
+// SECURITY FIX: previously `organizationId: (data as any).organizationId || 1`
+// -- this function had its own internal silent-default-to-org-1 fallback,
+// independent of (and surviving) every router-level fix elsewhere in this
+// codebase. Any caller that forgot to pass organizationId (as several did --
+// see bulkImportRouter.ts's parents/teachers/staff cases) would silently
+// create the new user in organization #1 rather than failing loudly.
+// organizationId is now required with no fallback.
+export async function createUser(data: { name: string; email: string; phone?: string; role: string; openId: string; nationalId?: string; organizationId: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!data.organizationId || !Number.isInteger(data.organizationId) || data.organizationId <= 0) {
+    throw new Error("createUser: a valid organizationId is required");
+  }
   const result = await db.insert(users).values({
     openId: data.openId,
     name: data.name,
@@ -1117,15 +1296,25 @@ export async function createUser(data: { name: string; email: string; phone?: st
     phone: data.phone || null,
     role: data.role as any,
     nationalId: (data as any).nationalId || null,
-    organizationId: (data as any).organizationId || 1,
+    organizationId: data.organizationId,
     lastSignedIn: new Date(),
   });
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateUser(id: number, data: { name?: string; email?: string; phone?: string; role?: string; nationalId?: string; isActive?: boolean }) {
+// SECURITY FIX: previously took no organizationId at all -- any
+// organization's admin could update (including changing role/isActive/
+// contact info) any other organization's user by id. organizationId is now
+// an optional parameter; when provided, the update is fetch-and-verified
+// against it first and silently no-ops (returns undefined) if the target
+// user isn't in that organization, instead of acting cross-tenant.
+export async function updateUser(id: number, data: { name?: string; email?: string; phone?: string; role?: string; nationalId?: string; isActive?: boolean }, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (organizationId) {
+    const existing = await getUserById(id, organizationId);
+    if (!existing) return undefined;
+  }
   const updateData: Record<string, any> = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.email !== undefined) updateData.email = data.email;
@@ -1134,7 +1323,9 @@ export async function updateUser(id: number, data: { name?: string; email?: stri
   if (data.nationalId !== undefined) updateData.nationalId = data.nationalId;
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
   if (Object.keys(updateData).length > 0) {
-    await db.update(users).set(updateData).where(eq(users.id, id));
+    const conditions = [eq(users.id, id)];
+    if (organizationId) conditions.push(eq(users.organizationId, organizationId));
+    await db.update(users).set(updateData).where(and(...conditions));
   }
   return getUserById(id);
 }
@@ -1173,9 +1364,17 @@ export async function getAccountsPendingDeletion() {
   );
 }
 
-export async function deleteUser(id: number) {
+// SECURITY FIX: previously took no organizationId at all -- any
+// organization's admin could delete any other organization's user by id.
+// organizationId is now optional; when provided, fetch-and-verify first and
+// no-op (return success:false) if the target user isn't in that org.
+export async function deleteUser(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (organizationId) {
+    const existing = await getUserById(id, organizationId);
+    if (!existing) return { success: false };
+  }
   // Clean up parentChildren links
   await db.delete(parentChildren).where(eq(parentChildren.parentId, id));
   // Unlink children from this parent (legacy parentId column)
@@ -1187,9 +1386,22 @@ export async function deleteUser(id: number) {
   return { success: true };
 }
 
-export async function linkParentToChild(parentId: number, childId: number, relationship: string = 'parent') {
+// SECURITY FIX: previously took no organizationId at all -- any
+// organization's admin could link a child in their own organization to a
+// parent user account belonging to a DIFFERENT organization (or vice
+// versa), giving that other organization's parent account visibility into
+// this organization's child. organizationId is now required and both the
+// parent and the child are fetch-and-verified to belong to it before
+// linking.
+export async function linkParentToChild(parentId: number, childId: number, relationship: string = 'parent', organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (organizationId) {
+    const parent = await getUserById(parentId, organizationId);
+    if (!parent) throw new Error("linkParentToChild: parent not found in this organization");
+    const child = await getChildById(childId, organizationId);
+    if (!child) throw new Error("linkParentToChild: child not found in this organization");
+  }
   // Check if link already exists
   const existing = await db.select().from(parentChildren)
     .where(and(eq(parentChildren.parentId, parentId), eq(parentChildren.childId, childId)))
@@ -1201,9 +1413,17 @@ export async function linkParentToChild(parentId: number, childId: number, relat
   return { success: true, id: result[0].insertId };
 }
 
-export async function unlinkParentFromChild(parentId: number, childId: number) {
+// SECURITY FIX: previously took no organizationId -- any organization's
+// admin could unlink any parent/child pair by id regardless of which
+// organization they belonged to. organizationId is now optional; when
+// provided, the child is fetch-and-verified to belong to it first.
+export async function unlinkParentFromChild(parentId: number, childId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (organizationId) {
+    const child = await getChildById(childId, organizationId);
+    if (!child) throw new Error("unlinkParentFromChild: child not found in this organization");
+  }
   await db.delete(parentChildren).where(
     and(eq(parentChildren.parentId, parentId), eq(parentChildren.childId, childId))
   );
@@ -1215,21 +1435,43 @@ export async function unlinkParentFromChild(parentId: number, childId: number) {
   return { success: true };
 }
 
-export async function getChildrenForParent(parentId: number) {
+// SECURITY FIX: previously took no organizationId -- any organization's
+// admin could list any other organization's parent's linked children by
+// parentId. organizationId is now optional; when provided, the parent is
+// fetch-and-verified to belong to it and the returned children are also
+// filtered by it (defense in depth against the legacy-parentId fallback
+// path returning cross-org rows).
+export async function getChildrenForParent(parentId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const parent = await getUserById(parentId, organizationId);
+    if (!parent) return [];
+  }
   const links = await db.select().from(parentChildren).where(eq(parentChildren.parentId, parentId));
   if (links.length === 0) {
     // Fallback to legacy parentId
-    return db.select().from(children).where(eq(children.parentId, parentId));
+    const conditions = [eq(children.parentId, parentId)];
+    if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+    return db.select().from(children).where(and(...conditions));
   }
   const childIds = links.map(l => l.childId);
-  return db.select().from(children).where(inArray(children.id, childIds));
+  const conditions = [inArray(children.id, childIds)];
+  if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  return db.select().from(children).where(and(...conditions));
 }
 
-export async function getParentsForChild(childId: number) {
+// SECURITY FIX: previously took no organizationId -- any organization's
+// admin could list every parent (name/email/phone) linked to any other
+// organization's child by childId. organizationId is now optional; when
+// provided, the child is fetch-and-verified to belong to it first.
+export async function getParentsForChild(childId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const child = await getChildById(childId, organizationId);
+    if (!child) return [];
+  }
   const links = await db.select().from(parentChildren).where(eq(parentChildren.childId, childId));
   if (links.length === 0) return [];
   const parentIds = links.map(l => l.parentId);
@@ -1240,14 +1482,17 @@ export async function getParentsForChild(childId: number) {
   });
 }
 
-export async function getUnlinkedChildren() {
+// SECURITY FIX: previously took no organizationId at all -- returned every
+// organization's unlinked active children platform-wide to any
+// organization's admin. organizationId is now required and filtered on.
+export async function getUnlinkedChildren(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
   const linkedChildIds = await db.select({ childId: parentChildren.childId }).from(parentChildren);
   const ids = linkedChildIds.map(r => r.childId);
-  if (ids.length === 0) return db.select().from(children).where(eq(children.status, "active")).orderBy(children.firstName);
+  if (ids.length === 0) return db.select().from(children).where(and(eq(children.status, "active"), eq(children.organizationId, organizationId))).orderBy(children.firstName);
   const idPlaceholders = ids.map(id => sql`${id}`);
-  return db.select().from(children).where(and(eq(children.status, "active"), sql`${children.id} NOT IN (${sql.join(idPlaceholders, sql`, `)})`)).orderBy(children.firstName);
+  return db.select().from(children).where(and(eq(children.status, "active"), eq(children.organizationId, organizationId), sql`${children.id} NOT IN (${sql.join(idPlaceholders, sql`, `)})`)).orderBy(children.firstName);
 }
 
 // ============ CLASSES ============
@@ -1260,11 +1505,16 @@ export async function getClasses(organizationId?: number) {
   return db.select().from(classes).orderBy(classes.name);
 }
 
-export async function getClassById(id: number) {
+// SECURITY FIX: getClassById/updateClass/deleteClass/getChildrenByClass
+// previously took no organizationId at all -- any authenticated user could
+// read another organization's class or list of children by id.
+export async function getClassById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(classes).where(eq(classes.id, id)).limit(1);
-  return result[0] || null;
+  const conditions = [eq(classes.id, id)];
+  if (organizationId) conditions.push(eq(classes.organizationId, organizationId));
+  const result = await db.select().from(classes).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
 export async function createClass(data: any) {
@@ -1274,17 +1524,21 @@ export async function createClass(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateClass(id: number, data: any) {
+export async function updateClass(id: number, data: any, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(classes).set(data).where(eq(classes.id, id));
-  return getClassById(id);
+  const conditions = [eq(classes.id, id)];
+  if (organizationId) conditions.push(eq(classes.organizationId, organizationId));
+  await db.update(classes).set(data).where(and(...conditions));
+  return getClassById(id, organizationId);
 }
 
-export async function deleteClass(id: number) {
+export async function deleteClass(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(classes).where(eq(classes.id, id));
+  const conditions = [eq(classes.id, id)];
+  if (organizationId) conditions.push(eq(classes.organizationId, organizationId));
+  await db.delete(classes).where(and(...conditions));
   return { success: true };
 }
 
@@ -1297,14 +1551,19 @@ export async function getClassForTeacher(teacherId: number) {
   return result[0] || null;
 }
 
-export async function getChildrenByClass(classId: number) {
+export async function getChildrenByClass(classId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(children).where(eq(children.classId, classId)).orderBy(children.firstName);
+  const conditions = [eq(children.classId, classId)];
+  if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  return db.select().from(children).where(and(...conditions)).orderBy(children.firstName);
 }
 
 // ============ STAFF ATTENDANCE (GPS) ============
-export async function getStaffAttendanceByDate(date: string) {
+// SECURITY FIX: previously took no organizationId -- any admin (of ANY
+// organization) could pull every organization's GPS staff-attendance
+// records for a given date.
+export async function getStaffAttendanceByDate(date: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
@@ -1324,14 +1583,22 @@ export async function getStaffAttendanceByDate(date: string) {
     userName: users.name,
   }).from(staffAttendance)
     .leftJoin(users, eq(staffAttendance.userId, users.id))
-    .where(and(gte(staffAttendance.date, startOfDay), lte(staffAttendance.date, endOfDay)));
+    .where(and(
+      gte(staffAttendance.date, startOfDay),
+      lte(staffAttendance.date, endOfDay),
+      ...(organizationId ? [eq(staffAttendance.organizationId, organizationId)] : [])
+    ));
   return results;
 }
 
-export async function getStaffAttendanceByUser(userId: number) {
+// SECURITY FIX: previously took no organizationId -- any admin could pull
+// any user's GPS attendance history across organizations.
+export async function getStaffAttendanceByUser(userId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(staffAttendance).where(eq(staffAttendance.userId, userId)).orderBy(desc(staffAttendance.date));
+  const conditions = [eq(staffAttendance.userId, userId)];
+  if (organizationId) conditions.push(eq(staffAttendance.organizationId, organizationId));
+  return db.select().from(staffAttendance).where(and(...conditions)).orderBy(desc(staffAttendance.date));
 }
 
 export async function getTodayStaffAttendance(userId: number) {
@@ -1347,11 +1614,37 @@ export async function getTodayStaffAttendance(userId: number) {
   return result[0] ?? null;
 }
 
-export async function staffCheckIn(data: any) {
+// SECURITY FIX: previously took `data: any` and never required
+// organizationId. staff_attendance.organizationId used to default to 1 at
+// the schema level, so every staff GPS check-in record from every
+// organization on the platform was silently written as organizationId = 1
+// -- meaning organization #1's admin could see (and any org's admin trying
+// to view their OWN staff's attendance would fail to see) every
+// organization's check-in times, GPS coordinates, and device info. All
+// three callers (checkIn/quickCheckIn/lateCheckIn in routers.ts) now pass
+// ctx.organizationId explicitly, and this function enforces it's present.
+export async function staffCheckIn(data: any & { organizationId: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!data.organizationId || !Number.isInteger(data.organizationId) || data.organizationId <= 0) {
+    throw new Error("staffCheckIn: a valid organizationId is required");
+  }
   const result = await db.insert(staffAttendance).values(data);
   return { id: result[0].insertId, ...data };
+}
+
+// SECURITY FIX: added so callers (routers.ts checkOut/adminCheckOut) can
+// verify a client-supplied attendance record id actually belongs to the
+// caller (and/or their organization) before staffCheckOut is allowed to
+// modify it -- staffCheckOut itself takes a bare id with no ownership
+// check, by design, since that verification belongs at the call site.
+export async function getStaffAttendanceById(id: number, organizationId?: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const conditions = [eq(staffAttendance.id, id)];
+  if (organizationId) conditions.push(eq(staffAttendance.organizationId, organizationId));
+  const result = await db.select().from(staffAttendance).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
 export async function staffCheckOut(id: number, data: any) {
@@ -1361,51 +1654,65 @@ export async function staffCheckOut(id: number, data: any) {
 }
 
 // ============ CENTER SETTINGS ============
-export async function getCenterSettings() {
+// SECURITY FIX: centerSettings.organizationId existed in the schema but was
+// never used in either query -- getCenterSettings()/updateCenterSettings()
+// always operated on a single global row regardless of caller. In practice
+// EVERY organization shared the same center name, GPS coordinates/geofence
+// radius (used to validate staff GPS check-in), working hours, VAT number,
+// commercial register, and logo -- and any admin from ANY organization
+// updating "center settings" silently overwrote every other organization's
+// values in that one shared row. organizationId is now required.
+export async function getCenterSettings(organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
+  if (organizationId) {
+    const result = await db.select().from(centerSettings).where(eq(centerSettings.organizationId, organizationId)).limit(1);
+    return result[0];
+  }
   const result = await db.select().from(centerSettings).limit(1);
-  return result[0] || null;
+  return result[0];
 }
 
-export async function updateCenterSettings(data: any) {
+export async function updateCenterSettings(data: any, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const existing = await getCenterSettings();
+  const existing = await getCenterSettings(organizationId);
   if (existing) {
     await db.update(centerSettings).set(data).where(eq(centerSettings.id, existing.id));
   } else {
-    await db.insert(centerSettings).values(data);
+    await db.insert(centerSettings).values({ ...data, organizationId });
   }
-  return getCenterSettings();
+  return getCenterSettings(organizationId);
 }
 
 // ============ DAILY ACTIVITIES ============
-export async function getDailyActivities(childId: number, date?: string) {
+// SECURITY FIX: getDailyActivities/getDailyActivitiesByClass previously took
+// no organizationId at all, despite daily_activities having the column --
+// any teacher/admin could read another organization's child/class activity
+// log by id.
+export async function getDailyActivities(childId: number, date?: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (date) {
     const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
-    return db.select().from(dailyActivities).where(and(
-      eq(dailyActivities.childId, childId),
-      gte(dailyActivities.recordedAt, startOfDay),
-      lte(dailyActivities.recordedAt, endOfDay)
-    )).orderBy(desc(dailyActivities.recordedAt));
+    const conditions = [eq(dailyActivities.childId, childId), gte(dailyActivities.recordedAt, startOfDay), lte(dailyActivities.recordedAt, endOfDay)];
+    if (organizationId) conditions.push(eq(dailyActivities.organizationId, organizationId));
+    return db.select().from(dailyActivities).where(and(...conditions)).orderBy(desc(dailyActivities.recordedAt));
   }
-  return db.select().from(dailyActivities).where(eq(dailyActivities.childId, childId)).orderBy(desc(dailyActivities.recordedAt));
+  const conditions = [eq(dailyActivities.childId, childId)];
+  if (organizationId) conditions.push(eq(dailyActivities.organizationId, organizationId));
+  return db.select().from(dailyActivities).where(and(...conditions)).orderBy(desc(dailyActivities.recordedAt));
 }
 
-export async function getDailyActivitiesByClass(classId: number, date: string) {
+export async function getDailyActivitiesByClass(classId: number, date: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
-  return db.select().from(dailyActivities).where(and(
-    eq(dailyActivities.classId, classId),
-    gte(dailyActivities.recordedAt, startOfDay),
-    lte(dailyActivities.recordedAt, endOfDay)
-  )).orderBy(desc(dailyActivities.recordedAt));
+  const conditions = [eq(dailyActivities.classId, classId), gte(dailyActivities.recordedAt, startOfDay), lte(dailyActivities.recordedAt, endOfDay)];
+  if (organizationId) conditions.push(eq(dailyActivities.organizationId, organizationId));
+  return db.select().from(dailyActivities).where(and(...conditions)).orderBy(desc(dailyActivities.recordedAt));
 }
 
 export async function createDailyActivity(data: any) {
@@ -1416,10 +1723,14 @@ export async function createDailyActivity(data: any) {
 }
 
 // ============ CALENDAR EVENTS ============
-export async function getCalendarEvents(filters?: { month?: number; year?: number; audience?: string; status?: string }) {
+// SECURITY FIX (calendar read-side leak): organizationId is now a required
+// parameter, not an optional filter -- every caller MUST scope this query to a
+// single organization. Previously this had no organizationId condition at all,
+// so `list` returned every organization's events to any authenticated user.
+export async function getCalendarEvents(organizationId: number, filters?: { month?: number; year?: number; audience?: string; status?: string }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions: any[] = [];
+  const conditions: any[] = [eq(calendarEvents.organizationId, organizationId)];
   if (filters?.status) {
     conditions.push(eq(calendarEvents.status, filters.status as any));
   }
@@ -1433,10 +1744,7 @@ export async function getCalendarEvents(filters?: { month?: number; year?: numbe
     const prefix = `${filters.year}-${monthStr}`;
     conditions.push(sql`${calendarEvents.eventDate} LIKE ${prefix + '%'}`);
   }
-  const query = conditions.length > 0
-    ? db.select().from(calendarEvents).where(and(...conditions)).orderBy(calendarEvents.eventDate)
-    : db.select().from(calendarEvents).orderBy(calendarEvents.eventDate);
-  return query;
+  return db.select().from(calendarEvents).where(and(...conditions)).orderBy(calendarEvents.eventDate);
 }
 
 export async function getCalendarEvent(id: number) {
@@ -1446,7 +1754,7 @@ export async function getCalendarEvent(id: number) {
   return rows[0] || null;
 }
 
-export async function createCalendarEvent(data: any) {
+export async function createCalendarEvent(data: InsertCalendarEvent) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(calendarEvents).values(data);
@@ -1510,27 +1818,39 @@ export async function cancelEventReminders(eventId: number) {
   );
 }
 
-export async function cancelSingleReminder(id: number) {
+// SECURITY FIX (calendar read-side leak): optional eventId lets callers that
+// have already verified the parent event's organization (see
+// calendarRouter.ts's cancelReminders) also pin the WHERE clause to that event,
+// so a reminderId cannot be used to cancel a reminder belonging to a different
+// event/organization than the one the caller was authorized against.
+// processPendingReminders (the internal cron job) still calls this with only an
+// id, which is unaffected and intentionally cross-organization by design.
+export async function cancelSingleReminder(id: number, eventId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(eventReminders).set({ status: "cancelled" }).where(eq(eventReminders.id, id));
+  const conditions = [eq(eventReminders.id, id)];
+  if (eventId !== undefined) conditions.push(eq(eventReminders.eventId, eventId));
+  await db.update(eventReminders).set({ status: "cancelled" }).where(and(...conditions));
 }
 
 // ============ ANNOUNCEMENTS ============
-export async function getAnnouncements(audience?: string, includeExpired = false) {
+// SECURITY FIX: getAnnouncements/createAnnouncement/updateAnnouncement/
+// deleteAnnouncement previously took no organizationId at all, despite the
+// announcements table having an organizationId column -- every
+// organization's announcements were visible to every other organization's
+// users (as long as the audience enum matched), and any admin could edit or
+// delete any other organization's announcement by id.
+export async function getAnnouncements(organizationId: number, audience?: string, includeExpired = false) {
   const db = await getDb();
   if (!db) return [];
-  const conditions: any[] = [];
+  const conditions: any[] = [eq(announcements.organizationId, organizationId)];
   if (audience) {
     conditions.push(or(eq(announcements.audience, audience as any), eq(announcements.audience, "all")));
   }
   if (!includeExpired) {
     conditions.push(or(isNull(announcements.expiresAt), gt(announcements.expiresAt, new Date())));
   }
-  if (conditions.length > 0) {
-    return db.select().from(announcements).where(and(...conditions)).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
-  }
-  return db.select().from(announcements).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
+  return db.select().from(announcements).where(and(...conditions)).orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
 }
 
 export async function createAnnouncement(data: any) {
@@ -1540,17 +1860,30 @@ export async function createAnnouncement(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateAnnouncement(id: number, data: { title?: string; content?: string; audience?: string; isPinned?: boolean; imageUrl?: string | null; expiresAt?: Date | null }) {
+export async function getAnnouncementById(id: number, organizationId?: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const conditions = [eq(announcements.id, id)];
+  if (organizationId) conditions.push(eq(announcements.organizationId, organizationId));
+  const result = await db.select().from(announcements).where(and(...conditions)).limit(1);
+  return result[0];
+}
+
+export async function updateAnnouncement(id: number, data: { title?: string; content?: string; audience?: string; isPinned?: boolean; imageUrl?: string | null; expiresAt?: Date | null }, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(announcements).set(data as any).where(eq(announcements.id, id));
+  const conditions = [eq(announcements.id, id)];
+  if (organizationId) conditions.push(eq(announcements.organizationId, organizationId));
+  await db.update(announcements).set(data as any).where(and(...conditions));
   return { id, ...data };
 }
 
-export async function deleteAnnouncement(id: number) {
+export async function deleteAnnouncement(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(announcements).where(eq(announcements.id, id));
+  const conditions = [eq(announcements.id, id)];
+  if (organizationId) conditions.push(eq(announcements.organizationId, organizationId));
+  await db.delete(announcements).where(and(...conditions));
   return { success: true };
 }
 
@@ -1601,16 +1934,18 @@ export async function getUserReadAnnouncements(userId: number) {
 }
 
 // ============ DOCUMENTS ============
-export async function getDocuments(audience?: string, childId?: number) {
+// SECURITY FIX: getDocuments/deleteDocument previously took no
+// organizationId at all, despite documents.organizationId existing in the
+// schema -- every organization's policy/consent/form documents were visible
+// to every other organization's users, and any admin could delete any
+// other organization's document by id.
+export async function getDocuments(organizationId: number, audience?: string, childId?: number) {
   const db = await getDb();
   if (!db) return [];
-  const conditions: any[] = [];
+  const conditions: any[] = [eq(documents.organizationId, organizationId)];
   if (audience) conditions.push(or(eq(documents.audience, audience as any), eq(documents.audience, "all")));
   if (childId) conditions.push(or(eq(documents.childId, childId), isNull(documents.childId)));
-  if (conditions.length > 0) {
-    return db.select().from(documents).where(and(...conditions)).orderBy(desc(documents.createdAt));
-  }
-  return db.select().from(documents).orderBy(desc(documents.createdAt));
+  return db.select().from(documents).where(and(...conditions)).orderBy(desc(documents.createdAt));
 }
 
 export async function createDocument(data: any) {
@@ -1620,10 +1955,23 @@ export async function createDocument(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function deleteDocument(id: number) {
+// SECURITY FIX: added so the router can fetch-and-verify a document belongs
+// to the caller's organization before signing it or listing its signatures.
+export async function getDocumentById(id: number, organizationId?: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const conditions = [eq(documents.id, id)];
+  if (organizationId) conditions.push(eq(documents.organizationId, organizationId));
+  const result = await db.select().from(documents).where(and(...conditions)).limit(1);
+  return result[0];
+}
+
+export async function deleteDocument(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(documents).where(eq(documents.id, id));
+  const conditions = [eq(documents.id, id)];
+  if (organizationId) conditions.push(eq(documents.organizationId, organizationId));
+  await db.delete(documents).where(and(...conditions));
   return { success: true };
 }
 
@@ -1646,7 +1994,7 @@ export async function getMedicalInfo(childId: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(medicalInfo).where(eq(medicalInfo.childId, childId)).limit(1);
-  return result[0] || null;
+  return result[0];
 }
 
 export async function upsertMedicalInfo(childId: number, data: any) {
@@ -1675,6 +2023,16 @@ export async function createEmergencyContact(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
+// SECURITY FIX (new helper): needed so deleteEmergencyContact can verify
+// ownership via the contact's childId before deleting -- previously the
+// delete route had no ownership check of any kind.
+export async function getEmergencyContactById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(emergencyContacts).where(eq(emergencyContacts.id, id)).limit(1);
+  return result[0];
+}
+
 export async function deleteEmergencyContact(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1683,13 +2041,44 @@ export async function deleteEmergencyContact(id: number) {
 }
 
 // ============ ENROLLMENT ============
-export async function getEnrollments(status?: string) {
+// SECURITY FIX: the enrollment table has no organizationId column of its
+// own, so getEnrollments previously returned every organization's
+// enrollment records to any admin with no filtering whatsoever. Ownership
+// is now enforced via a join against children.organizationId (children
+// does have the column). createEnrollment/updateEnrollment ownership is
+// verified at the router layer via getChildById before writing.
+export async function getEnrollments(status?: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  if (status) {
-    return db.select().from(enrollment).where(eq(enrollment.status, status as any)).orderBy(desc(enrollment.createdAt));
+  const conditions = [];
+  if (status) conditions.push(eq(enrollment.status, status as any));
+  if (organizationId) {
+    return db.select({
+      id: enrollment.id,
+      childId: enrollment.childId,
+      classId: enrollment.classId,
+      status: enrollment.status,
+      startDate: enrollment.startDate,
+      endDate: enrollment.endDate,
+      notes: enrollment.notes,
+      createdAt: enrollment.createdAt,
+      updatedAt: enrollment.updatedAt,
+    }).from(enrollment)
+      .innerJoin(children, eq(enrollment.childId, children.id))
+      .where(conditions.length ? and(eq(children.organizationId, organizationId), ...conditions) : eq(children.organizationId, organizationId))
+      .orderBy(desc(enrollment.createdAt));
+  }
+  if (conditions.length > 0) {
+    return db.select().from(enrollment).where(and(...conditions)).orderBy(desc(enrollment.createdAt));
   }
   return db.select().from(enrollment).orderBy(desc(enrollment.createdAt));
+}
+
+export async function getEnrollmentById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(enrollment).where(eq(enrollment.id, id)).limit(1);
+  return result[0];
 }
 
 export async function createEnrollment(data: any) {
@@ -1706,10 +2095,27 @@ export async function updateEnrollment(id: number, data: any) {
 }
 
 // ============ WAITING LIST ============
-export async function getWaitingList() {
+// SECURITY FIX: previously had no organizationId at all (schema had no
+// such column) -- every organization's prospective-family waiting list was
+// a single shared global list, readable/editable by any admin regardless
+// of organization. organizationId column added to the schema (nullable,
+// see drizzle/schema.ts) and is now stamped on create and filtered on read
+// /update/delete.
+export async function getWaitingList(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(waitingList).orderBy(waitingList.priority, desc(waitingList.createdAt));
+  const query = db.select().from(waitingList);
+  return (organizationId ? query.where(eq(waitingList.organizationId, organizationId)) : query)
+    .orderBy(waitingList.priority, desc(waitingList.createdAt));
+}
+
+export async function getWaitingListEntryById(id: number, organizationId?: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const conditions = [eq(waitingList.id, id)];
+  if (organizationId) conditions.push(eq(waitingList.organizationId, organizationId));
+  const result = await db.select().from(waitingList).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
 export async function createWaitingListEntry(data: any) {
@@ -1719,24 +2125,33 @@ export async function createWaitingListEntry(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function updateWaitingListEntry(id: number, data: any) {
+export async function updateWaitingListEntry(id: number, data: any, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(waitingList).set(data).where(eq(waitingList.id, id));
+  const conditions = [eq(waitingList.id, id)];
+  if (organizationId) conditions.push(eq(waitingList.organizationId, organizationId));
+  await db.update(waitingList).set(data).where(and(...conditions));
 }
 
-export async function deleteWaitingListEntry(id: number) {
+export async function deleteWaitingListEntry(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(waitingList).where(eq(waitingList.id, id));
+  const conditions = [eq(waitingList.id, id)];
+  if (organizationId) conditions.push(eq(waitingList.organizationId, organizationId));
+  await db.delete(waitingList).where(and(...conditions));
   return { success: true };
 }
 
 // ============ EYFS ASSESSMENTS ============
-export async function getEyfsAssessments(childId: number) {
+// SECURITY FIX: previously took no organizationId at all despite
+// eyfs_assessments having the column -- any teacher/admin could read
+// another organization's child's EYFS assessments by id.
+export async function getEyfsAssessments(childId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(eyfsAssessments).where(eq(eyfsAssessments.childId, childId)).orderBy(desc(eyfsAssessments.assessedAt));
+  const conditions = [eq(eyfsAssessments.childId, childId)];
+  if (organizationId) conditions.push(eq(eyfsAssessments.organizationId, organizationId));
+  return db.select().from(eyfsAssessments).where(and(...conditions)).orderBy(desc(eyfsAssessments.assessedAt));
 }
 
 export async function createEyfsAssessment(data: any) {
@@ -1753,18 +2168,49 @@ export async function createAuditLog(data: any) {
   await db.insert(auditLog).values(data);
 }
 
-export async function getAuditLogs(limit = 100) {
+// SECURITY FIX: audit_log has no organizationId column of its own -- this
+// previously returned every organization's audit trail (which user did
+// what, to which resource, from which IP address) to any single
+// organization's admin, platform-wide. Scoped here via a join to users on
+// the acting userId (every audit entry is recorded against the user who
+// performed the action, and that user belongs to exactly one organization).
+export async function getAuditLogs(limit = 100, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const rows = await db.select({ log: auditLog }).from(auditLog)
+      .innerJoin(users, eq(auditLog.userId, users.id))
+      .where(eq(users.organizationId, organizationId))
+      .orderBy(desc(auditLog.createdAt))
+      .limit(limit);
+    return rows.map(r => r.log);
+  }
   return db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(limit);
 }
 
 // ============ CHILD DEPARTURES ============
-export async function getDeparturesByDate(date: string) {
+// SECURITY FIX: child_departures has no organizationId column of its own.
+// getDeparturesByDate/getDeparturesByChild previously took no organizationId
+// at all -- any authenticated staff/admin (of ANY organization) calling
+// departures.byDate or departures.byChild would see every organization's
+// pickup records platform-wide (who picked up which child, relationship,
+// notes, signature). Scoped here via a join to children, same pattern used
+// for childDocuments above.
+export async function getDeparturesByDate(date: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   const startOfDay = new Date(date); startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date); endOfDay.setHours(23, 59, 59, 999);
+  if (organizationId) {
+    const rows = await db.select({ dep: childDepartures }).from(childDepartures)
+      .innerJoin(children, eq(childDepartures.childId, children.id))
+      .where(and(
+        eq(children.organizationId, organizationId),
+        gte(childDepartures.departureTime, startOfDay),
+        lte(childDepartures.departureTime, endOfDay)
+      )).orderBy(desc(childDepartures.departureTime));
+    return rows.map(r => r.dep);
+  }
   return db.select().from(childDepartures).where(and(
     gte(childDepartures.departureTime, startOfDay),
     lte(childDepartures.departureTime, endOfDay)
@@ -1784,9 +2230,16 @@ export async function getDeparturesByDateForChildren(date: string, childIds: num
   )).orderBy(desc(childDepartures.departureTime));
 }
 
-export async function getDeparturesByChild(childId: number) {
+export async function getDeparturesByChild(childId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const rows = await db.select({ dep: childDepartures }).from(childDepartures)
+      .innerJoin(children, eq(childDepartures.childId, children.id))
+      .where(and(eq(childDepartures.childId, childId), eq(children.organizationId, organizationId)))
+      .orderBy(desc(childDepartures.departureTime)).limit(30);
+    return rows.map(r => r.dep);
+  }
   return db.select().from(childDepartures).where(eq(childDepartures.childId, childId)).orderBy(desc(childDepartures.departureTime)).limit(30);
 }
 
@@ -1798,19 +2251,51 @@ export async function createDeparture(data: any) {
 }
 
 // ============ CHILD DOCUMENTS ============
+// SECURITY FIX: childDocuments (birth certificates, national IDs, medical
+// reports, immunization records, passports) has no organizationId column of
+// its own. getAllChildDocuments previously took no organizationId at all --
+// any teacher (of ANY organization) calling childDocuments.listAll would see
+// every organization's uploaded identity/medical documents. Scoped here via
+// a join to children; updateChildDocument/deleteChildDocument now accept an
+// optional organizationId enforced the same way, and a new
+// getChildDocumentById is added so the router can fetch-and-verify before
+// approve/reject/delete.
 export async function getChildDocuments(childId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(childDocuments).where(eq(childDocuments.childId, childId)).orderBy(desc(childDocuments.createdAt));
 }
 
-export async function getAllChildDocuments(status?: string) {
+export async function getAllChildDocuments(status?: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (organizationId) {
+    const conditions = [eq(children.organizationId, organizationId)];
+    if (status) conditions.push(eq(childDocuments.status, status as any));
+    const rows = await db.select({ doc: childDocuments }).from(childDocuments)
+      .innerJoin(children, eq(childDocuments.childId, children.id))
+      .where(and(...conditions))
+      .orderBy(desc(childDocuments.createdAt));
+    return rows.map(r => r.doc);
+  }
   if (status) {
     return db.select().from(childDocuments).where(eq(childDocuments.status, status as any)).orderBy(desc(childDocuments.createdAt));
   }
   return db.select().from(childDocuments).orderBy(desc(childDocuments.createdAt));
+}
+
+export async function getChildDocumentById(id: number, organizationId?: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  if (organizationId) {
+    const rows = await db.select({ doc: childDocuments }).from(childDocuments)
+      .innerJoin(children, eq(childDocuments.childId, children.id))
+      .where(and(eq(childDocuments.id, id), eq(children.organizationId, organizationId)))
+      .limit(1);
+    return rows[0]?.doc;
+  }
+  const result = await db.select().from(childDocuments).where(eq(childDocuments.id, id)).limit(1);
+  return result[0];
 }
 
 export async function createChildDocument(data: any) {
@@ -1834,48 +2319,58 @@ export async function deleteChildDocument(id: number) {
 
 
 // ============ MEDIA ============
-export async function createMedia(data: { type: string; url: string; fileKey?: string; thumbnailUrl?: string; caption?: string; mimeType?: string; fileSize?: number; uploadedBy: number; classId?: number; visibility?: string; childIds?: number[] }) {
+// SECURITY FIX: the entire media module (photos/videos of children) had NO
+// organizationId filtering anywhere -- createMedia never stamped it on new
+// rows, and every read/delete/approve function below operated with no
+// org filter at all despite the media table having the column. Combined
+// with the router (see routers.ts media: router({...})), any admin could
+// list/approve/delete every organization's photos and videos of children.
+export async function createMedia(data: { type: string; url: string; fileKey?: string; thumbnailUrl?: string; caption?: string; mimeType?: string; fileSize?: number; uploadedBy: number; classId?: number; visibility?: string; childIds?: number[]; organizationId?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const { childIds, ...mediaData } = data;
   const result = await db.insert(media).values(mediaData as any);
   const mediaId = result[0].insertId;
-  
+
   // Link children to media
   if (childIds && childIds.length > 0) {
     const links = childIds.map(childId => ({ mediaId, childId }));
     await db.insert(mediaChildren).values(links);
   }
-  
+
   return { id: mediaId, ...mediaData };
 }
 
-export async function getMediaForClass(classId: number, limit = 50) {
+export async function getMediaForClass(classId: number, limit = 50, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const conditions = [eq(media.classId, classId), eq(media.isApproved, true)];
+  if (organizationId) conditions.push(eq(media.organizationId, organizationId));
   return db.select().from(media)
-    .where(and(eq(media.classId, classId), eq(media.isApproved, true)))
+    .where(and(...conditions))
     .orderBy(desc(media.createdAt))
     .limit(limit);
 }
 
-export async function getMediaForChild(childId: number, limit = 50) {
+export async function getMediaForChild(childId: number, limit = 50, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   // Get media where this child is tagged
   const tagged = await db.select({ mediaId: mediaChildren.mediaId })
     .from(mediaChildren)
     .where(eq(mediaChildren.childId, childId));
-  
+
   if (tagged.length === 0) return [];
   const mediaIds = tagged.map(t => t.mediaId);
+  const conditions = [inArray(media.id, mediaIds), eq(media.isApproved, true)];
+  if (organizationId) conditions.push(eq(media.organizationId, organizationId));
   return db.select().from(media)
-    .where(and(inArray(media.id, mediaIds), eq(media.isApproved, true)))
+    .where(and(...conditions))
     .orderBy(desc(media.createdAt))
     .limit(limit);
 }
 
-export async function getMediaForChildren(childIds: number[], limit = 50) {
+export async function getMediaForChildren(childIds: number[], limit = 50, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (childIds.length === 0) return [];
@@ -1883,26 +2378,32 @@ export async function getMediaForChildren(childIds: number[], limit = 50) {
   const tagged = await db.select({ mediaId: mediaChildren.mediaId })
     .from(mediaChildren)
     .where(inArray(mediaChildren.childId, childIds));
-  
+
   if (tagged.length === 0) return [];
   const mediaIds = Array.from(new Set(tagged.map(t => t.mediaId)));
+  const conditions = [inArray(media.id, mediaIds), eq(media.isApproved, true)];
+  if (organizationId) conditions.push(eq(media.organizationId, organizationId));
   return db.select().from(media)
-    .where(and(inArray(media.id, mediaIds), eq(media.isApproved, true)))
+    .where(and(...conditions))
     .orderBy(desc(media.createdAt))
     .limit(limit);
 }
 
-export async function getAllMedia(limit = 100) {
+export async function getAllMedia(limit = 100, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(media).orderBy(desc(media.createdAt)).limit(limit);
+  const conditions = organizationId ? [eq(media.organizationId, organizationId)] : [];
+  const query = db.select().from(media);
+  return (conditions.length ? query.where(and(...conditions)) : query).orderBy(desc(media.createdAt)).limit(limit);
 }
 
-export async function getMediaById(id: number) {
+export async function getMediaById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(media).where(eq(media.id, id)).limit(1);
-  return result[0] || null;
+  const conditions = [eq(media.id, id)];
+  if (organizationId) conditions.push(eq(media.organizationId, organizationId));
+  const result = await db.select().from(media).where(and(...conditions)).limit(1);
+  return result[0];
 }
 
 export async function getMediaChildren(mediaId: number) {
@@ -1911,17 +2412,23 @@ export async function getMediaChildren(mediaId: number) {
   return db.select().from(mediaChildren).where(eq(mediaChildren.mediaId, mediaId));
 }
 
-export async function deleteMedia(id: number) {
+export async function deleteMedia(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (organizationId) {
+    const existing = await getMediaById(id, organizationId);
+    if (!existing) return;
+  }
   await db.delete(mediaChildren).where(eq(mediaChildren.mediaId, id));
   await db.delete(media).where(eq(media.id, id));
 }
 
-export async function updateMediaApproval(id: number, isApproved: boolean) {
+export async function updateMediaApproval(id: number, isApproved: boolean, organizationId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(media).set({ isApproved }).where(eq(media.id, id));
+  const conditions = [eq(media.id, id)];
+  if (organizationId) conditions.push(eq(media.organizationId, organizationId));
+  await db.update(media).set({ isApproved }).where(and(...conditions));
 }
 
 // ============ PAYMENTS & TRANSACTIONS ============
@@ -1937,14 +2444,14 @@ export async function getPaymentById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
-  return result[0] || null;
+  return result[0];
 }
 
 export async function getPaymentByMoyasarId(moyasarPaymentId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(payments).where(eq(payments.moyasarPaymentId, moyasarPaymentId)).limit(1);
-  return result[0] || null;
+  return result[0];
 }
 
 export async function updatePayment(id: number, data: Partial<{ status: string; paidAt: Date; moyasarPaymentId: string; moyasarPaymentUrl: string; metadata: any; amount: string }>) {
@@ -2004,7 +2511,12 @@ export async function getTransactionsByParent(parentId: number) {
   return db.select().from(transactions).where(eq(transactions.parentId, parentId)).orderBy(desc(transactions.createdAt));
 }
 
-export async function getAllTransactions(limit = 100) {
+// SECURITY FIX (C1): `transactions` has no organizationId column of its own (it's
+// only reachable via invoices.organizationId), and this function previously ran
+// with NO tenant scoping at all -- any admin/principal/owner at any single
+// organization could see every organization's transactions. organizationId is now a
+// required parameter, enforced by filtering on the already-joined `invoices` table.
+export async function getAllTransactions(organizationId: number, limit = 100) {
   const db = await getDb();
   if (!db) return [];
   return db.select({
@@ -2030,6 +2542,7 @@ export async function getAllTransactions(limit = 100) {
     .leftJoin(invoices, eq(transactions.invoiceId, invoices.id))
     .leftJoin(children, eq(invoices.childId, children.id))
     .leftJoin(users, eq(transactions.parentId, users.id))
+    .where(eq(invoices.organizationId, organizationId))
     .orderBy(desc(transactions.createdAt))
     .limit(limit);
 }
@@ -2055,7 +2568,11 @@ export async function getRefundsByInvoice(invoiceId: number) {
   return db.select().from(refunds).where(eq(refunds.invoiceId, invoiceId)).orderBy(desc(refunds.createdAt));
 }
 
-export async function getAllRefunds(limit = 100) {
+// SECURITY FIX (C1, found during verification of the router surface): same pattern
+// as getAllTransactions -- `refunds` has no organizationId of its own, reachable via
+// invoices.organizationId, and this was called with zero scoping from `refunds.list`
+// (adminProcedure, server/routers.ts), leaking every organization's refund data.
+export async function getAllRefunds(organizationId: number, limit = 100) {
   const db = await getDb();
   if (!db) return [];
   return db.select({
@@ -2079,6 +2596,7 @@ export async function getAllRefunds(limit = 100) {
     .leftJoin(invoices, eq(refunds.invoiceId, invoices.id))
     .leftJoin(children, eq(invoices.childId, children.id))
     .leftJoin(users, eq(refunds.parentId, users.id))
+    .where(eq(invoices.organizationId, organizationId))
     .orderBy(desc(refunds.createdAt))
     .limit(limit);
 }
@@ -2098,7 +2616,11 @@ export async function createTuitionPlan(data: InsertTuitionPlan) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function getTuitionPlans() {
+// SECURITY FIX (C1): `tuition_plans` has no organizationId column of its own (only
+// reachable via children.organizationId), and this function previously took zero
+// arguments and returned every organization's tuition plans to any caller.
+// organizationId is now required, enforced via the already-joined `children` table.
+export async function getTuitionPlans(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select({
@@ -2120,14 +2642,26 @@ export async function getTuitionPlans() {
   }).from(tuitionPlans)
     .leftJoin(children, eq(tuitionPlans.childId, children.id))
     .leftJoin(users, eq(tuitionPlans.parentId, users.id))
+    .where(eq(children.organizationId, organizationId))
     .orderBy(desc(tuitionPlans.createdAt));
 }
 
-export async function getTuitionPlanById(id: number) {
+// SECURITY FIX: previously took no organizationId at all -- any caller could
+// fetch any organization's tuition plan by id. tuitionPlans has no
+// organizationId column of its own, so it is enforced via a join to children
+// (same pattern as getTuitionPlans above).
+export async function getTuitionPlanById(id: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return undefined;
+  if (organizationId) {
+    const result = await db.select({ plan: tuitionPlans }).from(tuitionPlans)
+      .innerJoin(children, eq(tuitionPlans.childId, children.id))
+      .where(and(eq(tuitionPlans.id, id), eq(children.organizationId, organizationId)))
+      .limit(1);
+    return result[0]?.plan;
+  }
   const result = await db.select().from(tuitionPlans).where(eq(tuitionPlans.id, id)).limit(1);
-  return result[0] || null;
+  return result[0];
 }
 
 export async function updateTuitionPlan(id: number, data: Partial<{ name: string; amount: string; frequency: string; description: string; nextBillingDate: Date; isActive: boolean; endDate: Date }>) {
@@ -2142,17 +2676,29 @@ export async function getActiveTuitionPlans() {
   return db.select().from(tuitionPlans).where(eq(tuitionPlans.isActive, true));
 }
 
-export async function generateInvoicesFromPlans() {
+// SECURITY FIX: previously took no organizationId at all and processed every
+// organization's due tuition plans in one call -- ANY admin, from ANY
+// organization, clicking "generate invoices" would generate (and get
+// notified about) recurring invoices for every other organization's
+// children too, and each generated invoice's organizationId was left unset
+// (silently defaulting to organization #1 per the schema default). Now
+// requires organizationId and scopes the plan lookup via a join to children
+// (tuitionPlans has no organizationId column of its own), and stamps it onto
+// every generated invoice.
+export async function generateInvoicesFromPlans(organizationId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const now = new Date();
-  const activePlans = await db.select().from(tuitionPlans)
+  const activePlanRows = await db.select({ plan: tuitionPlans }).from(tuitionPlans)
+    .innerJoin(children, eq(tuitionPlans.childId, children.id))
     .where(and(
       eq(tuitionPlans.isActive, true),
-      lte(tuitionPlans.nextBillingDate, now)
+      lte(tuitionPlans.nextBillingDate, now),
+      eq(children.organizationId, organizationId)
     ));
-  
+  const activePlans = activePlanRows.map(r => r.plan);
+
   const generatedInvoices: any[] = [];
   
   for (const plan of activePlans) {
@@ -2185,6 +2731,7 @@ export async function generateInvoicesFromPlans() {
       isRecurring: true,
       tuitionPlanId: plan.id,
       paidAmount: '0.00',
+      organizationId,
     };
     
     const invoice = await db.insert(invoices).values(invoiceData);
@@ -2213,15 +2760,19 @@ export async function generateInvoicesFromPlans() {
 
 // ============ FINANCE ENHANCED ============
 
-export async function getFinanceExportData(filters?: { startDate?: Date; endDate?: Date; status?: string }) {
+// SECURITY FIX (C1): previously took only date/status filters and NO organizationId
+// at all -- `finance.export` (adminProcedure, server/routers.ts) exported every
+// organization's invoices to any single organization's admin/principal/owner.
+// organizationId is now required and always applied, on top of the optional filters.
+export async function getFinanceExportData(organizationId: number, filters?: { startDate?: Date; endDate?: Date; status?: string }) {
   const db = await getDb();
   if (!db) return [];
-  
-  const conditions: any[] = [];
+
+  const conditions: any[] = [eq(invoices.organizationId, organizationId)];
   if (filters?.startDate) conditions.push(gte(invoices.createdAt, filters.startDate));
   if (filters?.endDate) conditions.push(lte(invoices.createdAt, filters.endDate));
   if (filters?.status) conditions.push(eq(invoices.status, filters.status as any));
-  
+
   const query = db.select({
     id: invoices.id,
     invoiceNumber: invoices.invoiceNumber,
@@ -2250,11 +2801,15 @@ export async function getFinanceExportData(filters?: { startDate?: Date; endDate
   return query.orderBy(desc(invoices.createdAt));
 }
 
-export async function getEnhancedFinanceSummary() {
+// SECURITY FIX (C1): previously took zero arguments and ran `db.select().from(invoices)`
+// with no WHERE clause at all -- `finance.summary` (protectedProcedure, server/routers.ts)
+// returned platform-wide revenue/invoice aggregates to any logged-in non-parent user at
+// any single organization. organizationId is now required and filters the base query.
+export async function getEnhancedFinanceSummary(organizationId: number) {
   const db = await getDb();
   if (!db) return { totalRevenue: 0, pendingAmount: 0, overdueAmount: 0, partiallyPaidAmount: 0, totalInvoices: 0, paidInvoices: 0, pendingInvoices: 0, overdueInvoices: 0, thisMonthRevenue: 0 };
-  
-  const allInvoices = await db.select().from(invoices);
+
+  const allInvoices = await db.select().from(invoices).where(eq(invoices.organizationId, organizationId));
   
   const totalRevenue = allInvoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + Number(i.total), 0);
   const pendingAmount = allInvoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + Number(i.total), 0);
@@ -2317,6 +2872,16 @@ export async function findUserByIdentifier(identifier: string) {
   return undefined;
 }
 
+// SECURITY FIX: this is the public parent self-registration path
+// (auth.register -> routers.ts). It previously never set organizationId at
+// all, and users.organizationId used to default to 1 at the schema level,
+// so every publicly self-registered parent account was silently created as
+// a member of organization #1 regardless of which nursery they intended to
+// join. organizationId is now a required parameter: the caller (auth.register)
+// resolves the parent's chosen nursery from a public orgSlug via
+// getOrganizationBySlug before calling this, and that resolved organization's
+// id is passed here. The schema column is now NOT NULL with no default, so
+// this also fails at the database level if ever called without one.
 export async function createUserWithPassword(data: {
   name: string;
   phone: string;
@@ -2324,12 +2889,16 @@ export async function createUserWithPassword(data: {
   password: string;
   role: string;
   isActive: boolean;
+  organizationId: number;
 }): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+  if (!data.organizationId || !Number.isInteger(data.organizationId) || data.organizationId <= 0) {
+    throw new Error("createUserWithPassword: a valid organizationId is required");
+  }
+
   const openId = `local_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-  
+
   const result = await db.insert(users).values({
     openId,
     name: data.name,
@@ -2338,8 +2907,9 @@ export async function createUserWithPassword(data: {
     password: data.password,
     role: data.role as any,
     isActive: data.isActive,
+    organizationId: data.organizationId,
   });
-  
+
   return result[0].insertId;
 }
 
@@ -2357,8 +2927,17 @@ export async function createPickupRequest(data: InsertPickupRequest) {
   return result[0].insertId;
 }
 
-export async function getActivePickupRequests() {
+// SECURITY FIX: previously took no organizationId at all -- any authenticated
+// staff member (of ANY organization) calling pickup.active would see every
+// organization's currently-active pickup requests, including child names,
+// parent names/phones, and class names.
+export async function getActivePickupRequests(organizationId?: number) {
   const db = await getDb();
+  const conditions = [
+    inArray(pickupRequests.status, ["waiting_teacher", "sent_to_reception", "waiting_at_reception"]),
+    gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`),
+  ];
+  if (organizationId) conditions.push(eq(pickupRequests.organizationId, organizationId));
   const results = await db!.select({
     id: pickupRequests.id,
     childId: pickupRequests.childId,
@@ -2387,12 +2966,7 @@ export async function getActivePickupRequests() {
   .leftJoin(children, eq(pickupRequests.childId, children.id))
   .leftJoin(users, eq(pickupRequests.parentId, users.id))
   .leftJoin(classes, eq(children.classId, classes.id))
-  .where(
-    and(
-      inArray(pickupRequests.status, ["waiting_teacher", "sent_to_reception", "waiting_at_reception"]),
-      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
-    )
-  )
+  .where(and(...conditions))
   .orderBy(desc(pickupRequests.requestedAt));
 
   // Enrich with teacher name
@@ -2434,28 +3008,41 @@ export async function getPickupRequestsByParent(parentId: number) {
   .limit(50);
 }
 
-export async function getActivePickupForChild(childId: number) {
+// SECURITY FIX: previously took no organizationId -- combined with the
+// router not checking organization ownership either, any authenticated
+// parent/staff user could probe an arbitrary childId (even one belonging to
+// another organization) and learn whether that child has an active pickup
+// request in progress.
+export async function getActivePickupForChild(childId: number, organizationId?: number) {
   const db = await getDb();
+  const conditions = [
+    eq(pickupRequests.childId, childId),
+    inArray(pickupRequests.status, ["waiting_teacher", "sent_to_reception", "waiting_at_reception"]),
+    gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`),
+  ];
+  if (organizationId) conditions.push(eq(pickupRequests.organizationId, organizationId));
   const results = await db!.select()
     .from(pickupRequests)
-    .where(
-      and(
-        eq(pickupRequests.childId, childId),
-        inArray(pickupRequests.status, ["waiting_teacher", "sent_to_reception", "waiting_at_reception"]),
-        gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
-      )
-    )
+    .where(and(...conditions))
     .limit(1);
   return results[0] || null;
 }
 
-export async function updatePickupRequestStatus(id: number, status: string, extra: Record<string, any> = {}) {
+// SECURITY FIX: previously matched by id alone with no organization check --
+// any authenticated staff user (of ANY organization) could advance/complete
+// another organization's pickup workflow (e.g. mark a foreign child as
+// "picked up" by an arbitrary named person) simply by guessing/enumerating
+// a pickup request id. organizationId is now applied as an additional
+// match condition when provided, so a cross-org id updates zero rows.
+export async function updatePickupRequestStatus(id: number, status: string, extra: Record<string, any> = {}, organizationId?: number) {
   const db = await getDb();
   const updateData: any = { status, ...extra };
   if (status === "sent_to_reception") updateData.teacherResponseAt = new Date();
   if (status === "waiting_at_reception") updateData.arrivedReceptionAt = new Date();
   if (status === "picked_up") updateData.pickedUpAt = new Date();
-  await db!.update(pickupRequests).set(updateData).where(eq(pickupRequests.id, id));
+  const conditions = [eq(pickupRequests.id, id)];
+  if (organizationId) conditions.push(eq(pickupRequests.organizationId, organizationId));
+  await db!.update(pickupRequests).set(updateData).where(and(...conditions));
 }
 
 export async function getPickupRequestsForTeacher(teacherId: number) {
@@ -2495,8 +3082,13 @@ export async function getPickupRequestsForTeacher(teacherId: number) {
   .orderBy(desc(pickupRequests.requestedAt));
 }
 
-export async function getPickupHistory(limit = 100) {
+// SECURITY FIX: previously took no organizationId -- staff of ANY
+// organization could read every organization's completed pickup history
+// (which child, picked up by whom, parent name).
+export async function getPickupHistory(limit = 100, organizationId?: number) {
   const db = await getDb();
+  const conditions = [eq(pickupRequests.status, "picked_up")];
+  if (organizationId) conditions.push(eq(pickupRequests.organizationId, organizationId));
   return db!.select({
     id: pickupRequests.id,
     childId: pickupRequests.childId,
@@ -2521,27 +3113,34 @@ export async function getPickupHistory(limit = 100) {
   .leftJoin(children, eq(pickupRequests.childId, children.id))
   .leftJoin(users, eq(pickupRequests.parentId, users.id))
   .leftJoin(classes, eq(children.classId, classes.id))
-  .where(eq(pickupRequests.status, "picked_up"))
+  .where(and(...conditions))
   .orderBy(desc(pickupRequests.pickedUpAt))
   .limit(limit);
 }
 
-export async function getPickupStats() {
+// SECURITY FIX: previously took no organizationId -- every count below was
+// computed across ALL organizations combined, so any staff member (of ANY
+// organization) calling pickup.stats saw a mixed aggregate that included
+// every other organization's pickup activity.
+export async function getPickupStats(organizationId?: number) {
   const db = await getDb();
+  const orgFilter = organizationId ? [eq(pickupRequests.organizationId, organizationId)] : [];
   const pending = await db!.select({ count: sql<number>`count(*)` })
     .from(pickupRequests)
     .where(and(
       inArray(pickupRequests.status, ['waiting_teacher', 'sent_to_reception', 'waiting_at_reception']),
-      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
+      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`),
+      ...orgFilter
     ));
-  
+
   const completedToday = await db!.select({ count: sql<number>`count(*)` })
     .from(pickupRequests)
     .where(and(
       eq(pickupRequests.status, 'picked_up'),
-      gte(pickupRequests.pickedUpAt, sql`CURDATE()`)
+      gte(pickupRequests.pickedUpAt, sql`CURDATE()`),
+      ...orgFilter
     ));
-  
+
   const avgResponse = await db!.select({
     avgSeconds: sql<number>`AVG(TIMESTAMPDIFF(SECOND, requestedAt, teacherResponseAt))`
   })
@@ -2549,16 +3148,18 @@ export async function getPickupStats() {
     .where(and(
       eq(pickupRequests.status, 'picked_up'),
       gte(pickupRequests.pickedUpAt, sql`CURDATE()`),
-      sql`teacherResponseAt IS NOT NULL`
+      sql`teacherResponseAt IS NOT NULL`,
+      ...orgFilter
     ));
-  
+
   const avgTotal = await db!.select({
     avgSeconds: sql<number>`AVG(TIMESTAMPDIFF(SECOND, requestedAt, pickedUpAt))`
   })
     .from(pickupRequests)
     .where(and(
       eq(pickupRequests.status, 'picked_up'),
-      gte(pickupRequests.pickedUpAt, sql`CURDATE()`)
+      gte(pickupRequests.pickedUpAt, sql`CURDATE()`),
+      ...orgFilter
     ));
 
   // Count escalated requests (waiting_teacher + escalatedAt not null)
@@ -2567,7 +3168,8 @@ export async function getPickupStats() {
     .where(and(
       eq(pickupRequests.status, 'waiting_teacher'),
       sql`escalatedAt IS NOT NULL`,
-      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`)
+      gte(pickupRequests.requestedAt, sql`DATE_SUB(NOW(), INTERVAL 12 HOUR)`),
+      ...orgFilter
     ));
 
   return {
@@ -2669,10 +3271,16 @@ export async function getAllAuthorizedPickupPersonsForChildren(childIds: number[
 }
 
 // ============ LEARNING OBSERVATIONS ============
-export async function getLearningObservations(childId: number) {
+// SECURITY FIX: getLearningObservations/getLearningObservationsByArea
+// previously took no organizationId at all despite learning_observations
+// having the column -- any teacher/admin could read another organization's
+// child's learning observations by id.
+export async function getLearningObservations(childId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(learningObservations).where(eq(learningObservations.childId, childId)).orderBy(desc(learningObservations.observedAt));
+  const conditions = [eq(learningObservations.childId, childId)];
+  if (organizationId) conditions.push(eq(learningObservations.organizationId, organizationId));
+  return db.select().from(learningObservations).where(and(...conditions)).orderBy(desc(learningObservations.observedAt));
 }
 
 export async function createLearningObservation(data: any) {
@@ -2682,10 +3290,12 @@ export async function createLearningObservation(data: any) {
   return { id: result[0].insertId, ...data };
 }
 
-export async function getLearningObservationsByArea(childId: number, area: string) {
+export async function getLearningObservationsByArea(childId: number, area: string, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(learningObservations).where(and(eq(learningObservations.childId, childId), eq(learningObservations.area, area))).orderBy(desc(learningObservations.observedAt));
+  const conditions = [eq(learningObservations.childId, childId), eq(learningObservations.area, area)];
+  if (organizationId) conditions.push(eq(learningObservations.organizationId, organizationId));
+  return db.select().from(learningObservations).where(and(...conditions)).orderBy(desc(learningObservations.observedAt));
 }
 
 // ============ PUSH SUBSCRIPTIONS ============
@@ -2734,7 +3344,15 @@ export async function getStaffUsers() {
     ));
 }
 
-export async function getUsersByRoles(roles: string[]) {
+// SECURITY FIX: previously took no organizationId at all -- every caller of
+// this function (calendar event reminders, evaluation reminders, event
+// reminders, announcement broadcasts, staff broadcasts) was unknowingly
+// notifying every matching-role user across EVERY organization in the
+// database, not just the organization that triggered the notification. A
+// parent in organization A would receive an in-app notification about an
+// event, evaluation, or announcement that belongs entirely to organization
+// B. organizationId is now required so every broadcast is scoped correctly.
+export async function getUsersByRoles(roles: string[], organizationId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select({
@@ -2746,7 +3364,8 @@ export async function getUsersByRoles(roles: string[]) {
     .from(users)
     .where(and(
       inArray(users.role, roles as any),
-      eq(users.isActive, true)
+      eq(users.isActive, true),
+      eq(users.organizationId, organizationId)
     ));
 }
 
@@ -2772,32 +3391,56 @@ export async function setStaffDutyStatus(userId: number, isOnDuty: boolean) {
   }
 }
 
-export async function getOnDutyStaffIds(): Promise<number[]> {
+// SECURITY FIX: previously took no organizationId -- "on duty" staff spanned
+// every organization, so operational alert pushes (pickup requests,
+// test alerts) were sent to every organization's staff regardless of which
+// organization triggered the alert.
+export async function getOnDutyStaffIds(organizationId?: number): Promise<number[]> {
   const db = await getDb();
   if (!db) return [];
   // Staff who are ON DUTY (either explicitly set or have no record = default on duty)
-  const allStaff = await db.select({ id: users.id }).from(users).where(
-    and(
-      inArray(users.role, ['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'owner'] as any),
-      eq(users.isActive, true)
-    )
-  );
+  const conditions = [
+    inArray(users.role, ['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'owner'] as any),
+    eq(users.isActive, true),
+  ];
+  if (organizationId) conditions.push(eq(users.organizationId, organizationId));
+  const allStaff = await db.select({ id: users.id }).from(users).where(and(...conditions));
   const offDutyRows = await db.select({ userId: staffDutyStatus.userId }).from(staffDutyStatus).where(eq(staffDutyStatus.isOnDuty, false));
   const offDutyIds = new Set(offDutyRows.map(r => r.userId));
   return allStaff.filter(s => !offDutyIds.has(s.id)).map(s => s.id);
 }
 
 // ============ PICKUP ALERT SETTINGS ============
-export async function getPickupAlertSettings() {
+// SECURITY FIX: previously a single global row (no organizationId column
+// existed) -- any org's admin changing "alert settings" silently changed
+// the pickup-alarm behavior for every other organization's staff. Now
+// scoped per organization with a get-or-create path, matching the pattern
+// used for center_settings/loyalty_settings.
+const DEFAULT_PICKUP_ALERT_SETTINGS = { volume: 80, tone: 'urgent' as const, repeatIntervalSeconds: 5, escalationMinutes: 2 };
+
+export async function getPickupAlertSettings(organizationId?: number) {
   const db = await getDb();
-  if (!db) return { volume: 80, tone: 'urgent' as const, repeatIntervalSeconds: 5, escalationMinutes: 2 };
+  if (!db) return DEFAULT_PICKUP_ALERT_SETTINGS;
+  if (organizationId) {
+    const rows = await db.select().from(pickupAlertSettings).where(eq(pickupAlertSettings.organizationId, organizationId)).limit(1);
+    return rows[0] || DEFAULT_PICKUP_ALERT_SETTINGS;
+  }
   const rows = await db.select().from(pickupAlertSettings).limit(1);
-  return rows[0] || { volume: 80, tone: 'urgent' as const, repeatIntervalSeconds: 5, escalationMinutes: 2 };
+  return rows[0] || DEFAULT_PICKUP_ALERT_SETTINGS;
 }
 
-export async function updatePickupAlertSettings(data: { volume?: number; tone?: string; repeatIntervalSeconds?: number; escalationMinutes?: number }) {
+export async function updatePickupAlertSettings(data: { volume?: number; tone?: string; repeatIntervalSeconds?: number; escalationMinutes?: number }, organizationId?: number) {
   const db = await getDb();
   if (!db) return;
+  if (organizationId) {
+    const existing = await db.select().from(pickupAlertSettings).where(eq(pickupAlertSettings.organizationId, organizationId)).limit(1);
+    if (existing.length > 0) {
+      await db.update(pickupAlertSettings).set(data as any).where(eq(pickupAlertSettings.id, existing[0].id));
+    } else {
+      await db.insert(pickupAlertSettings).values({ ...data, organizationId } as any);
+    }
+    return;
+  }
   const existing = await db.select().from(pickupAlertSettings).limit(1);
   if (existing.length > 0) {
     await db.update(pickupAlertSettings).set(data as any).where(eq(pickupAlertSettings.id, existing[0].id));
@@ -2829,15 +3472,20 @@ export async function isPickupAlertAcknowledged(pickupRequestId: number): Promis
   return rows.length > 0;
 }
 
-export async function getUnacknowledgedPickupAlerts(userId: number) {
+// SECURITY FIX: previously took no organizationId -- a staff member would
+// receive urgent "unacknowledged pickup alert" entries for children in
+// OTHER organizations too, not just their own.
+export async function getUnacknowledgedPickupAlerts(userId: number, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   // Get active pickup requests that this user hasn't acknowledged
+  const conditions = [
+    eq(pickupRequests.status, 'waiting_teacher'),
+    isNull(pickupRequests.escalatedAt),
+  ];
+  if (organizationId) conditions.push(eq(pickupRequests.organizationId, organizationId));
   const activeRequests = await db.select().from(pickupRequests)
-    .where(and(
-      eq(pickupRequests.status, 'waiting_teacher'),
-      isNull(pickupRequests.escalatedAt)
-    ));
+    .where(and(...conditions));
   
   if (activeRequests.length === 0) return [];
   
@@ -2878,19 +3526,48 @@ export async function createNurseryRegistration(data: InsertNurseryRegistration)
   return result[0].insertId;
 }
 
+// SECURITY FIX: previously used select() (all columns), which includes
+// ownerPassword -- a bcrypt hash of the prospective nursery owner's chosen
+// password -- and returned it straight through the tRPC response to
+// whichever caller had access to this endpoint (see registrationRouter.ts,
+// where the role check was ALSO too broad, letting any org's local
+// admin/owner call this). Explicit column list excludes ownerPassword.
+const NURSERY_REGISTRATION_SAFE_COLUMNS = {
+  id: nurseryRegistrations.id,
+  nurseryName: nurseryRegistrations.nurseryName,
+  nurseryNameAr: nurseryRegistrations.nurseryNameAr,
+  city: nurseryRegistrations.city,
+  district: nurseryRegistrations.district,
+  childrenCount: nurseryRegistrations.childrenCount,
+  staffCount: nurseryRegistrations.staffCount,
+  licenseNumber: nurseryRegistrations.licenseNumber,
+  ownerName: nurseryRegistrations.ownerName,
+  ownerEmail: nurseryRegistrations.ownerEmail,
+  ownerPhone: nurseryRegistrations.ownerPhone,
+  selectedPlan: nurseryRegistrations.selectedPlan,
+  billingCycle: nurseryRegistrations.billingCycle,
+  status: nurseryRegistrations.status,
+  adminNotes: nurseryRegistrations.adminNotes,
+  rejectionReason: nurseryRegistrations.rejectionReason,
+  convertedOrganizationId: nurseryRegistrations.convertedOrganizationId,
+  createdAt: nurseryRegistrations.createdAt,
+  reviewedAt: nurseryRegistrations.reviewedAt,
+  reviewedBy: nurseryRegistrations.reviewedBy,
+};
+
 export async function getNurseryRegistrations(status?: string) {
   const database = await getDb();
   if (!database) return [];
   if (status) {
-    return database.select().from(nurseryRegistrations).where(eq(nurseryRegistrations.status, status as any)).orderBy(desc(nurseryRegistrations.createdAt));
+    return database.select(NURSERY_REGISTRATION_SAFE_COLUMNS).from(nurseryRegistrations).where(eq(nurseryRegistrations.status, status as any)).orderBy(desc(nurseryRegistrations.createdAt));
   }
-  return database.select().from(nurseryRegistrations).orderBy(desc(nurseryRegistrations.createdAt));
+  return database.select(NURSERY_REGISTRATION_SAFE_COLUMNS).from(nurseryRegistrations).orderBy(desc(nurseryRegistrations.createdAt));
 }
 
 export async function getNurseryRegistrationById(id: number) {
   const database = await getDb();
   if (!database) return null;
-  const rows = await database.select().from(nurseryRegistrations).where(eq(nurseryRegistrations.id, id));
+  const rows = await database.select(NURSERY_REGISTRATION_SAFE_COLUMNS).from(nurseryRegistrations).where(eq(nurseryRegistrations.id, id));
   return rows[0] || null;
 }
 
@@ -2936,20 +3613,25 @@ export async function createAssessmentResponses(responses: InsertAssessmentRespo
   await database.insert(assessmentResponses).values(responses);
 }
 
-export async function getAssessmentsByChild(childId: number) {
+// SECURITY FIX: organizationId is now a required parameter on every one of
+// these (previously getAssessmentsByChild/getAssessmentById had no
+// organizationId parameter at all, and getAllDevelopmentalAssessments defaulted
+// to organizationId = 1 when called without an argument) -- callers can no
+// longer read/delete another organization's developmental assessments.
+export async function getAssessmentsByChild(childId: number, organizationId: number) {
   const database = await getDb();
   if (!database) return [];
   const rows = await database.select().from(developmentalAssessments)
-    .where(eq(developmentalAssessments.childId, childId))
+    .where(and(eq(developmentalAssessments.childId, childId), eq(developmentalAssessments.organizationId, organizationId)))
     .orderBy(desc(developmentalAssessments.assessmentDate));
   return rows;
 }
 
-export async function getAssessmentById(id: number) {
+export async function getAssessmentById(id: number, organizationId: number) {
   const database = await getDb();
   if (!database) return null;
   const rows = await database.select().from(developmentalAssessments)
-    .where(eq(developmentalAssessments.id, id));
+    .where(and(eq(developmentalAssessments.id, id), eq(developmentalAssessments.organizationId, organizationId)));
   return rows[0] || null;
 }
 
@@ -2961,7 +3643,7 @@ export async function getAssessmentResponsesByAssessmentId(assessmentId: number)
   return rows;
 }
 
-export async function getAllDevelopmentalAssessments(organizationId: number = 1) {
+export async function getAllDevelopmentalAssessments(organizationId: number) {
   const database = await getDb();
   if (!database) return [];
   const rows = await database.select().from(developmentalAssessments)
@@ -2970,25 +3652,9 @@ export async function getAllDevelopmentalAssessments(organizationId: number = 1)
   return rows;
 }
 
-export async function deleteDevelopmentalAssessment(id: number) {
+export async function deleteDevelopmentalAssessment(id: number, organizationId: number) {
   const database = await getDb();
   if (!database) throw new Error('Database not available');
   await database.delete(assessmentResponses).where(eq(assessmentResponses.assessmentId, id));
-  await database.delete(developmentalAssessments).where(eq(developmentalAssessments.id, id));
-}
-
-
-// ============ PUBLIC ORGANIZATIONS ============
-export async function getActiveOrganizations() {
-  const database = await getDb();
-  if (!database) return [];
-  const rows = await database.select({
-    id: organizations.id,
-    name: organizations.name,
-    nameAr: organizations.nameAr,
-    city: organizations.city,
-    logoUrl: organizations.logoUrl,
-  }).from(organizations)
-    .where(eq(organizations.status, 'active'));
-  return rows;
+  await database.delete(developmentalAssessments).where(and(eq(developmentalAssessments.id, id), eq(developmentalAssessments.organizationId, organizationId)));
 }

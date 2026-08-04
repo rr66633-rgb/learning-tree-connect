@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "./_core/trpc";
+import { tenantProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { getDb, createNotification } from "./db";
 import { employeeSalaries, payrollRecords, users } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -11,11 +12,18 @@ const monthNames = [
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
 ];
 
-async function sendSalaryPaidNotification(userId: number, netSalary: string, month: number, year: number) {
+// SECURITY FIX: organizationId is now a required parameter and passed through
+// to createNotification -- previously it was never set here at all, and since
+// notifications.organizationId still carries a schema default(1), every
+// salary-paid notification (from any organization) was silently written into
+// organization #1's notifications regardless of the employee's real
+// organization.
+async function sendSalaryPaidNotification(userId: number, netSalary: string, month: number, year: number, organizationId: number) {
   const monthName = monthNames[month - 1];
   try {
     await createNotification({
       userId,
+      organizationId,
       title: "Salary Paid",
       titleAr: "تم صرف الراتب",
       body: `Your salary for ${monthName} ${year} has been paid. Net amount: ${Number(netSalary).toLocaleString()} SAR`,
@@ -38,10 +46,10 @@ async function sendSalaryPaidNotification(userId: number, netSalary: string, mon
 
 export const payrollRouter = router({
   // Get salary config for an employee
-  getSalary: protectedProcedure
+  getSalary: tenantProcedure
     .input(z.object({ userId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       const [salary] = await db
         .select()
@@ -52,8 +60,8 @@ export const payrollRouter = router({
     }),
 
   // List all employee salaries for the organization
-  listSalaries: protectedProcedure.query(async ({ ctx }) => {
-    const orgId = ctx.user.organizationId ?? 1;
+  listSalaries: tenantProcedure.query(async ({ ctx }) => {
+    const orgId = ctx.organizationId;
     const db = (await getDb())!;
     const salaries = await db
       .select({
@@ -78,7 +86,7 @@ export const payrollRouter = router({
   }),
 
   // Create or update salary config
-  upsertSalary: protectedProcedure
+  upsertSalary: tenantProcedure
     .input(z.object({
       userId: z.number(),
       basicSalary: z.string(),
@@ -91,8 +99,18 @@ export const payrollRouter = router({
       iban: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
+      // SECURITY FIX: previously trusted input.userId with no check that the
+      // target user belongs to the caller's organization -- an admin could
+      // attach a salary record (organizationId: orgId) to a user from a
+      // DIFFERENT organization, which listSalaries/getAnnualReport/
+      // getPayrollSummary would then join against `users` and display that
+      // foreign user's name and role inside this organization's own payroll.
+      const [targetUser] = await db.select({ organizationId: users.organizationId }).from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!targetUser || targetUser.organizationId !== orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "المستخدم غير موجود" });
+      }
       // Deactivate existing
       await db.update(employeeSalaries)
         .set({ isActive: false })
@@ -114,19 +132,25 @@ export const payrollRouter = router({
     }),
 
   // Delete salary config
-  deleteSalary: protectedProcedure
+  deleteSalary: tenantProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
+      // SECURITY FIX: previously deactivated by id alone -- any user could
+      // deactivate another organization's employeeSalaries record.
+      const [existing] = await db.select({ organizationId: employeeSalaries.organizationId }).from(employeeSalaries).where(eq(employeeSalaries.id, input.id)).limit(1);
+      if (!existing || existing.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
       await db.update(employeeSalaries).set({ isActive: false }).where(eq(employeeSalaries.id, input.id));
       return { success: true };
     }),
 
   // Generate monthly payroll for all employees
-  generateMonthlyPayroll: protectedProcedure
+  generateMonthlyPayroll: tenantProcedure
     .input(z.object({ month: z.number().min(1).max(12), year: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       // Get all active salaries
       const salaries = await db
@@ -173,10 +197,10 @@ export const payrollRouter = router({
     }),
 
   // List payroll records for a month
-  listPayrollRecords: protectedProcedure
+  listPayrollRecords: tenantProcedure
     .input(z.object({ month: z.number().optional(), year: z.number().optional() }))
     .query(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       let conditions = [eq(payrollRecords.organizationId, orgId)];
       if (input.month) conditions.push(eq(payrollRecords.month, input.month));
@@ -206,38 +230,47 @@ export const payrollRouter = router({
     }),
 
   // Update payroll record status
-  updatePayrollStatus: protectedProcedure
+  updatePayrollStatus: tenantProcedure
     .input(z.object({
       id: z.number(),
       status: z.enum(["draft", "approved", "paid", "cancelled"]),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check -- any user could flip another organization's payroll record to
+      // "paid", triggering an unauthorized salary-paid notification to that
+      // foreign-org employee and exposing their netSalary in the process.
+      const [existing] = await db.select({ organizationId: payrollRecords.organizationId }).from(payrollRecords).where(eq(payrollRecords.id, input.id)).limit(1);
+      if (!existing || existing.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
       const updateData: any = { status: input.status };
       if (input.status === "paid") {
         updateData.paidAt = new Date();
       }
       await db.update(payrollRecords).set(updateData).where(eq(payrollRecords.id, input.id));
-      
+
       // Send notification when status is "paid"
       if (input.status === "paid") {
         const [record] = await db.select().from(payrollRecords).where(eq(payrollRecords.id, input.id)).limit(1);
         if (record) {
-          await sendSalaryPaidNotification(record.userId, record.netSalary, record.month, record.year);
+          await sendSalaryPaidNotification(record.userId, record.netSalary, record.month, record.year, ctx.organizationId);
         }
       }
       return { success: true };
     }),
 
   // Bulk approve/pay all payroll records for a month
-  bulkUpdateStatus: protectedProcedure
+  bulkUpdateStatus: tenantProcedure
     .input(z.object({
       month: z.number(),
       year: z.number(),
       status: z.enum(["approved", "paid"]),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       const updateData: any = { status: input.status };
       if (input.status === "paid") {
@@ -265,7 +298,7 @@ export const payrollRouter = router({
       // Send notifications when status is "paid"
       if (input.status === "paid") {
         for (const record of recordsToUpdate) {
-          await sendSalaryPaidNotification(record.userId, record.netSalary, input.month, input.year);
+          await sendSalaryPaidNotification(record.userId, record.netSalary, input.month, input.year, orgId);
         }
       }
       return { success: true };
@@ -273,10 +306,10 @@ export const payrollRouter = router({
 
   // Get payroll summary for a month
   // Annual payroll report - all months for a year
-  getAnnualReport: protectedProcedure
+  getAnnualReport: tenantProcedure
     .input(z.object({ year: z.number() }))
     .query(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       const records = await db
         .select({
@@ -325,10 +358,10 @@ export const payrollRouter = router({
       return { records, monthlySummary, annualTotal, year: input.year };
     }),
 
-  getPayrollSummary: protectedProcedure
+  getPayrollSummary: tenantProcedure
     .input(z.object({ month: z.number(), year: z.number() }))
     .query(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       const records = await db
         .select()

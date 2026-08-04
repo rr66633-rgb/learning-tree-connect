@@ -172,8 +172,43 @@ export const bulkImportRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const rows = parseExcelBuffer(input.fileData);
-      const orgId = input.organizationId || ctx.user!.organizationId || 1;
-      
+
+      // SECURITY FIX: previously `input.organizationId || ctx.user!.organizationId || 1`
+      // -- a client-supplied, optional field was trusted BEFORE the authenticated
+      // user's own organization, and a missing value silently fell back to
+      // organization #1. Any authenticated user with bulk-import access could supply
+      // an arbitrary organizationId and inject rows into an organization they don't
+      // belong to.
+      //
+      // Fix: non-super-admin users may ONLY import into their own organization --
+      // input.organizationId is never trusted for them, and an explicit attempt to
+      // use it for a different org is rejected outright (rather than silently
+      // ignored) so a bug or probing attempt is visible, not swallowed. Only
+      // super_admin may perform a cross-organization import, and only via an
+      // explicit target organizationId that is verified to exist first.
+      let orgId: number;
+      if (ctx.user!.role === 'super_admin') {
+        if (input.organizationId !== undefined) {
+          const targetOrg = await db.getOrganizationById(input.organizationId);
+          if (!targetOrg) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'المنظمة المحددة غير موجودة' });
+          }
+          orgId = input.organizationId;
+        } else if (ctx.organizationId) {
+          orgId = ctx.organizationId;
+        } else {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'يجب تحديد المنظمة الهدف للاستيراد' });
+        }
+      } else {
+        if (input.organizationId !== undefined && input.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكنك الاستيراد إلى منظمة أخرى' });
+        }
+        if (!ctx.organizationId) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يوجد حساب مرتبط بمنظمة صالحة' });
+        }
+        orgId = ctx.organizationId;
+      }
+
       let imported = 0;
       let skipped = 0;
       const errors: { row: number; message: string }[] = [];
@@ -193,6 +228,13 @@ export const bulkImportRouter = router({
                 allergies: row.allergies || null,
               } as any);
               break;
+            // SECURITY FIX: these three cases previously omitted
+            // organizationId entirely -- every parent/teacher/staff account
+            // bulk-imported here silently landed on organization #1
+            // (users.organizationId's schema default) regardless of which
+            // organization the importing admin actually targeted (orgId,
+            // resolved and validated above). Only the 'children' case above
+            // was setting it correctly.
             case 'parents':
               await db.createUser({
                 name: row.name,
@@ -201,6 +243,7 @@ export const bulkImportRouter = router({
                 role: 'parent',
                 openId: `import_parent_${Date.now()}_${i}`,
                 nationalId: row.nationalId || undefined,
+                organizationId: orgId,
               });
               break;
             case 'teachers':
@@ -210,6 +253,7 @@ export const bulkImportRouter = router({
                 phone: row.phone || undefined,
                 role: 'teacher',
                 openId: `import_teacher_${Date.now()}_${i}`,
+                organizationId: orgId,
               });
               break;
             case 'staff':
@@ -219,6 +263,7 @@ export const bulkImportRouter = router({
                 phone: row.phone || undefined,
                 role: row.role || 'receptionist',
                 openId: `import_staff_${Date.now()}_${i}`,
+                organizationId: orgId,
               });
               break;
           }

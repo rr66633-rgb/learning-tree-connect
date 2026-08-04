@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "./_core/trpc";
+import { tenantProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import {
   developmentAreas,
@@ -50,7 +50,7 @@ function levelToNumber(level: string): number {
 
 export const developmentRouter = router({
   // ============ DEVELOPMENT AREAS ============
-  getAreas: protectedProcedure.query(async () => {
+  getAreas: tenantProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
     const areas = await db.select().from(developmentAreas).where(eq(developmentAreas.isActive, true)).orderBy(developmentAreas.sortOrder);
@@ -63,7 +63,7 @@ export const developmentRouter = router({
     return result;
   }),
 
-  getMilestones: protectedProcedure
+  getMilestones: tenantProcedure
     .input(z.object({ areaId: z.number().optional(), ageMonths: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -78,7 +78,7 @@ export const developmentRouter = router({
     }),
 
   // ============ OBSERVATIONS ============
-  createObservation: protectedProcedure
+  createObservation: tenantProcedure
     .input(z.object({
       childId: z.number(),
       areaId: z.number(),
@@ -93,7 +93,15 @@ export const developmentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
+      // SECURITY FIX: input.childId was previously trusted with no check that
+      // the child belongs to the caller's organization -- any authenticated
+      // user could create a development observation against another
+      // organization's child, tagged with their own organizationId.
+      const [ownedChild] = await db.select({ id: children.id }).from(children)
+        .where(and(eq(children.id, input.childId), eq(children.organizationId, orgId)))
+        .limit(1);
+      if (!ownedChild) throw new TRPCError({ code: "NOT_FOUND", message: "الطفل غير موجود" });
       const [result] = await db.insert(developmentObservations).values({
         ...input,
         observedBy: ctx.user.id,
@@ -106,7 +114,7 @@ export const developmentRouter = router({
       return { id: result.insertId, message: "تم حفظ الملاحظة بنجاح" };
     }),
 
-  listObservations: protectedProcedure
+  listObservations: tenantProcedure
     .input(z.object({
       childId: z.number(),
       areaId: z.number().optional(),
@@ -117,7 +125,7 @@ export const developmentRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       const conditions: any[] = [
         eq(developmentObservations.childId, input.childId),
         eq(developmentObservations.organizationId, orgId),
@@ -141,12 +149,12 @@ export const developmentRouter = router({
       return observations;
     }),
 
-  getChildProgress: protectedProcedure
+  getChildProgress: tenantProcedure
     .input(z.object({ childId: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       // Get all observations grouped by area
       const observations = await db.select({
         areaId: developmentObservations.areaId,
@@ -183,12 +191,12 @@ export const developmentRouter = router({
     }),
 
   // ============ SCHOOL READINESS ============
-  getReadinessScores: protectedProcedure
+  getReadinessScores: tenantProcedure
     .input(z.object({ childId: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       const scores = await db.select()
         .from(schoolReadinessScores)
         .where(and(
@@ -199,12 +207,12 @@ export const developmentRouter = router({
       return scores;
     }),
 
-  generateReadinessScore: protectedProcedure
+  generateReadinessScore: tenantProcedure
     .input(z.object({ childId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       // Get all observations for this child
       const observations = await db.select({
         observation: developmentObservations,
@@ -224,7 +232,7 @@ export const developmentRouter = router({
       }
 
       // Get child info
-      const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+      const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, orgId)));
       if (!child) throw new TRPCError({ code: "NOT_FOUND", message: "الطفل غير موجود" });
 
       const observationSummary = observations.map((o: any) => ({
@@ -293,9 +301,13 @@ Return ONLY a JSON object with this exact structure:
       const scores = JSON.parse(String(response.choices[0].message.content) || "{}");
 
       // Save scores
+      // SECURITY FIX: previously omitted organizationId entirely --
+      // schoolReadinessScores.organizationId is NOT NULL with no default,
+      // so this would fail outright; now stamped with the already-verified orgId.
       const [result] = await db.insert(schoolReadinessScores).values({
         childId: input.childId,
         assessedBy: ctx.user.id,
+        organizationId: orgId,
         languageReadiness: Math.min(100, Math.max(0, scores.languageReadiness)),
         socialReadiness: Math.min(100, Math.max(0, scores.socialReadiness)),
         emotionalReadiness: Math.min(100, Math.max(0, scores.emotionalReadiness)),
@@ -313,12 +325,12 @@ Return ONLY a JSON object with this exact structure:
     }),
 
   // ============ AI ANALYSIS ENGINE ============
-  analyzeChild: protectedProcedure
+  analyzeChild: tenantProcedure
     .input(z.object({ childId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       // Get observations
       const observations = await db.select({
         observation: developmentObservations,
@@ -337,7 +349,7 @@ Return ONLY a JSON object with this exact structure:
         throw new TRPCError({ code: "BAD_REQUEST", message: "يجب أن يكون هناك ملاحظتان على الأقل لإجراء التحليل" });
       }
 
-      const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+      const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, orgId)));
       if (!child) throw new TRPCError({ code: "NOT_FOUND", message: "الطفل غير موجود" });
 
       const observationData = observations.map((o: any) => ({
@@ -463,12 +475,12 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
       return { analysis, message: "تم إنشاء التحليل بنجاح" };
     }),
 
-  getLatestAnalysis: protectedProcedure
+  getLatestAnalysis: tenantProcedure
     .input(z.object({ childId: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return null;
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       const [latest] = await db.select()
         .from(aiDevelopmentAnalysis)
         .where(and(
@@ -483,7 +495,7 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     }),
 
   // ============ RECOMMENDATIONS ============
-  getRecommendations: protectedProcedure
+  getRecommendations: tenantProcedure
     .input(z.object({
       childId: z.number(),
       type: z.enum(["classroom_activity", "home_activity", "intervention", "enrichment", "parent_tip"]).optional(),
@@ -492,7 +504,7 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       const conditions: any[] = [
         eq(developmentRecommendations.childId, input.childId),
         eq(developmentRecommendations.organizationId, orgId),
@@ -510,7 +522,7 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
         .orderBy(desc(developmentRecommendations.createdAt));
     }),
 
-  updateRecommendationStatus: protectedProcedure
+  updateRecommendationStatus: tenantProcedure
     .input(z.object({
       id: z.number(),
       status: z.enum(["pending", "in_progress", "completed", "dismissed"]),
@@ -518,6 +530,12 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check -- any user could change another organization's recommendation.
+      const [existingRec] = await db.select({ organizationId: developmentRecommendations.organizationId }).from(developmentRecommendations).where(eq(developmentRecommendations.id, input.id)).limit(1);
+      if (!existingRec || existingRec.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
       await db.update(developmentRecommendations)
         .set({
           status: input.status,
@@ -529,7 +547,7 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     }),
 
   // ============ ALERTS ============
-  getAlerts: protectedProcedure
+  getAlerts: tenantProcedure
     .input(z.object({
       childId: z.number().optional(),
       status: z.enum(["active", "acknowledged", "resolved", "dismissed"]).optional(),
@@ -538,7 +556,7 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       const conditions: any[] = [eq(developmentAlerts.organizationId, orgId)];
       if (input.childId) conditions.push(eq(developmentAlerts.childId, input.childId));
       if (input.status) conditions.push(eq(developmentAlerts.status, input.status));
@@ -556,22 +574,34 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
         .orderBy(desc(developmentAlerts.createdAt));
     }),
 
-  acknowledgeAlert: protectedProcedure
+  acknowledgeAlert: tenantProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check -- any user could acknowledge another organization's alert.
+      const [existingAlert] = await db.select({ organizationId: developmentAlerts.organizationId }).from(developmentAlerts).where(eq(developmentAlerts.id, input.id)).limit(1);
+      if (!existingAlert || existingAlert.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
       await db.update(developmentAlerts)
         .set({ status: "acknowledged", acknowledgedBy: ctx.user.id, acknowledgedAt: new Date() })
         .where(eq(developmentAlerts.id, input.id));
       return { message: "تم الإقرار بالتنبيه" };
     }),
 
-  resolveAlert: protectedProcedure
+  resolveAlert: tenantProcedure
     .input(z.object({ id: z.number(), notes: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check -- any user could resolve another organization's alert.
+      const [existingAlert] = await db.select({ organizationId: developmentAlerts.organizationId }).from(developmentAlerts).where(eq(developmentAlerts.id, input.id)).limit(1);
+      if (!existingAlert || existingAlert.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
       await db.update(developmentAlerts)
         .set({ status: "resolved", resolvedBy: ctx.user.id, resolvedAt: new Date(), resolutionNotes: input.notes || null })
         .where(eq(developmentAlerts.id, input.id));
@@ -579,10 +609,10 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     }),
 
   // ============ TEACHER DASHBOARD ============
-  teacherDashboard: protectedProcedure.query(async ({ ctx }) => {
+  teacherDashboard: tenantProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return { totalChildren: 0, childrenNeedingAttention: 0, childrenExceeding: 0, childrenBelowExpected: 0, missingAssessments: 0, activeAlerts: 0, recentAlerts: [], childrenNeedingAttentionList: [], exceedingList: [], belowExpectedList: [], missingAssessmentsList: [] };
-    const orgId = ctx.user.organizationId || 1;
+    const orgId = ctx.organizationId;
 
     // Get all children in this org
     const allChildren = await db.select().from(children).where(and(eq(children.organizationId, orgId), eq(children.status, "active")));
@@ -631,15 +661,15 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
   }),
 
   // ============ BENCHMARKING ============
-  getBenchmark: protectedProcedure
+  getBenchmark: tenantProcedure
     .input(z.object({ childId: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
 
       // Get child info
-      const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+      const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, orgId)));
       if (!child) throw new TRPCError({ code: "NOT_FOUND" });
 
       const ageMonths = calculateAgeMonths(child.dateOfBirth as any);
@@ -699,12 +729,12 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     }),
 
   // ============ CHILD SUMMARY ============
-  getChildSummary: protectedProcedure
+  getChildSummary: tenantProcedure
     .input(z.object({ childId: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return null;
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
       const [summary] = await db.select()
         .from(childDevelopmentSummary)
         .where(and(eq(childDevelopmentSummary.childId, input.childId), eq(childDevelopmentSummary.organizationId, orgId)));
@@ -712,7 +742,7 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     }),
 
   // ============ REPORT GENERATION ============
-  generateReport: protectedProcedure
+  generateReport: tenantProcedure
     .input(z.object({
       childId: z.number(),
       language: z.enum(["ar", "en"]).default("ar"),
@@ -721,10 +751,10 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const orgId = ctx.user.organizationId || 1;
+      const orgId = ctx.organizationId;
 
       // Get child
-      const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+      const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, orgId)));
       if (!child) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Get observations

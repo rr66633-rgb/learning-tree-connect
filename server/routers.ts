@@ -2,7 +2,7 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, tenantProcedure, superAdminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
@@ -34,19 +34,26 @@ import { payrollRouter } from "./payrollRouter";
 import { evaluationRouter } from "./evaluationRouter";
 import { goalsRouter } from "./goalsRouter";
 
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+// SECURITY FIX (C2): these three procedures now build on `tenantProcedure` instead
+// of `protectedProcedure` directly, so every endpoint below that uses one of them
+// (the large majority of this file's business endpoints) is guaranteed a real,
+// non-null `ctx.organizationId` before its handler runs -- closing the gap where a
+// user with no organization on their account would previously fall through to
+// `ctx.user?.organizationId ?? undefined` (skipping tenant filtering entirely) or
+// `?? 1` (silently attributed to organization #1) at various call sites below.
+const adminProcedure = tenantProcedure.use(({ ctx, next }) => {
   const allowedRoles = ['super_admin', 'admin', 'principal', 'owner'];
   if (!allowedRoles.includes(ctx.user?.role ?? '')) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   return next({ ctx });
 });
 
-const teacherProcedure = protectedProcedure.use(({ ctx, next }) => {
+const teacherProcedure = tenantProcedure.use(({ ctx, next }) => {
   const allowedRoles = ['super_admin', 'admin', 'principal', 'owner', 'teacher', 'assistant'];
   if (!allowedRoles.includes(ctx.user?.role ?? '')) throw new TRPCError({ code: 'FORBIDDEN', message: 'Teacher access required' });
   return next({ ctx });
 });
 
-const parentProcedure = protectedProcedure.use(({ ctx, next }) => {
+const parentProcedure = tenantProcedure.use(({ ctx, next }) => {
   if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
   if (ctx.user.role === 'parent' && !ctx.user.isActive) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'حسابك قيد المراجعة. يرجى انتظار موافقة الإدارة.' });
@@ -166,14 +173,29 @@ export const appRouter = router({
       }),
 
     // ============ REGISTER (Parent Self-Registration) ============
+    // SECURITY FIX: previously took no organization identifier at all --
+    // createUserWithPassword never set organizationId, and users.organizationId
+    // used to default to 1 at the schema level, so every publicly
+    // self-registered parent account was silently created as a member of
+    // organization #1 regardless of which nursery they actually intended to
+    // join. Registration now requires `orgSlug` (the same public,
+    // opaque-identifier pattern used by the waiting-list public form), which
+    // is resolved server-side to a real, active organization -- never
+    // trusted as a raw id -- and rejected if it doesn't match one.
     register: publicProcedure
       .input(z.object({
+        orgSlug: z.string().min(1, "رابط التسجيل غير صحيح"),
         name: z.string().min(2),
         phone: z.string().min(9),
         email: z.string().email(),
         password: z.string().min(6),
       }))
       .mutation(async ({ input }) => {
+        const org = await db.getOrganizationBySlug(input.orgSlug);
+        if (!org || org.status === 'suspended') {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'رابط التسجيل غير صحيح أو الحضانة غير متاحة حالياً' });
+        }
+
         // Check if email or phone already exists
         const existingByEmail = await db.findUserByIdentifier(input.email);
         if (existingByEmail) {
@@ -195,6 +217,7 @@ export const appRouter = router({
           password: hashedPassword,
           role: 'parent',
           isActive: false,
+          organizationId: org.id,
         });
 
         // Generate and send OTP
@@ -663,11 +686,17 @@ export const appRouter = router({
     list: protectedProcedure.input(z.object({ parentId: z.number().optional(), classId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
       // Parents can only see their own children
       if (ctx.user?.role === 'parent') {
-        return db.getChildrenForParent(ctx.user.id);
+        return db.getChildren(ctx.user.id);
       }
-      // If classId filter is provided, return children for that class
+      // SECURITY FIX: previously called getChildrenByClass with no
+      // organizationId at all -- any authenticated user, of any role and any
+      // organization, could pass an arbitrary classId belonging to a
+      // DIFFERENT organization and receive that organization's full child
+      // roster (names, medical info, parent contacts). getChildrenByClass
+      // already supported an optional organizationId filter (used elsewhere)
+      // -- this call site just never passed it.
       if (input?.classId) {
-        return db.getChildrenByClass(input.classId);
+        return db.getChildrenByClass(input.classId, ctx.organizationId ?? undefined);
       }
       // All staff (teachers, assistants, admins) see all children in their organization
       // This ensures children appear in assessments and media upload regardless of class assignment
@@ -680,8 +709,13 @@ export const appRouter = router({
         if (!childIds.includes(input.id)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+        return db.getChildById(input.id);
       }
-      return db.getChildById(input.id);
+      // SECURITY FIX: staff/admin previously had no organization check at
+      // all -- any authenticated non-parent user could read another
+      // organization's child profile (medical info, national ID, parent
+      // contacts) by id.
+      return db.getChildById(input.id, ctx.organizationId ?? undefined);
     }),
     create: teacherProcedure.input(z.object({
       firstName: z.string().min(1),
@@ -710,11 +744,19 @@ export const appRouter = router({
       pickupAuthorization: z.string().optional(),
       busRequired: z.boolean().optional(),
       notes: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       const { parentId, ...childData } = input;
-      const child = await db.createChild({ ...childData, dateOfBirth: new Date(input.dateOfBirth) });
+      // SECURITY/DATA-INTEGRITY FIX (C3): previously omitted organizationId entirely,
+      // silently relying on the schema's now-removed `.default(1)` -- every new child
+      // created here would have landed in organization #1 regardless of which
+      // organization the creating teacher/admin actually belonged to.
+      const child = await db.createChild({ ...childData, organizationId: ctx.organizationId, dateOfBirth: new Date(input.dateOfBirth) });
       if (parentId && child.id) {
-        await db.linkParentToChild(parentId, child.id as number);
+        // SECURITY FIX: previously linked with no organizationId check --
+        // an admin/teacher could link this new child to a parent user
+        // account belonging to a DIFFERENT organization, giving that
+        // other organization's parent visibility into this child.
+        await db.linkParentToChild(parentId, child.id as number, 'parent', ctx.organizationId);
       }
       return child;
     }),
@@ -747,25 +789,39 @@ export const appRouter = router({
       attendanceDays: z.array(z.number().min(0).max(6)).optional(),
       notes: z.string().optional(),
       status: z.enum(["active", "inactive", "graduated", "waitlist"]).optional(),
-    })).mutation(async ({ input }) => {
+    // SECURITY FIX: previously called updateChild with no organizationId at
+    // all -- any teacher/admin (from any organization) could update any
+    // other organization's child (medical info, allergies, contacts,
+    // everything) by id. Now scoped with ctx.organizationId, matching the
+    // pattern already used by getById/create above.
+    })).mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
       const updateData: any = { ...data };
       if (data.dateOfBirth) updateData.dateOfBirth = new Date(data.dateOfBirth);
-      return db.updateChild(id, updateData);
+      return db.updateChild(id, updateData, ctx.organizationId);
     }),
+    // SECURITY FIX: previously called deleteChild with no organizationId --
+    // any admin could delete any other organization's child by id.
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.deleteChild(input.id);
+      await db.deleteChild(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_child', resource: 'children', resourceId: input.id, details: `Deleted child #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
-    archive: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.updateChild(input.id, { status: 'inactive' });
+    // SECURITY FIX: previously called updateChild with no organizationId --
+    // any teacher could archive any other organization's child by id.
+    archive: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      return db.updateChild(input.id, { status: 'inactive' }, ctx.organizationId);
     }),
-    activate: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.updateChild(input.id, { status: 'active' });
+    // SECURITY FIX: same as archive above.
+    activate: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      return db.updateChild(input.id, { status: 'active' }, ctx.organizationId);
     }),
-    getParents: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
-      return db.getParentsForChild(input.childId);
+    // SECURITY FIX: previously called getParentsForChild with no
+    // organizationId -- any authenticated user could list every parent
+    // (name/email/phone) linked to any other organization's child by
+    // childId. Now scoped with ctx.organizationId.
+    getParents: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      return db.getParentsForChild(input.childId, ctx.organizationId ?? undefined);
     }),
     // Parent can register a new child and auto-link to their account
     parentRegisterChild: parentProcedure.input(z.object({
@@ -792,10 +848,12 @@ export const appRouter = router({
       medicalNotes: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
       // Create the child
-      const child = await db.createChild({ ...input, dateOfBirth: new Date(input.dateOfBirth) });
+      // SECURITY/DATA-INTEGRITY FIX (C3): previously omitted organizationId entirely
+      // (see the equivalent fix on children.create above for the full rationale).
+      const child = await db.createChild({ ...input, organizationId: ctx.organizationId, dateOfBirth: new Date(input.dateOfBirth) });
       // Auto-link child to the parent
       if (child && child.id) {
-        await db.linkParentToChild(ctx.user!.id, child.id as number, 'parent');
+        await db.linkParentToChild(ctx.user!.id, child.id as number, 'parent', ctx.organizationId);
       }
       return child;
     }),
@@ -850,8 +908,14 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        // SECURITY FIX: staff/admin previously had no ownership check at
+        // all -- any authenticated non-parent user could read another
+        // organization's child's attendance history by id.
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
-      return db.getAttendanceByChild(input.childId);
+      return db.getAttendanceByChild(input.childId, ctx.organizationId ?? undefined);
     }),
     checkIn: teacherProcedure.input(z.object({
       childId: z.number(),
@@ -860,6 +924,12 @@ export const appRouter = router({
       droppedOffRelationship: z.enum(["mother", "father", "driver", "grandparent", "other"]).optional(),
       notes: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously created an attendance record for any
+      // childId with no verification it belongs to the caller's
+      // organization -- a teacher in org A could check in/mark attendance
+      // for org B's child.
+      const child = await db.getChildById(input.childId, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       const result = await db.createAttendance({
         childId: input.childId,
         date: new Date(input.date),
@@ -869,12 +939,13 @@ export const appRouter = router({
         droppedOffBy: input.droppedOffBy,
         droppedOffRelationship: input.droppedOffRelationship,
         notes: input.notes,
-      });
+        organizationId: ctx.organizationId,
+      } as any);
       // Notify parent about child arrival
-      const child = await db.getChildById(input.childId);
       if (child?.parentId) {
         await db.createNotification({
           userId: child.parentId,
+          organizationId: ctx.organizationId,
           title: 'Child Arrival',
           titleAr: 'وصول الطفل',
           body: `${child.firstName} has arrived at the center`,
@@ -883,14 +954,10 @@ export const appRouter = router({
           link: '/parent/attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkin' },
         });
-        // Send Firebase push notification
+        // Send push notification
         try {
-          const { sendPushToUser } = await import('./firebase-admin');
-          await sendPushToUser(child.parentId, {
-            title: 'تسجيل حضور ✅',
-            body: `وصل ${child.firstName} ${child.lastName} إلى المركز`,
-            data: { type: 'attendance', childId: String(input.childId), url: '/parent/attendance' },
-          });
+          const { notifyParentCheckIn } = await import('./_core/pushTriggers');
+          await notifyParentCheckIn(child.parentId, `${child.firstName} ${child.lastName}`, input.childId);
         } catch (e) { /* push failure shouldn't block */ }
       }
       return result;
@@ -903,7 +970,14 @@ export const appRouter = router({
       signatureData: z.string().optional(),
       notes: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      await db.updateAttendance(input.id, { checkOutTime: new Date(), checkedOutBy: ctx.user!.id });
+      // SECURITY FIX: previously trusted input.id/input.childId with no
+      // ownership check -- any teacher/admin could check out (and record a
+      // pickup for) another organization's child.
+      const attendanceRecord = await db.getAttendanceById(input.id, ctx.organizationId);
+      if (!attendanceRecord) throw new TRPCError({ code: 'NOT_FOUND', message: 'سجل الحضور غير موجود' });
+      const child = await db.getChildById(input.childId, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      await db.updateAttendance(input.id, { checkOutTime: new Date(), checkedOutBy: ctx.user!.id }, ctx.organizationId);
       // Create departure record
       await db.createDeparture({
         childId: input.childId,
@@ -916,10 +990,10 @@ export const appRouter = router({
         recordedBy: ctx.user!.id,
       });
       // Notify parent about child departure
-      const child = await db.getChildById(input.childId);
       if (child?.parentId) {
         await db.createNotification({
           userId: child.parentId,
+          organizationId: ctx.organizationId,
           title: 'Child Departure',
           titleAr: 'مغادرة الطفل',
           body: `${child.firstName} has left the center`,
@@ -928,14 +1002,10 @@ export const appRouter = router({
           link: '/parent/attendance',
           metadata: { childId: input.childId, time: new Date().toISOString(), type: 'checkout', pickedUpBy: input.pickedUpBy },
         });
-        // Send Firebase push notification
+        // Send push notification
         try {
-          const { sendPushToUser } = await import('./firebase-admin');
-          await sendPushToUser(child.parentId, {
-            title: 'مغادرة الطفل 👋',
-            body: `غادر ${child.firstName} ${child.lastName} المركز مع ${input.pickedUpBy}`,
-            data: { type: 'attendance', childId: String(input.childId), url: '/parent/attendance' },
-          });
+          const { notifyParentCheckOut } = await import('./_core/pushTriggers');
+          await notifyParentCheckOut(child.parentId, `${child.firstName} ${child.lastName}`, input.childId, input.pickedUpBy);
         } catch (e) { /* push failure shouldn't block */ }
       }
       return { success: true };
@@ -946,11 +1016,16 @@ export const appRouter = router({
       status: z.enum(["absent", "excused"]),
       notes: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously trusted input.childId with no ownership
+      // check -- any teacher/admin could mark another organization's child
+      // absent/excused.
+      const childCheck = await db.getChildById(input.childId, ctx.organizationId);
+      if (!childCheck) throw new TRPCError({ code: 'NOT_FOUND', message: '\u0627\u0644\u0637\u0641\u0644 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f' });
       // Check if attendance record exists for this child on this date
-      const existing = await db.getAttendanceForChildOnDate(input.childId, input.date);
+      const existing = await db.getAttendanceForChildOnDate(input.childId, input.date, ctx.organizationId);
       if (existing) {
         const previousStatus = existing.status;
-        await db.updateAttendance(existing.id, { status: input.status, notes: input.notes });
+        await db.updateAttendance(existing.id, { status: input.status, notes: input.notes }, ctx.organizationId);
         await db.createAttendanceAuditLog({
           attendanceId: existing.id,
           childId: input.childId,
@@ -962,7 +1037,7 @@ export const appRouter = router({
         });
         return { id: existing.id, childId: input.childId, status: input.status };
       }
-      const result = await db.createAttendance({ childId: input.childId, date: new Date(input.date), status: input.status, notes: input.notes });
+      const result = await db.createAttendance({ childId: input.childId, date: new Date(input.date), status: input.status, notes: input.notes, organizationId: ctx.organizationId } as any);
       await db.createAttendanceAuditLog({
         attendanceId: result.id,
         childId: input.childId,
@@ -980,7 +1055,10 @@ export const appRouter = router({
       newStatus: z.enum(["present", "absent", "late", "excused", "checked_in", "checked_out"]),
       notes: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      const existing = await db.getAttendanceById(input.id);
+      // SECURITY FIX: previously fetched by id with no organizationId
+      // filter -- any teacher/admin could edit another organization's
+      // attendance record by guessing/enumerating its id.
+      const existing = await db.getAttendanceById(input.id, ctx.organizationId);
       if (!existing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: '\u0633\u062c\u0644 \u0627\u0644\u062d\u0636\u0648\u0631 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f' });
       }
@@ -999,7 +1077,7 @@ export const appRouter = router({
         updateData.checkOutTime = new Date();
         updateData.checkedOutBy = ctx.user!.id;
       }
-      await db.updateAttendance(input.id, updateData);
+      await db.updateAttendance(input.id, updateData, ctx.organizationId);
       await db.createAttendanceAuditLog({
         attendanceId: input.id,
         childId: input.childId,
@@ -1009,7 +1087,7 @@ export const appRouter = router({
         changedByName: ctx.user!.name || '\u0645\u0633\u062a\u062e\u062f\u0645',
         notes: input.notes,
       });
-      const child = await db.getChildById(input.childId);
+      const child = await db.getChildById(input.childId, ctx.organizationId);
       if (child?.parentId) {
         const statusLabels: Record<string, string> = {
           present: '\u062d\u0627\u0636\u0631',
@@ -1021,6 +1099,7 @@ export const appRouter = router({
         };
         await db.createNotification({
           userId: child.parentId,
+          organizationId: ctx.organizationId,
           title: '\u062a\u062d\u062f\u064a\u062b \u062d\u0627\u0644\u0629 \u0627\u0644\u062d\u0636\u0648\u0631',
           titleAr: '\u062a\u062d\u062f\u064a\u062b \u062d\u0627\u0644\u0629 \u0627\u0644\u062d\u0636\u0648\u0631',
           body: `Attendance status updated for ${child.firstName}`,
@@ -1035,10 +1114,33 @@ export const appRouter = router({
       childId: z.number().optional(),
       attendanceId: z.number().optional(),
     })).query(async ({ input, ctx }) => {
+      // SECURITY FIX: the attendanceId path previously had NO ownership
+      // check at all, for any role including parents -- any authenticated
+      // user could read another organization's (or another parent's)
+      // attendance audit trail by guessing an attendanceId. The childId
+      // path only checked ownership for parents, not staff/admin. Both
+      // paths now verify the referenced attendance/child belongs to the
+      // caller's organization (and, for parents, to one of their own
+      // children) before returning anything.
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (input.childId && !childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+        if (input.attendanceId) {
+          const record = await db.getAttendanceById(input.attendanceId, ctx.organizationId ?? undefined);
+          if (!record || !childIds.includes(record.childId)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+          }
+        }
+      } else {
+        if (input.attendanceId) {
+          const record = await db.getAttendanceById(input.attendanceId, ctx.organizationId ?? undefined);
+          if (!record) throw new TRPCError({ code: 'NOT_FOUND', message: 'سجل الحضور غير موجود' });
+        }
+        if (input.childId) {
+          const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+          if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
         }
       }
       if (input.attendanceId) {
@@ -1068,7 +1170,10 @@ export const appRouter = router({
       return db.getDailyReports(input?.childId, ctx.user?.organizationId ?? undefined);
     }),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
-      const report = await db.getDailyReportById(input.id);
+      // SECURITY FIX: previously fetched by id with no organizationId
+      // filter -- any authenticated staff member of ANY organization could
+      // read another organization's daily report by id.
+      const report = await db.getDailyReportById(input.id, ctx.organizationId ?? undefined);
       // Parents can only view reports for their own children
       if (ctx.user?.role === 'parent' && report) {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
@@ -1090,13 +1195,18 @@ export const appRouter = router({
       photos: z.array(z.string()).optional(),
       isPublished: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
-      const report = await db.createDailyReport({ ...input, date: new Date(input.date), teacherId: ctx.user!.id });
+      // SECURITY FIX: previously created a daily report for any childId
+      // with no verification it belongs to the caller's organization.
+      const ownedChild = await db.getChildById(input.childId, ctx.organizationId);
+      if (!ownedChild) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      const report = await db.createDailyReport({ ...input, date: new Date(input.date), teacherId: ctx.user!.id, organizationId: ctx.organizationId } as any);
       // Notify parent about new daily report + push
       try {
-        const child = await db.getChildById(input.childId);
+        const child = ownedChild;
         if (child?.parentId) {
           await db.createNotification({
             userId: child.parentId,
+            organizationId: ctx.organizationId,
             title: 'تقرير يومي جديد',
             titleAr: 'تقرير يومي جديد',
             body: `تم إضافة تقرير يومي جديد لـ ${child.firstName} ${child.lastName}`,
@@ -1104,13 +1214,15 @@ export const appRouter = router({
             type: 'report',
             link: '/parent/daily-report',
           });
-          // Firebase push notification to parent
-          const { sendPushToUser } = await import('./firebase-admin');
-          await sendPushToUser(child.parentId, {
+          // Push notification to parent
+          const { sendPushToUser } = await import('./_core/webPush');
+          const pushResult = await sendPushToUser(child.parentId, {
             title: 'تقرير يومي جديد 📝',
             body: `تم إضافة تقرير يومي جديد لـ ${child.firstName}`,
-            data: { type: 'daily_report', childId: String(input.childId), url: '/parent/daily-report' },
-          });
+            tag: 'daily_report',
+            data: { type: 'daily_report', childId: input.childId, url: '/parent/daily-report' },
+          }, db.getPushSubscriptionsForUser);
+          if (pushResult.expired.length > 0) await db.removeExpiredSubscriptions(pushResult.expired);
         }
       } catch (e) { /* non-critical */ }
       return report;
@@ -1124,9 +1236,14 @@ export const appRouter = router({
       mood: z.enum(["happy", "calm", "tired", "upset", "excited"]).optional(),
       teacherNotes: z.string().optional(),
       isPublished: z.boolean().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id with no organizationId
+      // filter -- any teacher/admin could edit another organization's
+      // daily report by guessing/enumerating its id.
       const { id, ...data } = input;
-      await db.updateDailyReport(id, data);
+      const existing = await db.getDailyReportById(id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'التقرير غير موجود' });
+      await db.updateDailyReport(id, data, ctx.organizationId);
       return { success: true };
     }),
   }),
@@ -1136,11 +1253,18 @@ export const appRouter = router({
       return db.getConversations(ctx.user!.id);
     }),
     allConversations: adminProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
-      return db.getAllConversations(input?.search, ctx.user?.organizationId ?? undefined);
+      // SECURITY FIX: previously listed every organization's conversations
+      // to any admin -- now scoped to the caller's organization.
+      return db.getAllConversations(input?.search, ctx.organizationId);
     }),
     list: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input, ctx }) => {
-      // Verify user is participant or admin
-      const conv = await db.getConversationById(input.conversationId);
+      // SECURITY FIX: the isAdmin bypass previously granted access to a
+      // conversation regardless of which organization it belonged to --
+      // any admin of ANY organization could read any other organization's
+      // conversation by id. The conversation is now fetched pre-filtered
+      // by the caller's own organization, so an admin from a different org
+      // gets NOT_FOUND instead of a silent cross-tenant read.
+      const conv = await db.getConversationById(input.conversationId, ctx.organizationId ?? undefined);
       if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
       const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin' || ctx.user?.role === 'owner' || ctx.user?.role === 'principal';
       if (!isAdmin && conv.participantOneId !== ctx.user!.id && conv.participantTwoId !== ctx.user!.id) {
@@ -1157,8 +1281,9 @@ export const appRouter = router({
       attachmentType: z.string().optional(),
       attachmentName: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      // Verify user is participant or admin
-      const conv = await db.getConversationById(input.conversationId);
+      // SECURITY FIX: same cross-tenant admin bypass as `list` above --
+      // conversation is now fetched pre-filtered by the caller's org.
+      const conv = await db.getConversationById(input.conversationId, ctx.organizationId ?? undefined);
       if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
       const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'super_admin' || ctx.user?.role === 'owner' || ctx.user?.role === 'principal';
       if (!isAdmin && conv.participantOneId !== ctx.user!.id && conv.participantTwoId !== ctx.user!.id) {
@@ -1178,6 +1303,7 @@ export const appRouter = router({
       try {
         await db.createNotification({
           userId: recipientId,
+          organizationId: ctx.organizationId ?? undefined,
           title: 'رسالة جديدة',
           titleAr: 'رسالة جديدة',
           body: `${ctx.user!.name || 'مستخدم'}: ${input.content.slice(0, 100)}`,
@@ -1186,14 +1312,18 @@ export const appRouter = router({
           link: '/messages',
         });
       } catch (e) { /* non-critical */ }
-      // Firebase push notification
+      // Web push notification
       try {
-        const { sendPushToUser } = await import('./firebase-admin');
-        await sendPushToUser(recipientId, {
-          title: 'رسالة جديدة ✉️',
+        const { sendPushToUser } = await import('./_core/webPush');
+        const result = await sendPushToUser(recipientId, {
+          title: 'رسالة جديدة',
           body: `${ctx.user!.name || 'مستخدم'}: ${input.content.slice(0, 80)}`,
-          data: { type: 'message', conversationId: String(input.conversationId), url: '/messages' },
-        });
+          tag: 'new_message',
+          data: { type: 'new_message', conversationId: input.conversationId },
+        }, db.getPushSubscriptionsForUser);
+        if (result.expired.length > 0) {
+          await db.removeExpiredSubscriptions(result.expired);
+        }
       } catch (e) { /* push notification failure is non-critical */ }
       return message;
     }),
@@ -1202,7 +1332,14 @@ export const appRouter = router({
       childId: z.number().optional(),
       subject: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createConversation(ctx.user!.id, input.participantId, input.childId, input.subject);
+      // SECURITY FIX: previously created a conversation with any
+      // participantId with no check they belong to the same organization,
+      // and never stamped organizationId on the new row at all.
+      const participant = await db.getUserById(input.participantId);
+      if (!participant || participant.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+      }
+      return db.createConversation(ctx.user!.id, input.participantId, input.childId, input.subject, ctx.organizationId ?? undefined);
     }),
     unreadCount: protectedProcedure.query(async ({ ctx }) => {
       return db.getUnreadMessageCount(ctx.user!.id);
@@ -1212,17 +1349,29 @@ export const appRouter = router({
       return { success: true };
     }),
     archive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.archiveConversation(input.conversationId);
+      // SECURITY FIX: previously archived by id with no ownership check --
+      // any admin of ANY organization could archive another organization's
+      // conversation.
+      const conv = await db.getConversationById(input.conversationId, ctx.organizationId);
+      if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
+      await db.archiveConversation(input.conversationId, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'archive_conversation', resource: 'conversations', resourceId: input.conversationId, details: `Archived conversation #${input.conversationId}`, ipAddress: '' });
       return { success: true };
     }),
     unarchive: adminProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.unarchiveConversation(input.conversationId);
+      // SECURITY FIX: same as archive above.
+      const conv = await db.getConversationById(input.conversationId, ctx.organizationId);
+      if (!conv) throw new TRPCError({ code: 'NOT_FOUND', message: 'المحادثة غير موجودة' });
+      await db.unarchiveConversation(input.conversationId, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'unarchive_conversation', resource: 'conversations', resourceId: input.conversationId, details: `Unarchived conversation #${input.conversationId}`, ipAddress: '' });
       return { success: true };
     }),
     deleteMessage: adminProcedure.input(z.object({ messageId: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.deleteMessage(input.messageId);
+      // SECURITY FIX: previously deleted by id with no ownership check --
+      // any admin of ANY organization could soft-delete another
+      // organization's message. Ownership is verified via the message's
+      // parent conversation.
+      await db.deleteMessage(input.messageId, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_message', resource: 'messages', resourceId: input.messageId, details: `Deleted message #${input.messageId}`, ipAddress: '' });
       return { success: true };
     }),
@@ -1231,29 +1380,42 @@ export const appRouter = router({
       if (role === 'parent') {
         // Parents get teachers of their children
         if (input?.childId) {
-          return db.getTeachersForChild(input.childId);
+          // SECURITY FIX: previously passed input.childId straight through
+          // with no check that it's actually one of the caller's own
+          // children -- any parent could pass another parent's (or
+          // another organization's) childId and get that child's teacher
+          // contacts back.
+          const childIds = await db.getChildIdsForParent(ctx.user!.id);
+          if (!childIds.includes(input.childId)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+          }
+          return db.getTeachersForChild(input.childId, ctx.organizationId ?? undefined);
         }
         return [];
       } else if (role === 'teacher' || role === 'assistant') {
         // Teachers get parents of children in their class
-        return db.getParentsForTeacher(ctx.user!.id);
+        return db.getParentsForTeacher(ctx.user!.id, ctx.organizationId ?? undefined);
       } else {
-        // Admin gets all active non-user users
-        return db.getAllActiveStaffAndParents();
+        // SECURITY FIX: previously returned every active staff/parent user
+        // across ALL organizations -- now scoped to the caller's org.
+        return db.getAllActiveStaffAndParents(ctx.organizationId ?? undefined);
       }
     }),
   }),
 
   finance: router({
-    invoices: protectedProcedure.input(z.object({ parentId: z.number().optional(), status: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
-      const orgId = ctx.user?.organizationId ?? undefined;
+    // SECURITY FIX: previously called db.getInvoices()/db.getInvoiceById() with no
+    // organizationId at all -- any authenticated non-parent user could list or
+    // fetch ANY organization's invoices. Now upgraded to tenantProcedure so
+    // ctx.organizationId is guaranteed non-null and always applied as a filter.
+    invoices: tenantProcedure.input(z.object({ parentId: z.number().optional(), status: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
-        return db.getInvoices(ctx.user.id, orgId);
+        return db.getInvoices(ctx.organizationId, ctx.user.id);
       }
-      return db.getInvoices(input?.parentId, orgId);
+      return db.getInvoices(ctx.organizationId, input?.parentId);
     }),
-    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
-      const invoice = await db.getInvoiceById(input.id);
+    getById: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+      const invoice = await db.getInvoiceById(input.id, ctx.organizationId);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
       if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
@@ -1269,6 +1431,17 @@ export const appRouter = router({
       invoiceType: z.enum(['tuition', 'activity', 'trip', 'uniform', 'registration', 'other']).optional(),
       isRecurring: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: input.childId/input.parentId were previously trusted with
+      // no check that either belongs to the caller's organization -- an invoice
+      // (and its notification) could be created against a child/parent from a
+      // different organization entirely.
+      const targetChild = await db.getChildById(input.childId);
+      if (!targetChild || targetChild.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      }
+      if (targetChild.parentId !== input.parentId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'ولي الأمر غير مرتبط بهذا الطفل' });
+      }
       const subtotal = parseFloat(input.subtotal);
       const vatAmount = subtotal * 0.15;
       const total = subtotal + vatAmount;
@@ -1286,10 +1459,15 @@ export const appRouter = router({
         isRecurring: input.isRecurring || false,
         paidAmount: '0.00',
         createdBy: ctx.user!.id,
+        // SECURITY FIX: previously omitted -- the invoices.organizationId column
+        // defaults to 1, so every invoice ever created via this route silently
+        // landed on organization #1 regardless of the creating admin's real org.
+        organizationId: ctx.organizationId,
       });
       // Notify parent about new invoice
       await db.createNotification({
         userId: input.parentId,
+        organizationId: ctx.organizationId,
         title: 'فاتورة جديدة',
         titleAr: 'فاتورة جديدة',
         body: `تم إنشاء فاتورة جديدة بمبلغ ${total.toLocaleString('ar-SA')} ر.س - ${input.description}`,
@@ -1306,7 +1484,12 @@ export const appRouter = router({
       subtotal: z.string().optional(),
       dueDate: z.string().optional(),
       invoiceType: z.enum(['tuition', 'activity', 'trip', 'uniform', 'registration', 'other']).optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id alone with no organizationId check
+      // at all -- an admin from any organization could edit any other
+      // organization's invoice by guessing/enumerating ids.
+      const existing = await db.getInvoiceById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
       const updateData: any = {};
       if (input.description) updateData.description = input.description;
       if (input.dueDate) updateData.dueDate = new Date(input.dueDate);
@@ -1319,13 +1502,15 @@ export const appRouter = router({
         updateData.vatAmount = vatAmount.toFixed(2);
         updateData.total = total.toFixed(2);
       }
-      await db.updateInvoice(input.id, updateData);
+      await db.updateInvoice(input.id, updateData, ctx.organizationId);
       return { success: true };
     }),
     markPaid: adminProcedure.input(z.object({ id: z.number(), paymentMethod: z.enum(['cash', 'bank_transfer', 'card', 'apple_pay', 'mada', 'stc_pay']) })).mutation(async ({ input, ctx }) => {
-      const invoice = await db.getInvoiceById(input.id);
+      // SECURITY FIX: getInvoiceById previously had no organizationId check --
+      // an admin from another organization could mark a foreign invoice as paid.
+      const invoice = await db.getInvoiceById(input.id, ctx.organizationId);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
-      await db.updateInvoice(input.id, { status: 'paid', paidAt: new Date(), paymentMethod: input.paymentMethod, paidAmount: invoice.total });
+      await db.updateInvoice(input.id, { status: 'paid', paidAt: new Date(), paymentMethod: input.paymentMethod, paidAmount: invoice.total }, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'mark_paid', resource: 'invoices', resourceId: input.id, details: `Marked invoice ${invoice.invoiceNumber} as paid via ${input.paymentMethod}`, ipAddress: '' });
       // Create a manual payment record
       await db.createPayment({
@@ -1352,6 +1537,7 @@ export const appRouter = router({
       // Notify parent
       await db.createNotification({
         userId: invoice.parentId,
+        organizationId: ctx.organizationId,
         title: 'تأكيد الدفع',
         titleAr: 'تأكيد الدفع',
         body: `تم تسجيل دفع الفاتورة ${invoice.invoiceNumber} بنجاح`,
@@ -1362,20 +1548,33 @@ export const appRouter = router({
       return { success: true };
     }),
     markPending: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.updateInvoice(input.id, { status: 'pending', paidAt: null, paymentMethod: undefined as any, paidAmount: '0.00' });
+      // SECURITY FIX: previously updated by id alone with no fetch/org check at
+      // all -- an admin from another organization could revert any invoice to
+      // pending. Now fetch-and-verify before mutating.
+      const existing = await db.getInvoiceById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      await db.updateInvoice(input.id, { status: 'pending', paidAt: null, paymentMethod: undefined as any, paidAmount: '0.00' }, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'mark_pending', resource: 'invoices', resourceId: input.id, details: `Marked invoice #${input.id} as pending`, ipAddress: '' });
       return { success: true };
     }),
     deleteInvoice: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.deleteInvoice(input.id);
+      // SECURITY FIX: previously deleted by id alone with no fetch/org check --
+      // an admin from another organization could delete any invoice by id.
+      const existing = await db.getInvoiceById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
+      await db.deleteInvoice(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_invoice', resource: 'invoices', resourceId: input.id, details: `Deleted invoice #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
-    sendReminder: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      const invoice = await db.getInvoiceById(input.id);
+    sendReminder: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: getInvoiceById previously had no organizationId check --
+      // an admin from another organization could send a payment reminder
+      // (an in-app notification) about a foreign invoice to a foreign parent.
+      const invoice = await db.getInvoiceById(input.id, ctx.organizationId);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
       await db.createNotification({
         userId: invoice.parentId,
+        organizationId: ctx.organizationId,
         title: 'تذكير بالدفع',
         titleAr: 'تذكير بالدفع',
         body: `تذكير: لديك فاتورة مستحقة بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description || invoice.invoiceNumber}. تاريخ الاستحقاق: ${new Date(invoice.dueDate).toLocaleDateString('ar-SA')}`,
@@ -1385,8 +1584,11 @@ export const appRouter = router({
       });
       return { success: true };
     }),
-    sendInvoiceEmail: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      const invoice = await db.getInvoiceById(input.id);
+    sendInvoiceEmail: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: getInvoiceById previously had no organizationId check --
+      // an admin from another organization could email a foreign parent about
+      // a foreign invoice.
+      const invoice = await db.getInvoiceById(input.id, ctx.organizationId);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
       if (!invoice.parentEmail) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد بريد إلكتروني لولي الأمر' });
       const { sendDetailedInvoiceEmail } = await import('./services/emailService');
@@ -1415,18 +1617,25 @@ export const appRouter = router({
       }
       return { success: true, message: 'تم إرسال الفاتورة بالبريد الإلكتروني بنجاح' };
     }),
-    summary: protectedProcedure.query(async ({ ctx }) => {
+    // SECURITY FIX (C2): was `protectedProcedure` -- upgraded to `tenantProcedure` so
+    // `ctx.organizationId` is guaranteed non-null here (required since the C1 fix
+    // below passes it directly to a function expecting a real number).
+    summary: tenantProcedure.query(async ({ ctx }) => {
       if (ctx.user?.role === 'parent') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
-      return db.getEnhancedFinanceSummary();
+      // SECURITY FIX (C1): pass the caller's own organizationId (from the trusted
+      // server-side context, never client input) so results are scoped to their org.
+      return db.getEnhancedFinanceSummary(ctx.organizationId);
     }),
     export: adminProcedure.input(z.object({
       startDate: z.string().optional(),
       endDate: z.string().optional(),
       status: z.string().optional(),
-    }).optional()).query(async ({ input }) => {
-      return db.getFinanceExportData({
+    }).optional()).query(async ({ input, ctx }) => {
+      // SECURITY FIX (C1): pass the caller's own organizationId so the export is
+      // scoped to their org instead of returning every organization's invoices.
+      return db.getFinanceExportData(ctx.organizationId, {
         startDate: input?.startDate ? new Date(input.startDate) : undefined,
         endDate: input?.endDate ? new Date(input.endDate) : undefined,
         status: input?.status,
@@ -1503,6 +1712,27 @@ export const appRouter = router({
       const invoice = await db.getInvoiceById(input.invoiceId);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: '\u0627\u0644\u0641\u0627\u062a\u0648\u0631\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629' });
       if (invoice.parentId !== ctx.user!.id) throw new TRPCError({ code: 'FORBIDDEN' });
+
+      // SECURITY FIX (C5): previously trusted the client-supplied `input.status`
+      // directly ('status: input.status === 'paid' ? 'paid' : 'initiated'') with no
+      // server-side verification -- any authenticated parent could fabricate a
+      // moyasarPaymentId and pass status:'paid' to create a fraudulent 'paid'
+      // payment record with no real money having moved. Fixed by verifying the real
+      // status with Moyasar first, the same pattern already used correctly by the
+      // sibling `verify` procedure below -- input.status is no longer trusted at all.
+      const { fetchMoyasarPayment, isMoyasarConfigured } = await import('./_core/moyasar');
+      let verifiedStatus: 'paid' | 'initiated' = 'initiated';
+      if (isMoyasarConfigured()) {
+        const moyasarPayment = await fetchMoyasarPayment(input.moyasarPaymentId);
+        if (moyasarPayment.status === 'paid') {
+          verifiedStatus = 'paid';
+        }
+      }
+      // If Moyasar isn't configured, the payment cannot be verified -- it is never
+      // recorded as 'paid' in that case either, regardless of what the client
+      // claims (matches how the sibling `verify` procedure also never marks
+      // anything paid without an actual Moyasar confirmation).
+
       // Create payment record
       const payment = await db.createPayment({
         invoiceId: input.invoiceId,
@@ -1510,7 +1740,7 @@ export const appRouter = router({
         amount: String(input.amount),
         currency: 'SAR',
         method: input.method,
-        status: input.status === 'paid' ? 'paid' : 'initiated',
+        status: verifiedStatus,
         moyasarPaymentId: input.moyasarPaymentId,
         callbackUrl: '',
       });
@@ -1519,18 +1749,35 @@ export const appRouter = router({
     verify: protectedProcedure.input(z.object({
       paymentId: z.number().optional(),
       moyasarPaymentId: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       const { fetchMoyasarPayment, isMoyasarConfigured } = await import('./_core/moyasar');
-      
+
       let payment;
       if (input.paymentId) {
         payment = await db.getPaymentById(input.paymentId);
       } else if (input.moyasarPaymentId) {
         payment = await db.getPaymentByMoyasarId(input.moyasarPaymentId);
       }
-      
+
       if (!payment) throw new TRPCError({ code: 'NOT_FOUND', message: 'الدفعة غير موجودة' });
-      
+
+      // SECURITY FIX: this procedure previously had NO ownership or organization
+      // check at all -- ANY authenticated user, of any role and any
+      // organization, could verify (and thereby mark paid, update the invoice,
+      // and create a transaction record for) ANY payment in the entire system
+      // by id or moyasarPaymentId. Restrict to the paying parent themselves, or
+      // an admin-tier user whose organization matches the invoice's.
+      const isAdminTier = ['admin', 'super_admin', 'principal', 'owner'].includes(ctx.user?.role || '');
+      if (payment.parentId !== ctx.user!.id) {
+        if (!isAdminTier) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+        }
+        const relatedInvoice = await db.getInvoiceById(payment.invoiceId, ctx.organizationId ?? undefined);
+        if (!relatedInvoice) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
+        }
+      }
+
       if (!isMoyasarConfigured()) {
         // Mock mode - simulate successful payment
         return { status: 'not_configured', message: 'بوابة الدفع غير مفعلة حالياً' };
@@ -1576,6 +1823,7 @@ export const appRouter = router({
           // Notify parent of successful payment
           await db.createNotification({
             userId: payment.parentId,
+            organizationId: invoice.organizationId,
             title: 'تم الدفع بنجاح',
             titleAr: 'تم الدفع بنجاح',
             body: `تم دفع الفاتورة ${invoice.invoiceNumber} بنجاح. المبلغ: ${Number(payment.amount).toLocaleString('ar-SA')} ر.س`,
@@ -1594,6 +1842,7 @@ export const appRouter = router({
         if (invoice) {
           await db.createNotification({
             userId: payment.parentId,
+            organizationId: invoice.organizationId,
             title: 'فشل الدفع',
             titleAr: 'فشل الدفع',
             body: `فشلت عملية دفع الفاتورة ${invoice.invoiceNumber}. يرجى المحاولة مرة أخرى.`,
@@ -1611,8 +1860,11 @@ export const appRouter = router({
     history: parentProcedure.query(async ({ ctx }) => {
       return db.getPaymentsByParent(ctx.user!.id);
     }),
+    // SECURITY FIX: getInvoiceById previously had no organizationId check --
+    // any authenticated non-parent user (staff of ANY organization) could view
+    // payment records for an invoice belonging to a different organization.
     byInvoice: protectedProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
-      const invoice = await db.getInvoiceById(input.invoiceId);
+      const invoice = await db.getInvoiceById(input.invoiceId, ctx.organizationId ?? undefined);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND' });
       if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN' });
@@ -1629,11 +1881,16 @@ export const appRouter = router({
   }),
 
   transactions: router({
-    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
-      return db.getAllTransactions(input?.limit || 100);
+    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      // SECURITY FIX (C1): pass the caller's own organizationId so this only returns
+      // their organization's transactions instead of every organization's.
+      return db.getAllTransactions(ctx.organizationId, input?.limit || 100);
     }),
+    // SECURITY FIX: getInvoiceById previously had no organizationId check --
+    // any authenticated non-parent user (staff of ANY organization) could view
+    // transaction records for an invoice belonging to a different organization.
     byInvoice: protectedProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
-      const invoice = await db.getInvoiceById(input.invoiceId);
+      const invoice = await db.getInvoiceById(input.invoiceId, ctx.organizationId ?? undefined);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND' });
       if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN' });
@@ -1652,9 +1909,12 @@ export const appRouter = router({
       amount: z.string(),
       reason: z.string(),
     })).mutation(async ({ input, ctx }) => {
-      const invoice = await db.getInvoiceById(input.invoiceId);
+      // SECURITY FIX: getInvoiceById previously had no organizationId check --
+      // an admin from another organization could issue a refund against any
+      // other organization's invoice by id.
+      const invoice = await db.getInvoiceById(input.invoiceId, ctx.organizationId);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفاتورة غير موجودة' });
-      
+
       const { isMoyasarConfigured, createMoyasarRefund } = await import('./_core/moyasar');
       
       let moyasarRefundId: string | undefined;
@@ -1687,7 +1947,7 @@ export const appRouter = router({
       await db.updateInvoice(input.invoiceId, {
         paidAmount: newPaidAmount.toFixed(2),
         status: newPaidAmount <= 0 ? 'pending' : 'partially_paid',
-      });
+      }, ctx.organizationId);
       
       // Create refund transaction
       await db.createTransaction({
@@ -1706,6 +1966,7 @@ export const appRouter = router({
       // Notify parent
       await db.createNotification({
         userId: invoice.parentId,
+        organizationId: ctx.organizationId,
         title: 'تم الاسترداد',
         titleAr: 'تم الاسترداد',
         body: `تم استرداد مبلغ ${parseFloat(input.amount).toLocaleString('ar-SA')} ر.س من الفاتورة ${invoice.invoiceNumber}`,
@@ -1717,14 +1978,16 @@ export const appRouter = router({
       await db.createAuditLog({ userId: ctx.user!.id, action: 'create_refund', resource: 'refunds', resourceId: input.invoiceId, details: `Refund ${input.amount} SAR for invoice #${input.invoiceId}: ${input.reason}`, ipAddress: '' });
       return refund;
     }),
-    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
-      return db.getAllRefunds(input?.limit || 100);
+    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      // SECURITY FIX (C1): scope to the caller's own organization.
+      return db.getAllRefunds(ctx.organizationId, input?.limit || 100);
     }),
   }),
 
   tuitionPlans: router({
-    list: adminProcedure.query(async () => {
-      return db.getTuitionPlans();
+    list: adminProcedure.query(async ({ ctx }) => {
+      // SECURITY FIX (C1): scope to the caller's own organization.
+      return db.getTuitionPlans(ctx.organizationId);
     }),
     create: adminProcedure.input(z.object({
       childId: z.number(),
@@ -1736,6 +1999,18 @@ export const appRouter = router({
       startDate: z.string(),
       endDate: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously trusted input.childId/input.parentId with no
+      // check that either belongs to the caller's organization -- since
+      // tuition_plans has no organizationId column of its own (it's only
+      // reachable via a join to children.organizationId, see
+      // getTuitionPlanById/getTuitionPlans above), an admin from any
+      // organization could attach a billing plan (amount, frequency,
+      // recurring invoices) to another organization's child and parent.
+      const child = await db.getChildById(input.childId, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      const planParent = await db.getUserById(input.parentId, ctx.organizationId);
+      if (!planParent) throw new TRPCError({ code: 'NOT_FOUND', message: 'ولي الأمر غير موجود' });
+
       // Calculate next billing date based on start date
       const startDate = new Date(input.startDate);
       return db.createTuitionPlan({
@@ -1760,19 +2035,31 @@ export const appRouter = router({
       description: z.string().optional(),
       isActive: z.boolean().optional(),
       endDate: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check at all -- an admin from another organization could edit any
+      // other organization's tuition plan (tuitionPlans has no organizationId
+      // column of its own, so it's enforced via a join to children here).
+      const existing = await db.getTuitionPlanById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'خطة الدفع غير موجودة' });
       const { id, ...data } = input;
       const updateData: any = { ...data };
       if (data.endDate) updateData.endDate = new Date(data.endDate);
       await db.updateTuitionPlan(id, updateData);
       return { success: true };
     }),
-    generateInvoices: adminProcedure.mutation(async () => {
-      const generated = await db.generateInvoicesFromPlans();
+    generateInvoices: adminProcedure.mutation(async ({ ctx }) => {
+      // SECURITY FIX: previously took no organizationId at all -- ANY admin,
+      // from ANY organization, calling this would generate recurring
+      // invoices for every organization's due tuition plans in one shot, and
+      // each invoice's organizationId was left unset (silently defaulting to
+      // organization #1). Now scoped to the caller's own organization only.
+      const generated = await db.generateInvoicesFromPlans(ctx.organizationId);
       // Notify parents for each generated invoice
       for (const invoice of generated) {
         await db.createNotification({
           userId: invoice.parentId,
+          organizationId: ctx.organizationId,
           title: 'فاتورة شهرية جديدة',
           titleAr: 'فاتورة شهرية جديدة',
           body: `تم إنشاء فاتورة شهرية بمبلغ ${Number(invoice.total).toLocaleString('ar-SA')} ر.س - ${invoice.description}`,
@@ -1794,10 +2081,12 @@ export const appRouter = router({
       return db.getLoyaltyTransactions(ctx.user!.id, input?.limit);
     }),
     rewards: protectedProcedure.query(async ({ ctx }) => {
-      return db.getLoyaltyRewards(ctx.user?.organizationId ?? undefined);
+      // SECURITY FIX: previously returned every organization's reward
+      // catalog with no filter.
+      return db.getLoyaltyRewards(ctx.organizationId ?? undefined);
     }),
     redeem: protectedProcedure.input(z.object({ rewardId: z.number() })).mutation(async ({ ctx, input }) => {
-      const rewards = await db.getLoyaltyRewards(ctx.user?.organizationId ?? undefined);
+      const rewards = await db.getLoyaltyRewards(ctx.organizationId ?? undefined);
       const reward = rewards.find(r => r.id === input.rewardId);
       if (!reward) throw new TRPCError({ code: 'NOT_FOUND', message: 'المكافأة غير موجودة' });
       const balance = await db.getLoyaltyBalance(ctx.user!.id);
@@ -1819,7 +2108,15 @@ export const appRouter = router({
       userId: z.number(),
       points: z.number(),
       description: z.string(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously trusted input.userId with no check that
+      // the target user belongs to the caller's organization -- any admin
+      // could grant loyalty points to a user in a completely different
+      // organization.
+      const target = await db.getUserById(input.userId);
+      if (!target || target.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+      }
       await db.addLoyaltyPoints(input.userId, input.points, "earned", input.description);
       return { success: true };
     }),
@@ -1827,7 +2124,12 @@ export const appRouter = router({
       userId: z.number(),
       points: z.number(),
       description: z.string(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: same as addPoints above.
+      const target = await db.getUserById(input.userId);
+      if (!target || target.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+      }
       await db.addLoyaltyPoints(input.userId, -Math.abs(input.points), "adjusted", input.description);
       return { success: true };
     }),
@@ -1839,8 +2141,10 @@ export const appRouter = router({
       pointsCost: z.number(),
       category: z.enum(["discount", "free_day", "gift", "upgrade", "custom"]).optional(),
       maxRedemptions: z.number().nullable().optional(),
-    })).mutation(async ({ input }) => {
-      return db.createLoyaltyReward(input);
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously never stamped organizationId -- every
+      // organization's reward catalog was shared.
+      return db.createLoyaltyReward({ ...input, organizationId: ctx.organizationId ?? undefined });
     }),
     updateReward: adminProcedure.input(z.object({
       id: z.number(),
@@ -1852,16 +2156,27 @@ export const appRouter = router({
       category: z.enum(["discount", "free_day", "gift", "upgrade", "custom"]).optional(),
       isActive: z.boolean().optional(),
       maxRedemptions: z.number().nullable().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id with no ownership check --
+      // any admin could edit another organization's reward by id.
       const { id, ...data } = input;
-      return db.updateLoyaltyReward(id, data);
+      const existing = await db.getLoyaltyRewardById(id, ctx.organizationId ?? undefined);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'المكافأة غير موجودة' });
+      return db.updateLoyaltyReward(id, data, ctx.organizationId ?? undefined);
     }),
-    deleteReward: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      return db.deleteLoyaltyReward(input.id);
+    deleteReward: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: same as updateReward above.
+      const existing = await db.getLoyaltyRewardById(input.id, ctx.organizationId ?? undefined);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'المكافأة غير موجودة' });
+      return db.deleteLoyaltyReward(input.id, ctx.organizationId ?? undefined);
     }),
     // Settings
     getSettings: adminProcedure.query(async ({ ctx }) => {
-      return db.getLoyaltySettings(ctx.user?.organizationId ?? undefined);
+      // SECURITY FIX: previously read an arbitrary settings row with no
+      // WHERE clause at all -- every organization's loyalty program
+      // configuration was reading from whichever row happened to come
+      // back first.
+      return db.getLoyaltySettings(ctx.organizationId);
     }),
     updateSettings: adminProcedure.input(z.object({
       pointsPerReferral: z.number().optional(),
@@ -1873,34 +2188,72 @@ export const appRouter = router({
       isActive: z.boolean().optional(),
       welcomeBonus: z.number().optional(),
       birthdayBonus: z.number().optional(),
-    })).mutation(async ({ input }) => {
-      return db.updateLoyaltySettings(input);
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously hardcoded `WHERE id = 1` -- every
+      // organization's admin was silently overwriting the SAME single
+      // settings row (points-per-action rules, welcome/birthday bonus)
+      // shared by every other organization.
+      return db.updateLoyaltySettings(input, ctx.organizationId);
     }),
     // All parents points (admin view)
     allParentsPoints: adminProcedure.query(async ({ ctx }) => {
-      return db.getAllParentsLoyaltyPoints(ctx.user?.organizationId ?? undefined);
+      // SECURITY FIX: previously returned every parent's loyalty balance
+      // across every organization on the platform.
+      return db.getAllParentsLoyaltyPoints(ctx.organizationId ?? undefined);
     }),
     // All redemptions (admin view)
     allRedemptions: adminProcedure.query(async ({ ctx }) => {
-      return db.getAllRedemptions(ctx.user?.organizationId ?? undefined);
+      // SECURITY FIX: previously returned every organization's redemptions.
+      return db.getAllRedemptions(ctx.organizationId ?? undefined);
     }),
     // Update redemption status
     updateRedemptionStatus: adminProcedure.input(z.object({
       id: z.number(),
       status: z.enum(["approved", "fulfilled", "rejected"]),
       adminNote: z.string().optional(),
-    })).mutation(async ({ input }) => {
-      return db.updateRedemptionStatus(input.id, input.status, input.adminNote);
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id with no ownership check --
+      // any admin could approve/reject/fulfill any other organization's
+      // redemption by id.
+      return db.updateRedemptionStatus(input.id, input.status, input.adminNote, ctx.organizationId ?? undefined);
     }),
 
+    // SECURITY FIX (policy: full tenant isolation, Super Admin is the only
+    // cross-org exception): loyalty_partners, loyalty_cards, and
+    // loyalty_card_templates have NO organizationId column -- this is a
+    // single shared "Nashaa loyalty" partner network, card, and template
+    // catalog spanning every nursery on the platform (confirmed intentional
+    // by the shared branding in the QR payload: `naashah_loyalty`, and by
+    // there being no per-org variant of this feature anywhere in the UI).
+    // Read-only catalog data (`partners`, `cardTemplates`) contains no
+    // tenant-identifying or per-user PII -- it is just the shared list of
+    // discount partners and card designs -- so it staying visible to any
+    // authenticated user cannot expose one nursery's private data to
+    // another and is left as `protectedProcedure`. `myCard`/`generateCard`
+    // only ever read/write the calling user's own card (`ctx.user!.id`), so
+    // they are also safe as-is. Everything else here is either (a) a
+    // platform-wide catalog *write* (adding/editing/deleting a shared
+    // partner or template that every nursery's parents will see) or (b) a
+    // bulk read of every nursery's cardholders' names/emails/points in one
+    // call (`allCards`) -- both were previously gated only by the local
+    // per-organization `adminProcedure` (any org's own admin), which let
+    // any single nursery's admin edit the platform-wide shared catalog or
+    // view every other nursery's parents' loyalty data. These are now
+    // restricted to the real platform Super Admin via the shared
+    // `superAdminProcedure`. `validateCard` (used to scan/validate one
+    // specific card by number) is by-id, not bulk, but previously had no
+    // ownership check at all, so any authenticated staff member could
+    // validate any other nursery's parent's card by number and see that
+    // parent's name and points balance -- it now verifies the card's owner
+    // is in the caller's own organization unless the caller is super_admin.
     // === Partners ===
-    partners: protectedProcedure.query(async ({ ctx }) => {
-      return db.getLoyaltyPartners(ctx.user?.organizationId ?? undefined);
+    partners: protectedProcedure.query(async () => {
+      return db.getLoyaltyPartners();
     }),
-    allPartners: adminProcedure.query(async ({ ctx }) => {
-      return db.getAllLoyaltyPartners(ctx.user?.organizationId ?? undefined);
+    allPartners: superAdminProcedure.query(async () => {
+      return db.getAllLoyaltyPartners();
     }),
-    createPartner: adminProcedure.input(z.object({
+    createPartner: superAdminProcedure.input(z.object({
       name: z.string(),
       nameAr: z.string(),
       logoUrl: z.string().optional(),
@@ -1912,7 +2265,7 @@ export const appRouter = router({
     })).mutation(async ({ input }) => {
       return db.createLoyaltyPartner(input);
     }),
-    updatePartner: adminProcedure.input(z.object({
+    updatePartner: superAdminProcedure.input(z.object({
       id: z.number(),
       name: z.string().optional(),
       nameAr: z.string().optional(),
@@ -1927,7 +2280,7 @@ export const appRouter = router({
       const { id, ...data } = input;
       return db.updateLoyaltyPartner(id, data);
     }),
-    deletePartner: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    deletePartner: superAdminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       return db.deleteLoyaltyPartner(input.id);
     }),
 
@@ -1949,16 +2302,27 @@ export const appRouter = router({
       await db.createLoyaltyCard(ctx.user!.id, cardNumber, qrCodeData, templateId, expiryDate);
       return db.getLoyaltyCard(ctx.user!.id);
     }),
-    allCards: adminProcedure.query(async ({ ctx }) => {
-      return db.getAllLoyaltyCards(ctx.user?.organizationId ?? undefined);
+    allCards: superAdminProcedure.query(async () => {
+      return db.getAllLoyaltyCards();
     }),
-    validateCard: protectedProcedure.input(z.object({ cardNumber: z.string() })).query(async ({ input }) => {
-      return db.getCardByNumber(input.cardNumber);
+    validateCard: protectedProcedure.input(z.object({ cardNumber: z.string() })).query(async ({ ctx, input }) => {
+      const card = await db.getCardByNumber(input.cardNumber);
+      if (!card) return null;
+      // SECURITY FIX: reject cross-tenant card validation -- a card whose
+      // owning user belongs to a different organization than the caller
+      // must not be readable, unless the caller is the platform super_admin.
+      // Returning null (not FORBIDDEN) so this behaves identically to "card
+      // not found" from the caller's point of view and doesn't confirm the
+      // card number exists in another org.
+      if (ctx.user!.role !== 'super_admin' && card.userOrganizationId !== (ctx.organizationId ?? null)) {
+        return null;
+      }
+      return card;
     }),
     cardTemplates: protectedProcedure.query(async () => {
       return db.getCardTemplates();
     }),
-    createCardTemplate: adminProcedure.input(z.object({
+    createCardTemplate: superAdminProcedure.input(z.object({
       name: z.string(),
       nameAr: z.string(),
       backgroundColor: z.string(),
@@ -1978,8 +2342,11 @@ export const appRouter = router({
     unreadCount: protectedProcedure.query(async ({ ctx }) => {
       return db.getUnreadNotificationCount(ctx.user!.id);
     }),
-    markRead: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      await db.markNotificationRead(input.id);
+    // SECURITY FIX: previously called markNotificationRead with no
+    // ownership check -- any authenticated user could mark any other
+    // user's notification as read by guessing/enumerating its id.
+    markRead: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      await db.markNotificationRead(input.id, ctx.user!.id);
       return { success: true };
     }),
     markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
@@ -2041,7 +2408,13 @@ export const appRouter = router({
     getConfig: adminProcedure.query(async ({ ctx }) => {
       const dbConn = await getSharedDb();
       if (!dbConn) return {};
-      const orgId = ctx.user?.organizationId ?? 1;
+      // SECURITY FIX: previously `ctx.user?.organizationId ?? 1` -- an admin
+      // whose user record somehow lacked organizationId would silently read
+      // organization #1's live SMS/email provider credentials (Twilio
+      // account SID/auth token, SendGrid API key) instead of being rejected.
+      // adminProcedure is built on tenantProcedure, so ctx.organizationId is
+      // guaranteed non-null; use it directly.
+      const orgId = ctx.organizationId;
       const rows = await dbConn.select().from(integrationConfig).where(eq(integrationConfig.organizationId, orgId));
       const config: Record<string, Record<string, string>> = {};
       for (const row of rows) {
@@ -2056,7 +2429,11 @@ export const appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const dbConn = await getSharedDb();
       if (!dbConn) throw new Error('Database connection failed');
-      const orgId = ctx.user?.organizationId ?? 1;
+      // SECURITY FIX: previously `ctx.user?.organizationId ?? 1` -- an admin
+      // whose user record somehow lacked organizationId would silently
+      // OVERWRITE organization #1's live Twilio/SendGrid credentials instead
+      // of being rejected. Use the guaranteed-non-null ctx.organizationId.
+      const orgId = ctx.organizationId;
       for (const [key, value] of Object.entries(input.settings)) {
         await dbConn.insert(integrationConfig).values({
           organizationId: orgId,
@@ -2095,15 +2472,20 @@ export const appRouter = router({
     }),
   }),
 
+  // SECURITY FIX: getById/children previously had no organizationId check
+  // at all (any authenticated user could read another organization's class
+  // or list its children by id); create never set organizationId (silently
+  // defaulted to organization #1); update/delete had no fetch-and-verify
+  // before mutating by id.
   classes: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      return db.getClasses(ctx.user?.organizationId ?? undefined);
+    list: tenantProcedure.query(async ({ ctx }) => {
+      return db.getClasses(ctx.organizationId);
     }),
-    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-      return db.getClassById(input.id);
+    getById: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+      return db.getClassById(input.id, ctx.organizationId);
     }),
-    children: protectedProcedure.input(z.object({ classId: z.number() })).query(async ({ input }) => {
-      return db.getChildrenByClass(input.classId);
+    children: tenantProcedure.input(z.object({ classId: z.number() })).query(async ({ input, ctx }) => {
+      return db.getChildrenByClass(input.classId, ctx.organizationId);
     }),
     create: adminProcedure.input(z.object({
       name: z.string().min(1),
@@ -2111,8 +2493,8 @@ export const appRouter = router({
       ageGroup: z.string().optional(),
       capacity: z.number().optional(),
       teacherId: z.number().optional(),
-    })).mutation(async ({ input }) => {
-      return db.createClass(input);
+    })).mutation(async ({ input, ctx }) => {
+      return db.createClass({ ...input, organizationId: ctx.organizationId });
     }),
     update: adminProcedure.input(z.object({
       id: z.number(),
@@ -2121,12 +2503,16 @@ export const appRouter = router({
       ageGroup: z.string().optional(),
       capacity: z.number().optional(),
       teacherId: z.number().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
-      return db.updateClass(id, data);
+      const existing = await db.getClassById(id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفصل غير موجود' });
+      return db.updateClass(id, data, ctx.organizationId);
     }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      const result = await db.deleteClass(input.id);
+      const existing = await db.getClassById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفصل غير موجود' });
+      const result = await db.deleteClass(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_class', resource: 'classes', resourceId: input.id, details: `Deleted class #${input.id}`, ipAddress: '' });
       return result;
     }),
@@ -2136,14 +2522,14 @@ export const appRouter = router({
     today: protectedProcedure.query(async ({ ctx }) => {
       return db.getTodayStaffAttendance(ctx.user!.id);
     }),
-    byDate: adminProcedure.input(z.object({ date: z.string() })).query(async ({ input }) => {
-      return db.getStaffAttendanceByDate(input.date);
+    byDate: adminProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
+      return db.getStaffAttendanceByDate(input.date, ctx.organizationId);
     }),
     myHistory: protectedProcedure.query(async ({ ctx }) => {
-      return db.getStaffAttendanceByUser(ctx.user!.id);
+      return db.getStaffAttendanceByUser(ctx.user!.id, ctx.organizationId ?? undefined);
     }),
-    userHistory: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input }) => {
-      return db.getStaffAttendanceByUser(input.userId);
+    userHistory: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input, ctx }) => {
+      return db.getStaffAttendanceByUser(input.userId, ctx.organizationId);
     }),
     checkIn: protectedProcedure.input(z.object({
       gpsLat: z.number(),
@@ -2151,7 +2537,7 @@ export const appRouter = router({
       device: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
       // Verify GPS is within center radius
-      const settings = await db.getCenterSettings();
+      const settings = await db.getCenterSettings(ctx.organizationId ?? undefined);
       if (settings && settings.latitude && settings.longitude && settings.allowedRadius) {
         const distance = getDistanceKm(input.gpsLat, input.gpsLng, Number(settings.latitude), Number(settings.longitude));
         const radiusKm = Number(settings.allowedRadius) / 1000;
@@ -2167,13 +2553,24 @@ export const appRouter = router({
         gpsLngIn: input.gpsLng.toString(),
         device: input.device,
         status: 'checked_in',
+        organizationId: ctx.organizationId,
       });
     }),
     checkOut: protectedProcedure.input(z.object({
       id: z.number(),
       gpsLat: z.number(),
       gpsLng: z.number(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ ctx, input }) => {
+      // SECURITY FIX: previously updated the attendance record by id alone
+      // with NO check that it even belongs to the caller -- any
+      // authenticated user, of any role and any organization, could check
+      // out (overwriting checkOutTime/GPS) any other staff member's
+      // attendance record on the entire platform by guessing/enumerating
+      // its numeric id.
+      const record = await db.getStaffAttendanceById(input.id);
+      if (!record || record.userId !== ctx.user!.id) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'سجل الحضور غير موجود' });
+      }
       await db.staffCheckOut(input.id, {
         checkOutTime: new Date(),
         gpsLatOut: input.gpsLat.toString(),
@@ -2186,6 +2583,14 @@ export const appRouter = router({
       checkOutTime: z.string().optional(),
       notes: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
+      // SECURITY FIX: previously updated the attendance record by id alone
+      // with no organization check -- any admin could manually check out
+      // (and attach admin notes to) another organization's staff attendance
+      // record by id.
+      const record = await db.getStaffAttendanceById(input.id, ctx.organizationId);
+      if (!record) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'سجل الحضور غير موجود' });
+      }
       const checkOutTime = input.checkOutTime ? new Date(input.checkOutTime) : new Date();
       await db.staffCheckOut(input.id, {
         checkOutTime,
@@ -2210,6 +2615,7 @@ export const appRouter = router({
         device: input.device,
         status: 'checked_in',
         isLateRecord: false,
+        organizationId: ctx.organizationId,
       });
     }),
 
@@ -2252,6 +2658,7 @@ export const appRouter = router({
         status: 'checked_in',
         isLateRecord: true,
         lateReason: input.reason,
+        organizationId: ctx.organizationId,
       });
     }),
 
@@ -2280,16 +2687,21 @@ export const appRouter = router({
     }),
 
     // ============ ADMIN: Get all attendance with late records highlighted ============
-    allToday: adminProcedure.query(async () => {
+    // SECURITY FIX: previously called getStaffAttendanceByDate with no
+    // organizationId at all -- any organization's admin saw every
+    // organization's staff attendance (check-in/out times, status, late
+    // reasons) for the current day, platform-wide. Now filtered by
+    // ctx.organizationId, same as the sibling `byDate` endpoint above.
+    allToday: adminProcedure.query(async ({ ctx }) => {
       const today = new Date();
       const dateStr = today.toISOString().split('T')[0];
-      return db.getStaffAttendanceByDate(dateStr);
+      return db.getStaffAttendanceByDate(dateStr, ctx.organizationId);
     }),
   }),
 
   centerSettings: router({
-    get: adminProcedure.query(async () => {
-      return db.getCenterSettings();
+    get: adminProcedure.query(async ({ ctx }) => {
+      return db.getCenterSettings(ctx.organizationId);
     }),
     update: adminProcedure.input(z.object({
       name: z.string().optional(),
@@ -2303,7 +2715,7 @@ export const appRouter = router({
       vatNumber: z.string().optional(),
       commercialRegister: z.string().optional(),
       logoUrl: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       const mapped: any = {};
       if (input.name) mapped.centerName = input.name;
       if (input.gpsLat) mapped.latitude = input.gpsLat;
@@ -2314,7 +2726,7 @@ export const appRouter = router({
       if (input.vatNumber !== undefined) mapped.vatNumber = input.vatNumber;
       if (input.commercialRegister !== undefined) mapped.commercialRegister = input.commercialRegister;
       if (input.logoUrl !== undefined) mapped.logoUrl = input.logoUrl;
-      return db.updateCenterSettings(mapped);
+      return db.updateCenterSettings(mapped, ctx.organizationId);
     }),
   }),
 
@@ -2325,11 +2737,22 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        // SECURITY FIX: staff/admin previously had no ownership check --
+        // any authenticated non-parent user could read another
+        // organization's child activity log by id.
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
-      return db.getDailyActivities(input.childId, input.date);
+      return db.getDailyActivities(input.childId, input.date, ctx.organizationId ?? undefined);
     }),
-    byClass: teacherProcedure.input(z.object({ classId: z.number(), date: z.string() })).query(async ({ input }) => {
-      return db.getDailyActivitiesByClass(input.classId, input.date);
+    byClass: teacherProcedure.input(z.object({ classId: z.number(), date: z.string() })).query(async ({ input, ctx }) => {
+      // SECURITY FIX: previously had no organization check at all -- any
+      // teacher/admin could read another organization's class activity log
+      // by classId.
+      const cls = await db.getClassById(input.classId, ctx.organizationId);
+      if (!cls) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفصل غير موجود' });
+      return db.getDailyActivitiesByClass(input.classId, input.date, ctx.organizationId);
     }),
     create: teacherProcedure.input(z.object({
       childId: z.number(),
@@ -2340,12 +2763,17 @@ export const appRouter = router({
       notes: z.string().optional(),
       metadata: z.any().optional(),
     })).mutation(async ({ input, ctx }) => {
-      const activity = await db.createDailyActivity({ ...input, recordedBy: ctx.user!.id, recordedAt: new Date() });
+      // SECURITY FIX: previously created an activity for any childId with
+      // no verification it belongs to the caller's organization, and never
+      // stamped organizationId on the new row.
+      const ownedChild = await db.getChildById(input.childId, ctx.organizationId);
+      if (!ownedChild) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      const activity = await db.createDailyActivity({ ...input, recordedBy: ctx.user!.id, recordedAt: new Date(), organizationId: ctx.organizationId });
       // Push notification to parent for key activities
       const notifiableTypes = ['arrival', 'departure', 'medication', 'mood', 'learning_activity', 'photo', 'observation', 'breakfast', 'morning_snack', 'lunch', 'afternoon_snack', 'meal', 'snack', 'nap_start', 'nap_end', 'diaper', 'toilet', 'water', 'temperature', 'outdoor_play', 'indoor_play'];
       if (notifiableTypes.includes(input.type)) {
         try {
-          const child = await db.getChildById(input.childId);
+          const child = ownedChild;
           if (child?.parentId) {
             const activityLabels: Record<string, string> = {
               arrival: 'وصول', departure: 'مغادرة', medication: 'دواء',
@@ -2362,6 +2790,7 @@ export const appRouter = router({
             const label = activityLabels[input.type] || 'نشاط';
             await db.createNotification({
               userId: child.parentId,
+              organizationId: ctx.organizationId,
               title: `${label} - ${child.firstName}`,
               titleAr: `${label} - ${child.firstName}`,
               body: input.title || `تم تسجيل ${label} لـ ${child.firstName}`,
@@ -2369,12 +2798,14 @@ export const appRouter = router({
               type: 'activity',
               link: '/parent/daily-report',
             });
-            const { sendPushToUser } = await import('./firebase-admin');
-            await sendPushToUser(child.parentId, {
+            const { sendPushToUser } = await import('./_core/webPush');
+            const pushResult = await sendPushToUser(child.parentId, {
               title: `${label} - ${child.firstName}`,
               body: input.title || `تم تسجيل ${label} لـ ${child.firstName}`,
-              data: { type: 'activity', childId: String(input.childId), url: '/parent/daily-report' },
-            });
+              tag: `activity_${input.type}`,
+              data: { type: 'activity', childId: input.childId, url: '/parent/daily-report' },
+            }, db.getPushSubscriptionsForUser);
+            if (pushResult.expired.length > 0) await db.removeExpiredSubscriptions(pushResult.expired);
           }
         } catch (e) { /* non-critical */ }
       }
@@ -2382,13 +2813,19 @@ export const appRouter = router({
     }),
   }),
 
+  // SECURITY FIX: child_departures has no organizationId column, so
+  // byDate/byChild previously leaked every organization's pickup records
+  // platform-wide to any authenticated staff/admin, and create() never
+  // verified the childId belongs to the caller's organization. Fixed via
+  // an org-scoped join in db.ts (same pattern as childDocuments) plus a
+  // fetch-and-verify on childId before create.
   departures: router({
     byDate: protectedProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         return db.getDeparturesByDateForChildren(input.date, childIds);
       }
-      return db.getDeparturesByDate(input.date);
+      return db.getDeparturesByDate(input.date, ctx.organizationId ?? undefined);
     }),
     byChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
@@ -2396,8 +2833,11 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+        return db.getDeparturesByChild(input.childId);
       }
-      return db.getDeparturesByChild(input.childId);
+      const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      return db.getDeparturesByChild(input.childId, ctx.organizationId ?? undefined);
     }),
     create: teacherProcedure.input(z.object({
       childId: z.number(),
@@ -2409,6 +2849,8 @@ export const appRouter = router({
       notes: z.string().optional(),
       status: z.enum(['completed', 'pending', 'late']).optional(),
     })).mutation(async ({ input, ctx }) => {
+      const ownedChild = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+      if (!ownedChild) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       return db.createDeparture({
         ...input,
         departureTime: new Date(input.departureTime),
@@ -2429,19 +2871,22 @@ export const appRouter = router({
       visibility: z.enum(['class', 'specific']).optional(),
       childIds: z.array(z.number()).optional(),
     })).mutation(async ({ input, ctx }) => {
-      const media = await db.createMedia({ ...input, uploadedBy: ctx.user!.id });
+      // SECURITY FIX: createMedia previously never stamped organizationId
+      // on the new row at all.
+      const media = await db.createMedia({ ...input, uploadedBy: ctx.user!.id, organizationId: ctx.organizationId ?? undefined });
       // Push notification to parents of tagged children
       if (input.childIds && input.childIds.length > 0) {
         try {
-          const { sendPushToUser } = await import('./firebase-admin');
+          const { sendPushToUser } = await import('./_core/webPush');
           const notifiedParents = new Set<number>();
           for (const childId of input.childIds) {
-            const child = await db.getChildById(childId);
+            const child = await db.getChildById(childId, ctx.organizationId ?? undefined);
             if (child?.parentId && !notifiedParents.has(child.parentId)) {
               notifiedParents.add(child.parentId);
               const mediaLabel = input.type === 'photo' ? 'صورة جديدة' : 'فيديو جديد';
               await db.createNotification({
                 userId: child.parentId,
+                organizationId: ctx.organizationId,
                 title: `${mediaLabel} لـ ${child.firstName}`,
                 titleAr: `${mediaLabel} لـ ${child.firstName}`,
                 body: input.caption || `تم إضافة ${mediaLabel} لـ ${child.firstName}`,
@@ -2452,8 +2897,9 @@ export const appRouter = router({
               await sendPushToUser(child.parentId, {
                 title: `${mediaLabel} 📷`,
                 body: input.caption || `تم إضافة ${mediaLabel} لـ ${child.firstName}`,
-                data: { type: 'media', childId: String(childId), url: '/parent/photos' },
-              });
+                tag: 'new_media',
+                data: { type: 'media', childId, url: '/parent/photos' },
+              }, db.getPushSubscriptionsForUser);
             }
           }
         } catch (e) { /* non-critical */ }
@@ -2475,26 +2921,29 @@ export const appRouter = router({
     })).mutation(async ({ input, ctx }) => {
       const results = [];
       for (const item of input.items) {
+        // SECURITY FIX: previously never stamped organizationId on new rows.
         const result = await db.createMedia({
           ...item,
           classId: input.classId,
           visibility: input.visibility,
           childIds: input.childIds,
           uploadedBy: ctx.user!.id,
+          organizationId: ctx.organizationId ?? undefined,
         });
         results.push(result);
       }
       // Push notification to parents of tagged children (batch)
       if (input.childIds && input.childIds.length > 0) {
         try {
-          const { sendPushToUser } = await import('./firebase-admin');
+          const { sendPushToUser } = await import('./_core/webPush');
           const notifiedParents = new Set<number>();
           for (const childId of input.childIds) {
-            const child = await db.getChildById(childId);
+            const child = await db.getChildById(childId, ctx.organizationId ?? undefined);
             if (child?.parentId && !notifiedParents.has(child.parentId)) {
               notifiedParents.add(child.parentId);
               await db.createNotification({
                 userId: child.parentId,
+                organizationId: ctx.organizationId,
                 title: `صور جديدة لـ ${child.firstName}`,
                 titleAr: `صور جديدة لـ ${child.firstName}`,
                 body: `تم إضافة ${input.items.length} صور/فيديو جديدة لـ ${child.firstName}`,
@@ -2505,8 +2954,9 @@ export const appRouter = router({
               await sendPushToUser(child.parentId, {
                 title: 'صور جديدة 📷',
                 body: `تم إضافة ${input.items.length} صور/فيديو جديدة لـ ${child.firstName}`,
-                data: { type: 'media', childId: String(childId), url: '/parent/photos' },
-              });
+                tag: 'new_media_batch',
+                data: { type: 'media', childId, url: '/parent/photos' },
+              }, db.getPushSubscriptionsForUser);
             }
           }
         } catch (e) { /* non-critical */ }
@@ -2525,35 +2975,52 @@ export const appRouter = router({
           if (!childIds.includes(input.childId)) {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
           }
-          return db.getMediaForChild(input.childId, input?.limit);
+          return db.getMediaForChild(input.childId, input?.limit, ctx.organizationId ?? undefined);
         }
-        return db.getMediaForChildren(childIds, input?.limit);
+        return db.getMediaForChildren(childIds, input?.limit, ctx.organizationId ?? undefined);
       }
-      // Admin sees all
+      // SECURITY FIX: admin/teacher/fallback branches previously called
+      // getAllMedia()/getMediaForClass() with no organizationId at all --
+      // any admin (or teacher hitting the fallback with no classId) could
+      // see every organization's photos and videos of children.
+      // Admin sees all (within their own organization)
       if (ctx.user?.role === 'admin' || ctx.user?.role === 'owner' || ctx.user?.role === 'principal' || ctx.user?.role === 'super_admin') {
-        return db.getAllMedia(input?.limit);
+        return db.getAllMedia(input?.limit, ctx.organizationId ?? undefined);
       }
       // Teacher sees by class
       if (input?.classId) {
-        return db.getMediaForClass(input.classId, input?.limit);
+        return db.getMediaForClass(input.classId, input?.limit, ctx.organizationId ?? undefined);
       }
-      return db.getAllMedia(input?.limit);
+      return db.getAllMedia(input?.limit, ctx.organizationId ?? undefined);
     }),
-    getChildren: protectedProcedure.input(z.object({ mediaId: z.number() })).query(async ({ input }) => {
+    getChildren: protectedProcedure.input(z.object({ mediaId: z.number() })).query(async ({ input, ctx }) => {
+      // SECURITY FIX: previously had no organization check -- any
+      // authenticated user could look up which children are tagged in any
+      // organization's media item by id.
+      const item = await db.getMediaById(input.mediaId, ctx.organizationId ?? undefined);
+      if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       return db.getMediaChildren(input.mediaId);
     }),
     delete: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      // Only admin or the uploader can delete
-      const item = await db.getMediaById(input.id);
+      // SECURITY FIX: previously fetched by id with no organizationId
+      // filter -- any admin/uploader-role check ran without verifying the
+      // media even belongs to the caller's organization, so an admin in
+      // one organization could delete another organization's media.
+      const item = await db.getMediaById(input.id, ctx.organizationId ?? undefined);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       if (!['admin', 'owner', 'principal', 'super_admin'].includes(ctx.user?.role || '') && item.uploadedBy !== ctx.user!.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: '\u0644\u0627 \u064a\u0645\u0643\u0646\u0643 \u062d\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641' });
       }
-      await db.deleteMedia(input.id);
+      await db.deleteMedia(input.id, ctx.organizationId ?? undefined);
       return { success: true };
     }),
     approve: adminProcedure.input(z.object({ id: z.number(), isApproved: z.boolean() })).mutation(async ({ input, ctx }) => {
-      await db.updateMediaApproval(input.id, input.isApproved);
+      // SECURITY FIX: previously had no ownership check at all -- any
+      // admin of ANY organization could approve/reject another
+      // organization's media by id.
+      const item = await db.getMediaById(input.id, ctx.organizationId);
+      if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
+      await db.updateMediaApproval(input.id, input.isApproved, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: input.isApproved ? 'approve_media' : 'reject_media', resource: 'media', resourceId: input.id, details: `${input.isApproved ? 'Approved' : 'Rejected'} media #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
@@ -2586,15 +3053,17 @@ export const appRouter = router({
     aiSuggestChildren: teacherProcedure.input(z.object({
       imageUrl: z.string(),
       classId: z.number().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       const { invokeLLM } = await import("./_core/llm");
       const { withRetry } = await import("../shared/retry");
-      // Get children from the class (or all active children)
+      // SECURITY FIX: previously fetched children with no organizationId
+      // filter at all -- any teacher could get the AI to suggest tagging
+      // children from a different organization's entire roster.
       let childrenList;
       if (input.classId) {
-        childrenList = await db.getChildrenByClass(input.classId);
+        childrenList = await db.getChildrenByClass(input.classId, ctx.organizationId ?? undefined);
       } else {
-        childrenList = await db.getChildren();
+        childrenList = await db.getChildren(undefined, ctx.organizationId ?? undefined);
       }
       const activeChildren = childrenList.filter((c: any) => c.status === 'active');
       // Build a list of children with their photos for the AI to compare
@@ -2667,16 +3136,25 @@ export const appRouter = router({
   }),
   calendar: calendarRouter,
 
+  // SECURITY FIX: this entire router previously had NO organizationId
+  // scoping anywhere -- getAnnouncements() returned every organization's
+  // announcements to every user (filtered only by audience, never by
+  // organization), create/update/delete operated with no organization
+  // isolation at all, and create's parent-broadcast used the also-unscoped
+  // db.getUsersByRoles() to notify every parent in the ENTIRE database
+  // regardless of organization. `list` is upgraded to tenantProcedure so
+  // ctx.organizationId is guaranteed; admin mutations now fetch-and-verify
+  // or explicitly stamp organizationId before acting.
   announcements: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
+    list: tenantProcedure.query(async ({ ctx }) => {
       const isAdmin = ctx.user?.role === 'admin' || ctx.user?.role === 'principal' || ctx.user?.role === 'super_admin' || ctx.user?.role === 'owner';
       if (ctx.user?.role === 'parent') {
-        return db.getAnnouncements('parents', false);
+        return db.getAnnouncements(ctx.organizationId, 'parents', false);
       }
       if (ctx.user?.role === 'teacher') {
-        return db.getAnnouncements('staff', false);
+        return db.getAnnouncements(ctx.organizationId, 'staff', false);
       }
-      return db.getAnnouncements(undefined, isAdmin);
+      return db.getAnnouncements(ctx.organizationId, undefined, isAdmin);
     }),
     create: adminProcedure.input(z.object({
       title: z.string().min(1),
@@ -2689,15 +3167,24 @@ export const appRouter = router({
       expiresAt: z.string().nullable().optional(),
     })).mutation(async ({ input, ctx }) => {
       const { expiresAt, ...rest } = input;
-      const data: any = { ...rest, createdBy: ctx.user!.id };
+      // SECURITY FIX: previously omitted -- announcements.organizationId
+      // defaults to 1 in the schema, so every announcement ever created here
+      // silently landed on organization #1 regardless of the creating
+      // admin's real organization.
+      const data: any = { ...rest, createdBy: ctx.user!.id, organizationId: ctx.organizationId };
       if (expiresAt) data.expiresAt = new Date(expiresAt);
       const result = await db.createAnnouncement(data);
       // Send notification to parents if audience includes them
       if (input.audience === 'all' || input.audience === 'parents') {
-        const parents = await db.getUsersByRoles(['parent']);
+        // SECURITY FIX: previously called db.getUsersByRoles(['parent']) with
+        // no organizationId -- this notified every parent in every
+        // organization about an announcement that belongs to only one of
+        // them.
+        const parents = await db.getUsersByRoles(['parent'], ctx.organizationId);
         for (const parent of parents) {
           await db.createNotification({
             userId: parent.id,
+            organizationId: ctx.organizationId,
             title: 'إعلان جديد',
             titleAr: 'إعلان جديد',
             body: input.title,
@@ -2718,15 +3205,25 @@ export const appRouter = router({
       imageUrl: z.string().nullable().optional(),
       expiresAt: z.string().nullable().optional(),
     })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check -- an admin from another organization could edit any other
+      // organization's announcement.
+      const existing = await db.getAnnouncementById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الإعلان غير موجود' });
       const { id, expiresAt, ...rest } = input;
       const data: any = { ...rest };
       if (expiresAt !== undefined) data.expiresAt = expiresAt ? new Date(expiresAt) : null;
-      await db.updateAnnouncement(id, data);
+      await db.updateAnnouncement(id, data, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'update_announcement', resource: 'announcements', resourceId: id, details: `Updated announcement #${id}`, ipAddress: '' });
       return { success: true };
     }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.deleteAnnouncement(input.id);
+      // SECURITY FIX: previously deleted by id alone with no organization
+      // check -- an admin from another organization could delete any other
+      // organization's announcement.
+      const existing = await db.getAnnouncementById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الإعلان غير موجود' });
+      await db.deleteAnnouncement(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_announcement', resource: 'announcements', resourceId: input.id, details: `Deleted announcement #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
@@ -2736,22 +3233,33 @@ export const appRouter = router({
     myReadStatus: protectedProcedure.query(async ({ ctx }) => {
       return db.getUserReadAnnouncements(ctx.user!.id);
     }),
-    readers: adminProcedure.input(z.object({ announcementId: z.number() })).query(async ({ input }) => {
+    readers: adminProcedure.input(z.object({ announcementId: z.number() })).query(async ({ input, ctx }) => {
+      // SECURITY FIX: previously returned reader identities for any
+      // announcementId with no organization check -- an admin from another
+      // organization could read who has/hasn't seen a foreign announcement.
+      const existing = await db.getAnnouncementById(input.announcementId, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الإعلان غير موجود' });
       return db.getAnnouncementReaders(input.announcementId);
     }),
-    readCount: adminProcedure.input(z.object({ announcementId: z.number() })).query(async ({ input }) => {
+    readCount: adminProcedure.input(z.object({ announcementId: z.number() })).query(async ({ input, ctx }) => {
+      const existing = await db.getAnnouncementById(input.announcementId, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'الإعلان غير موجود' });
       return db.getAnnouncementReadCount(input.announcementId);
     }),
   }),
 
+  // SECURITY FIX: this router previously had NO organizationId scoping --
+  // getDocuments() returned every organization's policy/consent/form
+  // documents to every user (filtered only by audience), and delete
+  // operated on any document id with no organization check.
   documents: router({
-    list: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+    list: tenantProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (input?.childId && !childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
-        const docs = await db.getDocuments('parents', input?.childId);
+        const docs = await db.getDocuments(ctx.organizationId, 'parents', input?.childId);
         // Add signed status for each document
         const docsWithSignedStatus = await Promise.all(docs.map(async (doc: any) => {
           if (doc.requiresSignature) {
@@ -2763,7 +3271,7 @@ export const appRouter = router({
         }));
         return docsWithSignedStatus;
       }
-      return db.getDocuments(undefined, input?.childId);
+      return db.getDocuments(ctx.organizationId, undefined, input?.childId);
     }),
     create: adminProcedure.input(z.object({
       name: z.string().min(1),
@@ -2774,36 +3282,61 @@ export const appRouter = router({
       audience: z.enum(['all', 'parents', 'staff']).optional(),
       requiresSignature: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createDocument({ ...input, createdBy: ctx.user!.id });
+      // SECURITY FIX: previously omitted -- documents.organizationId
+      // defaults to 1, so every document ever created here silently landed
+      // on organization #1.
+      return db.createDocument({ ...input, createdBy: ctx.user!.id, organizationId: ctx.organizationId });
     }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.deleteDocument(input.id);
+      await db.deleteDocument(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_document', resource: 'documents', resourceId: input.id, details: `Deleted document #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
     sign: protectedProcedure.input(z.object({ documentId: z.number() })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously created a signature for any documentId with
+      // no check it belongs to the caller's organization -- a user could
+      // "sign" a document belonging to a completely different organization.
+      const document = await db.getDocumentById(input.documentId, ctx.organizationId ?? undefined);
+      if (!document) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستند غير موجود' });
       return db.createSignature({ documentId: input.documentId, parentId: ctx.user!.id, signedAt: new Date() });
     }),
-    signatures: protectedProcedure.input(z.object({ documentId: z.number() })).query(async ({ input }) => {
+    signatures: protectedProcedure.input(z.object({ documentId: z.number() })).query(async ({ input, ctx }) => {
+      // SECURITY FIX: previously returned the signature list (which parent
+      // ids signed) for ANY documentId with no organization check at all --
+      // any authenticated user of any organization could enumerate another
+      // organization's policy/consent document signatures.
+      const document = await db.getDocumentById(input.documentId, ctx.organizationId ?? undefined);
+      if (!document) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستند غير موجود' });
       return db.getSignaturesForDocument(input.documentId);
     }),
   }),
 
+  // SECURITY FIX: child_documents (birth certificates, national IDs, medical
+  // reports, immunization/passport scans) has no organizationId column of
+  // its own, and this router previously had NO organization scoping
+  // anywhere -- listAll returned every organization's identity/medical
+  // documents to any teacher, and approve/reject/delete acted on any
+  // document id with no ownership check at all.
   childDocuments: router({
-    listByChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    listByChild: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       // Parents can only see their own children's documents
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        const child = await db.getChildById(input.childId);
+        if (!child || child.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+        }
       }
       return db.getChildDocuments(input.childId);
     }),
-    listAll: teacherProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ input }) => {
-      return db.getAllChildDocuments(input?.status);
+    listAll: teacherProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
+      return db.getAllChildDocuments(input?.status, ctx.organizationId);
     }),
-    create: protectedProcedure.input(z.object({
+    create: tenantProcedure.input(z.object({
       childId: z.number(),
       type: z.enum(['birth_certificate', 'family_id', 'immunization', 'passport', 'national_id', 'medical_report', 'allergy_report', 'photo', 'other']),
       name: z.string().min(1),
@@ -2811,26 +3344,39 @@ export const appRouter = router({
       fileKey: z.string().optional(),
       mimeType: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      // Parents can only upload for their own children
+      // Parents can only upload for their own children; everyone else must
+      // still be within the same organization as the child.
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      } else {
+        const child = await db.getChildById(input.childId);
+        if (!child || child.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
         }
       }
       const status = (ctx.user?.role === 'admin' || ctx.user?.role === 'teacher') ? 'approved' : 'pending';
       return db.createChildDocument({ ...input, uploadedBy: ctx.user!.id, status });
     }),
     approve: teacherProcedure.input(z.object({ id: z.number(), reviewNote: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const existing = await db.getChildDocumentById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستند غير موجود' });
       return db.updateChildDocument(input.id, { status: 'approved', reviewedBy: ctx.user!.id, reviewedAt: new Date(), reviewNote: input.reviewNote || null });
     }),
     reject: teacherProcedure.input(z.object({ id: z.number(), reviewNote: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const existing = await db.getChildDocumentById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستند غير موجود' });
       return db.updateChildDocument(input.id, { status: 'rejected', reviewedBy: ctx.user!.id, reviewedAt: new Date(), reviewNote: input.reviewNote || null });
     }),
-    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      // Parents can only delete their own uploads
-      if (ctx.user?.role === 'parent') {
-        // For simplicity, allow delete of own uploads only
+    delete: tenantProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously deleted by id alone with no ownership or
+      // organization check whatsoever.
+      const existing = await db.getChildDocumentById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستند غير موجود' });
+      if (ctx.user?.role === 'parent' && existing.uploadedBy !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'غير مصرح' });
       }
       return db.deleteChildDocument(input.id);
     }),
@@ -2843,6 +3389,13 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        // SECURITY FIX: staff/admin previously had NO organization check at
+        // all -- any teacher/admin could read another organization's
+        // child's medical info (blood type, conditions, medications,
+        // allergies, insurance) by passing any childId.
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
       return db.getMedicalInfo(input.childId);
     }),
@@ -2856,7 +3409,15 @@ export const appRouter = router({
       doctorPhone: z.string().optional(),
       insuranceProvider: z.string().optional(),
       insuranceNumber: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: input.childId was previously trusted with no check
+      // that it belongs to the caller's organization -- a teacher from one
+      // organization could read/overwrite another organization's child's
+      // medical record (conditions, medications, allergies).
+      const child = await db.getChildById(input.childId);
+      if (!child || child.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      }
       const { childId, ...data } = input;
       return db.upsertMedicalInfo(childId, data);
     }),
@@ -2869,6 +3430,13 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        // SECURITY FIX: staff/admin previously had no organization check
+        // at all -- any authenticated non-parent user could read another
+        // organization's child's emergency contacts (names, phone numbers,
+        // pickup authorization) by passing any childId.
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
       return db.getEmergencyContacts(input.childId);
     }),
@@ -2884,17 +3452,43 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        // SECURITY FIX: staff/admin previously had no organization check
+        // at all -- any non-parent could add an emergency contact (with
+        // pickup authorization!) to another organization's child.
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
       return db.createEmergencyContact(input);
     }),
-    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously deleted by id with NO check whatsoever --
+      // any authenticated user of ANY role, in ANY organization, could
+      // delete any other organization's (or any other family's) emergency
+      // contact record by guessing/enumerating its numeric id. Ownership
+      // is now verified via the contact's child.
+      const existing = await db.getEmergencyContactById(input.id);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'جهة الاتصال غير موجودة' });
+      if (ctx.user?.role === 'parent') {
+        const childIds = await db.getChildIdsForParent(ctx.user.id);
+        if (!childIds.includes(existing.childId)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+      } else {
+        const child = await db.getChildById(existing.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      }
       return db.deleteEmergencyContact(input.id);
     }),
   }),
 
   enrollment: router({
-    list: adminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ input }) => {
-      return db.getEnrollments(input?.status);
+    list: adminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
+      // SECURITY FIX: previously listed every organization's enrollment
+      // records to any admin (enrollment has no organizationId column of
+      // its own -- ownership is now enforced via a join against
+      // children.organizationId).
+      return db.getEnrollments(input?.status, ctx.organizationId);
     }),
     create: adminProcedure.input(z.object({
       childId: z.number(),
@@ -2902,7 +3496,11 @@ export const appRouter = router({
       startDate: z.string(),
       endDate: z.string().optional(),
       status: z.enum(['active', 'pending', 'withdrawn', 'graduated']).optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously created an enrollment for any childId with
+      // no verification it belongs to the caller's organization.
+      const child = await db.getChildById(input.childId, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       return db.createEnrollment({
         ...input,
         startDate: new Date(input.startDate),
@@ -2914,7 +3512,14 @@ export const appRouter = router({
       status: z.enum(['active', 'pending', 'withdrawn', 'graduated']).optional(),
       classId: z.number().optional(),
       endDate: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id with no ownership check at
+      // all -- any admin could edit another organization's enrollment
+      // record by id.
+      const existing = await db.getEnrollmentById(input.id);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'سجل التسجيل غير موجود' });
+      const ownedChild = await db.getChildById(existing.childId, ctx.organizationId);
+      if (!ownedChild) throw new TRPCError({ code: 'NOT_FOUND', message: 'سجل التسجيل غير موجود' });
       const { id, ...data } = input;
       const updateData: any = { ...data };
       if (data.endDate) updateData.endDate = new Date(data.endDate);
@@ -2924,8 +3529,12 @@ export const appRouter = router({
   }),
 
   waitingList: router({
-    list: adminProcedure.query(async () => {
-      return db.getWaitingList();
+    list: adminProcedure.query(async ({ ctx }) => {
+      // SECURITY FIX: previously returned every organization's prospective-
+      // family waiting list to any admin -- see the organizationId column
+      // added to the waiting_list schema (nullable; existing rows predate
+      // the column and are not backfilled in this sandbox).
+      return db.getWaitingList(ctx.organizationId);
     }),
     create: adminProcedure.input(z.object({
       childName: z.string().min(1),
@@ -2936,7 +3545,7 @@ export const appRouter = router({
       preferredClass: z.string().optional(),
       notes: z.string().optional(),
       priority: z.number().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
       return db.createWaitingListEntry({
         childName: input.childName,
         parentName: input.parentName,
@@ -2946,6 +3555,7 @@ export const appRouter = router({
         preferredClass: input.preferredClass || null,
         notes: input.notes || null,
         priority: input.priority || 0,
+        organizationId: ctx.organizationId,
       });
     }),
     update: adminProcedure.input(z.object({
@@ -2953,22 +3563,38 @@ export const appRouter = router({
       status: z.enum(['waiting', 'contacted', 'enrolled', 'cancelled']).optional(),
       notes: z.string().optional(),
       priority: z.number().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: previously updated by id with no ownership check.
       const { id, ...data } = input;
-      await db.updateWaitingListEntry(id, data);
+      const existing = await db.getWaitingListEntryById(id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'السجل غير موجود' });
+      await db.updateWaitingListEntry(id, data, ctx.organizationId);
       return { success: true };
     }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.deleteWaitingListEntry(input.id);
+      // SECURITY FIX: previously deleted by id with no ownership check --
+      // any admin could delete another organization's waiting-list entry.
+      const existing = await db.getWaitingListEntryById(input.id, ctx.organizationId);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'السجل غير موجود' });
+      await db.deleteWaitingListEntry(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_waiting_list', resource: 'waiting_list', resourceId: input.id, details: `Deleted waiting list entry #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
-    // Public: list active organizations for nursery selection dropdown
-    publicOrganizations: publicProcedure.query(async () => {
-      return db.getActiveOrganizations();
-    }),
-    // Public registration - no auth required, for parents to register via shared link
+    // Public registration - no auth required, for parents to register via a
+    // shareable per-nursery link.
+    // SECURITY FIX: this endpoint previously accepted no organization
+    // identifier at all, so a public submission could never be attributed
+    // to a specific nursery -- organizationId was left null, meaning the
+    // entry would not appear in ANY organization's tenant-scoped waiting
+    // list view (an availability bug) and, before the waiting_list.
+    // organizationId column existed, would have been visible to every
+    // organization's admin. The shareable link now must include the
+    // target nursery's slug (e.g. /waitlist/:orgSlug), which the frontend
+    // reads from the URL and passes here; the slug is resolved to a real,
+    // active organization server-side (never trusted as a raw id) and the
+    // request is rejected if the slug doesn't match an active organization.
     publicRegister: publicProcedure.input(z.object({
+      orgSlug: z.string().min(1, "رابط الحضانة غير صحيح"),
       childName: z.string().min(1),
       parentName: z.string().min(1),
       phone: z.string().min(1),
@@ -2976,8 +3602,11 @@ export const appRouter = router({
       dateOfBirth: z.string().optional(),
       preferredClass: z.string().optional(),
       notes: z.string().optional(),
-      organizationId: z.number().optional(),
     })).mutation(async ({ input }) => {
+      const org = await db.getOrganizationBySlug(input.orgSlug);
+      if (!org || org.status === 'suspended') {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'رابط التسجيل غير صحيح أو الحضانة غير متاحة حالياً' });
+      }
       const entry = await db.createWaitingListEntry({
         childName: input.childName,
         parentName: input.parentName,
@@ -2986,14 +3615,26 @@ export const appRouter = router({
         dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
         preferredClass: input.preferredClass || null,
         notes: input.notes || null,
-        organizationId: input.organizationId || null,
         status: 'waiting',
         priority: 0,
+        organizationId: org.id,
       });
-      // Notify admins about new waitlist registration
+      // Notify this organization's own admins about the new waitlist
+      // registration (not a platform-wide broadcast).
       try {
-        const { notifyOwner } = await import('./_core/notification');
-        await notifyOwner({ title: 'تسجيل جديد في قائمة الانتظار', content: `تم تسجيل ${input.childName} (ولي الأمر: ${input.parentName}) في قائمة الانتظار` });
+        const orgAdmins = await db.getUsersByRoles(['admin', 'owner', 'principal'], org.id);
+        for (const admin of orgAdmins) {
+          await db.createNotification({
+            userId: admin.id,
+            organizationId: org.id,
+            title: 'تسجيل جديد في قائمة الانتظار',
+            titleAr: 'تسجيل جديد في قائمة الانتظار',
+            body: `${input.childName} (ولي الأمر: ${input.parentName})`,
+            bodyAr: `${input.childName} (ولي الأمر: ${input.parentName})`,
+            type: 'registration',
+            link: '/admin/waiting-list',
+          });
+        }
       } catch {}
       return { success: true, id: entry.id };
     }),
@@ -3006,8 +3647,12 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        // SECURITY FIX: staff/admin previously had no organization check.
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
-      return db.getEyfsAssessments(input.childId);
+      return db.getEyfsAssessments(input.childId, ctx.organizationId ?? undefined);
     }),
     create: teacherProcedure.input(z.object({
       childId: z.number(),
@@ -3017,7 +3662,12 @@ export const appRouter = router({
       notes: z.string().optional(),
       evidence: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createEyfsAssessment({ ...input, assessedBy: ctx.user!.id, assessedAt: new Date() });
+      // SECURITY FIX: previously created an assessment for any childId with
+      // no verification it belongs to the caller's organization, and never
+      // stamped organizationId on the new row.
+      const child = await db.getChildById(input.childId, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      return db.createEyfsAssessment({ ...input, assessedBy: ctx.user!.id, assessedAt: new Date(), organizationId: ctx.organizationId });
     }),
   }),
 
@@ -3028,8 +3678,12 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        // SECURITY FIX: staff/admin previously had no organization check.
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
-      return db.getLearningObservations(input.childId);
+      return db.getLearningObservations(input.childId, ctx.organizationId ?? undefined);
     }),
     create: teacherProcedure.input(z.object({
       childId: z.number(),
@@ -3040,7 +3694,12 @@ export const appRouter = router({
       nextSteps: z.string().optional(),
       linkedAssessmentId: z.number().optional(),
     })).mutation(async ({ input, ctx }) => {
-      return db.createLearningObservation({ ...input, observedBy: ctx.user!.id, observedAt: new Date() });
+      // SECURITY FIX: previously created an observation for any childId
+      // with no verification it belongs to the caller's organization, and
+      // never stamped organizationId on the new row.
+      const child = await db.getChildById(input.childId, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      return db.createLearningObservation({ ...input, observedBy: ctx.user!.id, observedAt: new Date(), organizationId: ctx.organizationId });
     }),
     byArea: protectedProcedure.input(z.object({ childId: z.number(), area: z.string() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
@@ -3048,14 +3707,21 @@ export const appRouter = router({
         if (!childIds.includes(input.childId)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+      } else {
+        const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+        if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       }
-      return db.getLearningObservationsByArea(input.childId, input.area);
+      return db.getLearningObservationsByArea(input.childId, input.area, ctx.organizationId ?? undefined);
     }),
   }),
 
   auditLog: router({
-    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
-      return db.getAuditLogs(input?.limit);
+    // SECURITY FIX: previously called getAuditLogs with no organizationId at
+    // all -- audit_log has no organizationId column of its own, so this
+    // returned every organization's audit trail (user actions, resource
+    // ids, IP addresses) to any single organization's admin, platform-wide.
+    list: adminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      return db.getAuditLogs(input?.limit, ctx.organizationId);
     }),
     create: protectedProcedure.input(z.object({
       action: z.string(),
@@ -3071,8 +3737,11 @@ export const appRouter = router({
     list: adminProcedure.input(z.object({ role: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
       return db.getUsersByRole(input?.role, input?.search, ctx.user?.organizationId ?? undefined);
     }),
-    getById: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-      return db.getUserById(input.id);
+    // SECURITY FIX: previously called getUserById with no organizationId --
+    // any organization's admin could view any other organization's user's
+    // full profile (name, email, phone, nationalId, role) by id.
+    getById: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+      return db.getUserById(input.id, ctx.organizationId);
     }),
     create: adminProcedure.input(z.object({
       name: z.string().min(1),
@@ -3103,7 +3772,12 @@ export const appRouter = router({
       // Generate a unique openId for manually created users
       const openId = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const { password, ...userData } = input;
-      const orgId = ctx.user!.organizationId ?? 1;
+      // SECURITY FIX: previously `ctx.user!.organizationId ?? 1` -- the exact
+      // silent-default-to-org-1 anti-pattern eradicated everywhere else in
+      // this codebase, missed here. adminProcedure is built on
+      // tenantProcedure, so ctx.organizationId is guaranteed non-null; use
+      // it directly instead of re-deriving from ctx.user with a fallback.
+      const orgId = ctx.organizationId;
       const user = await db.createUser({ ...userData, openId, organizationId: orgId });
       // If password provided, store hashed password for direct login (PBKDF2 format)
       if (password && user) {
@@ -3135,58 +3809,84 @@ export const appRouter = router({
       role: z.enum(['admin', 'principal', 'teacher', 'parent', 'assistant', 'accountant', 'receptionist', 'user']).optional(),
       nationalId: z.string().optional(),
       isActive: z.boolean().optional(),
+    // SECURITY FIX: previously called updateUser with no organizationId --
+    // any organization's admin could update any other organization's user
+    // (including role/contact info) by id.
     })).mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
-      const result = await db.updateUser(id, data);
+      const result = await db.updateUser(id, data, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'update_user', resource: 'users', resourceId: id, details: `Updated user #${id}: ${JSON.stringify(data)}`, ipAddress: '' });
       return result;
     }),
+    // SECURITY FIX: previously called deleteUser with no organizationId --
+    // any admin could delete any other organization's user by id.
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_user', resource: 'users', resourceId: input.id, details: `Deleted user #${input.id}`, ipAddress: '' });
-      return db.deleteUser(input.id);
+      return db.deleteUser(input.id, ctx.organizationId);
     }),
+    // SECURITY FIX: previously linked with no organizationId -- any admin
+    // could link a child in their own organization to a parent user
+    // account belonging to a DIFFERENT organization (or vice versa).
     linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input, ctx }) => {
-      const result = await db.linkParentToChild(input.parentId, input.childId, input.relationship || 'parent');
+      const result = await db.linkParentToChild(input.parentId, input.childId, input.relationship || 'parent', ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'link_child', resource: 'parent_children', resourceId: input.childId, details: `Linked parent #${input.parentId} to child #${input.childId}`, ipAddress: '' });
       return result;
     }),
+    // SECURITY FIX: same as linkChild above.
     unlinkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input, ctx }) => {
-      const result = await db.unlinkParentFromChild(input.parentId, input.childId);
+      const result = await db.unlinkParentFromChild(input.parentId, input.childId, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'unlink_child', resource: 'parent_children', resourceId: input.childId, details: `Unlinked parent #${input.parentId} from child #${input.childId}`, ipAddress: '' });
       return result;
     }),
-    getChildren: adminProcedure.input(z.object({ parentId: z.number() })).query(async ({ input }) => {
-      return db.getChildrenForParent(input.parentId);
+    // SECURITY FIX: previously called getChildrenForParent with no
+    // organizationId -- any admin could list any other organization's
+    // parent's linked children by parentId.
+    getChildren: adminProcedure.input(z.object({ parentId: z.number() })).query(async ({ input, ctx }) => {
+      return db.getChildrenForParent(input.parentId, ctx.organizationId);
     }),
-    getUnlinkedChildren: adminProcedure.query(async () => {
-      return db.getUnlinkedChildren();
+    // SECURITY FIX: previously returned every organization's unlinked
+    // active children platform-wide.
+    getUnlinkedChildren: adminProcedure.query(async ({ ctx }) => {
+      return db.getUnlinkedChildren(ctx.organizationId);
     }),
-    getParentsForChild: adminProcedure.input(z.object({ childId: z.number() })).query(async ({ input }) => {
-      return db.getParentsForChild(input.childId);
+    // SECURITY FIX: previously called getParentsForChild with no
+    // organizationId -- any admin could list every parent linked to any
+    // other organization's child by childId.
+    getParentsForChild: adminProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      return db.getParentsForChild(input.childId, ctx.organizationId);
     }),
+    // SECURITY FIX: previously called updateUser with no organizationId --
+    // any admin could activate any other organization's user by id.
     activate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      const result = await db.updateUser(input.id, { isActive: true });
+      const result = await db.updateUser(input.id, { isActive: true }, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'activate_user', resource: 'users', resourceId: input.id, details: `Activated user #${input.id}`, ipAddress: '' });
       return result;
     }),
+    // SECURITY FIX: same as activate above -- previously any admin could
+    // deactivate (lock out) any other organization's user by id.
     deactivate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      const result = await db.updateUser(input.id, { isActive: false });
+      const result = await db.updateUser(input.id, { isActive: false }, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'deactivate_user', resource: 'users', resourceId: input.id, details: `Deactivated user #${input.id}`, ipAddress: '' });
       return result;
     }),
     // Get pending parents (role='parent', isActive=false) awaiting approval
-    pending: adminProcedure.query(async () => {
-      return db.getPendingParents();
+    // SECURITY FIX: previously returned every pending self-registered
+    // parent from every organization on the platform (name/phone/email).
+    pending: adminProcedure.query(async ({ ctx }) => {
+      return db.getPendingParents(ctx.organizationId);
     }),
     // Approve a pending parent (set isActive=true)
+    // SECURITY FIX: previously any admin could approve (activate) any
+    // other organization's pending parent by id.
     approveAsParent: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.approveParent(input.id);
+      await db.approveParent(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'approve_parent', resource: 'users', resourceId: input.id, details: `Approved parent #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
     // Reject a pending parent
+    // SECURITY FIX: same as approveAsParent above.
     reject: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      await db.rejectParent(input.id);
+      await db.rejectParent(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'reject_parent', resource: 'users', resourceId: input.id, details: `Rejected parent #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
@@ -3198,13 +3898,20 @@ export const appRouter = router({
     request: parentProcedure.input(z.object({
       childId: z.number(),
     })).mutation(async ({ ctx, input }) => {
-      const existing = await db.getActivePickupForChild(input.childId);
+      // SECURITY FIX: input.childId was previously trusted with no check that
+      // it belongs to the caller's organization -- and
+      // getActivePickupForChild ran with no organizationId, so a parent
+      // could probe any childId across organizations.
+      const child = await db.getChildById(input.childId);
+      if (!child || child.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      }
+      const existing = await db.getActivePickupForChild(input.childId, ctx.organizationId);
       if (existing) {
         throw new TRPCError({ code: 'CONFLICT', message: 'يوجد طلب استلام نشط لهذا الطفل بالفعل' });
       }
-      const child = await db.getChildById(input.childId);
       const childName = child ? `${child.firstName} ${child.lastName}` : 'طفل';
-      
+
       // Find the teacher for this child's class
       let teacherId: number | undefined;
       if (child?.classId) {
@@ -3217,15 +3924,20 @@ export const appRouter = router({
         parentId: ctx.user!.id,
         status: 'waiting_teacher',
         teacherId: teacherId || null,
+        // SECURITY FIX: previously omitted -- pickup_requests.organizationId
+        // defaults to 1, so every pickup request ever created here silently
+        // landed on organization #1.
+        organizationId: ctx.organizationId,
       });
 
       // Notify ON DUTY staff only (operational alert)
       try {
-        const onDutyIds = await db.getOnDutyStaffIds();
+        const onDutyIds = await db.getOnDutyStaffIds(ctx.organizationId);
         // Notify classroom teacher (if on duty)
         if (teacherId && onDutyIds.includes(teacherId)) {
           await db.createNotification({
             userId: teacherId,
+            organizationId: ctx.organizationId,
             title: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
             titleAr: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
             body: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647 - \u064a\u0631\u062c\u0649 \u0627\u0644\u0627\u0633\u062a\u062c\u0627\u0628\u0629 \u0641\u0648\u0631\u0627\u064b`,
@@ -3235,11 +3947,12 @@ export const appRouter = router({
           });
         }
         // Notify reception staff (if on duty)
-        const receptionStaff = await db.getUsersByRole('receptionist');
+        const receptionStaff = await db.getUsersByRole('receptionist', undefined, ctx.organizationId);
         for (const staff of receptionStaff) {
           if (onDutyIds.includes(staff.id)) {
             await db.createNotification({
               userId: staff.id,
+              organizationId: ctx.organizationId,
               title: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
               titleAr: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
               body: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647`,
@@ -3255,6 +3968,7 @@ export const appRouter = router({
           if (classInfo?.assistantId && onDutyIds.includes(classInfo.assistantId)) {
             await db.createNotification({
               userId: classInfo.assistantId,
+              organizationId: ctx.organizationId,
               title: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
               titleAr: '\u26a0\ufe0f \u0637\u0644\u0628 \u0627\u0633\u062a\u0644\u0627\u0645 \u0639\u0627\u062c\u0644',
               body: `\u0648\u0644\u064a \u0623\u0645\u0631 ${childName} \u0648\u0635\u0644 \u0644\u0627\u0633\u062a\u0644\u0627\u0645\u0647`,
@@ -3264,18 +3978,9 @@ export const appRouter = router({
             });
           }
         }
-        // Firebase push notifications to on-duty staff
-        try {
-          const { sendPushToUsers } = await import('./firebase-admin');
-          const onDutyStaffIds = await db.getOnDutyStaffIds();
-          if (onDutyStaffIds.length > 0) {
-            await sendPushToUsers(onDutyStaffIds, {
-              title: '⚠️ طلب استلام عاجل',
-              body: `ولي أمر ${childName} وصل لاستلامه`,
-              data: { type: 'pickup', childId: String(input.childId), url: '/staff/pickup' },
-            });
-          }
-        } catch (e) { /* non-critical */ }
+        // Push notifications to on-duty staff only
+        const { notifyStaffPickupRequest } = await import('./_core/pushTriggers');
+        await notifyStaffPickupRequest(childName, id, input.childId);
       } catch (e) { /* notification failure shouldn't block */ }
       return { id, status: 'waiting_teacher' };
     }),
@@ -3284,13 +3989,26 @@ export const appRouter = router({
     teacherSendToReception: protectedProcedure.input(z.object({
       id: z.number(),
     })).mutation(async ({ ctx, input }) => {
-      await db.updatePickupRequestStatus(input.id, 'sent_to_reception', { teacherId: ctx.user!.id });
-      
+      // SECURITY FIX: previously updated (and later fetched/notified about)
+      // this pickup request by id alone with no organization check at all --
+      // any authenticated staff user in ANY organization could advance
+      // another organization's pickup workflow by guessing/enumerating a
+      // pickup request id.
+      const dbConn = await (await import('./db')).getDb();
+      const { pickupRequests: pr } = await import('../drizzle/schema');
+      const { eq: eqOp, and: andOp } = await import('drizzle-orm');
+      const orgId = ctx.organizationId ?? undefined;
+      const existingRows = orgId
+        ? await dbConn!.select().from(pr).where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1)
+        : await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+      if (!existingRows[0]) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب الاستلام غير موجود' });
+      }
+
+      await db.updatePickupRequestStatus(input.id, 'sent_to_reception', { teacherId: ctx.user!.id }, orgId);
+
       // Get request details for notifications
       try {
-        const dbConn = await (await import('./db')).getDb();
-        const { pickupRequests: pr } = await import('../drizzle/schema');
-        const { eq: eqOp } = await import('drizzle-orm');
         const rows = await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
         const req = rows[0];
         if (req) {
@@ -3299,6 +4017,7 @@ export const appRouter = router({
           // Notify parent
           await db.createNotification({
             userId: req.parentId,
+            organizationId: orgId,
             title: 'طفلك في الطريق',
             titleAr: 'طفلك في الطريق',
             body: `${childName} في طريقه إلى الاستقبال`,
@@ -3307,10 +4026,11 @@ export const appRouter = router({
             metadata: JSON.stringify({ pickupRequestId: input.id, step: 'sent_to_reception' }),
           });
           // Notify reception
-          const receptionStaff = await db.getUsersByRole('receptionist');
+          const receptionStaff = await db.getUsersByRole('receptionist', undefined, orgId);
           for (const staff of receptionStaff) {
             await db.createNotification({
               userId: staff.id,
+              organizationId: orgId,
               title: 'طفل في الطريق للاستقبال',
               titleAr: 'طفل في الطريق للاستقبال',
               body: `${childName} تم إرساله من الفصل إلى الاستقبال`,
@@ -3319,13 +4039,9 @@ export const appRouter = router({
               metadata: JSON.stringify({ pickupRequestId: input.id, step: 'sent_to_reception' }),
             });
           }
-          // Firebase push notification to parent
-          const { sendPushToUser: sendPush1 } = await import('./firebase-admin');
-          await sendPush1(req.parentId, {
-            title: 'تحديث طلب الاستلام',
-            body: `تم إرسال ${childName} إلى الاستقبال`,
-            data: { type: 'pickup', url: '/parent/pickup' },
-          });
+          // Push notification to parent
+          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
+          await notifyParentPickupStatus(req.parentId, childName, 'sent_to_reception', input.id);
         }
       } catch (e) { /* notification failure shouldn't block */ }
       return { success: true };
@@ -3335,7 +4051,19 @@ export const appRouter = router({
     markWaitingAtReception: protectedProcedure.input(z.object({
       id: z.number(),
     })).mutation(async ({ ctx, input }) => {
-      await db.updatePickupRequestStatus(input.id, 'waiting_at_reception', { receptionStaffId: ctx.user!.id });
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check -- see teacherSendToReception above for the same class of bug.
+      const dbConn = await (await import('./db')).getDb();
+      const { pickupRequests: pr } = await import('../drizzle/schema');
+      const { eq: eqOp, and: andOp } = await import('drizzle-orm');
+      const orgId = ctx.organizationId ?? undefined;
+      const existingRows = orgId
+        ? await dbConn!.select().from(pr).where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1)
+        : await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+      if (!existingRows[0]) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب الاستلام غير موجود' });
+      }
+      await db.updatePickupRequestStatus(input.id, 'waiting_at_reception', { receptionStaffId: ctx.user!.id }, orgId);
       return { success: true };
     }),
 
@@ -3348,17 +4076,28 @@ export const appRouter = router({
       if (!input.pickedUpBy || !input.pickedUpByRelationship) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'يجب تحديد شخص الاستلام المخول' });
       }
+      // SECURITY FIX: previously updated by id alone with no organization
+      // check -- any authenticated staff user in ANY organization could mark
+      // another organization's child as picked up by an arbitrary named
+      // person, by guessing/enumerating a pickup request id.
+      const dbConn = await (await import('./db')).getDb();
+      const { pickupRequests: pr } = await import('../drizzle/schema');
+      const { eq: eqOp, and: andOp } = await import('drizzle-orm');
+      const orgId = ctx.organizationId ?? undefined;
+      const existingRows = orgId
+        ? await dbConn!.select().from(pr).where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1)
+        : await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+      if (!existingRows[0]) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب الاستلام غير موجود' });
+      }
       await db.updatePickupRequestStatus(input.id, 'picked_up', {
         pickedUpBy: input.pickedUpBy,
         pickedUpByRelationship: input.pickedUpByRelationship,
         receptionStaffId: ctx.user!.id,
-      });
+      }, orgId);
 
       // Notify parent and teacher
       try {
-        const dbConn = await (await import('./db')).getDb();
-        const { pickupRequests: pr } = await import('../drizzle/schema');
-        const { eq: eqOp } = await import('drizzle-orm');
         const rows = await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
         const req = rows[0];
         if (req) {
@@ -3367,6 +4106,7 @@ export const appRouter = router({
           // Notify parent
           await db.createNotification({
             userId: req.parentId,
+            organizationId: orgId,
             title: 'تم الاستلام بنجاح',
             titleAr: 'تم الاستلام بنجاح',
             body: `تم تسليم ${childName} بنجاح`,
@@ -3378,6 +4118,7 @@ export const appRouter = router({
           if (req.teacherId) {
             await db.createNotification({
               userId: req.teacherId,
+              organizationId: orgId,
               title: 'تم استلام الطفل',
               titleAr: 'تم استلام الطفل',
               body: `تم استلام ${childName} بنجاح`,
@@ -3386,23 +4127,34 @@ export const appRouter = router({
               metadata: JSON.stringify({ pickupRequestId: input.id, step: 'picked_up' }),
             });
           }
-          // Firebase push notification
-          const { sendPushToUser: sendPush2 } = await import('./firebase-admin');
-          await sendPush2(req.parentId, {
-            title: 'تم الاستلام بنجاح ✅',
-            body: `تم تسليم ${childName} بنجاح`,
-            data: { type: 'pickup', url: '/parent/pickup' },
-          });
+          // Push notification
+          const { notifyParentPickupStatus } = await import('./_core/pushTriggers');
+          await notifyParentPickupStatus(req.parentId, childName, 'picked_up', input.id);
         }
       } catch (e) { /* notification failure shouldn't block */ }
       return { success: true };
     }),
 
     // Parent cancels their pickup request
+    // SECURITY FIX: previously updated by id alone with no check that the
+    // request belongs to the caller at all -- any authenticated parent
+    // could cancel any other parent's (possibly another organization's)
+    // active pickup request by guessing/enumerating an id.
     cancel: parentProcedure.input(z.object({
       id: z.number(),
     })).mutation(async ({ ctx, input }) => {
-      await db.updatePickupRequestStatus(input.id, 'cancelled');
+      const dbConn = await (await import('./db')).getDb();
+      const { pickupRequests: pr } = await import('../drizzle/schema');
+      const { eq: eqOp, and: andOp } = await import('drizzle-orm');
+      const rows = await dbConn!.select().from(pr).where(andOp(
+        eqOp(pr.id, input.id),
+        eqOp(pr.parentId, ctx.user!.id),
+        eqOp(pr.organizationId, ctx.organizationId)
+      )).limit(1);
+      if (!rows[0]) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب الاستلام غير موجود' });
+      }
+      await db.updatePickupRequestStatus(input.id, 'cancelled', {}, ctx.organizationId);
       return { success: true };
     }),
 
@@ -3412,15 +4164,24 @@ export const appRouter = router({
     }),
 
     // Parent checks active pickup for a child
+    // SECURITY FIX: previously ran with no organizationId, and no check that
+    // childId belongs to the caller's organization at all.
     activeForChild: parentProcedure.input(z.object({
       childId: z.number(),
-    })).query(async ({ input }) => {
-      return db.getActivePickupForChild(input.childId);
+    })).query(async ({ input, ctx }) => {
+      const child = await db.getChildById(input.childId);
+      if (!child || child.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      }
+      return db.getActivePickupForChild(input.childId, ctx.organizationId);
     }),
 
     // Staff views all active pickup requests
-    active: protectedProcedure.query(async () => {
-      return db.getActivePickupRequests();
+    // SECURITY FIX: previously ran with no organizationId -- any
+    // authenticated staff user (of ANY organization) saw every
+    // organization's active pickup requests.
+    active: tenantProcedure.query(async ({ ctx }) => {
+      return db.getActivePickupRequests(ctx.organizationId);
     }),
 
     // Teacher views pickup requests for their classes
@@ -3429,46 +4190,73 @@ export const appRouter = router({
     }),
 
     // Staff gets pickup dashboard stats
-    stats: protectedProcedure.query(async () => {
-      return db.getPickupStats();
+    // SECURITY FIX: previously computed across ALL organizations combined.
+    stats: tenantProcedure.query(async ({ ctx }) => {
+      return db.getPickupStats(ctx.organizationId);
     }),
 
     // Get authorized pickup persons for a child
-    authorizedPersons: protectedProcedure.input(z.object({
+    // SECURITY FIX: previously had no check that childId belongs to the
+    // caller's organization -- any authenticated staff user could read
+    // (or add/remove) authorized pickup persons -- names, phone numbers,
+    // national IDs -- for a child in a completely different organization.
+    authorizedPersons: tenantProcedure.input(z.object({
       childId: z.number(),
-    })).query(async ({ input }) => {
+    })).query(async ({ input, ctx }) => {
+      const child = await db.getChildById(input.childId);
+      if (!child || child.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      }
       return db.getAuthorizedPickupPersons(input.childId);
     }),
 
     // Add authorized pickup person
-    addAuthorizedPerson: protectedProcedure.input(z.object({
+    addAuthorizedPerson: tenantProcedure.input(z.object({
       childId: z.number(),
       name: z.string(),
       relationship: z.enum(['father', 'mother', 'grandfather', 'grandmother', 'driver', 'relative', 'other']),
       phone: z.string().optional(),
       nationalId: z.string().optional(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      const child = await db.getChildById(input.childId);
+      if (!child || child.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      }
       const id = await db.addAuthorizedPickupPerson(input);
       return { id };
     }),
 
     // Remove authorized pickup person
-    removeAuthorizedPerson: protectedProcedure.input(z.object({
+    // SECURITY FIX: previously deleted by id alone with no check that the
+    // authorized-person row's child belongs to the caller's organization.
+    removeAuthorizedPerson: tenantProcedure.input(z.object({
       id: z.number(),
-    })).mutation(async ({ input }) => {
+    })).mutation(async ({ input, ctx }) => {
+      const dbConn = await (await import('./db')).getDb();
+      const { authorizedPickupPersons: app, children: childrenTbl } = await import('../drizzle/schema');
+      const { eq: eqOp } = await import('drizzle-orm');
+      const rows = await dbConn!.select({ childOrgId: childrenTbl.organizationId })
+        .from(app)
+        .leftJoin(childrenTbl, eqOp(app.childId, childrenTbl.id))
+        .where(eqOp(app.id, input.id))
+        .limit(1);
+      if (!rows[0] || rows[0].childOrgId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'غير موجود' });
+      }
       await db.removeAuthorizedPickupPerson(input.id);
       return { success: true };
     }),
 
     // Staff views pickup history
-    history: protectedProcedure.input(z.object({
+    // SECURITY FIX: previously ran with no organizationId.
+    history: tenantProcedure.input(z.object({
       limit: z.number().min(1).max(500).default(100),
-    }).optional()).query(async ({ input }) => {
-      return db.getPickupHistory(input?.limit || 100);
+    }).optional()).query(async ({ input, ctx }) => {
+      return db.getPickupHistory(input?.limit || 100, ctx.organizationId);
     }),
 
     // ===== OPERATIONAL ALERTS =====
-    
+
     // Acknowledge pickup alert (stops repeating sound)
     acknowledge: protectedProcedure.input(z.object({
       pickupRequestId: z.number(),
@@ -3478,17 +4266,25 @@ export const appRouter = router({
     }),
 
     // Get unacknowledged alerts for current user
+    // SECURITY FIX: previously ran with no organizationId -- a staff member
+    // would receive urgent alert entries for children in OTHER
+    // organizations too.
     unacknowledgedAlerts: protectedProcedure.query(async ({ ctx }) => {
-      return db.getUnacknowledgedPickupAlerts(ctx.user!.id);
+      return db.getUnacknowledgedPickupAlerts(ctx.user!.id, ctx.organizationId ?? undefined);
     }),
 
     // Get alert settings
-    alertSettings: protectedProcedure.query(async () => {
-      return db.getPickupAlertSettings();
+    // SECURITY FIX: previously a single global row shared by every
+    // organization -- any org's admin changing "alert settings" changed the
+    // pickup-alarm volume/tone/escalation for every other organization's
+    // staff. Per policy (full tenant isolation, Super Admin is the only
+    // cross-org exception), this is now scoped per organization.
+    alertSettings: protectedProcedure.query(async ({ ctx }) => {
+      return db.getPickupAlertSettings(ctx.organizationId ?? undefined);
     }),
 
     // Update alert settings (admin only)
-    updateAlertSettings: adminProcedure.input(z.object({
+    updateAlertSettings: protectedProcedure.input(z.object({
       volume: z.number().min(0).max(100).optional(),
       tone: z.enum(['urgent', 'gentle', 'alarm', 'chime']).optional(),
       repeatIntervalSeconds: z.number().min(2).max(30).optional(),
@@ -3497,7 +4293,7 @@ export const appRouter = router({
       if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
-      await db.updatePickupAlertSettings(input);
+      await db.updatePickupAlertSettings(input, ctx.organizationId ?? undefined);
       return { success: true };
     }),
 
@@ -3506,14 +4302,28 @@ export const appRouter = router({
       if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
-      // Send a test operational alert push to all on-duty staff via Firebase
-      const { sendPushToUsers } = await import('./firebase-admin');
-      const onDutyIds = await db.getOnDutyStaffIds();
-      const sent = await sendPushToUsers(onDutyIds, {
-        title: 'تجربة تنبيه الاستلام',
-        body: 'هذا تنبيه تجريبي - الصوت والاهتزاز يعملان',
-        data: { url: '/staff/pickup', type: 'pickup_alert' },
-      });
+      // SECURITY FIX: previously called db.getOnDutyStaffIds() with no
+      // organizationId -- a test alert push was sent to every organization's
+      // on-duty staff, not just the caller's own.
+      // Send a test operational alert push to all on-duty staff
+      const { sendPushToUser } = await import('./_core/webPush');
+      const onDutyIds = await db.getOnDutyStaffIds(ctx.organizationId ?? undefined);
+      let sent = 0;
+      for (const userId of onDutyIds) {
+        try {
+          const result = await sendPushToUser(
+            userId,
+            {
+              title: '\u062a\u062c\u0631\u0628\u0629 \u062a\u0646\u0628\u064a\u0647 \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645',
+              body: '\u0647\u0630\u0627 \u062a\u0646\u0628\u064a\u0647 \u062a\u062c\u0631\u064a\u0628\u064a - \u0627\u0644\u0635\u0648\u062a \u0648\u0627\u0644\u0627\u0647\u062a\u0632\u0627\u0632 \u064a\u0639\u0645\u0644\u0627\u0646',
+              tag: 'test-pickup-alert',
+              data: { url: '/staff/pickup', type: 'pickup_alert', priority: 'urgent', isTest: true },
+            },
+            db.getPushSubscriptionsForUser
+          );
+          sent += result.sent;
+        } catch {}
+      }
       return { sent, onDutyCount: onDutyIds.length };
     }),
 
@@ -3534,68 +4344,100 @@ export const appRouter = router({
     }),
   }),
 
-  // ============ PUSH NOTIFICATIONS (Firebase FCM) ============
+  // ============ PUSH NOTIFICATIONS ============
   push: router({
-    // Register FCM token for the current user
-    registerToken: protectedProcedure.input(z.object({
-      token: z.string().min(1),
-      platform: z.enum(['web', 'android', 'ios']).default('web'),
-      device: z.string().optional(),
+    getVapidPublicKey: publicProcedure.query(async () => {
+      const { getVapidPublicKey } = await import('./_core/webPush');
+      return { publicKey: getVapidPublicKey() };
+    }),
+    subscribe: protectedProcedure.input(z.object({
+      endpoint: z.string().url(),
+      p256dh: z.string(),
+      auth: z.string(),
+      userAgent: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
-      const { registerFcmToken } = await import('./firebase-admin');
-      await registerFcmToken(ctx.user!.id, input.token, input.platform, input.device);
+      await db.savePushSubscription({
+        userId: ctx.user!.id,
+        endpoint: input.endpoint,
+        p256dh: input.p256dh,
+        auth: input.auth,
+        userAgent: input.userAgent,
+      });
       return { success: true };
     }),
-    // Remove FCM token (on logout or unsubscribe)
-    removeToken: protectedProcedure.input(z.object({
-      token: z.string().min(1),
-    })).mutation(async ({ input }) => {
-      const { removeFcmToken } = await import('./firebase-admin');
-      await removeFcmToken(input.token);
+    unsubscribe: protectedProcedure.input(z.object({
+      endpoint: z.string(),
+    })).mutation(async ({ input, ctx }) => {
+      await db.removePushSubscription(input.endpoint, ctx.user!.id);
       return { success: true };
     }),
     // Test push notification (for debugging)
     test: protectedProcedure.input(z.object({
       targetUserId: z.number().optional(),
     }).optional()).mutation(async ({ ctx, input }) => {
-      const { sendPushToUser } = await import('./firebase-admin');
-      const targetId = input?.targetUserId || ctx.user!.id;
-      const sent = await sendPushToUser(targetId, {
-        title: 'تجربة الإشعارات',
-        body: 'مرحباً! إشعارات الدفع تعمل بنجاح.',
-        data: { url: '/', type: 'test' },
-      });
+      const { sendPushToUser } = await import('./_core/webPush');
+      // SECURITY FIX: previously trusted input.targetUserId with no check it
+      // belongs to the caller's organization -- any authenticated user could
+      // trigger a push notification (and a persisted notification row) to an
+      // arbitrary user id anywhere on the platform, and use the
+      // success/failure result to probe whether a given user id exists and
+      // has an active push subscription. super_admin is exempt (sanctioned
+      // cross-org exception); everyone else may only target themselves or a
+      // user confirmed to be in their own organization.
+      let targetId = ctx.user!.id;
+      if (input?.targetUserId && input.targetUserId !== ctx.user!.id) {
+        if (ctx.user!.role === 'super_admin') {
+          targetId = input.targetUserId;
+        } else {
+          const targetUser = await db.getUserById(input.targetUserId, ctx.organizationId ?? undefined);
+          if (!targetUser) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+          targetId = input.targetUserId;
+        }
+      }
+      const result = await sendPushToUser(
+        targetId,
+        {
+          title: '\u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',
+          body: '\u0645\u0631\u062d\u0628\u0627\u064b! \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u062f\u0641\u0639 \u062a\u0639\u0645\u0644 \u0628\u0646\u062c\u0627\u062d. \u0627\u0644\u0635\u0648\u062a \u0648\u0627\u0644\u0627\u0647\u062a\u0632\u0627\u0632 \u064a\u0639\u0645\u0644\u0627\u0646 \u0628\u0634\u0643\u0644 \u0635\u062d\u064a\u062d.',
+          tag: 'test',
+          data: { url: '/', type: 'parent_arrival', priority: 'urgent' },
+        },
+        db.getPushSubscriptionsForUser
+      );
+      // Clean up expired subscriptions
+      if (result.expired.length > 0) {
+        await db.removeExpiredSubscriptions(result.expired);
+      }
       // Log the test notification event
       try {
         await db.createNotification({
           userId: targetId,
-          title: 'تجربة الإشعارات',
-          body: 'إشعار تجريبي من الإدارة',
+          organizationId: ctx.organizationId ?? undefined,
+          title: '\u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a',
+          body: '\u0625\u0634\u0639\u0627\u0631 \u062a\u062c\u0631\u064a\u0628\u064a \u0645\u0646 \u0627\u0644\u0625\u062f\u0627\u0631\u0629',
           type: 'general',
         });
       } catch {}
-      return { sent, targetUserId: targetId };
+      return { sent: result.sent, failed: result.failed, targetUserId: targetId };
     }),
     // Get push subscription status for all staff (admin only)
-    staffStatus: protectedProcedure.query(async ({ ctx }) => {
+    staffStatus: tenantProcedure.query(async ({ ctx }) => {
       if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
-      const dbConn = await getSharedDb();
-      if (!dbConn) return [];
-      const { fcmTokens } = await import('../drizzle/schema');
-      const { eq } = await import('drizzle-orm');
-      const staffUsers = await db.getUsersByRoles(['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'super_admin']);
+      // SECURITY FIX: getUsersByRoles previously ran with no organizationId --
+      // this admin dashboard would list every organization's staff push
+      // subscription status, not just the caller's own organization.
+      const staffUsers = await db.getUsersByRoles(['teacher', 'assistant', 'receptionist', 'admin', 'principal', 'super_admin'], ctx.organizationId);
       const statuses = await Promise.all(
         staffUsers.map(async (u) => {
-          const tokens = await dbConn.select().from(fcmTokens).where(eq(fcmTokens.userId, u.id));
-          const activeTokens = tokens.filter((t: any) => t.active);
+          const subs = await db.getPushSubscriptionsForUser(u.id);
           return {
             userId: u.id,
             name: u.name || '',
             role: u.role,
-            subscriptionCount: activeTokens.length,
-            hasActiveSubscription: activeTokens.length > 0,
+            subscriptionCount: subs.length,
+            hasActiveSubscription: subs.length > 0,
           };
         })
       );

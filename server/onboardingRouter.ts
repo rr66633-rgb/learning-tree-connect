@@ -8,6 +8,7 @@ import {
   organizationSubscriptions,
   organizationMembers,
   subscriptionPlans,
+  users,
 } from "../drizzle/schema";
 import { getDb } from "./db";
 
@@ -141,6 +142,23 @@ export const onboardingRouter = router({
         role: "owner",
         isActive: true,
       });
+
+      // SECURITY FIX (critical): this handler previously created the
+      // organization, its branding, its subscription, and an
+      // organizationMembers row for the caller -- but NEVER updated the
+      // caller's own users.organizationId column. Every tenantProcedure
+      // check across the entire codebase (the mechanism this whole audit
+      // has been hardening) reads ctx.organizationId, which is derived
+      // directly from users.organizationId (see server/_core/context.ts),
+      // NOT from organizationMembers. Since users.organizationId defaults
+      // to 1 at the schema level, a brand-new nursery owner who just
+      // completed onboarding would have every subsequent tenantProcedure-
+      // gated action (creating children, staff, invoices, calendar events,
+      // etc.) silently applied to organization #1 instead of the
+      // organization they just created -- mixing every new signup's data
+      // into a single default organization. Fixed by stamping the new
+      // organizationId onto the owner's own user row here.
+      await db.update(users).set({ organizationId: orgId }).where(eq(users.id, ctx.user!.id));
 
       return {
         success: true,

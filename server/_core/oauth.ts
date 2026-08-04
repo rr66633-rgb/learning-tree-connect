@@ -64,16 +64,26 @@ export function registerOAuthRoutes(app: Express) {
       }
 
       if (!existingUser) {
-        // New user - auto-assign 'parent' role with isActive=false (pending admin approval)
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          role: 'parent',
-          isActive: false,
-          lastSignedIn: new Date(),
+        // SECURITY FIX: this route is not currently wired into the app (see
+        // server/_core/index.ts: "OAuth routes removed - independent auth
+        // only" -- registerOAuthRoutes is never called anywhere), but it
+        // previously auto-created a brand-new 'parent' user via upsertUser
+        // with NO organizationId at all. users.organizationId used to
+        // default to 1 at the schema level, so if this route were ever
+        // wired back up it would silently land every new OAuth user in
+        // organization #1 -- the exact same bug class fixed in
+        // auth.register (routers.ts), which now requires the parent to
+        // select a real nursery via a public orgSlug. This callback has no
+        // equivalent mechanism to determine which organization a new OAuth
+        // user is registering for, so rather than leave that landmine in
+        // place for whenever this route is reactivated, new-user
+        // auto-creation is refused here until this flow is updated to
+        // carry an organization identifier (e.g. via `state`), consistent
+        // with the "never rely on a default organization" policy.
+        res.status(501).json({
+          error: "OAuth self-registration is not available. Please register through the standard sign-up flow, which requires selecting your nursery.",
         });
+        return;
       } else {
         // Existing user - just update lastSignedIn
         await db.upsertUser({

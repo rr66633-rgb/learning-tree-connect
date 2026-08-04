@@ -1,4 +1,4 @@
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, tenantProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getDb } from "./db";
@@ -7,12 +7,14 @@ import { eq, and, desc, or } from "drizzle-orm";
 
 export const curriculumRouter = router({
   // List curricula (staff - all levels)
-  list: protectedProcedure
+  list: tenantProcedure
     .input(z.object({
       level: z.enum(["nursery", "kg1", "kg2", "kg3", "all"]).optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
-      const conditions: any[] = [eq(curricula.isActive, true)];
+      // SECURITY FIX: previously filtered only by isActive/level -- returned
+      // every organization's curricula to any authenticated user.
+      const conditions: any[] = [eq(curricula.isActive, true), eq(curricula.organizationId, ctx.organizationId)];
       if (input?.level && input.level !== "all") {
         conditions.push(
           or(
@@ -29,7 +31,7 @@ export const curriculumRouter = router({
     }),
 
   // List curricula for parent (filtered by child's class level)
-  listForParent: protectedProcedure.query(async ({ ctx }) => {
+  listForParent: tenantProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "parent") {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
@@ -77,10 +79,13 @@ export const curriculumRouter = router({
     }
 
     // Get curricula matching child levels + "all" level
+    // SECURITY FIX: previously filtered only by isActive/level -- returned
+    // every organization's matching curricula, not just the parent's own.
     const levelConditions = levels.map(l => eq(curricula.level, l as any));
     const results = await db.select().from(curricula)
       .where(and(
         eq(curricula.isActive, true),
+        eq(curricula.organizationId, ctx.organizationId),
         or(
           eq(curricula.level, "all"),
           ...levelConditions
@@ -92,7 +97,7 @@ export const curriculumRouter = router({
   }),
 
   // Add curriculum (staff only)
-  create: protectedProcedure
+  create: tenantProcedure
     .input(z.object({
       title: z.string().min(1),
       description: z.string().optional(),
@@ -108,21 +113,32 @@ export const curriculumRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
       }
       const db = (await getDb())!;
+      // SECURITY FIX: organizationId was previously never set on insert --
+      // since curricula.organizationId still carries a schema default(1),
+      // every curriculum uploaded by any organization's staff was silently
+      // tagged as organizationId = 1.
       const [result] = await db.insert(curricula).values({
         ...input,
         uploadedBy: ctx.user.id,
+        organizationId: ctx.organizationId,
       });
       return { id: result.insertId };
     }),
 
   // Delete curriculum (staff only)
-  delete: protectedProcedure
+  delete: tenantProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role === "parent") {
         throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
       }
       const db = (await getDb())!;
+      // SECURITY FIX: previously deactivated by id alone -- any staff member
+      // could deactivate another organization's curriculum item.
+      const [existing] = await db.select({ organizationId: curricula.organizationId }).from(curricula).where(eq(curricula.id, input.id)).limit(1);
+      if (!existing || existing.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
       await db.update(curricula)
         .set({ isActive: false })
         .where(eq(curricula.id, input.id));

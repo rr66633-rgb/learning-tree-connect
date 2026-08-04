@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "./_core/trpc";
+import { router, superAdminProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { eq, desc, sql, and, like, or, gte, lte, inArray } from "drizzle-orm";
@@ -19,13 +19,10 @@ import { getDb } from "./db";
 import { hashPassword } from "./_core/authService";
 import crypto from "crypto";
 
-// Super Admin procedure - ONLY super_admin role can access (not regular admin)
-const superAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user?.role !== "super_admin") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "صلاحيات المدير العام مطلوبة" });
-  }
-  return next({ ctx });
-});
+// SECURITY FIX: superAdminProcedure moved to server/_core/trpc.ts as the
+// single canonical cross-organization gate, imported here instead of being
+// redefined locally -- see the comment there for why centralizing this one
+// check matters. Behavior is unchanged (still ctx.user.role !== 'super_admin').
 
 export const superAdminRouter = router({
   // ============ ORGANIZATIONS ============
@@ -746,6 +743,24 @@ export const superAdminRouter = router({
   // ============ MEMBER MANAGEMENT ============
 
   // Add member to organization (create user if not exists)
+  // CONFIRMED SAFE (not a tenant-isolation issue): this can add an existing
+  // user (who already belongs to some other organization, via their
+  // `users.organizationId`) as a member of a *second* organization here, by
+  // inserting a row into `organization_members`. That could look like a
+  // cross-tenant access grant, but it is not one: `ctx.organizationId` --
+  // the ONLY value ever consulted anywhere in this codebase to scope a
+  // request to a tenant (see server/_core/context.ts) -- is derived solely
+  // from `users.organizationId`, a single column, which this function does
+  // NOT modify for an existing user. `organization_members` rows are never
+  // read by any authorization check; they only back the org's own
+  // "members list" UI. So adding a user to a second org's membership here
+  // does not grant that user any tenant-scoped access to that org's data --
+  // their session will still resolve to their original, single
+  // `users.organizationId` until/unless that column itself is changed
+  // (which only happens through the normal user-management flows, which
+  // are already org-scoped). Confirmed via full-codebase search: this
+  // route is restricted to `superAdminProcedure` already, so only the
+  // platform Super Admin exception can even reach this path.
   addMember: superAdminProcedure
     .input(z.object({
       organizationId: z.number(),

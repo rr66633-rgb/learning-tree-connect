@@ -19,8 +19,14 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
   try {
     const { sdk } = await import("./_core/sdk");
     const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && (user as any).role !== "admin" && (user as any).role !== "super_admin") {
-      res.status(403).json({ error: "cron-only or admin" });
+    // SECURITY FIX: this is a platform-wide scheduled job (iterates
+    // enrollments across every organization, even though each individual
+    // notification it sends is correctly organization-scoped); previously
+    // any single organization's own regular admin could manually trigger
+    // it. Per policy, the only allowed cross-organization actor is the
+    // authenticated Super Admin (or the automated cron system itself).
+    if (!user.isCron && (user as any).role !== "super_admin") {
+      res.status(403).json({ error: "cron-only or super_admin" });
       return;
     }
 
@@ -47,6 +53,15 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
 
     let notificationsSent = 0;
 
+    // SECURITY FIX: enrollment has no organizationId column of its own --
+    // both queries below previously selected across ALL organizations
+    // combined, and (more seriously) the admin-notify block further down
+    // notified EVERY admin/principal/owner in the ENTIRE database with ONE
+    // combined count mixing every organization's expiring enrollments. Both
+    // queries now also select children.organizationId (via the existing
+    // join) so notifications can be tagged and admins can be scoped
+    // per-organization.
+
     // Find enrollments expiring in 7 days
     const expiringIn7Days = await db
       .select({
@@ -56,6 +71,7 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
         childName: children.firstName,
         childArabicName: children.arabicName,
         parentId: children.parentId,
+        organizationId: children.organizationId,
       })
       .from(enrollment)
       .innerJoin(children, eq(enrollment.childId, children.id))
@@ -76,6 +92,7 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
         childName: children.firstName,
         childArabicName: children.arabicName,
         parentId: children.parentId,
+        organizationId: children.organizationId,
       })
       .from(enrollment)
       .innerJoin(children, eq(enrollment.childId, children.id))
@@ -92,9 +109,10 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
       if (!enr.parentId) continue;
       const childDisplayName = enr.childArabicName || enr.childName || "طفلك";
       const endDateStr = enr.endDate ? new Date(enr.endDate).toLocaleDateString("ar-SA") : "";
-      
+
       await db.insert(notifications).values({
         userId: enr.parentId,
+        organizationId: enr.organizationId,
         title: "تنبيه: اقتراب انتهاء الاشتراك",
         titleAr: "تنبيه: اقتراب انتهاء الاشتراك",
         body: `اشتراك ${childDisplayName} في الحضانة سينتهي خلال 7 أيام (${endDateStr}). يرجى التواصل مع الإدارة لتجديد الاشتراك.`,
@@ -110,9 +128,10 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
       if (!enr.parentId) continue;
       const childDisplayName = enr.childArabicName || enr.childName || "طفلك";
       const endDateStr = enr.endDate ? new Date(enr.endDate).toLocaleDateString("ar-SA") : "";
-      
+
       await db.insert(notifications).values({
         userId: enr.parentId,
+        organizationId: enr.organizationId,
         title: "تنبيه عاجل: انتهاء الاشتراك غداً",
         titleAr: "تنبيه عاجل: انتهاء الاشتراك غداً",
         body: `اشتراك ${childDisplayName} في الحضانة سينتهي غداً (${endDateStr}). يرجى تجديد الاشتراك في أقرب وقت لضمان استمرار الخدمة.`,
@@ -123,27 +142,47 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
       notificationsSent++;
     }
 
-    // Also notify the nursery admin about expiring enrollments
-    if (expiringIn7Days.length > 0 || expiringTomorrow.length > 0) {
-      // Get admin users for the organization
+    // Also notify each organization's own admins about their own expiring
+    // enrollments (grouped per-organization, not a global combined count).
+    const countsByOrg = new Map<number, { in7: number; tomorrow: number }>();
+    for (const enr of expiringIn7Days) {
+      const orgId = enr.organizationId;
+      if (!orgId) continue;
+      const entry = countsByOrg.get(orgId) || { in7: 0, tomorrow: 0 };
+      entry.in7++;
+      countsByOrg.set(orgId, entry);
+    }
+    for (const enr of expiringTomorrow) {
+      const orgId = enr.organizationId;
+      if (!orgId) continue;
+      const entry = countsByOrg.get(orgId) || { in7: 0, tomorrow: 0 };
+      entry.tomorrow++;
+      countsByOrg.set(orgId, entry);
+    }
+
+    for (const [orgId, counts] of countsByOrg) {
+      const totalExpiring = counts.in7 + counts.tomorrow;
+      if (totalExpiring === 0) continue;
+
       const adminUsers = await db
         .select({ id: users.id })
         .from(users)
         .where(
           and(
             sql`${users.role} IN ('admin', 'principal', 'owner')`,
-            eq(users.isActive, true)
+            eq(users.isActive, true),
+            eq(users.organizationId, orgId)
           )
         );
 
-      const totalExpiring = expiringIn7Days.length + expiringTomorrow.length;
       for (const admin of adminUsers) {
         await db.insert(notifications).values({
           userId: admin.id,
+          organizationId: orgId,
           title: "تنبيه: اشتراكات على وشك الانتهاء",
           titleAr: "تنبيه: اشتراكات على وشك الانتهاء",
-          body: `يوجد ${totalExpiring} اشتراك(ات) على وشك الانتهاء. ${expiringTomorrow.length} تنتهي غداً و ${expiringIn7Days.length} تنتهي خلال أسبوع.`,
-          bodyAr: `يوجد ${totalExpiring} اشتراك(ات) على وشك الانتهاء. ${expiringTomorrow.length} تنتهي غداً و ${expiringIn7Days.length} تنتهي خلال أسبوع.`,
+          body: `يوجد ${totalExpiring} اشتراك(ات) على وشك الانتهاء. ${counts.tomorrow} تنتهي غداً و ${counts.in7} تنتهي خلال أسبوع.`,
+          bodyAr: `يوجد ${totalExpiring} اشتراك(ات) على وشك الانتهاء. ${counts.tomorrow} تنتهي غداً و ${counts.in7} تنتهي خلال أسبوع.`,
           type: "system",
           isRead: false,
         });

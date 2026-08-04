@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { tenantProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
@@ -9,9 +9,21 @@ import {
 } from "../drizzle/schema";
 import { getDb } from "./db";
 
+// SECURITY FIX (cross-tenant billing takeover): both routes below previously ran
+// on plain `protectedProcedure` with NO role check at all, and trusted a
+// client-supplied `input.organizationId` directly to look up/insert/update
+// `organizationSubscriptions` and `organizations`. Any authenticated user of any
+// role (including a parent) could activate/overwrite the subscription plan,
+// billing cycle, status, and maxChildren/maxStaff limits of ANY organization by
+// id, or read any organization's subscription/billing status. Now both use
+// `tenantProcedure` (ctx.organizationId guaranteed non-null) and reject if the
+// caller's own organization doesn't match the target -- input.organizationId is
+// no longer trusted as an authorization boundary, only ctx.organizationId is.
+const ORG_ADMIN_ROLES = ["admin", "super_admin", "principal", "owner"];
+
 export const subscriptionPaymentRouter = router({
   // Activate subscription after successful payment
-  activate: protectedProcedure
+  activate: tenantProcedure
     .input(z.object({
       moyasarPaymentId: z.string(),
       organizationId: z.number(),
@@ -19,6 +31,13 @@ export const subscriptionPaymentRouter = router({
       billingCycle: z.enum(["monthly", "yearly"]),
     }))
     .mutation(async ({ input, ctx }) => {
+      if (!ORG_ADMIN_ROLES.includes(ctx.user?.role || "")) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "صلاحية الإدارة مطلوبة لتفعيل الاشتراك" });
+      }
+      if (input.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك تفعيل اشتراك لمنظمة أخرى" });
+      }
+
       const db = (await getDb())!;
 
       // Verify payment with Moyasar
@@ -112,9 +131,13 @@ export const subscriptionPaymentRouter = router({
     }),
 
   // Get subscription status for an organization
-  status: protectedProcedure
+  status: tenantProcedure
     .input(z.object({ organizationId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      if (input.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك عرض اشتراك منظمة أخرى" });
+      }
+
       const db = (await getDb())!;
 
       const [subscription] = await db

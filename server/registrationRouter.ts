@@ -1,4 +1,4 @@
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, superAdminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
@@ -173,6 +173,12 @@ export const registrationRouter = router({
           const { eq } = await import('drizzle-orm');
           const superAdmins = await database.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.role, 'super_admin'));
           for (const sa of superAdmins) {
+            // organizationId is explicitly null (not omitted) -- this
+            // notification concerns a nursery registration request that has
+            // not been approved into an organization yet, so there is no
+            // real organization to attach it to. Recipients are restricted
+            // to genuine platform super_admin users above, the sole
+            // cross-organization exception in this codebase.
             await db.createNotification({
               userId: sa.id,
               title: 'طلب تسجيل حضانة جديدة',
@@ -181,6 +187,7 @@ export const registrationRouter = router({
               bodyAr: `${input.nurseryNameAr} - ${input.city} - ${input.ownerName}`,
               type: 'registration',
               link: '/super-admin/registrations',
+              organizationId: null,
             });
           }
         }
@@ -194,25 +201,28 @@ export const registrationRouter = router({
     }),
 
   // Super Admin: List all registration requests
-  list: protectedProcedure
+  // SECURITY FIX: this previously checked `ctx.user?.role !== 'super_admin'`
+  // inline on `protectedProcedure` (see history: it also used to allow
+  // 'admin'/'owner', letting any nursery's own admin see every other
+  // prospective nursery's registration request platform-wide -- business
+  // details, owner PII, and even a bcrypt password hash). That inline check
+  // is now replaced with the shared `superAdminProcedure` from
+  // server/_core/trpc.ts so this router relies on the single canonical
+  // cross-org gate instead of its own copy of the role check.
+  list: superAdminProcedure
     .input(z.object({
       status: z.enum(["pending", "approved", "rejected", "converted", "all"]).optional(),
     }).optional())
-    .query(async ({ ctx, input }) => {
-      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin' && ctx.user?.role !== 'owner') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'صلاحيات غير كافية' });
-      }
+    .query(async ({ input }) => {
       const status = input?.status === 'all' ? undefined : input?.status;
       return db.getNurseryRegistrations(status);
     }),
 
   // Super Admin: Get single registration details
-  getById: protectedProcedure
+  // SECURITY FIX: migrated to the shared `superAdminProcedure` -- see `list` above.
+  getById: superAdminProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ ctx, input }) => {
-      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin' && ctx.user?.role !== 'owner') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'صلاحيات غير كافية' });
-      }
+    .query(async ({ input }) => {
       const registration = await db.getNurseryRegistrationById(input.id);
       if (!registration) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب التسجيل غير موجود' });
@@ -221,7 +231,8 @@ export const registrationRouter = router({
     }),
 
   // Super Admin: Approve/Reject registration
-  updateStatus: protectedProcedure
+  // SECURITY FIX: migrated to the shared `superAdminProcedure` -- see `list` above.
+  updateStatus: superAdminProcedure
     .input(z.object({
       id: z.number(),
       status: z.enum(["approved", "rejected"]),
@@ -229,10 +240,6 @@ export const registrationRouter = router({
       rejectionReason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'admin' && ctx.user?.role !== 'owner') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'صلاحيات غير كافية' });
-      }
-      
       const registration = await db.getNurseryRegistrationById(input.id);
       if (!registration) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب التسجيل غير موجود' });

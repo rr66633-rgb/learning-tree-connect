@@ -55,8 +55,8 @@ describe("USER MANAGEMENT: Admin Access", () => {
   it("admin can create a teacher user", async () => {
     const result = await call(createCtx("admin", ADMIN_ID)).users.create({
       name: "معلمة اختبار",
-      email: `test-teacher-${Date.now()}@test.com`,
-      phone: `+9665${Date.now().toString().slice(-8)}`,
+      email: "test-teacher-new@test.com",
+      phone: "+966500000001",
       role: "teacher",
     });
     expect(result).toBeDefined();
@@ -66,8 +66,8 @@ describe("USER MANAGEMENT: Admin Access", () => {
   it("admin can create a parent user", async () => {
     const result = await call(createCtx("admin", ADMIN_ID)).users.create({
       name: "ولي أمر اختبار",
-      email: `test-parent-${Date.now()}@test.com`,
-      phone: `+9665${(Date.now() + 1).toString().slice(-8)}`,
+      email: "test-parent-new@test.com",
+      phone: "+966500000002",
       role: "parent",
     });
     expect(result).toBeDefined();
@@ -78,7 +78,7 @@ describe("USER MANAGEMENT: Admin Access", () => {
     // First create a user to update
     const created = await call(createCtx("admin", ADMIN_ID)).users.create({
       name: "مستخدم للتحديث",
-      email: `update-test-${Date.now()}@test.com`,
+      email: "update-test@test.com",
       role: "teacher",
     });
     const updated = await call(createCtx("admin", ADMIN_ID)).users.update({
@@ -93,12 +93,12 @@ describe("USER MANAGEMENT: Admin Access", () => {
   it("admin can delete a user", async () => {
     const created = await call(createCtx("admin", ADMIN_ID)).users.create({
       name: "مستخدم للحذف",
-      email: `delete-test-${Date.now()}@test.com`,
+      email: "delete-test@test.com",
       role: "parent",
     });
     const result = await call(createCtx("admin", ADMIN_ID)).users.delete({ id: created.id });
     expect(result.success).toBe(true);
-  }, 15000);
+  });
 
   it("admin can get unlinked children", async () => {
     const result = await call(createCtx("admin", ADMIN_ID)).users.getUnlinkedChildren();

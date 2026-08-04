@@ -1,4 +1,4 @@
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { protectedProcedure, publicProcedure, superAdminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { eq, and, desc, sql, inArray, gte, lte } from "drizzle-orm";
@@ -150,10 +150,18 @@ export const storeRouter = router({
           .set({ quantity: existing.quantity + input.quantity })
           .where(eq(storeCart.id, existing.id));
       } else {
+        // SECURITY FIX: previously omitted organizationId entirely --
+        // storeCart.organizationId is NOT NULL with no default, so this
+        // would fail outright. The store is an intentional cross-org
+        // marketplace (a parent from any organization can browse/buy from
+        // any nursery's store), so organizationId here identifies which
+        // nursery's store the product belongs to (not the buyer's own
+        // organization) -- taken from the already-fetched product record.
         await db.insert(storeCart).values({
           userId: ctx.user.id,
           productId: input.productId,
           quantity: input.quantity,
+          organizationId: product.organizationId,
         });
       }
       return { success: true };
@@ -281,6 +289,7 @@ export const storeRouter = router({
         for (const staff of orgStaff) {
           await db.insert(notifications).values({
             userId: staff.id,
+            organizationId,
             title: "New Store Order",
             titleAr: "طلب جديد من المتجر",
             body: `New order #${orderNumber} received - Total: ${total} SAR`,
@@ -566,14 +575,16 @@ export const storeRouter = router({
     }),
 
   // ============ SUPER ADMIN: All Orders & Commission Reports ============
-  superAdminGetAllOrders: protectedProcedure
+  // SECURITY FIX: migrated from an inline `ctx.user.role !== "super_admin"`
+  // check on `protectedProcedure` to the shared `superAdminProcedure` from
+  // server/_core/trpc.ts -- this is genuinely a deliberate cross-organization
+  // endpoint (the platform operator reviewing orders/commission across every
+  // nursery-run store), so it now builds on the single canonical gate instead
+  // of its own copy of the same check.
+  superAdminGetAllOrders: superAdminProcedure
     .input(z.object({ status: z.string().optional(), organizationId: z.number().optional() }).optional())
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       const db = (await getDb())!;
-      if (ctx.user.role !== "super_admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
-      }
-      
       const conditions: any[] = [];
       if (input?.status) conditions.push(eq(storeOrders.status, input.status as any));
       if (input?.organizationId) conditions.push(eq(storeOrders.organizationId, input.organizationId));
@@ -678,12 +689,10 @@ export const storeRouter = router({
       };
     }),
 
-  superAdminGetCommissionReport: protectedProcedure.query(async ({ ctx }) => {
+  // SECURITY FIX: migrated to the shared `superAdminProcedure` -- see
+  // superAdminGetAllOrders above.
+  superAdminGetCommissionReport: superAdminProcedure.query(async () => {
     const db = (await getDb())!;
-    if (ctx.user.role !== "super_admin") {
-      throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
-    }
-    
     const [totals] = await db
       .select({
         totalOrders: sql<number>`COUNT(*)`,

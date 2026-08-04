@@ -1,15 +1,19 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, tenantProcedure, router } from "./_core/trpc";
 import { safeJsonParse, validateWeeklyPlan } from "./jsonParser";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import { eq, desc, and, like, inArray, sql } from "drizzle-orm";
-import { aiGeneratedContent, aiLibrary, children, attendance, eyfsAssessments, learningObservations, dailyReports, calendarEvents, announcements } from "../drizzle/schema";
+import { aiGeneratedContent, aiLibrary, children, attendance, eyfsAssessments, learningObservations, dailyReports, calendarEvents, announcements, classes } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 
 // Middleware: only teachers and admins can use AI features
-const aiProcedure = protectedProcedure.use(({ ctx, next }) => {
+// SECURITY FIX (calendar/AI read-side leak): upgraded from `protectedProcedure`
+// to `tenantProcedure` so ctx.organizationId is guaranteed a non-null integer
+// for every AI route -- needed by generateNewsletter below, which previously
+// queried calendarEvents with no organization scoping at all.
+const aiProcedure = tenantProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
   if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'owner' && role !== 'teacher' && role !== 'assistant') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'AI features are restricted to staff members' });
@@ -101,6 +105,11 @@ Write the response in JSON format with this structure:
       const content = parsed.data;
       
       // Save to database
+      // SECURITY FIX: previously never stamped organizationId on new
+      // aiGeneratedContent rows (silently defaulted to org 1 at the schema
+      // level) -- every AI-generated observation across every organization
+      // landed in one shared bucket, readable by any staff member who
+      // could guess/enumerate its id (see myLibrary/getById/delete below).
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "observation",
         title: content.title || input.shortNote,
@@ -109,6 +118,7 @@ Write the response in JSON format with this structure:
         childId: input.childId || null,
         inputPrompt: input.shortNote,
         createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
       });
 
       return { id: saved.insertId, ...content };
@@ -389,6 +399,22 @@ Do NOT leave any field empty.`;
         });
       }
 
+      // SECURITY FIX: previously trusted input.classId with no check that it
+      // belongs to the caller's organization -- the same defect class fixed
+      // in weeklyPlanRouter.generate and customAssessmentRouter.create/update.
+      // No query in this codebase currently joins aiGeneratedContent by
+      // classId (confirmed via repo-wide search), so this was not yet
+      // exploitable to leak data, but a foreign classId silently stored
+      // against this organization's own organizationId is still a data
+      // integrity bug and a landmine for any future classId-based query.
+      if (input.classId) {
+        const [cls] = await db.select({ id: classes.id }).from(classes)
+          .where(and(eq(classes.id, input.classId), eq(classes.organizationId, ctx.organizationId)))
+          .limit(1);
+        if (!cls) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفصل غير موجود' });
+      }
+
+      // SECURITY FIX: previously never stamped organizationId.
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "weekly_plan",
         title: content.title || `خطة أسبوعية: ${input.theme}`,
@@ -399,6 +425,7 @@ Do NOT leave any field empty.`;
         theme: input.theme,
         inputPrompt: `${input.ageGroup} - ${input.theme}`,
         createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
       });
 
       return { id: saved.insertId, ...content };
@@ -479,6 +506,7 @@ Write the response in JSON format:
       }
       const content = parsed.data;
       
+      // SECURITY FIX: previously never stamped organizationId.
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "activity",
         title: content.title || input.topic,
@@ -488,6 +516,7 @@ Write the response in JSON format:
         theme: input.topic,
         inputPrompt: `${input.age} - ${input.topic}`,
         createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
       });
 
       return { id: saved.insertId, ...content };
@@ -501,9 +530,16 @@ Write the response in JSON format:
     }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      
-      // Fetch child data
-      const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
+
+      // SECURITY FIX: previously fetched the child (and all of their
+      // attendance/observations/assessments/daily reports below) with NO
+      // organization filter at all -- any teacher/admin could generate (and
+      // later read back via myLibrary/getById, since the saved report was
+      // also unscoped) a full AI progress report containing another
+      // organization's child's attendance, learning observations, EYFS
+      // assessments, and daily report history, just by passing an
+      // arbitrary childId.
+      const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, ctx.organizationId))).limit(1);
       if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'Child not found' });
 
       // Fetch attendance (last 30 days)
@@ -617,6 +653,7 @@ Make the report positive and encouraging.`;
         childId: input.childId,
         inputPrompt: `Progress report for ${childName}`,
         createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
       });
 
       return { id: saved.insertId, ...content };
@@ -665,6 +702,7 @@ ${CULTURAL_GUIDELINES}
       }
       const content = parsed.data;
       
+      // SECURITY FIX: previously never stamped organizationId.
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "parent_message",
         title: content.titleAr || input.idea,
@@ -672,6 +710,7 @@ ${CULTURAL_GUIDELINES}
         language: "ar",
         inputPrompt: input.idea,
         createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
       });
 
       return { id: saved.insertId, ...content };
@@ -688,9 +727,18 @@ ${CULTURAL_GUIDELINES}
       const db = (await getDb())!;
       
       // Fetch recent events and announcements
+      // SECURITY FIX (calendar/AI read-side leak): previously had no
+      // organizationId filter at all, so a newsletter for one organization
+      // could be generated using another organization's event titles. Scoped
+      // to ctx.organizationId, guaranteed non-null by tenantProcedure.
       const recentEvents = await db.select().from(calendarEvents)
+        .where(eq(calendarEvents.organizationId, ctx.organizationId))
         .orderBy(desc(calendarEvents.eventDate)).limit(5);
+      // SECURITY FIX: previously had no organizationId filter at all -- a
+      // newsletter for one organization could be generated using another
+      // organization's announcement titles.
       const recentAnnouncements = await db.select().from(announcements)
+        .where(eq(announcements.organizationId, ctx.organizationId))
         .orderBy(desc(announcements.createdAt)).limit(5);
 
       const eventsText = recentEvents.map((e: any) => e.title || e.titleAr).join("، ");
@@ -761,6 +809,8 @@ Write the response in JSON format:
       }
       const content = parsed.data;
       
+      // SECURITY FIX: previously never stamped organizationId on the saved
+      // newsletter row.
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "newsletter",
         title: content.title || `نشرة ${input.month}`,
@@ -769,6 +819,7 @@ Write the response in JSON format:
         theme: input.month,
         inputPrompt: `Newsletter for ${input.month}`,
         createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
       });
 
       return { id: saved.insertId, ...content };
@@ -841,6 +892,7 @@ Write the response in JSON format:
       }
       const content = parsed.data;
       
+      // SECURITY FIX: previously never stamped organizationId.
       const [saved] = await db.insert(aiGeneratedContent).values({
         type: "story",
         title: content.title || input.theme,
@@ -850,6 +902,7 @@ Write the response in JSON format:
         theme: input.theme,
         inputPrompt: `${input.ageGroup} - ${input.theme}`,
         createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
       });
 
       return { id: saved.insertId, ...content };
@@ -863,9 +916,11 @@ Write the response in JSON format:
     }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      
-      // Get the content to determine category
-      const [content] = await db.select().from(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.contentId)).limit(1);
+
+      // SECURITY FIX: previously fetched by contentId with no
+      // organizationId filter -- any staff member could save (and mark
+      // isSaved=true on) another organization's AI-generated content by id.
+      const [content] = await db.select().from(aiGeneratedContent).where(and(eq(aiGeneratedContent.id, input.contentId), eq(aiGeneratedContent.organizationId, ctx.organizationId))).limit(1);
       if (!content) throw new TRPCError({ code: 'NOT_FOUND' });
 
       // Mark as saved
@@ -886,9 +941,13 @@ Write the response in JSON format:
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const [item] = await db.select().from(aiLibrary).where(eq(aiLibrary.id, input.id)).limit(1);
+      // SECURITY FIX: previously fetched by id with no check that the
+      // library entry even belongs to the caller -- any authenticated
+      // staff member could remove any other user's (possibly another
+      // organization's) saved library entry by guessing/enumerating its id.
+      const [item] = await db.select().from(aiLibrary).where(and(eq(aiLibrary.id, input.id), eq(aiLibrary.savedBy, ctx.user!.id))).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
-      
+
       await db.update(aiGeneratedContent).set({ isSaved: false }).where(eq(aiGeneratedContent.id, item.contentId));
       await db.delete(aiLibrary).where(eq(aiLibrary.id, input.id));
       return { success: true };
@@ -896,9 +955,12 @@ Write the response in JSON format:
 
   toggleFavorite: aiProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const [item] = await db.select().from(aiLibrary).where(eq(aiLibrary.id, input.id)).limit(1);
+      // SECURITY FIX: previously had no ownership check at all -- any
+      // authenticated staff member could toggle any other user's favorite
+      // flag on any library entry by id.
+      const [item] = await db.select().from(aiLibrary).where(and(eq(aiLibrary.id, input.id), eq(aiLibrary.savedBy, ctx.user!.id))).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       await db.update(aiLibrary).set({ isFavorite: !item.isFavorite }).where(eq(aiLibrary.id, input.id));
       return { success: true, isFavorite: !item.isFavorite };
@@ -967,9 +1029,13 @@ Write the response in JSON format:
 
   getById: aiProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const [item] = await db.select().from(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.id)).limit(1);
+      // SECURITY FIX: previously had NO check at all -- any authenticated
+      // staff member could read any organization's AI-generated content by
+      // id, including progress reports that embed child names, attendance,
+      // and assessment data.
+      const [item] = await db.select().from(aiGeneratedContent).where(and(eq(aiGeneratedContent.id, input.id), eq(aiGeneratedContent.organizationId, ctx.organizationId))).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       return item;
     }),
@@ -1043,7 +1109,10 @@ Write the response in JSON format:
     }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
+      // SECURITY FIX: previously fetched the child with no organizationId
+      // filter -- any teacher/admin could generate (and save, embedding the
+      // child's name) a certificate for another organization's child.
+      const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, ctx.organizationId))).limit(1);
       if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
 
       const typeLabels: Record<string, string> = {
@@ -1087,7 +1156,9 @@ Write the response in JSON format:
     }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const [child] = await db.select().from(children).where(eq(children.id, input.childId)).limit(1);
+      // SECURITY FIX: previously fetched the child with no organizationId
+      // filter -- same class of bug as generateCertificate above.
+      const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, ctx.organizationId))).limit(1);
       if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
 
       const typeLabels: Record<string, string> = {

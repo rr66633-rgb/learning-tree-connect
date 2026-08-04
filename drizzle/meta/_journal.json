@@ -134,6 +134,13 @@
       "when": 1782060619005,
       "tag": "0018_lucky_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1782200000000,
+      "tag": "0019_calendar_events_schema_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, count } from "drizzle-orm";
-import { protectedProcedure, router } from "./_core/trpc";
+import { tenantProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import {
   homeLearningActivities,
@@ -18,6 +18,19 @@ import {
 import { invokeLLM } from "./_core/llm";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import { TRPCError } from "@trpc/server";
+
+// SECURITY FIX helper: verifies a client-supplied childId actually belongs to
+// the caller's organization before it's used to read/write any of the
+// engagement tables in this file (homeLearningActivities, familyChallenges,
+// challengeParticipations, homeJournalEntries, parentObservations,
+// monthlyGrowthGoals). Every route below that takes a childId was previously
+// trusting it with no such check.
+async function assertChildInOrg(db: MySql2Database<any>, childId: number, organizationId: number) {
+  const [child] = await db.select({ id: children.id }).from(children)
+    .where(and(eq(children.id, childId), eq(children.organizationId, organizationId)))
+    .limit(1);
+  if (!child) throw new TRPCError({ code: "NOT_FOUND", message: "الطفل غير موجود" });
+}
 
 // ============ AI HELPERS ============
 
@@ -163,7 +176,7 @@ export const engagementRouter = router({
   // ---- HOME LEARNING ACTIVITIES ----
   
   activities: router({
-    list: protectedProcedure
+    list: tenantProcedure
       .input(z.object({
         childId: z.number(),
         status: z.enum(["pending", "completed", "skipped"]).optional(),
@@ -172,24 +185,30 @@ export const engagementRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const conditions = [eq(homeLearningActivities.childId, input.childId)];
+        // SECURITY FIX: previously filtered by childId alone -- any
+        // authenticated user could list another organization's home learning
+        // activities for an arbitrary childId.
+        const conditions = [eq(homeLearningActivities.childId, input.childId), eq(homeLearningActivities.organizationId, ctx.organizationId)];
         if (input.status) conditions.push(eq(homeLearningActivities.status, input.status));
         if (input.category) conditions.push(eq(homeLearningActivities.category, input.category as any));
-        
+
         return db.select().from(homeLearningActivities)
           .where(and(...conditions))
           .orderBy(desc(homeLearningActivities.createdAt))
           .limit(input.limit);
       }),
 
-    generate: protectedProcedure
+    generate: tenantProcedure
       .input(z.object({
         childId: z.number(),
         category: z.enum(["language", "fine_motor", "gross_motor", "social_emotional", "early_math", "literacy", "creative", "outdoor"]),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+        // SECURITY FIX: previously fetched by childId alone -- any
+        // authenticated user could generate (and write) activities against
+        // another organization's child.
+        const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, ctx.organizationId)));
         if (!child) throw new TRPCError({ code: "NOT_FOUND", message: "Child not found" });
 
         const ageMonths = Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
@@ -228,7 +247,7 @@ export const engagementRouter = router({
             difficulty: activity.difficulty as any,
             ageGroupMonths: ageMonths,
             weekNumber: currentWeek,
-            organizationId: ctx.user.organizationId || 1,
+            organizationId: ctx.organizationId,
           });
           inserted.push(result);
         }
@@ -236,7 +255,7 @@ export const engagementRouter = router({
         return { count: inserted.length, message: "Activities generated successfully" };
       }),
 
-    complete: protectedProcedure
+    complete: tenantProcedure
       .input(z.object({
         activityId: z.number(),
         feedback: z.string().optional(),
@@ -244,6 +263,13 @@ export const engagementRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
+        // SECURITY FIX: previously updated by id alone -- any user could mark
+        // another organization's activity completed.
+        const [activity] = await db.select({ organizationId: homeLearningActivities.organizationId, childId: homeLearningActivities.childId })
+          .from(homeLearningActivities).where(eq(homeLearningActivities.id, input.activityId)).limit(1);
+        if (!activity || activity.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
         await db.update(homeLearningActivities)
           .set({
             status: "completed",
@@ -254,17 +280,24 @@ export const engagementRouter = router({
           .where(eq(homeLearningActivities.id, input.activityId));
 
         // Update engagement score
-        await updateEngagementScore(ctx.user.id, input.activityId, "activity");
+        await updateEngagementScore(ctx.user.id, activity.childId, ctx.organizationId, "activity");
         // Check for badge earning
-        await checkAndAwardBadges(ctx.user.id, ctx.user.organizationId || 1);
+        await checkAndAwardBadges(ctx.user.id, ctx.organizationId);
 
         return { success: true };
       }),
 
-    skip: protectedProcedure
+    skip: tenantProcedure
       .input(z.object({ activityId: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
+        // SECURITY FIX: previously updated by id alone -- any user could mark
+        // another organization's activity skipped.
+        const [activity] = await db.select({ organizationId: homeLearningActivities.organizationId })
+          .from(homeLearningActivities).where(eq(homeLearningActivities.id, input.activityId)).limit(1);
+        if (!activity || activity.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
         await db.update(homeLearningActivities)
           .set({ status: "skipped" })
           .where(eq(homeLearningActivities.id, input.activityId));
@@ -275,18 +308,18 @@ export const engagementRouter = router({
   // ---- FAMILY CHALLENGES ----
   
   challenges: router({
-    listActive: protectedProcedure
+    listActive: tenantProcedure
       .input(z.object({ childId: z.number().optional() }))
       .query(async ({ ctx }) => {
         const db = (await getDb())!;
-        const orgId = ctx.user.organizationId || 1;
+        const orgId = ctx.organizationId;
         const activeChallenges = await db.select().from(familyChallenges)
           .where(and(eq(familyChallenges.isActive, true), eq(familyChallenges.organizationId, orgId)))
           .orderBy(desc(familyChallenges.createdAt));
         return activeChallenges;
       }),
 
-    myParticipations: protectedProcedure
+    myParticipations: tenantProcedure
       .input(z.object({ childId: z.number() }))
       .query(async ({ ctx, input }) => {
         const db = (await getDb())!;
@@ -298,10 +331,18 @@ export const engagementRouter = router({
           .orderBy(desc(challengeParticipations.createdAt));
       }),
 
-    enroll: protectedProcedure
+    enroll: tenantProcedure
       .input(z.object({ challengeId: z.number(), childId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
+        // SECURITY FIX: previously enrolled in any challengeId with no
+        // organization check -- a user could enroll in another organization's
+        // family challenge.
+        const [challenge] = await db.select({ id: familyChallenges.id }).from(familyChallenges)
+          .where(and(eq(familyChallenges.id, input.challengeId), eq(familyChallenges.organizationId, ctx.organizationId)))
+          .limit(1);
+        if (!challenge) throw new TRPCError({ code: "NOT_FOUND", message: "التحدي غير موجود" });
+
         // Check if already enrolled
         const existing = await db.select().from(challengeParticipations)
           .where(and(
@@ -316,12 +357,12 @@ export const engagementRouter = router({
           parentId: ctx.user.id,
           childId: input.childId,
           status: "enrolled",
-          organizationId: ctx.user.organizationId || 1,
+          organizationId: ctx.organizationId,
         });
         return { success: true };
       }),
 
-    updateProgress: protectedProcedure
+    updateProgress: tenantProcedure
       .input(z.object({
         participationId: z.number(),
         progressPercent: z.number().min(0).max(100),
@@ -330,8 +371,16 @@ export const engagementRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
+        // SECURITY FIX: previously updated by id alone -- any user could edit
+        // another organization's challenge participation.
+        const [participation] = await db.select().from(challengeParticipations)
+          .where(eq(challengeParticipations.id, input.participationId));
+        if (!participation || participation.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
         const isComplete = input.progressPercent >= 100;
-        
+
         await db.update(challengeParticipations)
           .set({
             progressPercent: input.progressPercent,
@@ -344,26 +393,22 @@ export const engagementRouter = router({
 
         if (isComplete) {
           // Award points from the challenge
-          const [participation] = await db.select().from(challengeParticipations)
-            .where(eq(challengeParticipations.id, input.participationId));
-          if (participation) {
-            const [challenge] = await db.select().from(familyChallenges)
-              .where(eq(familyChallenges.id, participation.challengeId));
-            if (challenge) {
-              await db.update(challengeParticipations)
-                .set({ pointsEarned: challenge.pointsReward })
-                .where(eq(challengeParticipations.id, input.participationId));
-            }
+          const [challenge] = await db.select().from(familyChallenges)
+            .where(eq(familyChallenges.id, participation.challengeId));
+          if (challenge) {
+            await db.update(challengeParticipations)
+              .set({ pointsEarned: challenge.pointsReward })
+              .where(eq(challengeParticipations.id, input.participationId));
           }
-          await updateEngagementScore(ctx.user.id, input.participationId, "challenge");
-          await checkAndAwardBadges(ctx.user.id, ctx.user.organizationId || 1);
+          await updateEngagementScore(ctx.user.id, participation.childId, ctx.organizationId, "challenge");
+          await checkAndAwardBadges(ctx.user.id, ctx.organizationId);
         }
 
         return { success: true };
       }),
 
     // Admin: create challenge
-    create: protectedProcedure
+    create: tenantProcedure
       .input(z.object({
         titleEn: z.string(),
         titleAr: z.string(),
@@ -385,7 +430,7 @@ export const engagementRouter = router({
           ...input,
           weekNumber: currentWeek,
           academicYear: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-          organizationId: ctx.user.organizationId || 1,
+          organizationId: ctx.organizationId,
         });
         return { success: true };
       }),
@@ -394,7 +439,7 @@ export const engagementRouter = router({
   // ---- HOME JOURNAL ----
   
   journal: router({
-    list: protectedProcedure
+    list: tenantProcedure
       .input(z.object({
         childId: z.number(),
         entryType: z.enum(["photo", "video", "note", "achievement", "milestone"]).optional(),
@@ -402,16 +447,18 @@ export const engagementRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const conditions = [eq(homeJournalEntries.childId, input.childId)];
+        // SECURITY FIX: previously filtered by childId alone -- any user could
+        // list another organization's home journal entries.
+        const conditions = [eq(homeJournalEntries.childId, input.childId), eq(homeJournalEntries.organizationId, ctx.organizationId)];
         if (input.entryType) conditions.push(eq(homeJournalEntries.entryType, input.entryType));
-        
+
         return db.select().from(homeJournalEntries)
           .where(and(...conditions))
           .orderBy(desc(homeJournalEntries.createdAt))
           .limit(input.limit);
       }),
 
-    create: protectedProcedure
+    create: tenantProcedure
       .input(z.object({
         childId: z.number(),
         entryType: z.enum(["photo", "video", "note", "achievement", "milestone"]),
@@ -423,18 +470,21 @@ export const engagementRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
+        // SECURITY FIX: input.childId was previously trusted with no check
+        // that it belongs to the caller's organization.
+        await assertChildInOrg(db, input.childId, ctx.organizationId);
         await db.insert(homeJournalEntries).values({
           ...input,
           parentId: ctx.user.id,
-          organizationId: ctx.user.organizationId || 1,
+          organizationId: ctx.organizationId,
         });
-        await updateEngagementScore(ctx.user.id, 0, "journal");
-        await checkAndAwardBadges(ctx.user.id, ctx.user.organizationId || 1);
+        await updateEngagementScore(ctx.user.id, input.childId, ctx.organizationId, "journal");
+        await checkAndAwardBadges(ctx.user.id, ctx.organizationId);
         return { success: true };
       }),
 
     // Teacher: review journal entry
-    review: protectedProcedure
+    review: tenantProcedure
       .input(z.object({
         entryId: z.number(),
         status: z.enum(["approved", "needs_revision", "rejected"]),
@@ -446,6 +496,12 @@ export const engagementRouter = router({
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
+        // SECURITY FIX: previously updated by id alone -- any teacher/admin
+        // could review another organization's journal entry.
+        const [entry] = await db.select({ organizationId: homeJournalEntries.organizationId }).from(homeJournalEntries).where(eq(homeJournalEntries.id, input.entryId)).limit(1);
+        if (!entry || entry.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
         await db.update(homeJournalEntries)
           .set({
             status: input.status,
@@ -459,7 +515,7 @@ export const engagementRouter = router({
       }),
 
     // Teacher: list pending reviews
-    pendingReviews: protectedProcedure
+    pendingReviews: tenantProcedure
       .query(async ({ ctx }) => {
         if (!["admin", "principal", "owner", "teacher", "assistant"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
@@ -468,7 +524,7 @@ export const engagementRouter = router({
         return db.select().from(homeJournalEntries)
           .where(and(
             eq(homeJournalEntries.status, "pending_review"),
-            eq(homeJournalEntries.organizationId, ctx.user.organizationId || 1)
+            eq(homeJournalEntries.organizationId, ctx.organizationId)
           ))
           .orderBy(desc(homeJournalEntries.createdAt));
       }),
@@ -477,20 +533,22 @@ export const engagementRouter = router({
   // ---- PARENT OBSERVATIONS ----
   
   observations: router({
-    list: protectedProcedure
+    list: tenantProcedure
       .input(z.object({
         childId: z.number(),
         limit: z.number().default(20),
       }))
       .query(async ({ ctx, input }) => {
         const db = (await getDb())!;
+        // SECURITY FIX: previously filtered by childId alone -- any user
+        // could list another organization's parent observations.
         return db.select().from(parentObservations)
-          .where(eq(parentObservations.childId, input.childId))
+          .where(and(eq(parentObservations.childId, input.childId), eq(parentObservations.organizationId, ctx.organizationId)))
           .orderBy(desc(parentObservations.createdAt))
           .limit(input.limit);
       }),
 
-    create: protectedProcedure
+    create: tenantProcedure
       .input(z.object({
         childId: z.number(),
         observationText: z.string().min(10),
@@ -499,10 +557,12 @@ export const engagementRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        
-        // Get child age for AI analysis
-        const [child] = await db.select().from(children).where(eq(children.id, input.childId));
-        const ageMonths = child ? Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : 36;
+
+        // SECURITY FIX: input.childId was previously trusted with no check
+        // that it belongs to the caller's organization.
+        const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, ctx.organizationId)));
+        if (!child) throw new TRPCError({ code: "NOT_FOUND", message: "الطفل غير موجود" });
+        const ageMonths = Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
 
         // AI analysis
         const analysis = await analyzeParentObservation(input.observationText, ageMonths);
@@ -516,16 +576,16 @@ export const engagementRouter = router({
           aiAnalysis: analysis,
           aiSuggestedAreaIds: analysis?.suggestedAreas || [],
           significance: (analysis?.significance as any) || "routine",
-          organizationId: ctx.user.organizationId || 1,
+          organizationId: ctx.organizationId,
         });
 
-        await updateEngagementScore(ctx.user.id, 0, "observation");
-        await checkAndAwardBadges(ctx.user.id, ctx.user.organizationId || 1);
+        await updateEngagementScore(ctx.user.id, input.childId, ctx.organizationId, "observation");
+        await checkAndAwardBadges(ctx.user.id, ctx.organizationId);
         return { success: true, analysis };
       }),
 
     // Teacher: review parent observation
-    review: protectedProcedure
+    review: tenantProcedure
       .input(z.object({
         observationId: z.number(),
         status: z.enum(["reviewed", "flagged", "linked_to_assessment"]),
@@ -536,6 +596,12 @@ export const engagementRouter = router({
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
+        // SECURITY FIX: previously updated by id alone -- any teacher/admin
+        // could review another organization's parent observation.
+        const [obs] = await db.select({ organizationId: parentObservations.organizationId }).from(parentObservations).where(eq(parentObservations.id, input.observationId)).limit(1);
+        if (!obs || obs.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
         await db.update(parentObservations)
           .set({
             teacherStatus: input.status,
@@ -548,7 +614,7 @@ export const engagementRouter = router({
       }),
 
     // Teacher: list pending observations
-    pendingReview: protectedProcedure
+    pendingReview: tenantProcedure
       .query(async ({ ctx }) => {
         if (!["admin", "principal", "owner", "teacher", "assistant"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
@@ -557,7 +623,7 @@ export const engagementRouter = router({
         return db.select().from(parentObservations)
           .where(and(
             eq(parentObservations.teacherStatus, "pending"),
-            eq(parentObservations.organizationId, ctx.user.organizationId || 1)
+            eq(parentObservations.organizationId, ctx.organizationId)
           ))
           .orderBy(desc(parentObservations.createdAt));
       }),
@@ -566,7 +632,7 @@ export const engagementRouter = router({
   // ---- MONTHLY GROWTH GOALS ----
   
   goals: router({
-    list: protectedProcedure
+    list: tenantProcedure
       .input(z.object({
         childId: z.number(),
         month: z.number().optional(),
@@ -574,20 +640,24 @@ export const engagementRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const conditions = [eq(monthlyGrowthGoals.childId, input.childId)];
+        // SECURITY FIX: previously filtered by childId alone -- any user could
+        // list another organization's monthly growth goals.
+        const conditions = [eq(monthlyGrowthGoals.childId, input.childId), eq(monthlyGrowthGoals.organizationId, ctx.organizationId)];
         if (input.month) conditions.push(eq(monthlyGrowthGoals.targetMonth, input.month));
         if (input.year) conditions.push(eq(monthlyGrowthGoals.targetYear, input.year));
-        
+
         return db.select().from(monthlyGrowthGoals)
           .where(and(...conditions))
           .orderBy(desc(monthlyGrowthGoals.createdAt));
       }),
 
-    generate: protectedProcedure
+    generate: tenantProcedure
       .input(z.object({ childId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+        // SECURITY FIX: previously fetched by childId alone -- any user could
+        // generate (and write) goals against another organization's child.
+        const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, ctx.organizationId)));
         if (!child) throw new TRPCError({ code: "NOT_FOUND" });
 
         const ageMonths = Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
@@ -612,14 +682,14 @@ export const engagementRouter = router({
             targetMonth: now.getMonth() + 1,
             targetYear: now.getFullYear(),
             suggestedActivities: goal.suggestedActivities,
-            organizationId: ctx.user.organizationId || 1,
+            organizationId: ctx.organizationId,
           });
         }
 
         return { count: goals.length };
       }),
 
-    updateProgress: protectedProcedure
+    updateProgress: tenantProcedure
       .input(z.object({
         goalId: z.number(),
         progressPercent: z.number().min(0).max(100),
@@ -627,8 +697,15 @@ export const engagementRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
+        // SECURITY FIX: previously updated by id alone -- any user could edit
+        // another organization's growth goal.
+        const [goal] = await db.select().from(monthlyGrowthGoals).where(eq(monthlyGrowthGoals.id, input.goalId)).limit(1);
+        if (!goal || goal.organizationId !== ctx.organizationId) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
         const isComplete = input.progressPercent >= 100;
-        
+
         await db.update(monthlyGrowthGoals)
           .set({
             progressPercent: input.progressPercent,
@@ -639,8 +716,8 @@ export const engagementRouter = router({
           .where(eq(monthlyGrowthGoals.id, input.goalId));
 
         if (isComplete) {
-          await updateEngagementScore(ctx.user.id, 0, "goal");
-          await checkAndAwardBadges(ctx.user.id, ctx.user.organizationId || 1);
+          await updateEngagementScore(ctx.user.id, goal.childId, ctx.organizationId, "goal");
+          await checkAndAwardBadges(ctx.user.id, ctx.organizationId);
         }
         return { success: true };
       }),
@@ -649,7 +726,7 @@ export const engagementRouter = router({
   // ---- ENGAGEMENT & GAMIFICATION ----
   
   engagement: router({
-    myScore: protectedProcedure
+    myScore: tenantProcedure
       .input(z.object({ childId: z.number() }))
       .query(async ({ ctx, input }) => {
         const db = (await getDb())!;
@@ -667,14 +744,16 @@ export const engagementRouter = router({
         return score || { score: 0, level: "inactive", streak: 0, totalPoints: 0, activitiesCompleted: 0, challengesCompleted: 0, journalEntries: 0, observationsSubmitted: 0, goalsCompleted: 0 };
       }),
 
-    myBadges: protectedProcedure
+    myBadges: tenantProcedure
       .query(async ({ ctx }) => {
         const db = (await getDb())!;
         const earned = await db.select().from(parentBadges)
           .where(eq(parentBadges.parentId, ctx.user.id));
-        
+
+        // SECURITY FIX: previously filtered only by isActive -- leaked every
+        // organization's badge catalogue to any authenticated user.
         const allBadges = await db.select().from(achievementBadges)
-          .where(eq(achievementBadges.isActive, true));
+          .where(and(eq(achievementBadges.isActive, true), eq(achievementBadges.organizationId, ctx.organizationId)));
 
         return {
           earned: earned.map(e => ({
@@ -685,11 +764,11 @@ export const engagementRouter = router({
         };
       }),
 
-    leaderboard: protectedProcedure
+    leaderboard: tenantProcedure
       .input(z.object({ period: z.enum(["weekly", "monthly", "term"]).default("monthly") }))
       .query(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const orgId = ctx.user.organizationId || 1;
+        const orgId = ctx.organizationId;
         const now = new Date();
         const periodValue = input.period === "weekly"
           ? `${now.getFullYear()}-W${Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))}`
@@ -709,7 +788,7 @@ export const engagementRouter = router({
   // ---- AI CHATBOT ----
   
   chatbot: router({
-    ask: protectedProcedure
+    ask: tenantProcedure
       .input(z.object({
         question: z.string().min(3),
         childId: z.number(),
@@ -717,7 +796,10 @@ export const engagementRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+        // SECURITY FIX: previously fetched by childId alone -- any user could
+        // ask the chatbot about (and leak the name/age of) another
+        // organization's child.
+        const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, ctx.organizationId)));
         if (!child) throw new TRPCError({ code: "NOT_FOUND" });
 
         const ageMonths = Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
@@ -736,13 +818,13 @@ export const engagementRouter = router({
   // ---- TEACHER/ADMIN ANALYTICS ----
   
   analytics: router({
-    overview: protectedProcedure
+    overview: tenantProcedure
       .query(async ({ ctx }) => {
         if (!["admin", "principal", "owner", "teacher", "super_admin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
-        const orgId = ctx.user.organizationId || 1;
+        const orgId = ctx.organizationId;
 
         const [activitiesCount] = await db.select({ count: count() }).from(homeLearningActivities)
           .where(eq(homeLearningActivities.organizationId, orgId));
@@ -768,13 +850,13 @@ export const engagementRouter = router({
         };
       }),
 
-    engagementByFamily: protectedProcedure
+    engagementByFamily: tenantProcedure
       .query(async ({ ctx }) => {
         if (!["admin", "principal", "owner", "teacher", "super_admin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
-        const orgId = ctx.user.organizationId || 1;
+        const orgId = ctx.organizationId;
         const now = new Date();
         const periodValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
@@ -791,7 +873,7 @@ export const engagementRouter = router({
   // ---- FAMILY REPORTS ----
   
   reports: router({
-    generate: protectedProcedure
+    generate: tenantProcedure
       .input(z.object({
         childId: z.number(),
         period: z.enum(["weekly", "monthly", "term"]).default("monthly"),
@@ -799,11 +881,13 @@ export const engagementRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const db = (await getDb())!;
-        const [child] = await db.select().from(children).where(eq(children.id, input.childId));
+        const orgId = ctx.organizationId;
+        // SECURITY FIX: previously fetched by childId alone -- any user could
+        // generate a report using another organization's child data.
+        const [child] = await db.select().from(children).where(and(eq(children.id, input.childId), eq(children.organizationId, orgId)));
         if (!child) throw new TRPCError({ code: "NOT_FOUND" });
 
         const ageMonths = Math.floor((Date.now() - new Date(child.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
-        const orgId = ctx.user.organizationId || 1;
 
         // Gather engagement data
         const activities = await db.select().from(homeLearningActivities)
@@ -815,8 +899,10 @@ export const engagementRouter = router({
         const observations = await db.select().from(parentObservations)
           .where(and(eq(parentObservations.childId, input.childId), eq(parentObservations.organizationId, orgId)))
           .orderBy(desc(parentObservations.createdAt)).limit(10);
+        // SECURITY FIX: unlike the sibling activities/journals/observations
+        // queries above, this one previously had no organizationId condition.
         const goals = await db.select().from(monthlyGrowthGoals)
-          .where(eq(monthlyGrowthGoals.childId, input.childId))
+          .where(and(eq(monthlyGrowthGoals.childId, input.childId), eq(monthlyGrowthGoals.organizationId, orgId)))
           .orderBy(desc(monthlyGrowthGoals.createdAt)).limit(5);
         const now = new Date();
         const periodValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -889,16 +975,16 @@ Return as JSON: {"title": "Report title", "sections": [{"heading": "Section head
   // ---- MODULE CONFIG ----
   
   config: router({
-    get: protectedProcedure
+    get: tenantProcedure
       .query(async ({ ctx }) => {
         const db = (await getDb())!;
-        const orgId = ctx.user.organizationId || 1;
+        const orgId = ctx.organizationId;
         const [config] = await db.select().from(familyEngagementConfig)
           .where(eq(familyEngagementConfig.organizationId, orgId));
         return config || { isEnabled: true, activitiesPerWeek: 3, challengesEnabled: true, journalEnabled: true, parentObservationsEnabled: true, chatbotEnabled: true, gamificationEnabled: true, autoGenerateGoals: true, defaultLanguage: "both" };
       }),
 
-    update: protectedProcedure
+    update: tenantProcedure
       .input(z.object({
         isEnabled: z.boolean().optional(),
         activitiesPerWeek: z.number().min(1).max(10).optional(),
@@ -915,7 +1001,7 @@ Return as JSON: {"title": "Report title", "sections": [{"heading": "Section head
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = (await getDb())!;
-        const orgId = ctx.user.organizationId || 1;
+        const orgId = ctx.organizationId;
         
         const [existing] = await db.select().from(familyEngagementConfig)
           .where(eq(familyEngagementConfig.organizationId, orgId));
@@ -932,7 +1018,12 @@ Return as JSON: {"title": "Report title", "sections": [{"heading": "Section head
 
 // ============ HELPER FUNCTIONS ============
 
-async function updateEngagementScore(parentId: number, _itemId: number, type: "activity" | "challenge" | "journal" | "observation" | "goal") {
+// SECURITY FIX: previously took an unused `_itemId` and never received/stored
+// organizationId at all -- new engagementScores rows were inserted with
+// childId: 0 and no organizationId, and the "existing" lookup below matched
+// purely on parentId + period, with no organization scoping either. Now takes
+// the real childId and organizationId and uses both.
+async function updateEngagementScore(parentId: number, childId: number, organizationId: number, type: "activity" | "challenge" | "journal" | "observation" | "goal") {
   const db = (await getDb())!;
   const now = new Date();
   const periodValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -941,6 +1032,8 @@ async function updateEngagementScore(parentId: number, _itemId: number, type: "a
   const [existing] = await db.select().from(engagementScores)
     .where(and(
       eq(engagementScores.parentId, parentId),
+      eq(engagementScores.childId, childId),
+      eq(engagementScores.organizationId, organizationId),
       eq(engagementScores.period, "monthly"),
       eq(engagementScores.periodValue, periodValue)
     ));
@@ -976,7 +1069,8 @@ async function updateEngagementScore(parentId: number, _itemId: number, type: "a
   } else {
     const initial: any = {
       parentId,
-      childId: 0, // Will be updated
+      childId,
+      organizationId,
       period: "monthly",
       periodValue,
       totalPoints: points,

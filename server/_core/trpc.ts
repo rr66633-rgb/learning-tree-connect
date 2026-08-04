@@ -3,49 +3,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 
-// Arabic error messages for user-friendly error display
-function getArabicErrorMessage(code: string): string {
-  switch (code) {
-    case 'UNAUTHORIZED':
-      return 'يرجى تسجيل الدخول للمتابعة';
-    case 'FORBIDDEN':
-      return 'ليس لديك صلاحية للوصول إلى هذا المحتوى';
-    case 'NOT_FOUND':
-      return 'العنصر المطلوب غير موجود';
-    case 'BAD_REQUEST':
-      return 'البيانات المدخلة غير صحيحة';
-    case 'CONFLICT':
-      return 'يوجد تعارض مع بيانات موجودة مسبقاً';
-    case 'TOO_MANY_REQUESTS':
-      return 'تم تجاوز الحد الأقصى للطلبات. يرجى المحاولة لاحقاً';
-    case 'TIMEOUT':
-      return 'انتهت مهلة الطلب. يرجى المحاولة مرة أخرى';
-    case 'INTERNAL_SERVER_ERROR':
-      return 'حدث خطأ في الخادم. يرجى المحاولة لاحقاً';
-    case 'PARSE_ERROR':
-      return 'خطأ في تنسيق البيانات المرسلة';
-    case 'METHOD_NOT_SUPPORTED':
-      return 'هذا الإجراء غير مدعوم';
-    case 'UNPROCESSABLE_CONTENT':
-      return 'لا يمكن معالجة البيانات المرسلة';
-    case 'PAYLOAD_TOO_LARGE':
-      return 'حجم البيانات المرسلة كبير جداً';
-    default:
-      return 'حدث خطأ غير متوقع. يرجى المحاولة لاحقاً';
-  }
-}
-
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        arabicMessage: error.message || getArabicErrorMessage(error.code),
-      },
-    };
-  },
 });
 
 export const router = t.router;
@@ -68,6 +27,52 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure.use(requireUser);
 
+// SECURITY FIX (C2): root-cause fix for the missing tenant-isolation enforcement
+// that made the C1 cross-tenant data leak possible (and can reproduce the same
+// leak class anywhere a query helper is called with an organizationId that ends up
+// null/undefined -- see server/_core/context.ts, which used to silently default a
+// missing organizationId to 1 rather than rejecting the request).
+//
+// This does NOT retroactively scope every existing query in the codebase -- it is
+// a building block. Any procedure built on `tenantProcedure` is guaranteed that
+// `ctx.organizationId` is a real, positive integer by the time its handler runs, or
+// the request is rejected before the handler ever executes. Existing per-router
+// procedures (e.g. the local `adminProcedure`/`teacherProcedure`/`parentProcedure`
+// in server/routers.ts) should be migrated to build on this instead of directly on
+// `protectedProcedure` so their handlers can rely on `ctx.organizationId` being
+// trustworthy. superAdminRouter.ts's separate `superAdminProcedure` intentionally
+// stays on `protectedProcedure` directly, since super-admin operations are meant to
+// be cross-organization by design.
+//
+// KNOWN REMAINING SCOPE: as of this commit, only server/routers.ts has been
+// migrated to use this (see that file for details). The other sub-routers
+// (calendarRouter.ts, staffManagementRouter.ts, assessmentRouter.ts, and ~19 more)
+// each define their own local role-check procedures independently and have NOT
+// been migrated yet -- that is necessary follow-up work, not something this commit
+// claims to have completed everywhere.
+export const tenantProcedure = protectedProcedure.use(async opts => {
+  const { ctx, next } = opts;
+
+  if (
+    ctx.organizationId === null ||
+    ctx.organizationId === undefined ||
+    !Number.isInteger(ctx.organizationId) ||
+    ctx.organizationId <= 0
+  ) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "لا يوجد حساب مرتبط بمنظمة صالحة", // "No account linked to a valid organization"
+    });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      organizationId: ctx.organizationId,
+    },
+  });
+});
+
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
@@ -82,5 +87,31 @@ export const adminProcedure = t.procedure.use(
         user: ctx.user,
       },
     });
+  }),
+);
+
+// SECURITY FIX: this is the single, canonical gate for the one deliberate
+// cross-organization exception in the whole codebase -- the authenticated
+// platform Super Admin. Every place that needs to read or act across more
+// than one organization's data MUST build on this (or on the pre-existing,
+// functionally-identical local `superAdminProcedure` in
+// server/superAdminRouter.ts) instead of writing its own inline
+// `ctx.user?.role !== 'super_admin'` check. Before this fix, at least four
+// separate files (registrationRouter.ts, storeRouter.ts x2, and the
+// loyalty admin-catalog endpoints in routers.ts) each implemented their own
+// ad hoc version of this exact check directly on `protectedProcedure` --
+// functionally correct individually, but a single missed `!==` or an
+// accidentally-broadened role list in any one of those copies would have
+// reopened a cross-tenant leak without anyone needing to touch this file.
+// Intentionally built on `protectedProcedure` (not `tenantProcedure`):
+// super-admin actions are cross-organization by design and must not be
+// blocked by "does this super-admin's own account have an organizationId".
+export const superAdminProcedure = protectedProcedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+    if (ctx.user.role !== 'super_admin') {
+      throw new TRPCError({ code: "FORBIDDEN", message: "صلاحيات المدير العام مطلوبة" });
+    }
+    return next({ ctx });
   }),
 );

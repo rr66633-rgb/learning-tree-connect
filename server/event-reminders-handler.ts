@@ -14,8 +14,12 @@ export async function eventRemindersHandler(req: Request, res: Response) {
   try {
     const { sdk } = await import("./_core/sdk");
     const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && (user as any).role !== "admin") {
-      res.status(403).json({ error: "cron-only or admin" });
+    // SECURITY FIX: this is a platform-wide scheduled job; previously any
+    // single organization's own regular admin could manually trigger it.
+    // Per policy, the only allowed cross-organization actor is the
+    // authenticated Super Admin (or the automated cron system itself).
+    if (!user.isCron && (user as any).role !== "super_admin") {
+      res.status(403).json({ error: "cron-only or super_admin" });
       return;
     }
 
@@ -35,15 +39,20 @@ export async function eventRemindersHandler(req: Request, res: Response) {
         }
 
         // Determine target users based on audience
+        // SECURITY FIX: previously called db.getUsersByRoles() with no
+        // organizationId at all -- every hourly event reminder was broadcast
+        // to every matching-role user across EVERY organization, not just
+        // the organization that owns this event. Scoped via the event's own
+        // (trusted, server-side) organizationId.
         let targetUserIds: number[] = [];
         const audience = reminder.audience;
 
         if (audience === "parents" || audience === "all") {
-          const parents = await db.getUsersByRoles(["parent"]);
+          const parents = await db.getUsersByRoles(["parent"], event.organizationId);
           targetUserIds.push(...parents.map((u: any) => u.id));
         }
         if (audience === "staff" || audience === "all") {
-          const staff = await db.getUsersByRoles(["admin", "super_admin", "principal", "teacher"]);
+          const staff = await db.getUsersByRoles(["admin", "super_admin", "principal", "teacher"], event.organizationId);
           targetUserIds.push(...staff.map((u: any) => u.id));
         }
 
@@ -81,6 +90,7 @@ export async function eventRemindersHandler(req: Request, res: Response) {
         for (const userId of targetUserIds) {
           await db.createNotification({
             userId,
+            organizationId: event.organizationId,
             title: "تذكير حدث",
             titleAr: "تذكير حدث",
             body: message,

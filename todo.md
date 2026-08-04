@@ -2743,3 +2743,16 @@ Fix:
 - [x] إنشاء نسخة احتياطية لملفات المشروع (naashah_project_backup_2026-08-01.zip - 15MB، 1514 ملف)
 - [x] إصلاح مشكلة ترميز الخط العربي في PDF الخطة الأسبوعية (إرجاع طريقة فتح نافذة HTML مع زر طباعة/حفظ PDF - الأوضح والأنظف)
 - [ ] إصلاح خطأ 404 عند فتح المعلمة لأي فصل
+
+## Security & Calendar Fixes (Bundle Applied)
+- [x] Apply tenant isolation fixes across all routers
+- [x] Fix calendar_events migration (0019) - drop legacy columns, enforce organizationId NOT NULL
+- [x] Remove @builder.io/vite-plugin-jsx-loc dependency conflict with Vite 7
+- [x] Add multi-tenant isolation test suite
+- [x] Add security audit report v2
+- [x] Fix SQL injection in loyalty settings
+- [x] Fix CSRF secret fallback
+- [x] Fix cross-tenant financial data leak
+- [x] Fix bulk-import cross-tenant write vulnerability
+- [x] Fix payment status spoofing (Moyasar)
+- [x] Fix registration privilege escalation

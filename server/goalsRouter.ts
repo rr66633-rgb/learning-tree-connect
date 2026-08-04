@@ -1,15 +1,16 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "./_core/trpc";
-import { performanceGoals } from "../drizzle/schema";
+import { tenantProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { performanceGoals, users } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
 
 export const goalsRouter = router({
   // List goals for a user (or all for admin)
-  list: protectedProcedure
+  list: tenantProcedure
     .input(z.object({ userId: z.number().optional() }))
     .query(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       let conditions = [eq(performanceGoals.organizationId, orgId)];
       if (input.userId) {
@@ -24,7 +25,7 @@ export const goalsRouter = router({
     }),
 
   // Create a new goal
-  create: protectedProcedure
+  create: tenantProcedure
     .input(z.object({
       userId: z.number(),
       title: z.string().min(1),
@@ -34,8 +35,15 @@ export const goalsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
+      // SECURITY FIX: input.userId was previously trusted with no check that
+      // the target user belongs to the caller's organization -- a goal could
+      // be assigned to a user from a different organization.
+      const [targetUser] = await db.select({ organizationId: users.organizationId }).from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!targetUser || targetUser.organizationId !== orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "المستخدم غير موجود" });
+      }
       await db.insert(performanceGoals).values({
         userId: input.userId,
         organizationId: orgId,
@@ -52,14 +60,14 @@ export const goalsRouter = router({
     }),
 
   // Update goal progress
-  updateProgress: protectedProcedure
+  updateProgress: tenantProcedure
     .input(z.object({
       id: z.number(),
       progress: z.number().min(0).max(100),
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       const updateData: any = { progress: input.progress };
       if (input.notes) updateData.notes = input.notes;
@@ -75,13 +83,13 @@ export const goalsRouter = router({
     }),
 
   // Update goal status
-  updateStatus: protectedProcedure
+  updateStatus: tenantProcedure
     .input(z.object({
       id: z.number(),
       status: z.enum(["active", "completed", "cancelled", "overdue"]),
     }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       const updateData: any = { status: input.status };
       if (input.status === "completed") updateData.progress = 100;
@@ -96,10 +104,10 @@ export const goalsRouter = router({
     }),
 
   // Delete a goal
-  delete: protectedProcedure
+  delete: tenantProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       await db
         .delete(performanceGoals)
@@ -111,10 +119,10 @@ export const goalsRouter = router({
     }),
 
   // Get summary stats for goals
-  summary: protectedProcedure
+  summary: tenantProcedure
     .input(z.object({ userId: z.number().optional() }))
     .query(async ({ input, ctx }) => {
-      const orgId = ctx.user.organizationId ?? 1;
+      const orgId = ctx.organizationId;
       const db = (await getDb())!;
       let conditions = [eq(performanceGoals.organizationId, orgId)];
       if (input.userId) {
