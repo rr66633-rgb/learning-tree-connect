@@ -145,7 +145,15 @@ async function startServer() {
         url.startsWith('/api/upload-photo') ||
         url.startsWith('/api/upload-document') ||
         url.startsWith('/api/upload-media') ||
-        url.startsWith('/api/upload')) {
+        url.startsWith('/api/upload') ||
+        // Skip CSRF for scheduled/cron callback endpoints - these are called
+        // by an external cron caller (cron-job.org, Railway/Render cron, etc),
+        // never by a browser, so there is no session cookie and no CSRF cookie
+        // to double-submit. They're protected instead by the CRON_SECRET
+        // bearer-token check (requireCronSecret, see below). Without this
+        // exemption every scheduled call was rejected with 403 "invalid csrf
+        // token" before it ever reached that check.
+        url.startsWith('/api/scheduled/')) {
       return next();
     }
 
