@@ -1237,7 +1237,7 @@ DEALLOCATE PREPARE stmt;
 SET @s = (SELECT IF(
 	(SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'loyalty_rewards' AND COLUMN_NAME = 'category') > 0,
 	'SELECT 1',
-	'ALTER TABLE `loyalty_rewards` ADD COLUMN `category` enum('discount','free_day','gift','upgrade','custom') DEFAULT 'custom''
+	'ALTER TABLE `loyalty_rewards` ADD COLUMN `category` enum(''discount'',''free_day'',''gift'',''upgrade'',''custom'') DEFAULT ''custom'''
 ));
 --> statement-breakpoint
 PREPARE stmt FROM @s;
