@@ -184,11 +184,45 @@ async function startServer() {
     return res.status(status).json({ error: err.message || 'Internal server error' });
   });
 
+  // tRPC's httpBatchLink expects every response -- including error responses --
+  // to be a JSON array with one entry per batched procedure call, each shaped
+  // like { error: { json: { message, code, data } } }. express-rate-limit's
+  // default `message` option just sends a plain `{ error: "..." }` object,
+  // which isn't valid tRPC batch shape. The client then fails to parse/
+  // "transform" the response and shows a generic, confusing error (observed
+  // in practice as "Unable to transform response from server" or a bogus
+  // "connection error" toast) instead of the real "too many attempts, wait
+  // N minutes" message. This wraps the message correctly for routes mounted
+  // under /api/trpc/*, so rate-limit errors surface as intended.
+  function trpcRateLimitHandler(arabicMessage: string) {
+    return (req: express.Request, res: express.Response) => {
+      let batchSize = 1;
+      try {
+        if (req.body && typeof req.body === "object") {
+          const keys = Object.keys(req.body);
+          if (keys.length > 0) batchSize = keys.length;
+        }
+      } catch {
+        // fall back to batchSize = 1
+      }
+      const errorEntry = {
+        error: {
+          json: {
+            message: arabicMessage,
+            code: -32029,
+            data: { code: "TOO_MANY_REQUESTS", httpStatus: 429 },
+          },
+        },
+      };
+      res.status(429).json(Array.from({ length: batchSize }, () => errorEntry));
+    };
+  }
+
   // Rate limiting for auth-related tRPC procedures (strict)
   const authRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // max 10 login attempts per 15 min per IP
-    message: { error: "تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار 15 دقيقة." },
+    handler: trpcRateLimitHandler("تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار 15 دقيقة."),
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Only count failed attempts
@@ -198,7 +232,7 @@ async function startServer() {
   const otpRateLimit = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 5, // max 5 OTP attempts per 10 min per IP
-    message: { error: "تم تجاوز الحد الأقصى لمحاولات التحقق. يرجى الانتظار 10 دقائق." },
+    handler: trpcRateLimitHandler("تم تجاوز الحد الأقصى لمحاولات التحقق. يرجى الانتظار 10 دقائق."),
     standardHeaders: true,
     legacyHeaders: false,
   });
@@ -221,11 +255,14 @@ async function startServer() {
     legacyHeaders: false,
   });
 
-  // Rate limit for AI features (5 per minute - expensive operations)
+  // Rate limit for AI features (5 per minute - expensive operations).
+  // Mounted on /api/trpc/ai.* and /api/trpc/weeklyPlan.generate (tRPC routes),
+  // so it needs the same tRPC-shaped error response as authRateLimit/otpRateLimit
+  // above -- see trpcRateLimitHandler for why.
   const aiRateLimit = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5, // max 5 AI requests per minute per IP
-    message: { error: "تم تجاوز الحد الأقصى لطلبات الذكاء الاصطناعي. يرجى الانتظار." },
+    handler: trpcRateLimitHandler("تم تجاوز الحد الأقصى لطلبات الذكاء الاصطناعي. يرجى الانتظار."),
     standardHeaders: true,
     legacyHeaders: false,
   });
