@@ -155,6 +155,20 @@
       "when": 1785933775392,
       "tag": "0021_fix_schema_drift",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1785938700000,
+      "tag": "0022_clear_stale_manus_storage_urls",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1785945900000,
+      "tag": "0023_bootstrap_super_admin",
+      "breakpoints": true
     }
   ]
 }
