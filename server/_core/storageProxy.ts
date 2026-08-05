@@ -1,18 +1,23 @@
 import type { Express } from "express";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { ENV } from "./env";
+
+const S3_BUCKET = process.env.S3_BUCKET || "naashah-storage";
+const S3_REGION = process.env.S3_REGION || "auto";
+const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID || "0124dd1c7734d75bd7e304bdf980a23a";
+const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || "a3e9a76e03376b98da7d31fa1bf0d67aa87d3a881f1be857d2500c04f6e3d0f5";
+const S3_ENDPOINT = process.env.S3_ENDPOINT || "https://12f27c10f3facdef54519307c717b23f.r2.cloudflarestorage.com";
 
 let _client: S3Client | null = null;
 
 function getS3Client(): S3Client {
   if (_client) return _client;
   _client = new S3Client({
-    region: ENV.s3Region,
-    endpoint: ENV.s3Endpoint || undefined,
-    forcePathStyle: ENV.s3ForcePathStyle,
+    region: S3_REGION,
+    endpoint: S3_ENDPOINT,
+    forcePathStyle: true,
     credentials: {
-      accessKeyId: ENV.s3AccessKeyId,
-      secretAccessKey: ENV.s3SecretAccessKey,
+      accessKeyId: S3_ACCESS_KEY_ID,
+      secretAccessKey: S3_SECRET_ACCESS_KEY,
     },
   });
   return _client;
@@ -26,12 +31,7 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    if (
-      !ENV.s3Bucket ||
-      !ENV.s3Region ||
-      !ENV.s3AccessKeyId ||
-      !ENV.s3SecretAccessKey
-    ) {
+    if (!S3_BUCKET || !S3_ACCESS_KEY_ID) {
       res.status(500).send("Storage proxy not configured");
       return;
     }
@@ -39,7 +39,7 @@ export function registerStorageProxy(app: Express) {
     try {
       const client = getS3Client();
       const result = await client.send(
-        new GetObjectCommand({ Bucket: ENV.s3Bucket, Key: key }),
+        new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }),
       );
 
       if (!result.Body) {

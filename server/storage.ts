@@ -1,46 +1,27 @@
-// Storage helpers - Amazon S3 (or any S3-compatible provider: Cloudflare R2,
-// Backblaze B2, MinIO, etc).
-// Uploads go directly to the bucket via the AWS SDK.
-// Downloads return /manus-storage/{key} paths (path kept unchanged for
-// backward compatibility with an existing hardcoded reference in the client),
-// served via a 307 redirect to a short-lived signed URL -- see
-// server/_core/storageProxy.ts.
-//
-// This replaces the Manus-proprietary "Forge" storage backend this project
-// used while hosted on Manus. @aws-sdk/client-s3 and
-// @aws-sdk/s3-request-presigner were already declared as dependencies but
-// unused; this file is now what actually uses them.
-
+// Storage helpers - Cloudflare R2 (S3-compatible)
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { ENV } from "./_core/env";
+
+// Use process.env directly with hardcoded fallbacks for R2
+const S3_BUCKET = process.env.S3_BUCKET || "naashah-storage";
+const S3_REGION = process.env.S3_REGION || "auto";
+const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID || "0124dd1c7734d75bd7e304bdf980a23a";
+const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || "a3e9a76e03376b98da7d31fa1bf0d67aa87d3a881f1be857d2500c04f6e3d0f5";
+const S3_ENDPOINT = process.env.S3_ENDPOINT || "https://12f27c10f3facdef54519307c717b23f.r2.cloudflarestorage.com";
 
 let _client: S3Client | null = null;
 
 function getS3Client(): S3Client {
   if (_client) return _client;
-
-  if (
-    !ENV.s3Bucket ||
-    !ENV.s3Region ||
-    !ENV.s3AccessKeyId ||
-    !ENV.s3SecretAccessKey
-  ) {
-    throw new Error(
-      "Storage config missing: set S3_BUCKET, S3_REGION, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY",
-    );
-  }
-
   _client = new S3Client({
-    region: ENV.s3Region,
-    endpoint: ENV.s3Endpoint || undefined,
-    forcePathStyle: ENV.s3ForcePathStyle,
+    region: S3_REGION,
+    endpoint: S3_ENDPOINT,
+    forcePathStyle: true,
     credentials: {
-      accessKeyId: ENV.s3AccessKeyId,
-      secretAccessKey: ENV.s3SecretAccessKey,
+      accessKeyId: S3_ACCESS_KEY_ID,
+      secretAccessKey: S3_SECRET_ACCESS_KEY,
     },
   });
-
   return _client;
 }
 
@@ -68,7 +49,7 @@ export async function storagePut(
 
   await client.send(
     new PutObjectCommand({
-      Bucket: ENV.s3Bucket,
+      Bucket: S3_BUCKET,
       Key: key,
       Body: body,
       ContentType: contentType,
@@ -89,7 +70,7 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
 
   return getSignedUrl(
     client,
-    new GetObjectCommand({ Bucket: ENV.s3Bucket, Key: key }),
+    new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }),
     { expiresIn: 300 }, // 5 minutes -- matches the short-lived nature of the old Forge presign
   );
 }
