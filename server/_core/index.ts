@@ -10,6 +10,7 @@ import cookieParser from "cookie-parser";
 import { doubleCsrf } from "csrf-csrf";
 // OAuth removed - using independent auth system
 import { registerStorageProxy } from "./storageProxy";
+import { storagePut } from "../storage";
 import { ENV } from "./env";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -332,7 +333,7 @@ async function startServer() {
         res.status(401).json({ error: 'يجب تسجيل الدخول لرفع الملفات' });
         return;
       }
-      const { storagePut } = await import('../storage');
+      
       const jsonBody = req.body;
       if (!jsonBody || !jsonBody.data) {
         res.status(400).json({ error: 'Missing data field' });
@@ -383,7 +384,7 @@ async function startServer() {
       if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
       if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: 'نوع الملف غير مدعوم' }); return; }
-      const { storagePut } = await import('../storage');
+      
       const sharp = (await import('sharp')).default;
       
       // Auto-resize and optimize: max 800x800, JPEG quality 85, auto-rotate based on EXIF
@@ -412,7 +413,7 @@ async function startServer() {
       if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: 'نوع الملف غير مدعوم. يرجى رفع صور أو PDF أو Word' }); return; }
-      const { storagePut } = await import('../storage');
+      
       const ext = file.originalname.split('.').pop() || 'pdf';
       const key = `documents/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { url } = await storagePut(key, file.buffer, file.mimetype);
@@ -434,7 +435,7 @@ async function startServer() {
       const file = (req as any).file;
       if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
       if (file.mimetype !== 'application/pdf') { res.status(400).json({ error: 'يرجى رفع ملف PDF فقط' }); return; }
-      const { storagePut } = await import('../storage');
+      
       const key = `curricula/${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;
       const { url } = await storagePut(key, file.buffer, 'application/pdf');
       res.json({ fileUrl: url, fileKey: key, fileName: file.originalname, fileSize: file.size });
@@ -455,7 +456,7 @@ async function startServer() {
       if (!file) { res.status(400).json({ error: 'لم يتم إرفاق ملف' }); return; }
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
       if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: 'نوع الملف غير مدعوم. يرجى رفع صور PNG أو JPG أو SVG' }); return; }
-      const { storagePut } = await import('../storage');
+      
       
       let finalBuffer = file.buffer;
       let finalMime = file.mimetype;
@@ -498,7 +499,7 @@ async function startServer() {
       if (!file) { res.status(400).json({ error: '\u0644\u0645 \u064a\u062a\u0645 \u0625\u0631\u0641\u0627\u0642 \u0645\u0644\u0641' }); return; }
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/webm'];
       if (!allowedTypes.includes(file.mimetype)) { res.status(400).json({ error: '\u0646\u0648\u0639 \u0627\u0644\u0645\u0644\u0641 \u063a\u064a\u0631 \u0645\u062f\u0639\u0648\u0645. \u064a\u0631\u062c\u0649 \u0631\u0641\u0639 \u0635\u0648\u0631 (JPG, PNG, HEIC) \u0623\u0648 \u0641\u064a\u062f\u064a\u0648 (MP4, MOV)' }); return; }
-      const { storagePut } = await import('../storage');
+      
       const ext = file.originalname.split('.').pop() || 'jpg';
       const isVideo = file.mimetype.startsWith('video/');
       const folder = isVideo ? 'videos' : 'photos';
@@ -521,7 +522,7 @@ async function startServer() {
       const files = (req as any).files as any[];
       if (!files || files.length === 0) { res.status(400).json({ error: '\u0644\u0645 \u064a\u062a\u0645 \u0625\u0631\u0641\u0627\u0642 \u0645\u0644\u0641\u0627\u062a' }); return; }
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/webm'];
-      const { storagePut } = await import('../storage');
+      
       const results = [];
       for (const file of files) {
         if (!allowedTypes.includes(file.mimetype)) continue;
