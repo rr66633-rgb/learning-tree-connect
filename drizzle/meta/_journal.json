@@ -148,6 +148,13 @@
       "when": 1785932278945,
       "tag": "0020_schema_catchup",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1785933775392,
+      "tag": "0021_fix_schema_drift",
+      "breakpoints": true
     }
   ]
 }
