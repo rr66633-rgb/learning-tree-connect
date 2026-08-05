@@ -160,7 +160,7 @@ export async function enrollmentExpiryHandler(req: Request, res: Response) {
       countsByOrg.set(orgId, entry);
     }
 
-    for (const [orgId, counts] of countsByOrg) {
+    for (const [orgId, counts] of Array.from(countsByOrg)) {
       const totalExpiring = counts.in7 + counts.tomorrow;
       if (totalExpiring === 0) continue;
 

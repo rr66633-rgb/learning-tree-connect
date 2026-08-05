@@ -253,8 +253,18 @@ class SDKServer {
 
   async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
     // Independent authentication flow - no external OAuth dependency
+    // Check cookie first, then fallback to Authorization Bearer header (used by Heartbeat cron system)
     const cookies = this.parseCookies(req.headers.cookie);
-    const sessionCookie = cookies.get(COOKIE_NAME);
+    let sessionCookie = cookies.get(COOKIE_NAME);
+
+    // Heartbeat cron system sends Bearer token in Authorization header
+    if (!sessionCookie) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        sessionCookie = authHeader.slice(7);
+      }
+    }
+
     const session = await this.verifySession(sessionCookie);
 
     if (!session) {

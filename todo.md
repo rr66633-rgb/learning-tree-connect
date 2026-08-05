@@ -2770,3 +2770,6 @@ Fix:
 - [x] Create deployment guide for Railway/Render (docs/DEPLOYMENT.md)
 - [x] Create migration guide (docs/MIGRATION-GUIDE.md)
 - [x] Create standalone Dockerfile (Dockerfile.standalone)
+
+## Pickup Escalation Cron Fix (Aug 5, 2026)
+- [x] Fix sdk.authenticateRequest to read Bearer token from Authorization header (Heartbeat cron system)
