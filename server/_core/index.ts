@@ -1,4 +1,5 @@
 import "dotenv/config";
+import crypto from "crypto";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
@@ -10,7 +11,30 @@ import cookieParser from "cookie-parser";
 import { doubleCsrf } from "csrf-csrf";
 // OAuth removed - using independent auth system
 import { registerStorageProxy } from "./storageProxy";
-import { storagePut } from "../storage";
+// Direct R2 upload function - inline to avoid bundling issues
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+const _r2Client = new S3Client({
+  region: 'auto',
+  endpoint: process.env.S3_ENDPOINT || 'https://12f27c10f3facdef54519307c717b23f.r2.cloudflarestorage.com',
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || '0124dd1c7734d75bd7e304bdf980a23a',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'a3e9a76e03376b98da7d31fa1bf0d67aa87d3a881f1be857d2500c04f6e3d0f5',
+  },
+});
+async function storagePut(relKey: string, data: Buffer | Uint8Array | string, contentType = 'application/octet-stream'): Promise<{ key: string; url: string }> {
+  const hash = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  const lastDot = relKey.lastIndexOf('.');
+  const key = lastDot === -1 ? `${relKey}_${hash}` : `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
+  const body = typeof data === 'string' ? Buffer.from(data, 'utf-8') : Buffer.from(data);
+  await _r2Client.send(new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET || 'naashah-storage',
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  }));
+  return { key, url: `/manus-storage/${key}` };
+}
 import { ENV } from "./env";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
