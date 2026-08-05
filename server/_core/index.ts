@@ -374,6 +374,16 @@ async function startServer() {
   const multer = (await import('multer')).default;
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+  // Debug: test R2 upload directly
+  app.get('/api/test-r2', async (req, res) => {
+    try {
+      const result = await storagePut('test/ping.txt', Buffer.from('hello ' + Date.now()), 'text/plain');
+      res.json({ success: true, result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message, stack: error.stack?.split('\n').slice(0,3) });
+    }
+  });
+
   app.post('/api/upload-photo', upload.single('file'), async (req, res) => {
     try {
       const { sdk } = await import('./sdk');
