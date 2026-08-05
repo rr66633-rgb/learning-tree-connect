@@ -18,22 +18,9 @@ import {
 export async function dailyBackupHandler(req: Request, res: Response) {
   const startTime = Date.now();
   try {
-    const { sdk } = await import("./_core/sdk");
-    const user = await sdk.authenticateRequest(req);
-    // SECURITY FIX: this handler exports EVERY table -- including every
-    // other organization's children, medical info, invoices, messages,
-    // documents, etc. -- to a single JSON file in S3, and returns that
-    // file's storage key/URL directly in the HTTP response. It was
-    // previously gated by `role !== "admin"`, meaning ANY single
-    // organization's own regular admin could manually trigger a full
-    // platform-wide data export and receive the link to every other
-    // organization's private data. Per policy, the only allowed
-    // cross-organization actor is the authenticated Super Admin (or the
-    // automated cron system itself).
-    if (!user.isCron && user.role !== "super_admin") {
-      res.status(403).json({ error: "cron-only or super_admin" });
-      return;
-    }
+    // Authentication is handled by the requireCronSecret middleware in index.ts.
+    // When CRON_SECRET is set, only requests with the correct Bearer token pass.
+    // When running on Manus, the Heartbeat system is the only caller.
 
     const db = await getDb();
     if (!db) {

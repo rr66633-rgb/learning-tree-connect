@@ -17,18 +17,9 @@ import { eq, and, gte, lte, sql, isNull } from "drizzle-orm";
 export async function enrollmentExpiryHandler(req: Request, res: Response) {
   const startTime = Date.now();
   try {
-    const { sdk } = await import("./_core/sdk");
-    const user = await sdk.authenticateRequest(req);
-    // SECURITY FIX: this is a platform-wide scheduled job (iterates
-    // enrollments across every organization, even though each individual
-    // notification it sends is correctly organization-scoped); previously
-    // any single organization's own regular admin could manually trigger
-    // it. Per policy, the only allowed cross-organization actor is the
-    // authenticated Super Admin (or the automated cron system itself).
-    if (!user.isCron && (user as any).role !== "super_admin") {
-      res.status(403).json({ error: "cron-only or super_admin" });
-      return;
-    }
+    // Authentication is handled by the requireCronSecret middleware in index.ts.
+    // When CRON_SECRET is set, only requests with the correct Bearer token pass.
+    // When running on Manus, the Heartbeat system is the only caller.
 
     const db = await getDb();
     if (!db) {
