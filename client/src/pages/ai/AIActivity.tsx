@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export default function AIActivity() {
   const { i18n } = useTranslation();
+  const { runTask } = useAiTask();
   const isAr = i18n.language === "ar";
   const [age, setAge] = useState("");
   const [topic, setTopic] = useState("");
@@ -47,7 +49,28 @@ export default function AIActivity() {
 
   const handleGenerate = () => {
     if (!age || !topic.trim()) { toast.error(isAr ? "يرجى اختيار العمر وإدخال الموضوع" : "Please select age and enter topic"); return; }
-    generateMutation.mutate({ age, topic, language });
+    runTask({
+      title: "جارٍ توليد النشاط",
+      titleEn: "Generating the activity",
+      stages: [
+        { label: "تحديد الفئة العمرية والموضوع", labelEn: "Matching age group and topic" },
+        { label: "بناء خطوات النشاط والمواد", labelEn: "Building steps and materials" },
+        { label: "إضافة طريقة التقييم", labelEn: "Adding the assessment method" },
+      ],
+      stageSeconds: [3, 8],
+      run: () => generateMutation.mutateAsync({ age, topic, language }),
+      onDone: () => ({
+        title: "تم توليد النشاط",
+        titleEn: "Activity ready",
+        actionLabel: "عرض النشاط",
+        actionLabelEn: "View activity",
+        // The result renders inline below the form; bring it into view
+        // rather than leaving the user staring at the inputs.
+        onAction: () => requestAnimationFrame(() =>
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        ),
+      }),
+    }).catch(() => { /* the card reports the failure; the toast already fired */ });
   };
 
   return (

@@ -11,6 +11,7 @@ import { getCsrfToken, invalidateCsrfToken } from "@/lib/csrf";
 import { FileText, Trash2, Upload, BookOpen, Loader2 } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 const getLEVEL_LABELS = (isAr: boolean): Record<string, string>  => ({
@@ -66,33 +67,15 @@ export default function CurriculumManagement() {
 
     setUploading(true);
     try {
-      // Upload file first
+      // Upload file first. Curriculum files are documents (PDF/Word), so they
+      // are sent byte-exact -- no client-side re-encoding.
+      // The hand-rolled 403/CSRF retry that used to live here is now built into
+      // uploadWithProgress, so it is no longer duplicated per page.
       const formData = new FormData();
       formData.append("file", file);
-      const csrfToken = await getCsrfToken();
-      let res = await fetchWithCsrf(apiUrl('/api/upload-curriculum'), {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-        headers: { "x-csrf-token": csrfToken } });
-
-      // Retry on CSRF error
-      if (res.status === 403) {
-        invalidateCsrfToken();
-        const newToken = await getCsrfToken();
-        res = await fetchWithCsrf(apiUrl('/api/upload-curriculum'), {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-          headers: { "x-csrf-token": newToken } });
-      }
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || (isAr ? "فشل رفع الملف" : "Failed to Upload File"));
-      }
-
-      const { fileUrl, fileKey, fileName, fileSize } = await res.json();
+      const { fileUrl, fileKey, fileName, fileSize } = await uploadWithProgress<{
+        fileUrl: string; fileKey: string; fileName: string; fileSize: number;
+      }>(apiUrl('/api/upload-curriculum'), formData);
 
       // Create curriculum record
       await createMutation.mutateAsync({

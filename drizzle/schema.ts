@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, decimal } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, decimal, index } from "drizzle-orm/mysql-core";
 
 // ============ USERS ============
 export const users = mysqlTable("users", {
@@ -27,7 +27,11 @@ export const users = mysqlTable("users", {
   organizationId: int("organizationId").notNull(),
   deletionRequestedAt: timestamp("deletionRequestedAt"),
   deletionScheduledAt: timestamp("deletionScheduledAt"),
-});
+}, (table) => [
+  index("idx_users_org_role_active").on(table.organizationId, table.role, table.isActive),
+  index("idx_users_email").on(table.email),
+  index("idx_users_phone").on(table.phone),
+]);
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -49,7 +53,10 @@ export const classes = mysqlTable("classes", {
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_classes_org_active").on(table.organizationId, table.isActive),
+  index("idx_classes_org_teacher").on(table.organizationId, table.teacherId),
+]);
 
 export type Class = typeof classes.$inferSelect;
 export type InsertClass = typeof classes.$inferInsert;
@@ -94,7 +101,11 @@ export const children = mysqlTable("children", {
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_children_org_created").on(table.organizationId, table.createdAt),
+  index("idx_children_org_class_status").on(table.organizationId, table.classId, table.status),
+  index("idx_children_parent_org").on(table.parentId, table.organizationId),
+]);
 
 export type Child = typeof children.$inferSelect;
 export type InsertChild = typeof children.$inferInsert;
@@ -143,7 +154,10 @@ export const attendance = mysqlTable("attendance", {
   // database level instead of silently landing in organization #1.
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_attendance_org_date").on(table.organizationId, table.date),
+  index("idx_attendance_org_child_date").on(table.organizationId, table.childId, table.date),
+]);
 
 export type Attendance = typeof attendance.$inferSelect;
 export type InsertAttendance = typeof attendance.$inferInsert;
@@ -172,7 +186,10 @@ export const staffAttendance = mysqlTable("staff_attendance", {
   // database level instead of silently landing in organization #1.
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_staff_attendance_org_date").on(table.organizationId, table.date),
+  index("idx_staff_attendance_org_user_date").on(table.organizationId, table.userId, table.date),
+]);
 
 export type StaffAttendance = typeof staffAttendance.$inferSelect;
 
@@ -221,7 +238,10 @@ export const dailyActivities = mysqlTable("daily_activities", {
   // database level instead of silently landing in organization #1.
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_daily_activities_org_child_recorded").on(table.organizationId, table.childId, table.recordedAt),
+  index("idx_daily_activities_org_class_recorded").on(table.organizationId, table.classId, table.recordedAt),
+]);
 
 export type DailyActivity = typeof dailyActivities.$inferSelect;
 
@@ -246,7 +266,10 @@ export const dailyReports = mysqlTable("daily_reports", {
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_daily_reports_org_date").on(table.organizationId, table.date),
+  index("idx_daily_reports_org_child_date").on(table.organizationId, table.childId, table.date),
+]);
 
 export type DailyReport = typeof dailyReports.$inferSelect;
 export type InsertDailyReport = typeof dailyReports.$inferInsert;
@@ -406,10 +429,12 @@ export const waitingList = mysqlTable("waiting_list", {
   notes: text("notes"),
   status: mysqlEnum("status", ["waiting", "contacted", "enrolled", "cancelled"]).default("waiting").notNull(),
   priority: int("priority").default(0).notNull(),
-  organizationId: int("organizationId"),
+  organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_waiting_list_org_priority_created").on(table.organizationId, table.priority, table.createdAt),
+]);
 
 // ============ MESSAGES ============
 export const conversations = mysqlTable("conversations", {
@@ -427,7 +452,11 @@ export const conversations = mysqlTable("conversations", {
   // database level instead of silently landing in organization #1.
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_conversations_org_archived_last").on(table.organizationId, table.isArchived, table.lastMessageAt),
+  index("idx_conversations_participant_one").on(table.participantOneId, table.isArchived, table.lastMessageAt),
+  index("idx_conversations_participant_two").on(table.participantTwoId, table.isArchived, table.lastMessageAt),
+]);
 
 export const messages = mysqlTable("messages", {
   id: int("id").autoincrement().primaryKey(),
@@ -441,7 +470,10 @@ export const messages = mysqlTable("messages", {
   readAt: timestamp("readAt"),
   isDeleted: boolean("isDeleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_messages_conversation_created").on(table.conversationId, table.isDeleted, table.createdAt),
+  index("idx_messages_conversation_unread").on(table.conversationId, table.isRead, table.isDeleted),
+]);
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
@@ -656,7 +688,10 @@ export const notifications = mysqlTable("notifications", {
   // every other call site always supplies a real organizationId.
   organizationId: int("organizationId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_notifications_user_created").on(table.userId, table.createdAt),
+  index("idx_notifications_user_unread").on(table.userId, table.isRead),
+]);
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
@@ -702,7 +737,10 @@ export const parentChildren = mysqlTable("parent_children", {
   relationship: varchar("relationship", { length: 50 }).default("parent").notNull(),
   isPrimary: boolean("isPrimary").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_parent_children_parent_child").on(table.parentId, table.childId),
+  index("idx_parent_children_child_parent").on(table.childId, table.parentId),
+]);
 export type ParentChild = typeof parentChildren.$inferSelect;
 export type InsertParentChild = typeof parentChildren.$inferInsert;
 // ============ AUDIT LOG ============
@@ -756,7 +794,10 @@ export const media = mysqlTable("media", {
   // database level instead of silently landing in organization #1.
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_media_org_created").on(table.organizationId, table.createdAt),
+  index("idx_media_org_class_approved_created").on(table.organizationId, table.classId, table.isApproved, table.createdAt),
+]);
 export type Media = typeof media.$inferSelect;
 export type InsertMedia = typeof media.$inferInsert;
 
@@ -765,7 +806,10 @@ export const mediaChildren = mysqlTable("media_children", {
   id: int("id").autoincrement().primaryKey(),
   mediaId: int("mediaId").notNull(),
   childId: int("childId").notNull(),
-});
+}, (table) => [
+  index("idx_media_children_child_media").on(table.childId, table.mediaId),
+  index("idx_media_children_media").on(table.mediaId),
+]);
 export type MediaChild = typeof mediaChildren.$inferSelect;
 
 // ============ OTP CODES ============
@@ -843,7 +887,11 @@ export const pickupRequests = mysqlTable("pickup_requests", {
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_pickup_org_status_requested").on(table.organizationId, table.status, table.requestedAt),
+  index("idx_pickup_parent_requested").on(table.parentId, table.requestedAt),
+  index("idx_pickup_child_status_requested").on(table.childId, table.status, table.requestedAt),
+]);
 export type PickupRequest = typeof pickupRequests.$inferSelect;
 export type InsertPickupRequest = typeof pickupRequests.$inferInsert;
 
@@ -890,7 +938,9 @@ export const pushSubscriptions = mysqlTable("push_subscriptions", {
   auth: varchar("auth", { length: 255 }).notNull(),
   userAgent: text("userAgent"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_push_subscriptions_user").on(table.userId),
+]);
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
@@ -1012,7 +1062,11 @@ export const weeklyPlans = mysqlTable("weekly_plans", {
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_weekly_plans_org_created").on(table.organizationId, table.createdAt),
+  index("idx_weekly_plans_org_teacher_created").on(table.organizationId, table.teacherId, table.createdAt),
+  index("idx_weekly_plans_org_class_status_published").on(table.organizationId, table.classId, table.status, table.publishedAt),
+]);
 export type WeeklyPlan = typeof weeklyPlans.$inferSelect;
 export type InsertWeeklyPlan = typeof weeklyPlans.$inferInsert;
 
@@ -1040,7 +1094,9 @@ export const organizations = mysqlTable("organizations", {
   trialEndsAt: timestamp("trialEndsAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_organizations_status_name").on(table.status, table.nameAr),
+]);
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = typeof organizations.$inferInsert;
 
@@ -1894,6 +1950,20 @@ export const demoRequests = mysqlTable("demo_requests", {
 });
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type InsertDemoRequest = typeof demoRequests.$inferInsert;
+
+// ============ PUBLIC VISITOR ASSISTANT SETTINGS ============
+// A single platform-wide row (id = 1) controls whether the public marketing
+// assistant is available. This is intentionally not tenant-scoped: it is owned
+// by the platform super admin and is only exposed publicly as an enabled flag.
+export const visitorAssistantSettings = mysqlTable("visitor_assistant_settings", {
+  id: int("id").primaryKey(),
+  enabled: boolean("enabled").default(true).notNull(),
+  updatedBy: int("updatedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type VisitorAssistantSettings = typeof visitorAssistantSettings.$inferSelect;
+export type InsertVisitorAssistantSettings = typeof visitorAssistantSettings.$inferInsert;
 
 
 // ============ PAYROLL (مسيّر الرواتب) ============

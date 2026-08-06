@@ -3,8 +3,72 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 
+// ---------------------------------------------------------------------------
+// SECURITY FIX: stop internal detail reaching the browser.
+//
+// Two leaks, both on EVERY tRPC error, on every page of the app:
+//
+//  1. `data.stack` was sent to the client in full -- including absolute server
+//     paths (/Users/.../server/_core/trpc.ts), the dependency tree and exact
+//     library versions. That is a map of the server handed to any visitor.
+//
+//  2. `message` was whatever was thrown. Anything raised by a third-party
+//     client came through verbatim, e.g.
+//       "LLM invoke failed: 401 Unauthorized - Incorrect API key provided:
+//        sk-proj-****DlgA. You can find your API key at
+//        https://platform.openai.com/account/api-keys"
+//     which names the AI provider, part of the key and the vendor's console
+//     URL -- shown to a nursery teacher inside the app.
+//
+// Fixing it at each call site was the wrong approach (I tried that first and it
+// only covered the weekly plan). This formatter is the single place every tRPC
+// error passes through, so it holds for all ~30 routers and anything added
+// later. Full detail is still logged server-side.
+// ---------------------------------------------------------------------------
+
+// Anything that names infrastructure, a vendor, a credential or a file path.
+const LEAK_PATTERNS = [
+  /openai|anthropic|cloudflare|r2\.|amazonaws|s3[-_. ]|forge\.manus|platform\.openai/i,
+  /api[ _-]?key|secret|token|bearer|authorization|sk-[A-Za-z0-9_-]{8,}|cfat_/i,
+  /\/Users\/|\/home\/|node_modules|\.ts:\d+|\.js:\d+|at\s+\w+\s+\(/,
+  /ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|socket hang up|fetch failed/i,
+  /mysql|sql syntax|ER_[A-Z_]+|drizzle|column .* doesn't exist|unknown column/i,
+  /LLM invoke failed|SignatureDoesNotMatch|AccessDenied|NoSuchKey/i,
+  /\b\d{1,3}(\.\d{1,3}){3}\b|localhost:\d+|https?:\/\//i,
+];
+
+const GENERIC_MESSAGE = "تعذّر إتمام العملية، يرجى المحاولة مرة أخرى";
+
+function looksLikeInternalDetail(message: string): boolean {
+  return LEAK_PATTERNS.some(re => re.test(message));
+}
+
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    const { stack, ...safeData } = shape.data as Record<string, unknown>;
+
+    // A deliberate, curated message is thrown as a TRPCError with no wrapped
+    // cause. An unexpected failure arrives wrapped, with the original error in
+    // `cause` -- that one is never safe to show.
+    const wrappedUnexpected =
+      error.code === "INTERNAL_SERVER_ERROR" && error.cause !== undefined;
+
+    const message =
+      wrappedUnexpected || looksLikeInternalDetail(shape.message)
+        ? GENERIC_MESSAGE
+        : shape.message;
+
+    if (message !== shape.message) {
+      // Keep the real reason where it belongs: the server log.
+      console.error(
+        `[tRPC] ${(safeData as any).path ?? "unknown"} -> ${error.code}:`,
+        error.cause ?? shape.message,
+      );
+    }
+
+    return { ...shape, message, data: safeData };
+  },
 });
 
 export const router = t.router;
@@ -109,7 +173,7 @@ export const adminProcedure = t.procedure.use(
 export const superAdminProcedure = protectedProcedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
-    if (ctx.user.role !== 'super_admin') {
+    if (ctx.user!.role !== 'super_admin') {
       throw new TRPCError({ code: "FORBIDDEN", message: "صلاحيات المدير العام مطلوبة" });
     }
     return next({ ctx });

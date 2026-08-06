@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { WEEKLY_PLAN_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesForAgeGroup, type WeeklyPlanTemplate } from "@/lib/weeklyPlanTemplates";
@@ -65,14 +66,131 @@ const OBJECT_LABEL_KEYS: Record<string, string> = {
   memorization: "labelMemorization", religious_activity: "labelReligiousActivity",
 };
 
+/**
+ * Renders one section's text with the structure the model already put in it.
+ *
+ * Three things are recognised, all optional -- anything unrecognised falls
+ * through as an ordinary paragraph, so no content can ever be lost or hidden:
+ *   1. a language switch line ("العربية:" / "English:") starts a labelled block
+ *   2. "1. …" / "- …" lines become a real list with aligned numbers
+ *   3. a short "label: value" prefix is set in a lighter weight than its value
+ * The wording itself is never touched.
+ */
+function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
+  const LANG_HEADING = /^\s*(العربية|بالعربية|عربي|English|الإنجليزية|بالإنجليزية)\s*[:：]\s*$/;
+  const LANG_INLINE = /^\s*(العربية|بالعربية|عربي|English|الإنجليزية|بالإنجليزية)\s*[:：]\s*(.+)$/;
+  const NUMBERED = /^\s*(\d+)\s*[.)\-–]\s*(.+)$/;
+  const BULLET = /^\s*[-•*]\s*(.+)$/;
+  // A leading "شيء: ..." label, only when it is genuinely short (a label, not a
+  // sentence that happens to contain a colon).
+  const LABELLED = /^\s*([^:：\n]{2,28})\s*[:：]\s+(.+)$/;
+
+  type Block = { lang: string | null; lines: string[] };
+  const blocks: Block[] = [];
+  let current: Block = { lang: null, lines: [] };
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) { current.lines.push(""); continue; }
+
+    const heading = line.match(LANG_HEADING);
+    const inline = heading ? null : line.match(LANG_INLINE);
+    if (heading || inline) {
+      if (current.lines.some(Boolean)) blocks.push(current);
+      current = { lang: (heading ? heading[1] : inline![1]), lines: [] };
+      if (inline && inline[2].trim()) current.lines.push(inline[2].trim());
+      continue;
+    }
+    current.lines.push(line);
+  }
+  if (current.lines.some(Boolean)) blocks.push(current);
+
+  const isEnglishLabel = (l: string) => /english/i.test(l);
+
+  const renderLine = (line: string, key: number) => {
+    if (!line) return null;
+    const num = line.match(NUMBERED);
+    if (num) {
+      return (
+        <li key={key} className="flex gap-2.5 items-start">
+          <span className="mt-0.5 shrink-0 h-5 min-w-5 px-1 rounded-md bg-gray-100 text-gray-500 text-[11px] font-semibold flex items-center justify-center tabular-nums">
+            {num[1]}
+          </span>
+          <span className="text-sm text-gray-700 leading-relaxed">{renderInline(num[2])}</span>
+        </li>
+      );
+    }
+    const bullet = line.match(BULLET);
+    if (bullet) {
+      return (
+        <li key={key} className="flex gap-2.5 items-start">
+          <span className="mt-2 shrink-0 h-1.5 w-1.5 rounded-full bg-gray-300" />
+          <span className="text-sm text-gray-700 leading-relaxed">{renderInline(bullet[1])}</span>
+        </li>
+      );
+    }
+    return (
+      <p key={key} className="text-sm text-gray-700 leading-relaxed">{renderInline(line)}</p>
+    );
+  };
+
+  // "المواد: كذا" -> label in a lighter weight, value normal.
+  function renderInline(s: string) {
+    const m = s.match(LABELLED);
+    if (!m) return s;
+    return (
+      <>
+        <span className="font-medium text-gray-500">{m[1]}: </span>
+        {m[2]}
+      </>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {blocks.map((block, bi) => {
+        const en = block.lang ? isEnglishLabel(block.lang) : false;
+        const items = block.lines.filter(Boolean);
+        const allListItems = items.length > 1 && items.every((l) => NUMBERED.test(l) || BULLET.test(l));
+        return (
+          <div key={bi} dir={block.lang ? (en ? "ltr" : "rtl") : undefined}
+               className={block.lang && en ? "text-left" : undefined}>
+            {block.lang && (
+              // Deliberately quiet: a small uppercase-ish label with a hairline,
+              // so it separates the two languages without competing with the
+              // section's own heading.
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[11px] font-semibold tracking-wide text-gray-400">
+                  {block.lang}
+                </span>
+                <span className="h-px flex-1 bg-gray-100" />
+              </div>
+            )}
+            {allListItems ? (
+              <ol className="space-y-1.5">{items.map(renderLine)}</ol>
+            ) : (
+              <div className="space-y-1.5">{items.map(renderLine)}</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: string; t: (key: string) => string }) {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
   if (!content) return <p className="text-gray-400 text-sm">{t('weeklyPlan.noContent')}</p>;
 
-  // Handle string content
+  // Handle string content.
+  // The model returns one long string per section, and it was previously dumped
+  // straight into a <p> with whitespace-pre-wrap -- so numbered lists, the
+  // "العربية:/English:" split and "label: value" pairs all read as one grey
+  // block. FormattedText below gives that structure back without changing a
+  // single word of the content.
   if (typeof content === "string") {
-    return <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{content}</p>;
+    return <FormattedText text={content} isAr={isAr} />;
   }
 
   // Handle array content (like learning_objectives or activities)
@@ -202,6 +320,7 @@ export default function WeeklyPlanPage() {
   ];
 
   // Queries
+  const { runTask } = useAiTask();
   const classesQuery = trpc.classes.list.useQuery();
   const plansQuery = trpc.weeklyPlan.list.useQuery({ limit: 50 });
   const selectedPlan = trpc.weeklyPlan.get.useQuery(
@@ -265,14 +384,38 @@ export default function WeeklyPlanPage() {
       toast.error(t('weeklyPlan.fillAllRequired'));
       return;
     }
-    generateMutation.mutate({
-      classId: classId ? parseInt(classId) : undefined,
-      ageGroup: ageGroup as any,
-      weekStartDate: weekStart,
-      weekEndDate: weekEnd,
-      theme,
-      language: language as any,
-    });
+    // Handed to the app-level task runner rather than fired here, so the work
+    // survives navigating away from this page and the user gets a staged
+    // progress card instead of a spinner on a button.
+    runTask({
+      title: "جارٍ إنشاء الخطة الأسبوعية",
+      titleEn: "Creating the weekly plan",
+      stages: [
+        { label: "تجهيز بيانات الأسبوع", labelEn: "Preparing week details" },
+        { label: "بناء الأنشطة والأهداف", labelEn: "Building activities and objectives" },
+        { label: "مراجعة الأقسام الأربعة عشر", labelEn: "Reviewing the 14 sections" },
+        { label: "حفظ الخطة", labelEn: "Saving the plan" },
+      ],
+      stageSeconds: [4, 22, 10],
+      run: () => generateMutation.mutateAsync({
+        classId: classId ? parseInt(classId) : undefined,
+        ageGroup: ageGroup as any,
+        weekStartDate: weekStart,
+        weekEndDate: weekEnd,
+        theme,
+        language: language as any,
+      }),
+      onDone: (plan: any) => ({
+        title: "تم إنشاء الخطة الأسبوعية",
+        titleEn: "Weekly plan ready",
+        actionLabel: "عرض الخطة",
+        actionLabelEn: "View plan",
+        // The mutation's onSuccess already switches to the preview; this makes
+        // that jump explicit and puts the new plan on screen even if the user
+        // wandered off to another page while it was generating.
+        onAction: () => { setSelectedPlanId(plan.id); setView("preview"); },
+      }),
+    }).catch(() => { /* the card shows the failure; the toast already fired */ });
   };
 
   const handleSaveEdits = () => {

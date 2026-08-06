@@ -1,4 +1,4 @@
-import { protectedProcedure, publicProcedure, superAdminProcedure, router } from "./_core/trpc";
+import { protectedProcedure, publicProcedure, superAdminProcedure, tenantProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { eq, and, desc, sql, inArray, gte, lte } from "drizzle-orm";
@@ -13,6 +13,29 @@ import {
   notifications,
 } from "../drizzle/schema";
 import { getDb } from "./db";
+
+// SECURITY FIX (broken access control): all eleven `admin*` endpoints in this
+// router were declared on `protectedProcedure`, which only proves the caller is
+// logged in -- NOT that they are staff. Despite their names, every one of them
+// was reachable by ANY authenticated account, including a parent. Verified
+// against the running app with a real parent session: adminGetProducts,
+// adminGetCategories, adminGetOrders, adminGetSalesReport and
+// adminCreateCategory all executed successfully for a parent. That exposed
+// every order in the nursery (with the buying parents' names, phone numbers and
+// addresses) and the full sales report, and allowed a parent to create, edit and
+// delete the nursery's store catalogue.
+//
+// This is the store-router equivalent of the gate already used elsewhere in the
+// codebase. It is built on `tenantProcedure` (not `protectedProcedure`) so
+// ctx.organizationId is additionally guaranteed to be a real organization,
+// rather than being read from ctx.user with an `if (!orgId) throw` afterwards.
+const storeAdminProcedure = tenantProcedure.use(({ ctx, next }) => {
+  const adminRoles = ['admin', 'super_admin', 'owner', 'principal'];
+  if (!adminRoles.includes(ctx.user.role)) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'صلاحيات الإدارة مطلوبة' });
+  }
+  return next({ ctx });
+});
 
 const COMMISSION_RATE = 0.10; // 10%
 
@@ -382,7 +405,7 @@ export const storeRouter = router({
     }),
 
   // ============ NURSERY ADMIN: Product Management ============
-  adminGetProducts: protectedProcedure.query(async ({ ctx }) => {
+  adminGetProducts: storeAdminProcedure.query(async ({ ctx }) => {
     const db = (await getDb())!;
     const orgId = ctx.user.organizationId;
     if (!orgId) throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
@@ -394,7 +417,7 @@ export const storeRouter = router({
     return products;
   }),
 
-  adminCreateProduct: protectedProcedure
+  adminCreateProduct: storeAdminProcedure
     .input(z.object({
       name: z.string().min(1),
       nameAr: z.string().min(1),
@@ -430,7 +453,7 @@ export const storeRouter = router({
       return { id: result.insertId };
     }),
 
-  adminUpdateProduct: protectedProcedure
+  adminUpdateProduct: storeAdminProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().min(1).optional(),
@@ -452,18 +475,26 @@ export const storeRouter = router({
       if (!orgId) throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
       
       const { id, ...updates } = input;
+      const [existing] = await db.select({ id: storeProducts.id }).from(storeProducts)
+        .where(and(eq(storeProducts.id, id), eq(storeProducts.organizationId, orgId)))
+        .limit(1);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "المنتج غير موجود" });
       await db.update(storeProducts)
         .set(updates as any)
         .where(and(eq(storeProducts.id, id), eq(storeProducts.organizationId, orgId)));
       return { success: true };
     }),
 
-  adminDeleteProduct: protectedProcedure
+  adminDeleteProduct: storeAdminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
       const orgId = ctx.user.organizationId;
       if (!orgId) throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
+      const [existing] = await db.select({ id: storeProducts.id }).from(storeProducts)
+        .where(and(eq(storeProducts.id, input.id), eq(storeProducts.organizationId, orgId)))
+        .limit(1);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "المنتج غير موجود" });
       
       await db.update(storeProducts)
         .set({ isActive: false })
@@ -472,7 +503,7 @@ export const storeRouter = router({
     }),
 
   // ============ NURSERY ADMIN: Category Management ============
-  adminGetCategories: protectedProcedure.query(async ({ ctx }) => {
+  adminGetCategories: storeAdminProcedure.query(async ({ ctx }) => {
     const db = (await getDb())!;
     const orgId = ctx.user.organizationId;
     if (!orgId) throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
@@ -484,7 +515,7 @@ export const storeRouter = router({
     return categories;
   }),
 
-  adminCreateCategory: protectedProcedure
+  adminCreateCategory: storeAdminProcedure
     .input(z.object({
       name: z.string().min(1),
       nameAr: z.string().min(1),
@@ -504,7 +535,7 @@ export const storeRouter = router({
       return { id: result.insertId };
     }),
 
-  adminDeleteCategory: protectedProcedure
+  adminDeleteCategory: storeAdminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
@@ -517,7 +548,7 @@ export const storeRouter = router({
     }),
 
   // ============ NURSERY ADMIN: Order Management ============
-  adminGetOrders: protectedProcedure
+  adminGetOrders: storeAdminProcedure
     .input(z.object({ status: z.string().optional() }).optional())
     .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
@@ -537,7 +568,7 @@ export const storeRouter = router({
       return orders;
     }),
 
-  adminUpdateOrderStatus: protectedProcedure
+  adminUpdateOrderStatus: storeAdminProcedure
     .input(z.object({
       orderId: z.number(),
       status: z.enum(["processing", "ready", "completed", "cancelled"]),
@@ -546,6 +577,10 @@ export const storeRouter = router({
       const db = (await getDb())!;
       const orgId = ctx.user.organizationId;
       if (!orgId) throw new TRPCError({ code: "FORBIDDEN", message: "غير مصرح" });
+      const [existing] = await db.select({ id: storeOrders.id }).from(storeOrders)
+        .where(and(eq(storeOrders.id, input.orderId), eq(storeOrders.organizationId, orgId)))
+        .limit(1);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "الطلب غير موجود" });
       
       await db.update(storeOrders)
         .set({ status: input.status })
@@ -553,7 +588,7 @@ export const storeRouter = router({
       return { success: true };
     }),
 
-  adminGetOrderDetails: protectedProcedure
+  adminGetOrderDetails: storeAdminProcedure
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
@@ -598,7 +633,7 @@ export const storeRouter = router({
     }),
 
   // ============ NURSERY ADMIN: Sales Report ============
-  adminGetSalesReport: protectedProcedure
+  adminGetSalesReport: storeAdminProcedure
     .input(z.object({ period: z.enum(["week", "month", "year"]).default("month") }).optional())
     .query(async ({ input, ctx }) => {
       const db = (await getDb())!;

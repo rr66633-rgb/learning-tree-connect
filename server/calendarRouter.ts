@@ -522,7 +522,7 @@ export const calendarRouter = router({
   // Now requires the same cron-or-super_admin gate used by the equivalent
   // /api/scheduled/* Express handlers elsewhere in this codebase.
   processPendingReminders: publicProcedure
-    .input(z.object({ secret: z.string() }).optional())
+    .input(z.object({ secret: z.string().optional() }).optional())
     .mutation(async ({ ctx }) => {
       const { sdk } = await import('./_core/sdk');
       let authedUser: Awaited<ReturnType<typeof sdk.authenticateRequest>> | null = null;

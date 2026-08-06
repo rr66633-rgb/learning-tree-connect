@@ -69,6 +69,10 @@ export const goalsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const orgId = ctx.organizationId;
       const db = (await getDb())!;
+      const [goal] = await db.select({ id: performanceGoals.id }).from(performanceGoals)
+        .where(and(eq(performanceGoals.id, input.id), eq(performanceGoals.organizationId, orgId)))
+        .limit(1);
+      if (!goal) throw new TRPCError({ code: "NOT_FOUND", message: "الهدف غير موجود" });
       const updateData: any = { progress: input.progress };
       if (input.notes) updateData.notes = input.notes;
       if (input.progress >= 100) updateData.status = "completed";
@@ -91,6 +95,10 @@ export const goalsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const orgId = ctx.organizationId;
       const db = (await getDb())!;
+      const [goal] = await db.select({ id: performanceGoals.id }).from(performanceGoals)
+        .where(and(eq(performanceGoals.id, input.id), eq(performanceGoals.organizationId, orgId)))
+        .limit(1);
+      if (!goal) throw new TRPCError({ code: "NOT_FOUND", message: "الهدف غير موجود" });
       const updateData: any = { status: input.status };
       if (input.status === "completed") updateData.progress = 100;
       await db
@@ -109,6 +117,10 @@ export const goalsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const orgId = ctx.organizationId;
       const db = (await getDb())!;
+      const [goal] = await db.select({ id: performanceGoals.id }).from(performanceGoals)
+        .where(and(eq(performanceGoals.id, input.id), eq(performanceGoals.organizationId, orgId)))
+        .limit(1);
+      if (!goal) throw new TRPCError({ code: "NOT_FOUND", message: "الهدف غير موجود" });
       await db
         .delete(performanceGoals)
         .where(and(

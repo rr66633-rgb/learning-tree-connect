@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -186,6 +187,7 @@ function DayCard({ day, index }: { day: any; index: number }) {
 
 export default function AIPlanner() {
   const { i18n } = useTranslation();
+  const { runTask } = useAiTask();
   const isAr = i18n.language === "ar";
   const [ageGroup, setAgeGroup] = useState("");
   const [theme, setTheme] = useState("");
@@ -708,12 +710,33 @@ export default function AIPlanner() {
       toast.error(isAr ? "يرجى اختيار الفئة العمرية وإدخال الموضوع" : "Please select age group and enter topic");
       return;
     }
-    generateMutation.mutate({
-      ageGroup,
-      theme,
-      learningGoals: learningGoals.split("\n").filter(Boolean),
-      language,
-    });
+    runTask({
+      title: "جارٍ إنشاء الخطة الأسبوعية",
+      titleEn: "Creating the weekly plan",
+      stages: [
+        { label: "تجهيز بيانات الأسبوع", labelEn: "Preparing week details" },
+        { label: "بناء الأنشطة اليومية", labelEn: "Building daily activities" },
+        { label: "مراجعة الخطة", labelEn: "Reviewing the plan" },
+      ],
+      stageSeconds: [4, 20],
+      run: () => generateMutation.mutateAsync({
+        ageGroup,
+        theme,
+        learningGoals: learningGoals.split("\n").filter(Boolean),
+        language,
+      }),
+      onDone: () => ({
+        title: "تم إنشاء الخطة الأسبوعية",
+        titleEn: "Weekly plan ready",
+        actionLabel: "عرض الخطة",
+        actionLabelEn: "View plan",
+        // The result renders inline below the form; bring it into view
+        // rather than leaving the user staring at the inputs.
+        onAction: () => requestAnimationFrame(() =>
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        ),
+      }),
+    }).catch(() => { /* the card reports the failure; the toast already fired */ });
   };
 
   const copyToClipboard = (text: string) => {

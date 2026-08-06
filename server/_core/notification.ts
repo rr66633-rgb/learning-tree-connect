@@ -78,7 +78,7 @@ async function notifyOwnerByEmail(
       payload.title,
       payload.content
     );
-    return result.success !== false;
+    return result.sent;
   } catch (error) {
     console.warn("[Notification] Email fallback failed:", error);
     return false;

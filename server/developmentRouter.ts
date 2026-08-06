@@ -318,7 +318,6 @@ Return ONLY a JSON object with this exact structure:
         notes: scores.notes,
         termPeriod: getCurrentTermPeriod(),
         academicYear: getCurrentAcademicYear(),
-        organizationId: orgId,
       });
 
       return { id: result.insertId, scores, message: "تم توليد درجة الجاهزية المدرسية بنجاح" };

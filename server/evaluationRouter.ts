@@ -139,7 +139,9 @@ export const evaluationRouter = router({
       // SECURITY FIX: previously had NO organization filter/check at all --
       // full cross-tenant read of any organization's evaluation (scores,
       // strengths, improvements, goals, notes) by id.
-      if (!evaluation || evaluation.organizationId !== ctx.organizationId) return null;
+      if (!evaluation || evaluation.organizationId !== ctx.organizationId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'التقييم غير موجود' });
+      }
 
       // Get scores
       const scores = await db

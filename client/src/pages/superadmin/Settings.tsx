@@ -1,15 +1,35 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings as SettingsIcon, Server, Database, Shield, Globe } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Settings as SettingsIcon, Server, Database, Shield, Globe, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+
+const NUMA_IMAGE = "/assets/numa-assistant.webp";
 
 export default function SuperAdminSettings() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
   const locale = i18n.language === "ar" ? "ar-SA" : "en-US";
+  const utils = trpc.useUtils();
   const { data: stats, isLoading } = trpc.superAdmin.platformStats.useQuery();
+  const assistantSettings = trpc.visitorAssistant.adminSettings.useQuery();
+  const updateAssistant = trpc.visitorAssistant.updateSettings.useMutation({
+    onSuccess: async data => {
+      await Promise.all([
+        utils.visitorAssistant.adminSettings.invalidate(),
+        utils.visitorAssistant.publicSettings.invalidate(),
+      ]);
+      toast.success(data.enabled
+        ? (isAr ? "تم إظهار نُمى للزوار" : "Numa is now visible to visitors")
+        : (isAr ? "تم إخفاء نُمى عن الزوار" : "Numa is now hidden from visitors"));
+    },
+    onError: error => {
+      toast.error(error.message || (isAr ? "تعذّر تحديث الإعداد" : "Couldn't update the setting"));
+    },
+  });
 
   if (isLoading) {
     return (
@@ -34,6 +54,56 @@ export default function SuperAdminSettings() {
         </h1>
         <p className="text-muted-foreground mt-1">{isAr ? "إعدادات عامة للمنصة" : "General Platform Settings"}</p>
       </div>
+
+      <Card className="overflow-hidden border-[#00C9B7]/20 bg-gradient-to-br from-[#F0FFFC] via-white to-[#F4F1FF]">
+        <CardHeader className="border-b border-[#00C9B7]/10 pb-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#00C9B7]/15">
+                <img src={NUMA_IMAGE} alt={isAr ? "شخصية نُمى" : "Numa mascot"} className="h-[88px] w-[88px] max-w-none translate-y-2 object-contain" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sparkles className="size-5 text-[#7B61FF]" />
+                  {isAr ? "نُمى — مساعد الزوار" : "Numa — Visitor Assistant"}
+                </CardTitle>
+                <CardDescription className="mt-2 leading-6">
+                  {isAr
+                    ? "تحكم في ظهور زر المحادثة الذكي على صفحات الموقع العامة. عند الإيقاف تُرفض المحادثات الجديدة من الخادم أيضاً."
+                    : "Control the smart chat button on public website pages. When disabled, new chats are also rejected by the server."}
+                </CardDescription>
+              </div>
+            </div>
+            <Badge className={assistantSettings.data?.enabled
+              ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border border-gray-200 bg-gray-100 text-gray-600"}
+            >
+              {assistantSettings.isLoading
+                ? (isAr ? "جارٍ التحميل" : "Loading")
+                : assistantSettings.data?.enabled
+                  ? (isAr ? "ظاهر للزوار" : "Visible")
+                  : (isAr ? "مخفي" : "Hidden")}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-5 rounded-xl border border-gray-100 bg-white/80 p-4">
+            <div>
+              <p className="font-semibold text-foreground">{isAr ? "إظهار المساعد في الموقع" : "Show assistant on website"}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {isAr ? "يظهر في الصفحة الرئيسية وصفحة الباقات فقط." : "Shown on the homepage and pricing page only."}
+              </p>
+            </div>
+            <Switch
+              checked={assistantSettings.data?.enabled ?? false}
+              onCheckedChange={enabled => updateAssistant.mutate({ enabled })}
+              disabled={assistantSettings.isLoading || assistantSettings.isError || updateAssistant.isPending}
+              aria-label={isAr ? "إظهار أو إخفاء مساعد الزوار" : "Show or hide visitor assistant"}
+              className="!h-7 !w-12 !min-h-0 !min-w-0 data-[state=checked]:bg-[#00B7A7] [&_[data-slot=switch-thumb]]:size-6"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Platform Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

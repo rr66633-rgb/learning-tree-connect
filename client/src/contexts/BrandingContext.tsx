@@ -3,10 +3,10 @@ import { trpc } from "@/lib/trpc";
 import { useNativeSessionGate } from "@/contexts/NativeSessionGate";
 
 export interface BrandingConfig {
-  organizationId: number;
+  organizationId: number | null;
   organizationName: string;
   organizationNameAr: string;
-  edition: "learning_tree" | "nashaa";
+  edition: string;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;

@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export default function AIStory() {
   const { i18n } = useTranslation();
+  const { runTask } = useAiTask();
   const isAr = i18n.language === "ar";
   const [theme, setTheme] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
@@ -47,7 +49,28 @@ export default function AIStory() {
 
   const handleGenerate = () => {
     if (!theme.trim() || !ageGroup) { toast.error(isAr ? "يرجى إدخال الموضوع واختيار الفئة العمرية" : "Please enter topic and select age group"); return; }
-    generateMutation.mutate({ theme, ageGroup, language });
+    runTask({
+      title: "جارٍ تأليف القصة",
+      titleEn: "Writing the story",
+      stages: [
+        { label: "اختيار الشخصيات والحبكة", labelEn: "Choosing characters and plot" },
+        { label: "كتابة القصة", labelEn: "Writing the story" },
+        { label: "إضافة أسئلة النقاش والمفردات", labelEn: "Adding discussion questions and vocabulary" },
+      ],
+      stageSeconds: [3, 8],
+      run: () => generateMutation.mutateAsync({ theme, ageGroup, language }),
+      onDone: () => ({
+        title: "تم تأليف القصة",
+        titleEn: "Story ready",
+        actionLabel: "عرض القصة",
+        actionLabelEn: "View story",
+        // The result renders inline below the form; bring it into view
+        // rather than leaving the user staring at the inputs.
+        onAction: () => requestAnimationFrame(() =>
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        ),
+      }),
+    }).catch(() => { /* the card reports the failure; the toast already fired */ });
   };
 
   return (

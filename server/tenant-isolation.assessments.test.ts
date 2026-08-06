@@ -85,7 +85,7 @@ describe("Tenant isolation: customAssessmentRouter (regression: classId + parent
   });
 
   it("P2: Org A parent's parentList never surfaces Org B's assessment (defense-in-depth org filter)", async () => {
-    const list = await callerAsOrgAParent().customAssessment.parentList();
+    const list = await callerAsOrgAParent().customAssessment.parentList({ limit: 20 });
     expect(list.some((a: any) => a.id === fixture.orgB.customAssessmentId)).toBe(false);
   });
 
@@ -110,7 +110,10 @@ describe("Tenant isolation: customAssessmentRouter (regression: classId + parent
 
   it("P1: Org A staff cannot read Org B's assessment responses", async () => {
     await expectRejected(
-      callerAsOrgATeacher().customAssessment.getResponses({ assessmentId: fixture.orgB.customAssessmentId } as any)
+      callerAsOrgATeacher().customAssessment.getResponses({
+        assessmentId: fixture.orgB.customAssessmentId,
+        childId: fixture.orgB.childId,
+      })
     );
   });
 });

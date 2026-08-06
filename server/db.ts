@@ -71,7 +71,25 @@ export async function closeDb(): Promise<void> {
   }
 }
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+// SECURITY FIX: this is an INSERT ... ON DUPLICATE KEY UPDATE, so whenever the
+// openId did not already exist it CREATED a user row -- and it never set
+// organizationId. users.organizationId is `int NULL DEFAULT 1` in the live
+// database (see migration 0024), so every user created down this path silently
+// landed in organization #1 and could then read organization #1's data. That
+// is the write-side half of the "every nursery sees another nursery's data"
+// report; the read-side half was unscoped queries.
+//
+// Both real callers (server/_core/sdk.ts and server/_core/oauth.ts) only ever
+// refresh an ALREADY-AUTHENTICATED user's lastSignedIn, so the insert path was
+// pure latent risk. It is now explicit: creating a user requires a caller-
+// supplied organizationId, and without one the call fails loudly instead of
+// defaulting.
+// organizationId is optional in the INPUT type (callers that only refresh an
+// existing user have no reason to know it) but mandatory at runtime on the
+// create path -- see the guard below.
+export async function upsertUser(
+  user: Omit<InsertUser, "organizationId"> & { organizationId?: number }
+): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
   }
@@ -83,9 +101,20 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.openId, user.openId))
+      .limit(1);
+
+    if (!existing && user.organizationId === undefined) {
+      throw new Error(
+        `Refusing to create user ${user.openId} without an explicit organizationId. ` +
+        `Creating a user with no organization would fall back to the database default ` +
+        `(organization #1) and expose that organization's data to them.`
+      );
+    }
+
     const updateSet: Record<string, unknown> = {};
 
     const textFields = ["name", "email", "loginMethod"] as const;
@@ -94,40 +123,44 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     const assignNullable = (field: TextField) => {
       const value = user[field];
       if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
+      updateSet[field] = value ?? null;
     };
 
     textFields.forEach(assignNullable);
 
     if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
     }
     if (user.role !== undefined) {
-      values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'super_admin';
       updateSet.role = 'super_admin';
     }
     if (user.isActive !== undefined) {
-      values.isActive = user.isActive;
       updateSet.isActive = user.isActive;
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
     }
 
     if (Object.keys(updateSet).length === 0) {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
+    // Split into an explicit UPDATE vs INSERT rather than the previous
+    // INSERT ... ON DUPLICATE KEY UPDATE. The combined form always had to build
+    // a full insert row even when the user already existed, which is what
+    // silently supplied a NULL/absent organizationId on the hot path -- this
+    // function runs on EVERY authenticated request (sdk.authenticateRequest
+    // refreshes lastSignedIn through it).
+    if (existing) {
+      await db.update(users).set(updateSet).where(eq(users.id, existing.id));
+      return;
+    }
+
+    await db.insert(users).values({
+      ...updateSet,
+      openId: user.openId,
+      organizationId: user.organizationId!,
+      lastSignedIn: (updateSet.lastSignedIn as Date) ?? new Date(),
+    } as InsertUser);
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
@@ -228,6 +261,15 @@ export async function getChildById(id: number, organizationId?: number) {
   if (organizationId) conditions.push(eq(children.organizationId, organizationId));
   const result = await db.select().from(children).where(and(...conditions)).limit(1);
   return result[0];
+}
+
+export async function getChildrenByIds(ids: number[], organizationId: number) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return [];
+  return db.select().from(children).where(and(
+    inArray(children.id, ids),
+    eq(children.organizationId, organizationId),
+  ));
 }
 
 export async function createChild(data: InsertChild) {
@@ -554,7 +596,13 @@ export async function createMessage(data: { conversationId: number; senderId: nu
 // conversation row (silently defaulted at the schema level), which is what
 // made the isAdmin-bypass cross-tenant read/write in the `list`/`send`
 // handlers possible in the first place.
-export async function createConversation(participantOneId: number, participantTwoId: number, childId?: number | null, subject?: string | null, organizationId?: number) {
+// SECURITY FIX (round 2): organizationId was optional here, and conversations
+// .organizationId is `int NULL DEFAULT 1` in the live database -- so a caller
+// that omitted it created a conversation belonging to organization #1
+// regardless of who the participants were. It is now REQUIRED; the sole caller
+// (messages.createConversation in routers.ts) runs on tenantProcedure, so a
+// valid organizationId is always available there.
+export async function createConversation(participantOneId: number, participantTwoId: number, childId: number | null | undefined, subject: string | null | undefined, organizationId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   // Check if conversation already exists between these two for this child
@@ -567,9 +615,20 @@ export async function createConversation(participantOneId: number, participantTw
   return { id: result[0].insertId, participantOneId, participantTwoId, childId, subject, organizationId };
 }
 
+// SECURITY FIX: previously took a conversationId straight from the client with
+// no check that `userId` is actually a participant in it -- any authenticated
+// user could mark another organization's conversation as read by enumerating
+// conversation ids, silently clearing that nursery's unread badges and
+// falsifying the readAt audit trail on messages they never had access to.
 export async function markMessagesAsRead(conversationId: number, userId: number) {
   const db = await getDb();
   if (!db) return;
+  const [conv] = await db.select({
+    participantOneId: conversations.participantOneId,
+    participantTwoId: conversations.participantTwoId,
+  }).from(conversations).where(eq(conversations.id, conversationId)).limit(1);
+  if (!conv) return;
+  if (conv.participantOneId !== userId && conv.participantTwoId !== userId) return;
   await db.update(messages).set({ isRead: true, readAt: new Date() }).where(and(
     eq(messages.conversationId, conversationId),
     sql`${messages.senderId} != ${userId}`,
@@ -1888,9 +1947,19 @@ export async function deleteAnnouncement(id: number, organizationId?: number) {
 }
 
 // ============ ANNOUNCEMENT READS ============
-export async function markAnnouncementRead(announcementId: number, userId: number) {
+// SECURITY FIX: previously inserted a read-receipt for ANY announcementId the
+// client supplied, with no check that the announcement belongs to the caller's
+// organization -- letting a user from one nursery pollute another nursery's
+// `announcements.readers` report with their own identity. organizationId is
+// required here (not optional) because there is no legitimate cross-tenant
+// caller for a per-user read receipt.
+export async function markAnnouncementRead(announcementId: number, userId: number, organizationId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const [ann] = await db.select({ id: announcements.id }).from(announcements)
+    .where(and(eq(announcements.id, announcementId), eq(announcements.organizationId, organizationId)))
+    .limit(1);
+  if (!ann) throw new Error("Announcement not found");
   // Use INSERT IGNORE to avoid duplicate errors
   await db.insert(announcementReads).values({ announcementId, userId }).onDuplicateKeyUpdate({ set: { readAt: new Date() } });
   return { success: true };
@@ -2325,7 +2394,9 @@ export async function deleteChildDocument(id: number) {
 // org filter at all despite the media table having the column. Combined
 // with the router (see routers.ts media: router({...})), any admin could
 // list/approve/delete every organization's photos and videos of children.
-export async function createMedia(data: { type: string; url: string; fileKey?: string; thumbnailUrl?: string; caption?: string; mimeType?: string; fileSize?: number; uploadedBy: number; classId?: number; visibility?: string; childIds?: number[]; organizationId?: number }) {
+type CreateMediaInput = { type: string; url: string; fileKey?: string; thumbnailUrl?: string; caption?: string; mimeType?: string; fileSize?: number; uploadedBy: number; classId?: number; visibility?: string; childIds?: number[]; organizationId: number };
+
+export async function createMedia(data: CreateMediaInput) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const { childIds, ...mediaData } = data;
@@ -2339,6 +2410,26 @@ export async function createMedia(data: { type: string; url: string; fileKey?: s
   }
 
   return { id: mediaId, ...mediaData };
+}
+
+export async function createMediaBatch(items: CreateMediaInput[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.transaction(async tx => {
+    const created = [];
+    for (const item of items) {
+      const { childIds, ...mediaData } = item;
+      const [result] = await tx.insert(media).values(mediaData as any);
+      const mediaId = result.insertId;
+      if (childIds?.length) {
+        await tx.insert(mediaChildren).values(
+          childIds.map(childId => ({ mediaId, childId })),
+        );
+      }
+      created.push({ id: mediaId, ...mediaData });
+    }
+    return created;
+  });
 }
 
 export async function getMediaForClass(classId: number, limit = 50, organizationId?: number) {
@@ -2355,38 +2446,28 @@ export async function getMediaForClass(classId: number, limit = 50, organization
 export async function getMediaForChild(childId: number, limit = 50, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
-  // Get media where this child is tagged
-  const tagged = await db.select({ mediaId: mediaChildren.mediaId })
-    .from(mediaChildren)
-    .where(eq(mediaChildren.childId, childId));
-
-  if (tagged.length === 0) return [];
-  const mediaIds = tagged.map(t => t.mediaId);
-  const conditions = [inArray(media.id, mediaIds), eq(media.isApproved, true)];
+  const conditions = [eq(mediaChildren.childId, childId), eq(media.isApproved, true)];
   if (organizationId) conditions.push(eq(media.organizationId, organizationId));
-  return db.select().from(media)
+  const rows = await db.select({ item: media }).from(media)
+    .innerJoin(mediaChildren, eq(media.id, mediaChildren.mediaId))
     .where(and(...conditions))
     .orderBy(desc(media.createdAt))
     .limit(limit);
+  return rows.map(row => row.item);
 }
 
 export async function getMediaForChildren(childIds: number[], limit = 50, organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (childIds.length === 0) return [];
-  // Get media where any of these children are tagged
-  const tagged = await db.select({ mediaId: mediaChildren.mediaId })
-    .from(mediaChildren)
-    .where(inArray(mediaChildren.childId, childIds));
-
-  if (tagged.length === 0) return [];
-  const mediaIds = Array.from(new Set(tagged.map(t => t.mediaId)));
-  const conditions = [inArray(media.id, mediaIds), eq(media.isApproved, true)];
+  const conditions = [inArray(mediaChildren.childId, childIds), eq(media.isApproved, true)];
   if (organizationId) conditions.push(eq(media.organizationId, organizationId));
-  return db.select().from(media)
+  const rows = await db.selectDistinct({ item: media }).from(media)
+    .innerJoin(mediaChildren, eq(media.id, mediaChildren.mediaId))
     .where(and(...conditions))
     .orderBy(desc(media.createdAt))
     .limit(limit);
+  return rows.map(row => row.item);
 }
 
 export async function getAllMedia(limit = 100, organizationId?: number) {
@@ -3333,14 +3414,23 @@ export async function getPushSubscriptionsForUsers(userIds: number[]) {
 }
 
 // ============ STAFF USERS HELPER ============
-export async function getStaffUsers() {
+// SECURITY FIX: previously had no organization filter at all. Its only caller
+// (server/_core/pushTriggers.ts) uses the result to pick which admins receive a
+// "parent arrived to pick up <child name>" push -- so every organization's
+// admins were pushed another nursery's child's name on every pickup request.
+// organizationId is now REQUIRED rather than optional: an unscoped staff list
+// has no legitimate use, so there is no caller that should be allowed to omit
+// it (contrast with the optional-organizationId helpers above, where omitting
+// silently degrades to a cross-tenant query).
+export async function getStaffUsers(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select({ id: users.id, name: users.name, role: users.role })
     .from(users)
     .where(and(
       inArray(users.role, ['super_admin', 'admin', 'principal', 'owner', 'teacher', 'assistant', 'receptionist']),
-      eq(users.isActive, true)
+      eq(users.isActive, true),
+      eq(users.organizationId, organizationId)
     ));
 }
 
@@ -3450,9 +3540,19 @@ export async function updatePickupAlertSettings(data: { volume?: number; tone?: 
 }
 
 // ============ PICKUP ALERT ACKNOWLEDGMENTS ============
-export async function acknowledgePickupAlert(pickupRequestId: number, userId: number) {
+// SECURITY FIX: previously acknowledged ANY pickupRequestId supplied by the
+// client with no ownership check. pickup_alert_acknowledgments has no
+// organizationId column of its own, so ownership is verified through the
+// parent pickup_requests row (which does) -- otherwise a staff member of one
+// nursery could silence another nursery's urgent child-pickup alert by
+// enumerating request ids, which is a child-safety issue, not just a data one.
+export async function acknowledgePickupAlert(pickupRequestId: number, userId: number, organizationId: number) {
   const db = await getDb();
   if (!db) return;
+  const [req] = await db.select({ id: pickupRequests.id }).from(pickupRequests)
+    .where(and(eq(pickupRequests.id, pickupRequestId), eq(pickupRequests.organizationId, organizationId)))
+    .limit(1);
+  if (!req) return;
   // Check if already acknowledged
   const existing = await db.select().from(pickupAlertAcknowledgments)
     .where(and(

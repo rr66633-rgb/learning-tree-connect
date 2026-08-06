@@ -1,0 +1,21 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://naashah.com",
+      "https://www.naashah.com",
+      "http://localhost:3000"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "HEAD",
+      "PUT"
+    ],
+    "AllowedHeaders": [
+      "Content-Type"
+    ],
+    "ExposeHeaders": [
+      "ETag"
+    ],
+    "MaxAgeSeconds": 3600
+  }
+]

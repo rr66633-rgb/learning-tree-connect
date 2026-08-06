@@ -1,10 +1,18 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { tenantProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import * as XLSX from "xlsx";
 
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+// SECURITY FIX: this local gate was built on `protectedProcedure`, so it only
+// ever verified the caller's ROLE, never that they belong to a real
+// organization. Its handler then scoped the import with
+// `ctx.organizationId ?? undefined`, and every db helper treats a missing
+// organizationId as "no filter" -- so an admin-role account with no
+// organization imported rows into, and resolved existing records across, every
+// tenant at once. Rebuilt on `tenantProcedure`, which rejects a null/invalid
+// organizationId before the handler runs.
+const adminProcedure = tenantProcedure.use(({ ctx, next }) => {
   if (ctx.user?.role !== 'admin' && ctx.user?.role !== 'super_admin' && ctx.user?.role !== 'owner' && ctx.user?.role !== 'principal') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   }
@@ -171,8 +179,6 @@ export const bulkImportRouter = router({
       organizationId: z.number().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const rows = parseExcelBuffer(input.fileData);
-
       // SECURITY FIX: previously `input.organizationId || ctx.user!.organizationId || 1`
       // -- a client-supplied, optional field was trusted BEFORE the authenticated
       // user's own organization, and a missing value silently fell back to
@@ -208,6 +214,11 @@ export const bulkImportRouter = router({
         }
         orgId = ctx.organizationId;
       }
+
+      // Resolve and authorize the target tenant before parsing untrusted file
+      // contents. This keeps authorization fail-closed and avoids spending CPU
+      // on files that the caller is not allowed to import.
+      const rows = parseExcelBuffer(input.fileData);
 
       let imported = 0;
       let skipped = 0;

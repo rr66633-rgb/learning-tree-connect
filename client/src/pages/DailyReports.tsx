@@ -13,6 +13,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 const moodColors: Record<string, string> = { happy: "bg-green-100 text-green-700", calm: "bg-blue-100 text-blue-700", tired: "bg-amber-100 text-amber-700", upset: "bg-red-100 text-red-700", excited: "bg-purple-100 text-purple-700" };
@@ -64,28 +65,25 @@ export default function DailyReports() {
   };
 
   const uploadPhoto = async (file: File): Promise<string> => {
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-      reader.onload = async () => {
-        try {
-          const base64 = (reader.result as string).split(',')[1];
-          const response = await fetchWithCsrf(apiUrl('/api/upload'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              data: base64,
-              fileName: `report-${Date.now()}-${file.name}`,
-              contentType: file.type }) });
-          if (!response.ok) throw new Error('Upload failed');
-          const { url } = await response.json();
-          resolve(url);
-        } catch (err) {
-          reject(err);
-        }
-      };
+    // Shrink first: this endpoint takes base64, which inflates whatever it is
+    // given by about a third on the wire. Compressing before encoding is what
+    // makes that acceptable on a phone connection.
+    const prepared = await compressImage(file);
+    const base64: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
       reader.onerror = reject;
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(prepared);
     });
+    const { url } = await uploadWithProgress<{ url: string }>(
+      apiUrl('/api/upload'),
+      JSON.stringify({
+        data: base64,
+        fileName: `report-${Date.now()}-${prepared.name}`,
+        contentType: prepared.type,
+      }),
+    );
+    return url;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export default function AIObservation() {
   const { i18n } = useTranslation();
+  const { runTask } = useAiTask();
   const isAr = i18n.language === "ar";
   const [childName, setChildName] = useState("");
   const [shortNote, setShortNote] = useState("");
@@ -43,7 +45,28 @@ export default function AIObservation() {
       toast.error(isAr ? "يرجى إدخال اسم الطفل والملاحظة" : "Please enter child name and observation");
       return;
     }
-    generateMutation.mutate({ childName, shortNote, language });
+    runTask({
+      title: "جارٍ إعداد الملاحظة",
+      titleEn: "Preparing the observation",
+      stages: [
+        { label: "قراءة ملاحظتك", labelEn: "Reading your note" },
+        { label: "تحليلها وفق إطار EYFS", labelEn: "Analysing against EYFS" },
+        { label: "صياغة الملاحظة المهنية", labelEn: "Writing the professional note" },
+      ],
+      stageSeconds: [3, 8],
+      run: () => generateMutation.mutateAsync({ childName, shortNote, language }),
+      onDone: () => ({
+        title: "تمت كتابة الملاحظة",
+        titleEn: "Observation ready",
+        actionLabel: "عرض الملاحظة",
+        actionLabelEn: "View observation",
+        // The result renders inline below the form; bring it into view
+        // rather than leaving the user staring at the inputs.
+        onAction: () => requestAnimationFrame(() =>
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        ),
+      }),
+    }).catch(() => { /* the card reports the failure; the toast already fired */ });
   };
 
   const copyToClipboard = (text: string) => {

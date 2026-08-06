@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 
 export default function StaffAnnouncements() {
   const { t, i18n } = useTranslation();
@@ -98,10 +99,8 @@ export default function StaffAnnouncements() {
     else setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
-      const data = await res.json();
+      formData.append('file', await compressImage(file));
+      const data = await uploadWithProgress(apiUrl('/api/upload-photo'), formData);
       if (isEdit) setEditImageUrl(data.url);
       else setCreateImageUrl(data.url);
       toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");

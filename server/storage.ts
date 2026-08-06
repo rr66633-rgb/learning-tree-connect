@@ -1,5 +1,6 @@
 // Storage helpers - Cloudflare R2 (S3-compatible)
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { randomUUID } from "node:crypto";
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const S3_BUCKET = process.env.S3_BUCKET!;
@@ -7,6 +8,26 @@ const S3_REGION = process.env.S3_REGION || "auto";
 const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID!;
 const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY!;
 const S3_ENDPOINT = process.env.S3_ENDPOINT!;
+
+export const MEDIA_UPLOAD_LIMITS = {
+  photo: 10 * 1024 * 1024,
+  video: 50 * 1024 * 1024,
+} as const;
+
+export const MEDIA_CONTENT_TYPES = {
+  "image/jpeg": { type: "photo", extension: "jpg" },
+  "image/png": { type: "photo", extension: "png" },
+  "image/gif": { type: "photo", extension: "gif" },
+  "image/webp": { type: "photo", extension: "webp" },
+  "image/heic": { type: "photo", extension: "heic" },
+  "image/heif": { type: "photo", extension: "heif" },
+  "video/mp4": { type: "video", extension: "mp4" },
+  "video/quicktime": { type: "video", extension: "mov" },
+  "video/webm": { type: "video", extension: "webm" },
+} as const;
+
+export type MediaUploadType = "photo" | "video";
+export type MediaContentType = keyof typeof MEDIA_CONTENT_TYPES;
 
 let _client: S3Client | null = null;
 function getS3Client(): S3Client {
@@ -28,6 +49,29 @@ function getS3Client(): S3Client {
 
 function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
+}
+
+export function getStorageUrl(key: string): string {
+  return `/manus-storage/${normalizeKey(key)}`;
+}
+
+export function getStorageKey(url: string, fileKey?: string | null): string | null {
+  if (fileKey) return normalizeKey(fileKey);
+  const prefix = "/manus-storage/";
+  if (url.startsWith(prefix)) return normalizeKey(url.slice(prefix.length));
+
+  // Older rows may contain the application's absolute URL instead of the
+  // canonical relative path. Recover the R2 key so those files can also be
+  // served by a fresh direct signed URL rather than disappearing after a
+  // domain/deployment change.
+  try {
+    const pathname = new URL(url).pathname;
+    return pathname.startsWith(prefix)
+      ? normalizeKey(pathname.slice(prefix.length))
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function appendHashSuffix(relKey: string): string {
@@ -53,20 +97,134 @@ export async function storagePut(
       ContentType: contentType,
     }),
   );
-  return { key, url: `/manus-storage/${key}` };
+  return { key, url: getStorageUrl(key) };
 }
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
-  return { key, url: `/manus-storage/${key}` };
+  return { key, url: getStorageUrl(key) };
 }
 
-export async function storageGetSignedUrl(relKey: string): Promise<string> {
+export async function storageGetSignedUrl(relKey: string, expiresIn = 3600): Promise<string> {
   const client = getS3Client();
   const key = normalizeKey(relKey);
   return getSignedUrl(
     client,
     new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }),
-    { expiresIn: 300 },
+    { expiresIn },
   );
+}
+
+export async function storageDelete(relKey: string): Promise<void> {
+  await getS3Client().send(new DeleteObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: normalizeKey(relKey),
+  }));
+}
+
+export function validateMediaUpload(
+  type: MediaUploadType,
+  contentType: string,
+  fileSize: number,
+): { contentType: MediaContentType; extension: string; maxBytes: number } {
+  const definition = MEDIA_CONTENT_TYPES[contentType as MediaContentType];
+  if (!definition || definition.type !== type) {
+    throw new Error("UNSUPPORTED_MEDIA_TYPE");
+  }
+
+  const maxBytes = MEDIA_UPLOAD_LIMITS[type];
+  if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > maxBytes) {
+    throw new Error("INVALID_MEDIA_SIZE");
+  }
+
+  return {
+    contentType: contentType as MediaContentType,
+    extension: definition.extension,
+    maxBytes,
+  };
+}
+
+export async function createDirectMediaUpload(input: {
+  organizationId: number;
+  userId: number;
+  type: MediaUploadType;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { contentType, extension } = validateMediaUpload(
+    input.type,
+    input.contentType,
+    input.fileSize,
+  );
+  const now = new Date();
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const folder = input.type === "video" ? "videos" : "photos";
+  const key = [
+    "media-staging",
+    String(input.organizationId),
+    folder,
+    `${now.getUTCFullYear()}-${month}`,
+    `${input.userId}-${randomUUID()}.${extension}`,
+  ].join("/");
+  const expiresIn = 10 * 60;
+
+  const uploadUrl = await getSignedUrl(
+    getS3Client(),
+    new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    }),
+    { expiresIn },
+  );
+
+  return {
+    uploadUrl,
+    fileKey: key,
+    storageUrl: getStorageUrl(key),
+    viewUrl: await storageGetSignedUrl(key, 60 * 60),
+    expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+  };
+}
+
+export async function verifyDirectMediaUpload(input: {
+  organizationId: number;
+  type: MediaUploadType;
+  fileKey: string;
+}) {
+  const key = normalizeKey(input.fileKey);
+  const folder = input.type === "video" ? "videos" : "photos";
+  const expectedPrefix = `media-staging/${input.organizationId}/${folder}/`;
+  if (!key.startsWith(expectedPrefix) || key.includes("..")) {
+    throw new Error("INVALID_MEDIA_KEY");
+  }
+
+  const result = await getS3Client().send(new HeadObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: key,
+  }));
+  const contentType = result.ContentType || "";
+  const fileSize = result.ContentLength || 0;
+  validateMediaUpload(input.type, contentType, fileSize);
+
+  // Promote the verified staging object to an immutable final key inside R2.
+  // The bytes never pass through this process; R2 performs the copy internally.
+  // A presigned PUT URL can be reused until it expires, so keeping the database
+  // pointed at the staging key would let the uploader replace already-published
+  // media after verification. Publishing to a separate key closes that window.
+  const finalKey = key.replace(/^media-staging\//, "media/");
+  const copySource = encodeURIComponent(`${S3_BUCKET}/${key}`).replace(/%2F/g, "/");
+  await getS3Client().send(new CopyObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: finalKey,
+    CopySource: copySource,
+  }));
+  await storageDelete(key);
+
+  return {
+    fileKey: finalKey,
+    url: getStorageUrl(finalKey),
+    mimeType: contentType,
+    fileSize,
+  };
 }

@@ -8,8 +8,8 @@ import { z } from "zod";
 import * as db from "./db";
 import { getDb as getSharedDb } from "./db";
 import * as authService from "./_core/authService";
-import { loginAttempts, integrationConfig } from "../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { loginAttempts, integrationConfig, organizations } from "../drizzle/schema";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { sendNewDeviceLoginAlert } from "./services/emailService";
 import { aiRouter } from "./aiRouter";
 import { weeklyPlanRouter } from "./weeklyPlanRouter";
@@ -33,6 +33,14 @@ import { demoRouter } from "./demoRouter";
 import { payrollRouter } from "./payrollRouter";
 import { evaluationRouter } from "./evaluationRouter";
 import { goalsRouter } from "./goalsRouter";
+import { visitorAssistantRouter } from "./visitorAssistantRouter";
+import {
+  createDirectMediaUpload,
+  getStorageKey,
+  storageDelete,
+  storageGetSignedUrl,
+  verifyDirectMediaUpload,
+} from "./storage";
 
 // SECURITY FIX (C2): these three procedures now build on `tenantProcedure` instead
 // of `protectedProcedure` directly, so every endpoint below that uses one of them
@@ -61,6 +69,32 @@ const parentProcedure = tenantProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+async function withDirectMediaUrls<T extends {
+  url: string;
+  fileKey?: string | null;
+  thumbnailUrl?: string | null;
+}>(items: T[]): Promise<T[]> {
+  return Promise.all(items.map(async item => {
+    try {
+      const fileKey = getStorageKey(item.url, item.fileKey);
+      const thumbnailKey = item.thumbnailUrl
+        ? getStorageKey(item.thumbnailUrl)
+        : null;
+
+      return {
+        ...item,
+        url: fileKey ? await storageGetSignedUrl(fileKey, 6 * 60 * 60) : item.url,
+        thumbnailUrl: thumbnailKey
+          ? await storageGetSignedUrl(thumbnailKey, 6 * 60 * 60)
+          : item.thumbnailUrl,
+      } as T;
+    } catch (error) {
+      console.error("[Media] Failed to sign a direct view URL:", error);
+      return item;
+    }
+  }));
+}
+
 // Haversine formula for GPS distance calculation
 function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -74,6 +108,7 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): 
 
 export const appRouter = router({
   system: systemRouter,
+  visitorAssistant: visitorAssistantRouter,
   
   auth: router({
     me: publicProcedure.query(opts => {
@@ -667,7 +702,7 @@ export const appRouter = router({
   }),
 
   dashboard: router({
-    stats: protectedProcedure.query(async ({ ctx }) => {
+    stats: tenantProcedure.query(async ({ ctx }) => {
       // Parents see only their children's stats
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
@@ -683,7 +718,7 @@ export const appRouter = router({
   }),
 
   children: router({
-    list: protectedProcedure.input(z.object({ parentId: z.number().optional(), classId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+    list: tenantProcedure.input(z.object({ parentId: z.number().optional(), classId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
       // Parents can only see their own children
       if (ctx.user?.role === 'parent') {
         return db.getChildren(ctx.user.id);
@@ -702,7 +737,7 @@ export const appRouter = router({
       // This ensures children appear in assessments and media upload regardless of class assignment
       return db.getChildren(input?.parentId, ctx.user?.organizationId ?? undefined);
     }),
-    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+    getById: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       // Parents can only view their own children's details
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
@@ -715,7 +750,9 @@ export const appRouter = router({
       // all -- any authenticated non-parent user could read another
       // organization's child profile (medical info, national ID, parent
       // contacts) by id.
-      return db.getChildById(input.id, ctx.organizationId ?? undefined);
+      const child = await db.getChildById(input.id, ctx.organizationId ?? undefined);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      return child;
     }),
     create: teacherProcedure.input(z.object({
       firstName: z.string().min(1),
@@ -798,11 +835,15 @@ export const appRouter = router({
       const { id, ...data } = input;
       const updateData: any = { ...data };
       if (data.dateOfBirth) updateData.dateOfBirth = new Date(data.dateOfBirth);
-      return db.updateChild(id, updateData, ctx.organizationId);
+      const child = await db.updateChild(id, updateData, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      return child;
     }),
     // SECURITY FIX: previously called deleteChild with no organizationId --
     // any admin could delete any other organization's child by id.
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const child = await db.getChildById(input.id, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       await db.deleteChild(input.id, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_child', resource: 'children', resourceId: input.id, details: `Deleted child #${input.id}`, ipAddress: '' });
       return { success: true };
@@ -810,17 +851,23 @@ export const appRouter = router({
     // SECURITY FIX: previously called updateChild with no organizationId --
     // any teacher could archive any other organization's child by id.
     archive: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      return db.updateChild(input.id, { status: 'inactive' }, ctx.organizationId);
+      const child = await db.updateChild(input.id, { status: 'inactive' }, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      return child;
     }),
     // SECURITY FIX: same as archive above.
     activate: teacherProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
-      return db.updateChild(input.id, { status: 'active' }, ctx.organizationId);
+      const child = await db.updateChild(input.id, { status: 'active' }, ctx.organizationId);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
+      return child;
     }),
     // SECURITY FIX: previously called getParentsForChild with no
     // organizationId -- any authenticated user could list every parent
     // (name/email/phone) linked to any other organization's child by
     // childId. Now scoped with ctx.organizationId.
-    getParents: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    getParents: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+      const child = await db.getChildById(input.childId, ctx.organizationId ?? undefined);
+      if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       return db.getParentsForChild(input.childId, ctx.organizationId ?? undefined);
     }),
     // Parent can register a new child and auto-link to their account
@@ -893,7 +940,7 @@ export const appRouter = router({
   }),
 
   attendance: router({
-    byDate: protectedProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
+    byDate: tenantProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
       // Parents can only see attendance for their own children
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
@@ -901,7 +948,7 @@ export const appRouter = router({
       }
       return db.getAttendanceByDate(input.date, ctx.user?.organizationId ?? undefined);
     }),
-    byChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    byChild: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       // Parents can only see their own children's attendance
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
@@ -1110,7 +1157,7 @@ export const appRouter = router({
       }
       return { success: true, previousStatus, newStatus: input.newStatus };
     }),
-    auditLog: protectedProcedure.input(z.object({
+    auditLog: tenantProcedure.input(z.object({
       childId: z.number().optional(),
       attendanceId: z.number().optional(),
     })).query(async ({ input, ctx }) => {
@@ -1154,7 +1201,7 @@ export const appRouter = router({
   }),
 
   dailyReports: router({
-    list: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+    list: tenantProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
       // Parents can only see reports for their own children
       if (ctx.user?.role === 'parent') {
         if (input?.childId) {
@@ -1169,7 +1216,7 @@ export const appRouter = router({
       }
       return db.getDailyReports(input?.childId, ctx.user?.organizationId ?? undefined);
     }),
-    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+    getById: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       // SECURITY FIX: previously fetched by id with no organizationId
       // filter -- any authenticated staff member of ANY organization could
       // read another organization's daily report by id.
@@ -1257,7 +1304,7 @@ export const appRouter = router({
       // to any admin -- now scoped to the caller's organization.
       return db.getAllConversations(input?.search, ctx.organizationId);
     }),
-    list: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input, ctx }) => {
+    list: tenantProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input, ctx }) => {
       // SECURITY FIX: the isAdmin bypass previously granted access to a
       // conversation regardless of which organization it belonged to --
       // any admin of ANY organization could read any other organization's
@@ -1274,7 +1321,7 @@ export const appRouter = router({
       await db.markMessagesAsRead(input.conversationId, ctx.user!.id);
       return db.getMessages(input.conversationId);
     }),
-    send: protectedProcedure.input(z.object({
+    send: tenantProcedure.input(z.object({
       conversationId: z.number(),
       content: z.string().min(1),
       attachmentUrl: z.string().optional(),
@@ -1327,7 +1374,7 @@ export const appRouter = router({
       } catch (e) { /* push notification failure is non-critical */ }
       return message;
     }),
-    createConversation: protectedProcedure.input(z.object({
+    createConversation: tenantProcedure.input(z.object({
       participantId: z.number(),
       childId: z.number().optional(),
       subject: z.string().optional(),
@@ -1339,7 +1386,7 @@ export const appRouter = router({
       if (!participant || participant.organizationId !== ctx.organizationId) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
       }
-      return db.createConversation(ctx.user!.id, input.participantId, input.childId, input.subject, ctx.organizationId ?? undefined);
+      return db.createConversation(ctx.user!.id, input.participantId, input.childId, input.subject, ctx.organizationId);
     }),
     unreadCount: protectedProcedure.query(async ({ ctx }) => {
       return db.getUnreadMessageCount(ctx.user!.id);
@@ -1375,7 +1422,7 @@ export const appRouter = router({
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_message', resource: 'messages', resourceId: input.messageId, details: `Deleted message #${input.messageId}`, ipAddress: '' });
       return { success: true };
     }),
-    getContacts: protectedProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+    getContacts: tenantProcedure.input(z.object({ childId: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
       const role = ctx.user?.role;
       if (role === 'parent') {
         // Parents get teachers of their children
@@ -1746,7 +1793,7 @@ export const appRouter = router({
       });
       return { paymentId: payment.id, status: 'created' };
     }),
-    verify: protectedProcedure.input(z.object({
+    verify: tenantProcedure.input(z.object({
       paymentId: z.number().optional(),
       moyasarPaymentId: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
@@ -1863,7 +1910,7 @@ export const appRouter = router({
     // SECURITY FIX: getInvoiceById previously had no organizationId check --
     // any authenticated non-parent user (staff of ANY organization) could view
     // payment records for an invoice belonging to a different organization.
-    byInvoice: protectedProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
+    byInvoice: tenantProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
       const invoice = await db.getInvoiceById(input.invoiceId, ctx.organizationId ?? undefined);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND' });
       if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
@@ -1889,7 +1936,7 @@ export const appRouter = router({
     // SECURITY FIX: getInvoiceById previously had no organizationId check --
     // any authenticated non-parent user (staff of ANY organization) could view
     // transaction records for an invoice belonging to a different organization.
-    byInvoice: protectedProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
+    byInvoice: tenantProcedure.input(z.object({ invoiceId: z.number() })).query(async ({ input, ctx }) => {
       const invoice = await db.getInvoiceById(input.invoiceId, ctx.organizationId ?? undefined);
       if (!invoice) throw new TRPCError({ code: 'NOT_FOUND' });
       if (ctx.user?.role === 'parent' && invoice.parentId !== ctx.user.id) {
@@ -2080,12 +2127,12 @@ export const appRouter = router({
     transactions: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
       return db.getLoyaltyTransactions(ctx.user!.id, input?.limit);
     }),
-    rewards: protectedProcedure.query(async ({ ctx }) => {
+    rewards: tenantProcedure.query(async ({ ctx }) => {
       // SECURITY FIX: previously returned every organization's reward
       // catalog with no filter.
       return db.getLoyaltyRewards(ctx.organizationId ?? undefined);
     }),
-    redeem: protectedProcedure.input(z.object({ rewardId: z.number() })).mutation(async ({ ctx, input }) => {
+    redeem: tenantProcedure.input(z.object({ rewardId: z.number() })).mutation(async ({ ctx, input }) => {
       const rewards = await db.getLoyaltyRewards(ctx.organizationId ?? undefined);
       const reward = rewards.find(r => r.id === input.rewardId);
       if (!reward) throw new TRPCError({ code: 'NOT_FOUND', message: 'المكافأة غير موجودة' });
@@ -2305,7 +2352,7 @@ export const appRouter = router({
     allCards: superAdminProcedure.query(async () => {
       return db.getAllLoyaltyCards();
     }),
-    validateCard: protectedProcedure.input(z.object({ cardNumber: z.string() })).query(async ({ ctx, input }) => {
+    validateCard: tenantProcedure.input(z.object({ cardNumber: z.string() })).query(async ({ ctx, input }) => {
       const card = await db.getCardByNumber(input.cardNumber);
       if (!card) return null;
       // SECURITY FIX: reject cross-tenant card validation -- a card whose
@@ -2482,7 +2529,9 @@ export const appRouter = router({
       return db.getClasses(ctx.organizationId);
     }),
     getById: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
-      return db.getClassById(input.id, ctx.organizationId);
+      const classRecord = await db.getClassById(input.id, ctx.organizationId);
+      if (!classRecord) throw new TRPCError({ code: 'NOT_FOUND', message: 'الفصل غير موجود' });
+      return classRecord;
     }),
     children: tenantProcedure.input(z.object({ classId: z.number() })).query(async ({ input, ctx }) => {
       return db.getChildrenByClass(input.classId, ctx.organizationId);
@@ -2525,13 +2574,13 @@ export const appRouter = router({
     byDate: adminProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
       return db.getStaffAttendanceByDate(input.date, ctx.organizationId);
     }),
-    myHistory: protectedProcedure.query(async ({ ctx }) => {
+    myHistory: tenantProcedure.query(async ({ ctx }) => {
       return db.getStaffAttendanceByUser(ctx.user!.id, ctx.organizationId ?? undefined);
     }),
     userHistory: adminProcedure.input(z.object({ userId: z.number() })).query(async ({ input, ctx }) => {
       return db.getStaffAttendanceByUser(input.userId, ctx.organizationId);
     }),
-    checkIn: protectedProcedure.input(z.object({
+    checkIn: tenantProcedure.input(z.object({
       gpsLat: z.number(),
       gpsLng: z.number(),
       device: z.string().optional(),
@@ -2600,7 +2649,7 @@ export const appRouter = router({
     }),
 
     // ============ QUICK CHECK-IN (No GPS required) ============
-    quickCheckIn: protectedProcedure.input(z.object({
+    quickCheckIn: tenantProcedure.input(z.object({
       device: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
       // Check if already checked in today
@@ -2638,7 +2687,7 @@ export const appRouter = router({
     }),
 
     // ============ LATE CHECK-IN (with reason) ============
-    lateCheckIn: protectedProcedure.input(z.object({
+    lateCheckIn: tenantProcedure.input(z.object({
       actualTime: z.string(), // ISO string of the actual arrival time
       reason: z.string().min(1, 'يرجى كتابة سبب التسجيل المتأخر'),
       device: z.string().optional(),
@@ -2731,7 +2780,7 @@ export const appRouter = router({
   }),
 
   dailyActivities: router({
-    byChild: protectedProcedure.input(z.object({ childId: z.number(), date: z.string().optional() })).query(async ({ input, ctx }) => {
+    byChild: tenantProcedure.input(z.object({ childId: z.number(), date: z.string().optional() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
@@ -2820,14 +2869,14 @@ export const appRouter = router({
   // an org-scoped join in db.ts (same pattern as childDocuments) plus a
   // fetch-and-verify on childId before create.
   departures: router({
-    byDate: protectedProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
+    byDate: tenantProcedure.input(z.object({ date: z.string() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         return db.getDeparturesByDateForChildren(input.date, childIds);
       }
       return db.getDeparturesByDate(input.date, ctx.organizationId ?? undefined);
     }),
-    byChild: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    byChild: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
@@ -2859,6 +2908,41 @@ export const appRouter = router({
     }),
   }),
   media: router({
+    createUploadUrl: teacherProcedure.input(z.object({
+      type: z.enum(['photo', 'video']),
+      contentType: z.string().trim().min(1).max(100),
+      fileSize: z.number().int().positive(),
+    })).mutation(async ({ input, ctx }) => {
+      try {
+        return await createDirectMediaUpload({
+          organizationId: ctx.organizationId,
+          userId: ctx.user!.id,
+          type: input.type,
+          contentType: input.contentType,
+          fileSize: input.fileSize,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'UNSUPPORTED_MEDIA_TYPE') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'نوع الملف غير مدعوم. استخدم JPG أو PNG أو WebP أو MP4 أو MOV أو WebM',
+          });
+        }
+        if (error instanceof Error && error.message === 'INVALID_MEDIA_SIZE') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: input.type === 'video'
+              ? 'حجم الفيديو يتجاوز الحد المسموح (50 ميجابايت)'
+              : 'حجم الصورة يتجاوز الحد المسموح (10 ميجابايت)',
+          });
+        }
+        console.error('[Media] Failed to create direct upload URL:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'تعذّر تجهيز رابط الرفع حالياً',
+        });
+      }
+    }),
     upload: teacherProcedure.input(z.object({
       type: z.enum(['photo', 'video']),
       url: z.string(),
@@ -2869,18 +2953,54 @@ export const appRouter = router({
       fileSize: z.number().optional(),
       classId: z.number().optional(),
       visibility: z.enum(['class', 'specific']).optional(),
-      childIds: z.array(z.number()).optional(),
+      childIds: z.array(z.number()).max(200).optional(),
     })).mutation(async ({ input, ctx }) => {
-      // SECURITY FIX: createMedia previously never stamped organizationId
-      // on the new row at all.
-      const media = await db.createMedia({ ...input, uploadedBy: ctx.user!.id, organizationId: ctx.organizationId ?? undefined });
+      // Backward-compatible single-file finalization. File bytes still must
+      // have been uploaded directly to an organization-owned R2 staging key;
+      // arbitrary client URLs are never trusted as stored media.
+      if (!input.fileKey) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'مفتاح ملف R2 مطلوب' });
+      }
+      if (input.classId && !await db.getClassById(input.classId, ctx.organizationId)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'الفصل المحدد غير موجود' });
+      }
+      const uniqueChildIds = Array.from(new Set(input.childIds || []));
+      const ownedChildren = await db.getChildrenByIds(uniqueChildIds, ctx.organizationId);
+      if (ownedChildren.length !== uniqueChildIds.length) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تتضمن القائمة طفلاً غير صالح' });
+      }
+      let verified;
+      try {
+        verified = await verifyDirectMediaUpload({
+          organizationId: ctx.organizationId,
+          type: input.type,
+          fileKey: input.fileKey,
+        });
+      } catch (error) {
+        console.error('[Media] Direct single upload verification failed:', error);
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تعذّر التحقق من الملف المرفوع؛ أعد رفعه وحاول مجدداً' });
+      }
+      let media;
+      try {
+        media = await db.createMedia({
+          ...input,
+          ...verified,
+          childIds: uniqueChildIds,
+          uploadedBy: ctx.user!.id,
+          organizationId: ctx.organizationId,
+        });
+      } catch (error) {
+        await storageDelete(verified.fileKey).catch(() => undefined);
+        console.error('[Media] Failed to persist verified single upload:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذّر حفظ الملف المرفوع' });
+      }
       // Push notification to parents of tagged children
       if (input.childIds && input.childIds.length > 0) {
         try {
           const { sendPushToUser } = await import('./_core/webPush');
           const notifiedParents = new Set<number>();
-          for (const childId of input.childIds) {
-            const child = await db.getChildById(childId, ctx.organizationId ?? undefined);
+          for (const childId of uniqueChildIds) {
+            const child = ownedChildren.find(item => item.id === childId);
             if (child?.parentId && !notifiedParents.has(child.parentId)) {
               notifiedParents.add(child.parentId);
               const mediaLabel = input.type === 'photo' ? 'صورة جديدة' : 'فيديو جديد';
@@ -2909,36 +3029,76 @@ export const appRouter = router({
     uploadBatch: teacherProcedure.input(z.object({
       items: z.array(z.object({
         type: z.enum(['photo', 'video']),
-        url: z.string(),
-        fileKey: z.string().optional(),
-        caption: z.string().optional(),
-        mimeType: z.string().optional(),
-        fileSize: z.number().optional(),
-      })),
+        fileKey: z.string().trim().min(1).max(500),
+        caption: z.string().trim().max(1_000).optional(),
+      })).min(1).max(20),
       classId: z.number().optional(),
       visibility: z.enum(['class', 'specific']).optional(),
-      childIds: z.array(z.number()).optional(),
+      childIds: z.array(z.number()).max(200).optional(),
     })).mutation(async ({ input, ctx }) => {
-      const results = [];
-      for (const item of input.items) {
-        // SECURITY FIX: previously never stamped organizationId on new rows.
-        const result = await db.createMedia({
+      if (input.classId) {
+        const ownedClass = await db.getClassById(input.classId, ctx.organizationId);
+        if (!ownedClass) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'الفصل المحدد غير موجود' });
+        }
+      }
+
+      const uniqueChildIds = Array.from(new Set(input.childIds || []));
+      const ownedChildren = await db.getChildrenByIds(uniqueChildIds, ctx.organizationId);
+      if (ownedChildren.length !== uniqueChildIds.length) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'تتضمن القائمة طفلاً غير صالح' });
+      }
+
+      const verificationResults = await Promise.allSettled(input.items.map(async item => ({
+          ...await verifyDirectMediaUpload({
+            organizationId: ctx.organizationId,
+            type: item.type,
+            fileKey: item.fileKey,
+          }),
+          type: item.type,
+          caption: item.caption,
+      })));
+      const verifiedItems = verificationResults.flatMap(result =>
+        result.status === 'fulfilled' ? [result.value] : [],
+      );
+      const verificationFailed = verificationResults.some(result => result.status === 'rejected');
+      if (verificationFailed) {
+        // Some objects may already have been promoted from staging. Remove
+        // those successful promotions so a failed batch never leaves orphaned
+        // R2 data behind.
+        await Promise.allSettled(verifiedItems.map(item => storageDelete(item.fileKey)));
+        const firstFailure = verificationResults.find(result => result.status === 'rejected');
+        console.error('[Media] Direct upload verification failed:', firstFailure);
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'تعذّر التحقق من أحد الملفات المرفوعة؛ أعد رفعه وحاول مجدداً',
+        });
+      }
+
+      let results;
+      try {
+        results = await db.createMediaBatch(verifiedItems.map(item => ({
           ...item,
           classId: input.classId,
           visibility: input.visibility,
-          childIds: input.childIds,
+          childIds: uniqueChildIds,
           uploadedBy: ctx.user!.id,
-          organizationId: ctx.organizationId ?? undefined,
-        });
-        results.push(result);
+          organizationId: ctx.organizationId,
+        })));
+      } catch (error) {
+        // The database transaction rolled back, so no row references these
+        // promoted objects. Clean them from R2 before surfacing the failure.
+        await Promise.allSettled(verifiedItems.map(item => storageDelete(item.fileKey)));
+        console.error('[Media] Failed to persist verified upload batch:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذّر حفظ الملفات المرفوعة' });
       }
       // Push notification to parents of tagged children (batch)
-      if (input.childIds && input.childIds.length > 0) {
+      if (uniqueChildIds.length > 0) {
         try {
           const { sendPushToUser } = await import('./_core/webPush');
           const notifiedParents = new Set<number>();
-          for (const childId of input.childIds) {
-            const child = await db.getChildById(childId, ctx.organizationId ?? undefined);
+          for (const childId of uniqueChildIds) {
+            const child = ownedChildren.find(item => item.id === childId);
             if (child?.parentId && !notifiedParents.has(child.parentId)) {
               notifiedParents.add(child.parentId);
               await db.createNotification({
@@ -2963,7 +3123,7 @@ export const appRouter = router({
       }
       return results;
     }),
-    list: protectedProcedure.input(z.object({
+    list: tenantProcedure.input(z.object({
       classId: z.number().optional(),
       childId: z.number().optional(),
       limit: z.number().optional(),
@@ -2975,9 +3135,9 @@ export const appRouter = router({
           if (!childIds.includes(input.childId)) {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
           }
-          return db.getMediaForChild(input.childId, input?.limit, ctx.organizationId ?? undefined);
-        }
-        return db.getMediaForChildren(childIds, input?.limit, ctx.organizationId ?? undefined);
+            return withDirectMediaUrls(await db.getMediaForChild(input.childId, input?.limit, ctx.organizationId ?? undefined));
+          }
+          return withDirectMediaUrls(await db.getMediaForChildren(childIds, input?.limit, ctx.organizationId ?? undefined));
       }
       // SECURITY FIX: admin/teacher/fallback branches previously called
       // getAllMedia()/getMediaForClass() with no organizationId at all --
@@ -2985,15 +3145,15 @@ export const appRouter = router({
       // see every organization's photos and videos of children.
       // Admin sees all (within their own organization)
       if (ctx.user?.role === 'admin' || ctx.user?.role === 'owner' || ctx.user?.role === 'principal' || ctx.user?.role === 'super_admin') {
-        return db.getAllMedia(input?.limit, ctx.organizationId ?? undefined);
+        return withDirectMediaUrls(await db.getAllMedia(input?.limit, ctx.organizationId ?? undefined));
       }
       // Teacher sees by class
       if (input?.classId) {
-        return db.getMediaForClass(input.classId, input?.limit, ctx.organizationId ?? undefined);
+        return withDirectMediaUrls(await db.getMediaForClass(input.classId, input?.limit, ctx.organizationId ?? undefined));
       }
-      return db.getAllMedia(input?.limit, ctx.organizationId ?? undefined);
+      return withDirectMediaUrls(await db.getAllMedia(input?.limit, ctx.organizationId ?? undefined));
     }),
-    getChildren: protectedProcedure.input(z.object({ mediaId: z.number() })).query(async ({ input, ctx }) => {
+    getChildren: tenantProcedure.input(z.object({ mediaId: z.number() })).query(async ({ input, ctx }) => {
       // SECURITY FIX: previously had no organization check -- any
       // authenticated user could look up which children are tagged in any
       // organization's media item by id.
@@ -3012,6 +3172,16 @@ export const appRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: '\u0644\u0627 \u064a\u0645\u0643\u0646\u0643 \u062d\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641' });
       }
       await db.deleteMedia(input.id, ctx.organizationId ?? undefined);
+      const fileKey = getStorageKey(item.url, item.fileKey);
+      if (fileKey) {
+        try {
+          await storageDelete(fileKey);
+        } catch (error) {
+          // The database record is already gone, so do not make the user's
+          // delete appear to fail. Log the orphan for storage cleanup instead.
+          console.error('[Media] Failed to remove deleted media from storage:', error);
+        }
+      }
       return { success: true };
     }),
     approve: adminProcedure.input(z.object({ id: z.number(), isApproved: z.boolean() })).mutation(async ({ input, ctx }) => {
@@ -3227,8 +3397,8 @@ export const appRouter = router({
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_announcement', resource: 'announcements', resourceId: input.id, details: `Deleted announcement #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
-    markRead: protectedProcedure.input(z.object({ announcementId: z.number() })).mutation(async ({ input, ctx }) => {
-      return db.markAnnouncementRead(input.announcementId, ctx.user!.id);
+    markRead: tenantProcedure.input(z.object({ announcementId: z.number() })).mutation(async ({ input, ctx }) => {
+      return db.markAnnouncementRead(input.announcementId, ctx.user!.id, ctx.organizationId);
     }),
     myReadStatus: protectedProcedure.query(async ({ ctx }) => {
       return db.getUserReadAnnouncements(ctx.user!.id);
@@ -3292,7 +3462,7 @@ export const appRouter = router({
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_document', resource: 'documents', resourceId: input.id, details: `Deleted document #${input.id}`, ipAddress: '' });
       return { success: true };
     }),
-    sign: protectedProcedure.input(z.object({ documentId: z.number() })).mutation(async ({ input, ctx }) => {
+    sign: tenantProcedure.input(z.object({ documentId: z.number() })).mutation(async ({ input, ctx }) => {
       // SECURITY FIX: previously created a signature for any documentId with
       // no check it belongs to the caller's organization -- a user could
       // "sign" a document belonging to a completely different organization.
@@ -3300,7 +3470,7 @@ export const appRouter = router({
       if (!document) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستند غير موجود' });
       return db.createSignature({ documentId: input.documentId, parentId: ctx.user!.id, signedAt: new Date() });
     }),
-    signatures: protectedProcedure.input(z.object({ documentId: z.number() })).query(async ({ input, ctx }) => {
+    signatures: tenantProcedure.input(z.object({ documentId: z.number() })).query(async ({ input, ctx }) => {
       // SECURITY FIX: previously returned the signature list (which parent
       // ids signed) for ANY documentId with no organization check at all --
       // any authenticated user of any organization could enumerate another
@@ -3383,7 +3553,7 @@ export const appRouter = router({
   }),
 
   medicalInfo: router({
-    get: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    get: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
@@ -3424,7 +3594,7 @@ export const appRouter = router({
   }),
 
   emergencyContacts: router({
-    list: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    list: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
@@ -3440,7 +3610,7 @@ export const appRouter = router({
       }
       return db.getEmergencyContacts(input.childId);
     }),
-    create: protectedProcedure.input(z.object({
+    create: tenantProcedure.input(z.object({
       childId: z.number(),
       name: z.string().min(1),
       phone: z.string().min(1),
@@ -3461,7 +3631,7 @@ export const appRouter = router({
       }
       return db.createEmergencyContact(input);
     }),
-    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+    delete: tenantProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       // SECURITY FIX: previously deleted by id with NO check whatsoever --
       // any authenticated user of ANY role, in ANY organization, could
       // delete any other organization's (or any other family's) emergency
@@ -3529,6 +3699,21 @@ export const appRouter = router({
   }),
 
   waitingList: router({
+    // Public discovery exposes only the minimum fields needed by the generic
+    // registration forms. Mutations still resolve the selected opaque slug
+    // server-side and never trust a client-supplied organization id.
+    publicOrganizations: publicProcedure.query(async () => {
+      const database = (await getSharedDb())!;
+      return database.select({
+        name: organizations.name,
+        nameAr: organizations.nameAr,
+        slug: organizations.slug,
+        city: organizations.city,
+      })
+        .from(organizations)
+        .where(inArray(organizations.status, ['active', 'trial']))
+        .orderBy(organizations.nameAr);
+    }),
     list: adminProcedure.query(async ({ ctx }) => {
       // SECURITY FIX: previously returned every organization's prospective-
       // family waiting list to any admin -- see the organizationId column
@@ -3641,7 +3826,7 @@ export const appRouter = router({
   }),
 
   eyfs: router({
-    assessments: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    assessments: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
@@ -3672,7 +3857,7 @@ export const appRouter = router({
   }),
 
   observations: router({
-    list: protectedProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
+    list: tenantProcedure.input(z.object({ childId: z.number() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
@@ -3701,7 +3886,7 @@ export const appRouter = router({
       if (!child) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطفل غير موجود' });
       return db.createLearningObservation({ ...input, observedBy: ctx.user!.id, observedAt: new Date(), organizationId: ctx.organizationId });
     }),
-    byArea: protectedProcedure.input(z.object({ childId: z.number(), area: z.string() })).query(async ({ input, ctx }) => {
+    byArea: tenantProcedure.input(z.object({ childId: z.number(), area: z.string() })).query(async ({ input, ctx }) => {
       if (ctx.user?.role === 'parent') {
         const childIds = await db.getChildIdsForParent(ctx.user.id);
         if (!childIds.includes(input.childId)) {
@@ -3741,7 +3926,9 @@ export const appRouter = router({
     // any organization's admin could view any other organization's user's
     // full profile (name, email, phone, nationalId, role) by id.
     getById: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
-      return db.getUserById(input.id, ctx.organizationId);
+      const user = await db.getUserById(input.id, ctx.organizationId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+      return user;
     }),
     create: adminProcedure.input(z.object({
       name: z.string().min(1),
@@ -3815,12 +4002,15 @@ export const appRouter = router({
     })).mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
       const result = await db.updateUser(id, data, ctx.organizationId);
+      if (!result) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
       await db.createAuditLog({ userId: ctx.user!.id, action: 'update_user', resource: 'users', resourceId: id, details: `Updated user #${id}: ${JSON.stringify(data)}`, ipAddress: '' });
       return result;
     }),
     // SECURITY FIX: previously called deleteUser with no organizationId --
     // any admin could delete any other organization's user by id.
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const target = await db.getUserById(input.id, ctx.organizationId);
+      if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
       await db.createAuditLog({ userId: ctx.user!.id, action: 'delete_user', resource: 'users', resourceId: input.id, details: `Deleted user #${input.id}`, ipAddress: '' });
       return db.deleteUser(input.id, ctx.organizationId);
     }),
@@ -3828,12 +4018,22 @@ export const appRouter = router({
     // could link a child in their own organization to a parent user
     // account belonging to a DIFFERENT organization (or vice versa).
     linkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const [parent, child] = await Promise.all([
+        db.getUserById(input.parentId, ctx.organizationId),
+        db.getChildById(input.childId, ctx.organizationId),
+      ]);
+      if (!parent || !child) throw new TRPCError({ code: 'NOT_FOUND', message: 'ولي الأمر أو الطفل غير موجود' });
       const result = await db.linkParentToChild(input.parentId, input.childId, input.relationship || 'parent', ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'link_child', resource: 'parent_children', resourceId: input.childId, details: `Linked parent #${input.parentId} to child #${input.childId}`, ipAddress: '' });
       return result;
     }),
     // SECURITY FIX: same as linkChild above.
     unlinkChild: adminProcedure.input(z.object({ parentId: z.number(), childId: z.number(), relationship: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const [parent, child] = await Promise.all([
+        db.getUserById(input.parentId, ctx.organizationId),
+        db.getChildById(input.childId, ctx.organizationId),
+      ]);
+      if (!parent || !child) throw new TRPCError({ code: 'NOT_FOUND', message: 'ولي الأمر أو الطفل غير موجود' });
       const result = await db.unlinkParentFromChild(input.parentId, input.childId, ctx.organizationId);
       await db.createAuditLog({ userId: ctx.user!.id, action: 'unlink_child', resource: 'parent_children', resourceId: input.childId, details: `Unlinked parent #${input.parentId} from child #${input.childId}`, ipAddress: '' });
       return result;
@@ -3859,6 +4059,7 @@ export const appRouter = router({
     // any admin could activate any other organization's user by id.
     activate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       const result = await db.updateUser(input.id, { isActive: true }, ctx.organizationId);
+      if (!result) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
       await db.createAuditLog({ userId: ctx.user!.id, action: 'activate_user', resource: 'users', resourceId: input.id, details: `Activated user #${input.id}`, ipAddress: '' });
       return result;
     }),
@@ -3866,6 +4067,7 @@ export const appRouter = router({
     // deactivate (lock out) any other organization's user by id.
     deactivate: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       const result = await db.updateUser(input.id, { isActive: false }, ctx.organizationId);
+      if (!result) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
       await db.createAuditLog({ userId: ctx.user!.id, action: 'deactivate_user', resource: 'users', resourceId: input.id, details: `Deactivated user #${input.id}`, ipAddress: '' });
       return result;
     }),
@@ -3980,13 +4182,13 @@ export const appRouter = router({
         }
         // Push notifications to on-duty staff only
         const { notifyStaffPickupRequest } = await import('./_core/pushTriggers');
-        await notifyStaffPickupRequest(childName, id, input.childId);
+        await notifyStaffPickupRequest(childName, id, input.childId, ctx.organizationId);
       } catch (e) { /* notification failure shouldn't block */ }
       return { id, status: 'waiting_teacher' };
     }),
 
     // STEP 2: Teacher sends child to reception
-    teacherSendToReception: protectedProcedure.input(z.object({
+    teacherSendToReception: tenantProcedure.input(z.object({
       id: z.number(),
     })).mutation(async ({ ctx, input }) => {
       // SECURITY FIX: previously updated (and later fetched/notified about)
@@ -3994,13 +4196,22 @@ export const appRouter = router({
       // any authenticated staff user in ANY organization could advance
       // another organization's pickup workflow by guessing/enumerating a
       // pickup request id.
+      //
+      // SECURITY FIX (round 2): the first fix above was written as
+      // `orgId ? <scoped query> : <UNSCOPED query>` on `protectedProcedure`.
+      // ctx.organizationId is nullable (users.organizationId is a NULLABLE
+      // column in the live database -- see migration 0024), so any caller
+      // whose account had no organization fell into the else-branch and got
+      // the original unscoped behaviour back: the ownership check failed
+      // OPEN. Now on tenantProcedure, which rejects a null/invalid
+      // organizationId before the handler runs, so the scoped query is the
+      // only path that exists.
       const dbConn = await (await import('./db')).getDb();
       const { pickupRequests: pr } = await import('../drizzle/schema');
       const { eq: eqOp, and: andOp } = await import('drizzle-orm');
-      const orgId = ctx.organizationId ?? undefined;
-      const existingRows = orgId
-        ? await dbConn!.select().from(pr).where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1)
-        : await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+      const orgId = ctx.organizationId;
+      const existingRows = await dbConn!.select().from(pr)
+        .where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1);
       if (!existingRows[0]) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب الاستلام غير موجود' });
       }
@@ -4048,18 +4259,18 @@ export const appRouter = router({
     }),
 
     // STEP 3: Reception marks child as waiting
-    markWaitingAtReception: protectedProcedure.input(z.object({
+    markWaitingAtReception: tenantProcedure.input(z.object({
       id: z.number(),
     })).mutation(async ({ ctx, input }) => {
       // SECURITY FIX: previously updated by id alone with no organization
-      // check -- see teacherSendToReception above for the same class of bug.
+      // check -- see teacherSendToReception above for the same class of bug,
+      // including the fail-open `orgId ? scoped : unscoped` second round.
       const dbConn = await (await import('./db')).getDb();
       const { pickupRequests: pr } = await import('../drizzle/schema');
       const { eq: eqOp, and: andOp } = await import('drizzle-orm');
-      const orgId = ctx.organizationId ?? undefined;
-      const existingRows = orgId
-        ? await dbConn!.select().from(pr).where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1)
-        : await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+      const orgId = ctx.organizationId;
+      const existingRows = await dbConn!.select().from(pr)
+        .where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1);
       if (!existingRows[0]) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب الاستلام غير موجود' });
       }
@@ -4068,7 +4279,7 @@ export const appRouter = router({
     }),
 
     // STEP 4 & 5: Reception completes pickup with authorized person
-    completePickup: protectedProcedure.input(z.object({
+    completePickup: tenantProcedure.input(z.object({
       id: z.number(),
       pickedUpBy: z.string(),
       pickedUpByRelationship: z.string(),
@@ -4079,14 +4290,18 @@ export const appRouter = router({
       // SECURITY FIX: previously updated by id alone with no organization
       // check -- any authenticated staff user in ANY organization could mark
       // another organization's child as picked up by an arbitrary named
-      // person, by guessing/enumerating a pickup request id.
+      // person, by guessing/enumerating a pickup request id. The follow-up
+      // fix then reintroduced that exact capability through its
+      // `orgId ? scoped : unscoped` fallback whenever the caller had no
+      // organization; tenantProcedure now removes that branch entirely.
+      // This is the most safety-critical handler in the pickup workflow --
+      // it is the record of WHO a child was released to.
       const dbConn = await (await import('./db')).getDb();
       const { pickupRequests: pr } = await import('../drizzle/schema');
       const { eq: eqOp, and: andOp } = await import('drizzle-orm');
-      const orgId = ctx.organizationId ?? undefined;
-      const existingRows = orgId
-        ? await dbConn!.select().from(pr).where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1)
-        : await dbConn!.select().from(pr).where(eqOp(pr.id, input.id)).limit(1);
+      const orgId = ctx.organizationId;
+      const existingRows = await dbConn!.select().from(pr)
+        .where(andOp(eqOp(pr.id, input.id), eqOp(pr.organizationId, orgId))).limit(1);
       if (!existingRows[0]) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'طلب الاستلام غير موجود' });
       }
@@ -4258,10 +4473,10 @@ export const appRouter = router({
     // ===== OPERATIONAL ALERTS =====
 
     // Acknowledge pickup alert (stops repeating sound)
-    acknowledge: protectedProcedure.input(z.object({
+    acknowledge: tenantProcedure.input(z.object({
       pickupRequestId: z.number(),
     })).mutation(async ({ ctx, input }) => {
-      await db.acknowledgePickupAlert(input.pickupRequestId, ctx.user!.id);
+      await db.acknowledgePickupAlert(input.pickupRequestId, ctx.user!.id, ctx.organizationId);
       return { success: true };
     }),
 
@@ -4269,7 +4484,7 @@ export const appRouter = router({
     // SECURITY FIX: previously ran with no organizationId -- a staff member
     // would receive urgent alert entries for children in OTHER
     // organizations too.
-    unacknowledgedAlerts: protectedProcedure.query(async ({ ctx }) => {
+    unacknowledgedAlerts: tenantProcedure.query(async ({ ctx }) => {
       return db.getUnacknowledgedPickupAlerts(ctx.user!.id, ctx.organizationId ?? undefined);
     }),
 
@@ -4279,12 +4494,12 @@ export const appRouter = router({
     // pickup-alarm volume/tone/escalation for every other organization's
     // staff. Per policy (full tenant isolation, Super Admin is the only
     // cross-org exception), this is now scoped per organization.
-    alertSettings: protectedProcedure.query(async ({ ctx }) => {
+    alertSettings: tenantProcedure.query(async ({ ctx }) => {
       return db.getPickupAlertSettings(ctx.organizationId ?? undefined);
     }),
 
     // Update alert settings (admin only)
-    updateAlertSettings: protectedProcedure.input(z.object({
+    updateAlertSettings: tenantProcedure.input(z.object({
       volume: z.number().min(0).max(100).optional(),
       tone: z.enum(['urgent', 'gentle', 'alarm', 'chime']).optional(),
       repeatIntervalSeconds: z.number().min(2).max(30).optional(),
@@ -4298,7 +4513,7 @@ export const appRouter = router({
     }),
 
     // Test pickup alert (admin only)
-    testAlert: protectedProcedure.mutation(async ({ ctx }) => {
+    testAlert: tenantProcedure.mutation(async ({ ctx }) => {
       if (!['super_admin', 'admin', 'principal'].includes(ctx.user!.role)) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
@@ -4372,7 +4587,7 @@ export const appRouter = router({
       return { success: true };
     }),
     // Test push notification (for debugging)
-    test: protectedProcedure.input(z.object({
+    test: tenantProcedure.input(z.object({
       targetUserId: z.number().optional(),
     }).optional()).mutation(async ({ ctx, input }) => {
       const { sendPushToUser } = await import('./_core/webPush');

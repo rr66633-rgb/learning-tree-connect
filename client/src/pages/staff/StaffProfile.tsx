@@ -15,6 +15,7 @@ import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import {
   ArrowRight, Edit, Trash2, User, Briefcase, Calendar, FileText, MessageSquare,
   FolderOpen, Plus, Phone, Mail, MapPin, Clock, CheckCircle, XCircle, AlertCircle,
@@ -208,9 +209,7 @@ export default function StaffProfile() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      const data = await uploadWithProgress(apiUrl('/api/upload-document'), formData);
       createDocument.mutate({
         staffProfileId: staffId,
         name: docForm.name || file.name,

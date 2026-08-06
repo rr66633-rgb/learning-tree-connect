@@ -39,10 +39,26 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  const secure = isSecureRequest(req);
+
+  // BUGFIX: sameSite was hardcoded to "none" while `secure` was computed from
+  // the request. Browsers reject any `SameSite=None` cookie that is not also
+  // `Secure` -- so over plain HTTP the session cookie was silently DROPPED by
+  // the browser. Reproduced in a real Chromium session against
+  // http://localhost:3000/login: the server answered auth.login with 200, but
+  // the only cookies the browser kept were __csrf and _fbp -- no
+  // app_session_id. The page therefore just sat on /login with no error to
+  // show, because nothing had actually failed from its point of view.
+  // (curl does not enforce this rule, which is why API-level testing passed.)
+  //
+  // "none" is still required over HTTPS: the Capacitor native app loads the
+  // site cross-origin and needs the cookie sent on those requests. "lax" is the
+  // correct fallback for plain-HTTP/same-origin use and is what makes local
+  // development work at all.
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

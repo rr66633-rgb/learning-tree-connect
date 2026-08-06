@@ -59,13 +59,25 @@ describe("Tenant isolation: calendarRouter", () => {
   });
 
   it("P4: Org A admin cannot publish Org B's calendar event", async () => {
-    await expectRejected(callerAsOrgAAdmin().calendar.publish({ id: fixture.orgB.calendarEventId }));
+    await expectRejected(callerAsOrgAAdmin().calendar.publish({
+      id: fixture.orgB.calendarEventId,
+      published: true,
+    }));
   });
 
   it("P4: Org A admin cannot send/schedule/cancel reminders on Org B's event", async () => {
-    await expectRejected(callerAsOrgAAdmin().calendar.sendReminder({ id: fixture.orgB.calendarEventId } as any));
+    await expectRejected(callerAsOrgAAdmin().calendar.sendReminder({
+      eventId: fixture.orgB.calendarEventId,
+      audience: "parents",
+      message: "tenant isolation",
+    }));
     await expectRejected(
-      callerAsOrgAAdmin().calendar.scheduleReminder({ eventId: fixture.orgB.calendarEventId } as any)
+      callerAsOrgAAdmin().calendar.scheduleReminder({
+        eventId: fixture.orgB.calendarEventId,
+        audience: "parents",
+        message: "tenant isolation",
+        scheduledAt: new Date(Date.now() + 86_400_000).toISOString(),
+      })
     );
     await expectRejected(callerAsOrgAAdmin().calendar.cancelReminders({ eventId: fixture.orgB.calendarEventId } as any));
     await expectRejected(callerAsOrgAAdmin().calendar.reminderHistory({ eventId: fixture.orgB.calendarEventId } as any));
@@ -87,7 +99,7 @@ describe("Tenant isolation: staffManagementRouter", () => {
 
   it("P2: Org A admin's staff list never includes Org B's staff profile", async () => {
     const list = await callerAsOrgAAdmin().staffManagement.list({});
-    expect(list.some((s: any) => s.id === fixture.orgB.staffProfileId)).toBe(false);
+    expect(list.items.some((s: any) => s.id === fixture.orgB.staffProfileId)).toBe(false);
   });
 
   it("P4: Org A admin cannot update or delete Org B's staff profile", async () => {
@@ -114,8 +126,9 @@ describe("Tenant isolation: staffManagementRouter", () => {
     await expectRejected(
       callerAsOrgATeacher().staffManagement.notes.create({
         staffProfileId: fixture.orgB.staffProfileId,
-        note: "cross-tenant note",
-      } as any)
+        title: "tenant isolation",
+        content: "cross-tenant note",
+      })
     );
   });
 
@@ -127,8 +140,9 @@ describe("Tenant isolation: staffManagementRouter", () => {
       callerAsOrgAAdmin().staffManagement.documents.create({
         staffProfileId: fixture.orgB.staffProfileId,
         name: "x",
-        fileUrl: "https://example.test/x.pdf",
-      } as any)
+        url: "https://example.test/x.pdf",
+        fileKey: "tenant-isolation/x.pdf",
+      })
     );
   });
 });

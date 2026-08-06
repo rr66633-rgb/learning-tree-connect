@@ -22,13 +22,19 @@ if (!DB_URL) {
 
 // Parse DATABASE_URL
 const url = new URL(DB_URL);
+// BUGFIX: ssl was unconditionally on, which is right for the hosted database
+// but makes this script unusable against a local MySQL: Node refuses to set a
+// TLS servername to an IP ("Setting the TLS ServerName to an IP address is not
+// permitted") and the script dies before seeding anything. Local hosts don't
+// speak TLS anyway, so only negotiate it for remote hosts.
+const isLocalHost = ['localhost', '127.0.0.1', '::1', 'host.docker.internal'].includes(url.hostname);
 const connection = await mysql.createConnection({
   host: url.hostname,
   port: parseInt(url.port),
   user: url.username,
   password: url.password,
   database: url.pathname.slice(1).split('?')[0],
-  ssl: { rejectUnauthorized: false },
+  ...(isLocalHost ? {} : { ssl: { rejectUnauthorized: false } }),
 });
 
 console.log('Connected to database');
@@ -235,10 +241,15 @@ async function seedData() {
     ];
     
     for (const evt of eventData) {
+      // BUGFIX: this inserted `title` and `startDate`, which are the ORIGINAL
+      // 0002 column names. Migration 0019 reshaped calendar_events to
+      // titleAr/titleEn/eventDate (and dropped the legacy columns), so this
+      // insert failed with "Unknown column 'title'" and aborted the whole seed
+      // before invoices/messages/etc. were ever created.
       await connection.execute(
-        `INSERT INTO calendar_events (title, titleAr, description, eventDate, startDate, category, createdBy, organizationId, audience)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'all')`,
-        [evt.title, evt.title, evt.description, evt.date, evt.date, evt.category, teacherIds[0], ORG_ID]
+        `INSERT INTO calendar_events (titleAr, titleEn, description, eventDate, category, createdBy, organizationId, audience, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'all', 'published')`,
+        [evt.title, evt.title, evt.description, evt.date, evt.category, teacherIds[0], ORG_ID]
       );
     }
     console.log('  Calendar events created');

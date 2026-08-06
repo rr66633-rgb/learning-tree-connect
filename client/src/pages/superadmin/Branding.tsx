@@ -10,6 +10,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Palette, Save, RotateCcw, Upload, X, Image as ImageIcon } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 interface LogoUploadProps {
@@ -40,15 +41,8 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-logo'), {
-        method: 'POST',
-        body: formData });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || isAr ? 'فشل رفع الشعار' : 'Failed to Upload Logo');
-      }
-      const { url } = await res.json();
+      formData.append('file', await compressImage(file));
+      const { url } = await uploadWithProgress(apiUrl('/api/upload-logo'), formData);
       onUpload(url);
       toast.success(isAr ? "تم رفع الشعار بنجاح" : "Logo uploaded successfully");
     } catch (err: any) {

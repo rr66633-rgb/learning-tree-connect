@@ -5,15 +5,30 @@ import { apiUrl } from './apiBase';
 let csrfToken: string | null = null;
 let csrfTokenFetching: Promise<string> | null = null;
 
-async function fetchCsrfToken(): Promise<string> {
-  try {
-    const res = await fetch(apiUrl('/api/csrf-token'), { credentials: 'include' });
-    if (!res.ok) return '';
-    const data = await res.json();
-    return data.csrfToken || '';
-  } catch {
-    return '';
+async function fetchCsrfToken(retries = 3): Promise<string> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15_000);
+    try {
+      const res = await fetch(apiUrl('/api/csrf-token'), {
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.csrfToken || '';
+      }
+    } catch {
+      // A cold deployment may need one retry while the server wakes up.
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+
+    if (attempt < retries) {
+      await new Promise(resolve => window.setTimeout(resolve, attempt * 1_000));
+    }
   }
+  return '';
 }
 
 export async function getCsrfToken(): Promise<string> {

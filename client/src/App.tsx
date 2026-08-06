@@ -15,11 +15,13 @@ import i18n from "./lib/i18n";
 import { SplashScreen } from "./components/SplashScreen";
 import { useMetaPixelPageView } from "./hooks/useMetaPixel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AiTaskProvider } from "./components/AiTaskOverlay";
 
 // Landing Page
 const Landing = lazy(() => import("./pages/Landing"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const NurseriesLanding = lazy(() => import("./pages/NurseriesLanding"));
+const VisitorAssistant = lazy(() => import("./components/VisitorAssistant"));
 
 // Staff/Admin Pages
 const StaffDashboard = lazy(() => import("./pages/staff/Dashboard"));
@@ -414,7 +416,7 @@ function RoleRouter() {
     );
   }
   // Public waitlist registration page - shareable link for parents
-  if (location === "/waitlist") {
+  if (location === "/waitlist" || location.startsWith("/waitlist/")) {
     return (
       <Suspense fallback={<PageLoader />}>
         <PublicWaitlist />
@@ -635,6 +637,7 @@ function RoleRouter() {
 
 function App() {
   const [location] = useLocation();
+  const showVisitorAssistant = location === "/" || location === "/nurseries" || location === "/pricing";
   const isPublicPage = location === "/waitlist" || location === "/pricing" || location === "/privacy" || location === "/terms" || location.startsWith("/waitlist/");
   const [showSplash, setShowSplash] = useState(() => {
     // Show splash only on first load (not on HMR or navigation)
@@ -653,9 +656,19 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster />
-          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-          <RoleRouter />
+          {/* Mounted ABOVE RoleRouter on purpose: a long AI generation is owned
+              here, not by the page that started it, so navigating away neither
+              cancels the request nor discards its result. */}
+          <AiTaskProvider>
+            <Toaster />
+            {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+            <RoleRouter />
+            {showVisitorAssistant && (
+              <Suspense fallback={null}>
+                <VisitorAssistant />
+              </Suspense>
+            )}
+          </AiTaskProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

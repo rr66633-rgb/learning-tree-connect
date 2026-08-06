@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 
 function PickupAlertSettingsSection() {
   const { user } = useAuth();
@@ -300,17 +301,8 @@ export default function StaffSettings() {
                     setUploading(true);
                     try {
                       const formData = new FormData();
-                      formData.append('file', file);
-                      const resp = await fetchWithCsrf(apiUrl('/api/upload-logo'), {
-                        method: 'POST',
-                        body: formData,
-                      });
-                      if (!resp.ok) {
-                        const errData = await resp.json().catch(() => ({}));
-                        toast.error(errData.error || (isAr ? "فشل رفع الشعار" : "Failed to Upload Logo"));
-                        return;
-                      }
-                      const data = await resp.json();
+                      formData.append('file', await compressImage(file));
+                      const data: any = await uploadWithProgress(apiUrl('/api/upload-logo'), formData);
                       if (data.url) {
                         setLogoUrl(data.url);
                         toast.success(isAr ? "تم رفع الشعار بنجاح" : "Logo Uploaded Successfully");

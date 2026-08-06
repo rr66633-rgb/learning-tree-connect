@@ -46,10 +46,14 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { data: notifications, isLoading } = trpc.notifications.list.useQuery(undefined, {
-    refetchInterval: 15000, // Poll every 15 seconds
+    // The full list is only needed while the popover is visible. The global
+    // unread-count observer remains the lightweight real-time signal.
+    enabled: open,
+    staleTime: 15_000,
+    refetchInterval: open ? 30_000 : false,
   });
   const { data: unreadCount } = trpc.notifications.unreadCount.useQuery(undefined, {
-    refetchInterval: 15000,
+    staleTime: 5_000,
   });
   const utils = trpc.useUtils();
 

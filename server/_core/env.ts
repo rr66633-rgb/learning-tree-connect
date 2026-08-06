@@ -25,6 +25,11 @@ export const ENV = {
   // internal heartbeat scheduler could reach these; on a public host they
   // need their own auth, or anyone who finds the URL can trigger them.
   cronSecret: process.env.CRON_SECRET ?? "",
+  // Optional legacy Manus-compatible fallbacks. Keeping these properties
+  // explicit lets callers detect that the fallback is unavailable while real
+  // OpenAI/R2 integrations remain the primary path.
+  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
+  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   // AI chat features (server/_core/llm.ts: weekly plans, development/
   // engagement suggestions, marketing content) previously went through
   // Manus's "Forge" LLM proxy. Set a real OpenAI-compatible key here to run

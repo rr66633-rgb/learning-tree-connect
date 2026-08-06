@@ -14,7 +14,12 @@ function createAdminContext(): TrpcContext {
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
+      organizationId: 1,
     },
+    // Mirrors the real context (server/_core/context.ts), which always derives
+    // organizationId from the authenticated user. Tenant-scoped procedures
+    // reject a request without it.
+    organizationId: 1,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: () => {} } as TrpcContext["res"],
   };
@@ -32,7 +37,12 @@ function createTeacherContext(): TrpcContext {
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
+      organizationId: 1,
     },
+    // Mirrors the real context (server/_core/context.ts), which always derives
+    // organizationId from the authenticated user. Tenant-scoped procedures
+    // reject a request without it.
+    organizationId: 1,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: () => {} } as TrpcContext["res"],
   };
@@ -50,7 +60,12 @@ function createParentContext(): TrpcContext {
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
+      organizationId: 1,
     },
+    // Mirrors the real context (server/_core/context.ts), which always derives
+    // organizationId from the authenticated user. Tenant-scoped procedures
+    // reject a request without it.
+    organizationId: 1,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: () => {} } as TrpcContext["res"],
   };

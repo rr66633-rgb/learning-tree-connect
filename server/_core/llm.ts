@@ -282,6 +282,47 @@ const normalizeResponseFormat = ({
   };
 };
 
+// ---------------------------------------------------------------------------
+// max_tokens vs max_completion_tokens
+//
+// OpenAI's newer model families removed `max_tokens` in favour of
+// `max_completion_tokens` and reject the old name with a 400. Verified against
+// the live API: gpt-4.1-mini accepts `max_tokens`; gpt-5-mini and gpt-5.4-mini
+// both reject it. Callers of invokeLLM keep using `maxTokens`/`max_tokens` --
+// this module translates.
+// ---------------------------------------------------------------------------
+
+// Families known to require max_completion_tokens.
+const MAX_COMPLETION_TOKENS_FAMILIES = [/^gpt-5/i, /^o1\b/i, /^o3\b/i, /^o4\b/i];
+
+// Learned at runtime from a provider error, so an unknown future family is
+// only ever wrong once per process.
+const tokenParamOverrides = new Map<string, "max_tokens" | "max_completion_tokens">();
+
+function usesMaxCompletionTokens(model: string | undefined): boolean {
+  if (!model) return false;
+  const learned = tokenParamOverrides.get(model);
+  if (learned) return learned === "max_completion_tokens";
+  return MAX_COMPLETION_TOKENS_FAMILIES.some(re => re.test(model));
+}
+
+function rememberTokenParam(model: string | undefined, param: "max_tokens" | "max_completion_tokens") {
+  if (model) tokenParamOverrides.set(model, param);
+}
+
+// Returns the parameter name to switch to, if the error is the known
+// unsupported-parameter complaint about the one we sent.
+function detectTokenParamSwap(
+  errorText: string,
+  sent: "max_tokens" | "max_completion_tokens"
+): "max_tokens" | "max_completion_tokens" | null {
+  if (!/unsupported[_ ]parameter|not supported with this model|unrecognized request argument/i.test(errorText)) {
+    return null;
+  }
+  if (!errorText.includes(sent)) return null;
+  return sent === "max_tokens" ? "max_completion_tokens" : "max_tokens";
+}
+
 const RETRY_MAX_RETRIES = 4;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 30_000;
@@ -311,18 +352,47 @@ const computeBackoffDelay = (
   return Math.min(Math.max(jittered, retryAfterMs ?? 0), RETRY_MAX_DELAY_MS);
 };
 
-// Retries non-2xx responses and network errors with exponential backoff, then
-// returns the final Response so callers keep their existing error handling.
+// Only these are worth retrying. 429 = rate limited, 5xx = the provider had a
+// transient problem. Everything else (400 bad request, 401 bad key, 404 unknown
+// model, 413 too large...) is deterministic: the identical request will fail
+// identically, so retrying it just multiplies the user's wait.
+const isRetryableStatus = (status: number) => status === 429 || status >= 500;
+
+// PERFORMANCE FIX: a single generation could previously run for ~20 minutes.
+//
+// The old loop retried EVERY non-2xx response up to 5 times with backoff of up
+// to 30s each, and server/weeklyPlanRouter.ts wraps that in its own 3-attempt
+// loop. Worst case that is 3 x 5 = 15 full model calls plus up to 6 minutes of
+// pure sleeping -- and with no timeout on fetch, one stalled connection could
+// hang the request indefinitely, since Node's fetch has no default timeout.
+//
+// Now: only transient failures are retried, each request is bounded by a hard
+// timeout, and the whole call is bounded by an overall deadline.
+const REQUEST_TIMEOUT_MS = 120_000; // one attempt
+const TOTAL_DEADLINE_MS = 240_000;  // all attempts combined
+
 const fetchWithBackoff = async (
   url: string,
   init: FetchInit
 ): Promise<Response> => {
   let lastError: unknown;
+  const startedAt = Date.now();
+  const timeLeft = () => TOTAL_DEADLINE_MS - (Date.now() - startedAt);
 
   for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
+    // Give the attempt whatever is left of the overall budget, capped at the
+    // per-request timeout, so total time can never exceed the deadline.
+    const budget = Math.min(REQUEST_TIMEOUT_MS, timeLeft());
+    if (budget <= 0) break;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), budget);
     try {
-      const response = await fetch(url, init);
-      if (response.ok || attempt === RETRY_MAX_RETRIES) {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      if (response.ok || !isRetryableStatus(response.status) || attempt === RETRY_MAX_RETRIES) {
+        // Non-retryable failures are returned as-is so the caller can read the
+        // provider's message and surface something useful, instead of the user
+        // waiting out four pointless retries first.
         return response;
       }
 
@@ -334,17 +404,27 @@ const fetchWithBackoff = async (
       } catch {
         // Body already settled; nothing to clean up.
       }
+      const delay = Math.min(computeBackoffDelay(attempt, retryAfterMs), Math.max(0, timeLeft()));
+      if (delay <= 0) break;
       console.warn(
         `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after status ${response.status}`
       );
-      await sleep(computeBackoffDelay(attempt, retryAfterMs));
+      await sleep(delay);
     } catch (error) {
       lastError = error;
-      if (attempt === RETRY_MAX_RETRIES) throw error;
+      const aborted = (error as Error)?.name === "AbortError";
+      if (aborted) {
+        console.warn(`LLM request attempt ${attempt + 1} timed out after ${Math.round(budget / 1000)}s`);
+      }
+      if (attempt === RETRY_MAX_RETRIES || timeLeft() <= 0) break;
+      const delay = Math.min(computeBackoffDelay(attempt), Math.max(0, timeLeft()));
+      if (delay <= 0) break;
       console.warn(
         `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`
       );
-      await sleep(computeBackoffDelay(attempt));
+      await sleep(delay);
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -396,9 +476,22 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
+  // COMPATIBILITY FIX: newer OpenAI model families (gpt-5.x and the o1/o3/o4
+  // reasoning models) removed `max_tokens` and accept only
+  // `max_completion_tokens`; they reject the old name outright with
+  // "Unsupported parameter: 'max_tokens' is not supported with this model".
+  // Because server/weeklyPlanRouter.ts passes max_tokens: 8000 on every weekly
+  // plan generation, sending the legacy name made ALL of those models unusable
+  // -- all three retry attempts failed and the user saw
+  // "فشل في إنشاء الخطة الأسبوعية". The parameter name is now chosen per model,
+  // with a runtime fallback (below) so a future family we don't know about
+  // still works instead of hard-failing.
   const resolvedMaxTokens = max_tokens ?? maxTokens;
+  const tokenParam = usesMaxCompletionTokens(payload.model as string | undefined)
+    ? "max_completion_tokens"
+    : "max_tokens";
   if (typeof resolvedMaxTokens === "number") {
-    payload.max_tokens = resolvedMaxTokens;
+    payload[tokenParam] = resolvedMaxTokens;
   }
 
   if (thinking) {
@@ -419,14 +512,37 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetchWithBackoff(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${resolveApiKey()}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const send = () =>
+    fetchWithBackoff(resolveApiUrl(), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${resolveApiKey()}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+  let response = await send();
+
+  // Runtime safety net for the token-parameter split described above: if the
+  // provider rejects the name we chose, swap to the other one and retry once,
+  // and remember the answer so subsequent calls for this model get it right
+  // first time. This keeps the app working against models released after this
+  // code was written, in either direction.
+  if (!response.ok && typeof resolvedMaxTokens === "number") {
+    const errorText = await response.text();
+    const swapTo = detectTokenParamSwap(errorText, tokenParam);
+    if (swapTo) {
+      delete payload[tokenParam];
+      payload[swapTo] = resolvedMaxTokens;
+      rememberTokenParam(payload.model as string | undefined, swapTo);
+      response = await send();
+    } else {
+      throw new Error(
+        `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+      );
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

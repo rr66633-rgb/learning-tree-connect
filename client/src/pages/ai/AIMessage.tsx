@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export default function AIMessage() {
   const { t, i18n } = useTranslation();
+  const { runTask } = useAiTask();
   const isAr = i18n.language === "ar";
   const [idea, setIdea] = useState("");
   const [result, setResult] = useState<any>(null);
@@ -34,7 +36,27 @@ export default function AIMessage() {
 
   const handleGenerate = () => {
     if (!idea.trim()) { toast.error(isAr ? "يرجى إدخال فكرة الرسالة" : "Please enter message idea"); return; }
-    generateMutation.mutate({ idea });
+    runTask({
+      title: "جارٍ صياغة الرسالة",
+      titleEn: "Composing the message",
+      stages: [
+        { label: "قراءة الفكرة", labelEn: "Reading the idea" },
+        { label: "صياغة الرسالة", labelEn: "Composing the message" },
+      ],
+      stageSeconds: [3],
+      run: () => generateMutation.mutateAsync({ idea }),
+      onDone: () => ({
+        title: "تمت صياغة الرسالة",
+        titleEn: "Message ready",
+        actionLabel: "عرض الرسالة",
+        actionLabelEn: "View message",
+        // The result renders inline below the form; bring it into view
+        // rather than leaving the user staring at the inputs.
+        onAction: () => requestAnimationFrame(() =>
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        ),
+      }),
+    }).catch(() => { /* the card reports the failure; the toast already fired */ });
   };
 
   const copyText = (text: string) => {

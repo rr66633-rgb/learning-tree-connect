@@ -8,7 +8,11 @@ import { TRPCError } from "@trpc/server";
  * Verifies data isolation, RBAC, and unauthorized access prevention
  */
 
-function createCtx(role: "admin" | "teacher" | "parent", userId: number) {
+// organizationId mirrors the real context (server/_core/context.ts), which
+// always derives it from the authenticated user. Tenant-scoped procedures
+// reject a request that lacks it, so a fixture without one cannot exercise
+// any of the isolation behaviour these tests are asserting.
+function createCtx(role: "admin" | "teacher" | "parent", userId: number, organizationId: number = 1) {
   return {
     req: { protocol: "https", headers: {} } as any,
     res: { clearCookie: () => {} } as any,
@@ -22,7 +26,9 @@ function createCtx(role: "admin" | "teacher" | "parent", userId: number) {
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
+      organizationId,
     },
+    organizationId,
   };
 }
 

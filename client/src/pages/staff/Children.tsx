@@ -17,6 +17,7 @@ import { Search, Plus, Eye, Pencil, Trash2, Archive, CheckCircle, Camera, Downlo
 import { useLocation } from "wouter";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 
 
 const initialFormState = {
@@ -146,10 +147,8 @@ export default function StaffChildren() {
     setUploadingPhoto(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: 'POST', body: formData, credentials: 'include' });
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
+      formData.append('file', await compressImage(file));
+      const data = await uploadWithProgress(apiUrl('/api/upload-photo'), formData);
       setForm(prev => ({ ...prev, photo: data.url }));
       toast.success(isAr ? 'تم رفع الصورة بنجاح' : 'Image Uploaded Successfully');
     } catch (err) {

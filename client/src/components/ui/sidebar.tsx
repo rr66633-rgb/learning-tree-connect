@@ -237,13 +237,27 @@ function Sidebar({
           disableTransition
             ? "transition-none"
             : "transition-[left,right,width] duration-200 ease-linear",
+          // LAYOUT FIX: these were physical (`left-0` / `right-0`), but the
+          // spacer that reserves room for the sidebar is a normal flex child,
+          // so it follows the document direction. The app sets
+          // document.documentElement.dir = "rtl" for Arabic, which flips the
+          // flex order -- the spacer moved to the right while this fixed panel
+          // stayed pinned left. Measured on every page at 1280/1440/1920:
+          // the sidebar occupied x[0..280] while the content also started at
+          // x=0, so the first 280px of every screen sat underneath the menu,
+          // with 280px of dead space on the other side.
+          // `start-*`/`end-*` are logical (inset-inline-start/end), so the
+          // panel now lands on the same side the spacer reserves, in both
+          // directions.
           side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
+            ? "start-0 group-data-[collapsible=offcanvas]:start-[calc(var(--sidebar-width)*-1)]"
+            : "end-0 group-data-[collapsible=offcanvas]:end-[calc(var(--sidebar-width)*-1)]",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            // border-e/border-s are logical too, so the divider stays on the
+            // edge that actually faces the content in either direction.
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-e group-data-[side=right]:border-s",
           className
         )}
         {...props}
@@ -298,7 +312,11 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] sm:flex",
+        // LAYOUT FIX: same physical-vs-logical problem as the panel above --
+        // the drag rail was pinned with -right-4/left-0, so in RTL it detached
+        // from the sidebar edge and floated over the content. Logical -end/start
+        // keeps it on the sidebar's inner edge in both directions.
+        "hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-end-4 group-data-[side=right]:start-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] sm:flex",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
         "hover:group-data-[collapsible=offcanvas]:bg-sidebar group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full",

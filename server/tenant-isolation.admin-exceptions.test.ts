@@ -60,7 +60,7 @@ describe("Tenant isolation: superAdminRouter is the ONLY sanctioned cross-org ex
 
   it("P5: a genuine super_admin's listOrganizations includes both Org A and Org B", async () => {
     const list = await callerAsSuperAdmin().superAdmin.listOrganizations();
-    const ids = list.map((o: any) => o.id);
+    const ids = list.organizations.map((o: any) => o.id);
     expect(ids).toEqual(expect.arrayContaining([fixture.orgA.organizationId, fixture.orgB.organizationId]));
   });
 

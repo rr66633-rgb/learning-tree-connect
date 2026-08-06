@@ -9,6 +9,7 @@ import { BrandingProvider } from "./contexts/BrandingContext";
 import { NativeSessionGateProvider } from "./contexts/NativeSessionGate";
 import { LOGIN_PATH } from "./const";
 import { apiUrl } from "./lib/apiBase";
+import { getCsrfToken, invalidateCsrfToken } from "./lib/csrf";
 import { initExternalResources } from './lib/externalResources';
 import "./index.css";
 import "./lib/i18n";
@@ -54,70 +55,6 @@ queryClient.getMutationCache().subscribe(event => {
     console.error("[API Mutation Error]", error);
   }
 });
-
-// Warm-up ping: wake up the server from cold start
-// With server.url, native app loads from naashah.com (same-origin), so this works fine
-fetch(apiUrl('/api/csrf-token'), { credentials: 'include' }).catch(() => {});
-
-// ============================================================
-// CSRF Token management
-// ============================================================
-let csrfToken: string | null = null;
-let csrfTokenFetching: Promise<string> | null = null;
-
-async function fetchCsrfToken(retries = 3): Promise<string> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
-      const res = await fetch(
-        apiUrl('/api/csrf-token'),
-        { credentials: 'include', signal: controller.signal }
-      );
-      clearTimeout(timeoutId);
-      
-      if (!res.ok) {
-        console.warn(`[CSRF] Token fetch failed (attempt ${attempt}/${retries}):`, res.status);
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 1000 * attempt));
-          continue;
-        }
-        return '';
-      }
-      const data = await res.json();
-      return data.csrfToken || '';
-    } catch (err) {
-      console.warn(`[CSRF] Token fetch error (attempt ${attempt}/${retries}):`, err);
-      if (attempt < retries) {
-        await new Promise(r => setTimeout(r, 1000 * attempt));
-        continue;
-      }
-      return '';
-    }
-  }
-  return '';
-}
-
-async function getCsrfToken(): Promise<string> {
-  if (csrfToken) return csrfToken;
-
-  // Prevent concurrent fetches
-  if (!csrfTokenFetching) {
-    csrfTokenFetching = fetchCsrfToken().then(token => {
-      csrfToken = token;
-      csrfTokenFetching = null;
-      return token;
-    });
-  }
-  return csrfTokenFetching;
-}
-
-// Invalidate CSRF token so next request fetches a fresh one
-function invalidateCsrfToken() {
-  csrfToken = null;
-  csrfTokenFetching = null;
-}
 
 const trpcClient = trpc.createClient({
   links: [

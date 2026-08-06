@@ -52,6 +52,22 @@ const SECTION_TYPES = [
   "parent_notes"
 ] as const;
 
+// A strict schema prevents partially-shaped JSON from reaching the editor.
+// Each section remains a rich formatted string because that is the storage/UI
+// contract used by existing plans and keeps old drafts fully compatible.
+const WEEKLY_PLAN_OUTPUT_SCHEMA = {
+  name: "weekly_plan_sections",
+  strict: true,
+  schema: {
+    type: "object",
+    properties: Object.fromEntries(
+      SECTION_TYPES.map(section => [section, { type: "string" }])
+    ),
+    required: [...SECTION_TYPES],
+    additionalProperties: false,
+  },
+};
+
 const SECTION_LABELS_AR: Record<string, string> = {
   theme_overview: "نظرة عامة على الموضوع",
   learning_objectives: "أهداف التعلم",
@@ -112,7 +128,7 @@ function buildGenerationPrompt(input: { ageGroup: string; theme: string; languag
 - الفئة العمرية: ${ageLabel.ar}
 - الموضوع الأسبوعي: ${input.theme}
 - الأسبوع: من ${input.weekStart} إلى ${input.weekEnd}
-- اللغة: ثنائي اللغة (عربي وإنجليزي) - يجب كتابة كل محتوى بالعربية أولاً ثم الإنجليزية
+- اللغة: ${isBilingual ? "ثنائي اللغة (عربي وإنجليزي) - يجب كتابة كل محتوى بالعربية أولاً ثم الإنجليزية" : "العربية فقط"}
 
 ${CULTURAL_GUIDELINES}
 
@@ -146,7 +162,9 @@ ${CULTURAL_GUIDELINES}
 13. home_activity: 2-3 أنشطة منزلية يمكن للأهل تنفيذها مع أطفالهم (الوصف، المواد البسيطة المتاحة)
 14. parent_notes: ملاحظات وإرشادات لأولياء الأمور حول الموضوع وكيفية دعم تعلم الطفل في المنزل
 
-اكتبي كل قسم بالعربية أولاً ثم أضيفي الترجمة الإنجليزية الكاملة بعده مباشرة. كل عنوان نشاط يكتب بالعربية ثم بالإنجليزية بين قوسين. مثال: "استكشاف الألوان (Exploring Colors)". كل وصف يكتب بالعربية ثم ترجمته الإنجليزية في سطر جديد.
+${isBilingual
+  ? `اكتبي كل قسم بالعربية أولاً ثم أضيفي الترجمة الإنجليزية الكاملة بعده مباشرة. كل عنوان نشاط يكتب بالعربية ثم بالإنجليزية بين قوسين. مثال: "استكشاف الألوان (Exploring Colors)". كل وصف يكتب بالعربية ثم ترجمته الإنجليزية في سطر جديد.`
+  : `اكتبي كل المحتوى بالعربية فقط. لا تضيفي أي ترجمة إنجليزية.`}
 
 أعيدي الرد بصيغة JSON فقط. لا تكتبي أي نص خارج JSON.`;
   } else {
@@ -233,20 +251,61 @@ export const weeklyPlanRouter = router({
       let attempts = 0;
       let lastError: string = '';
 
-      while (attempts < 3 && !sections) {
+      // PERFORMANCE FIX: this used to be a flat "try 3 times" loop wrapped
+      // around a client that itself retried up to 5 times, so a bad run could
+      // burn ~15 model calls. invokeLLM now bounds its own retries and applies
+      // a hard deadline, so this loop only needs to cover the one thing it
+      // actually guards against: a syntactically valid reply that is missing
+      // sections. Two attempts is enough for that, and the whole procedure is
+      // bounded below so the user is never left waiting indefinitely.
+      const MAX_ATTEMPTS = 2;
+      const startedAt = Date.now();
+      const OVERALL_BUDGET_MS = 300_000; // 5 minutes, ceiling for the whole call
+
+      while (attempts < MAX_ATTEMPTS && !sections) {
+        if (Date.now() - startedAt > OVERALL_BUDGET_MS) {
+          console.warn('[WeeklyPlan] overall budget exhausted, stopping retries');
+          break;
+        }
         attempts++;
         try {
-          console.log(`[WeeklyPlan] Generate attempt ${attempts}/3 for theme: ${input.theme}, ageGroup: ${input.ageGroup}`);
+          console.log(`[WeeklyPlan] Generate attempt ${attempts}/${MAX_ATTEMPTS} for theme: ${input.theme}, ageGroup: ${input.ageGroup}`);
           const response = await invokeLLM({
             messages: [
               { role: "system", content: "You are an expert curriculum planner for kindergartens in Saudi Arabia. You MUST respond with valid JSON only. No markdown, no code fences, no text outside JSON. The JSON object must contain all 14 required section keys as string values." },
               { role: "user", content: prompt }
             ],
-            response_format: { type: "json_object" },
-            max_tokens: 8000,
+            // Structured Outputs guarantees the exact 14-key contract. JSON
+            // mode only guaranteed parseable JSON and was the reason valid but
+            // incomplete plans had to be retried.
+            response_format: {
+              type: "json_schema",
+              json_schema: WEEKLY_PLAN_OUTPUT_SCHEMA,
+            },
+            // BUGFIX: this was 8000, which is not enough for what the prompt
+            // above actually asks for -- 14 sections, each written in Arabic
+            // AND then fully translated to English. Measured against the real
+            // prompt, a complete answer needs ~10,600 completion tokens.
+            //
+            // On a reasoning-capable model the too-small budget did not merely
+            // truncate the answer, it produced NOTHING: with 8000 the model
+            // spent all 8000 tokens reasoning, returned finish_reason
+            // "length" with an empty body, and the handler saw "{}" -> 0/14
+            // sections -> all three retries failed -> the user got
+            // "فشل في إنشاء الخطة الأسبوعية". Given 16000 the same model
+            // finishes normally using only ~290 reasoning tokens.
+            //
+            // This is a ceiling, not a target: the model stops when done, so
+            // raising it does not increase cost for requests that finish
+            // early (measured: identical output at 16000 and 32000).
+            max_tokens: 16000,
           });
 
-          const rawContent = (response.choices[0]?.message?.content as string) || "{}";
+          const choice = response.choices[0];
+          if (choice?.finish_reason === "length") {
+            throw new Error("LLM response reached max completion tokens before finishing");
+          }
+          const rawContent = (choice?.message?.content as string) || "{}";
           console.log(`[WeeklyPlan] LLM response received, length: ${rawContent.length}`);
           const parsed = safeJsonParse(rawContent);
 
@@ -277,12 +336,37 @@ export const weeklyPlanRouter = router({
 
       if (!sections) {
         console.error(`[WeeklyPlan] All ${attempts} attempts failed. Last error: ${lastError}`);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: input.language === "ar" 
-            ? 'فشل في إنشاء الخطة الأسبوعية. يرجى المحاولة مرة أخرى.' 
-            : 'Failed to generate weekly plan. Please try again.'
-        });
+        // UX FIX: every failure used to produce the same sentence, so a teacher
+        // could not tell "the service is busy, try in a minute" from "this will
+        // never work until an administrator fixes the configuration". The cause
+        // is classified here into the few outcomes a user can actually act on.
+        // The raw provider text is only ever logged, never shown -- it names the
+        // provider and the model.
+        const err = lastError.toLowerCase();
+        const isAr = input.language !== "en";
+        let message: string;
+        if (err.includes("timed out") || err.includes("abort") || err.includes("deadline") || err.includes("max completion tokens")) {
+          message = isAr
+            ? 'استغرق إنشاء الخطة وقتاً أطول من المتوقع. جرّبي موضوعاً أقصر أو أعيدي المحاولة بعد قليل.'
+            : 'Generating the plan took longer than expected. Try a shorter theme, or try again shortly.';
+        } else if (err.includes("429") || err.includes("rate limit") || err.includes("quota")) {
+          message = isAr
+            ? 'الخدمة مشغولة الآن. يرجى إعادة المحاولة بعد دقيقة.'
+            : 'The service is busy right now. Please try again in a minute.';
+        } else if (err.includes("401") || err.includes("api key") || err.includes("no llm api key")) {
+          message = isAr
+            ? 'ميزة الذكاء الاصطناعي غير مفعّلة. يرجى التواصل مع مسؤول النظام.'
+            : 'The AI feature is not enabled. Please contact your system administrator.';
+        } else if (err.includes("sections generated")) {
+          message = isAr
+            ? 'تعذّر إنشاء خطة مكتملة لهذا الموضوع. جرّبي صياغة الموضوع بشكل أوضح ثم أعيدي المحاولة.'
+            : 'A complete plan could not be produced for this theme. Try rephrasing the theme and generating again.';
+        } else {
+          message = isAr
+            ? 'تعذّر إنشاء الخطة الأسبوعية. يرجى المحاولة مرة أخرى.'
+            : 'Could not generate the weekly plan. Please try again.';
+        }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
       }
 
       // Save as draft
@@ -562,7 +646,7 @@ export const weeklyPlanRouter = router({
     }),
 
   // ============ PARENT LIST (Published plans for child's class) ============
-  parentList: protectedProcedure
+  parentList: tenantProcedure
     .input(z.object({
       limit: z.number().default(20),
       offset: z.number().default(0),

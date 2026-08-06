@@ -6,7 +6,7 @@ import * as db from '../db';
  * Uses requireInteraction=true so the notification persists until acknowledged.
  * Includes vibration pattern and special data flags for full-screen alert.
  */
-export async function notifyStaffPickupRequest(childName: string, pickupRequestId: number, childId: number) {
+export async function notifyStaffPickupRequest(childName: string, pickupRequestId: number, childId: number, organizationId: number) {
   const payload: PushPayload = {
     title: 'طلب استلام جديد',
     body: `ولي أمر ${childName} وصل ويطلب الاستلام`,
@@ -29,12 +29,15 @@ export async function notifyStaffPickupRequest(childName: string, pickupRequestI
     ],
   };
 
-  // First, try to notify the specific teacher(s) for this child's class
-  const teachers = await db.getTeachersForChild(childId);
+  // First, try to notify the specific teacher(s) for this child's class.
+  // SECURITY FIX: both lookups below previously ran with no organization
+  // filter, so a pickup request in one nursery pushed that child's name to
+  // every other nursery's admins on the platform.
+  const teachers = await db.getTeachersForChild(childId, organizationId);
   let targetIds = teachers.map((t: any) => t.id);
 
   // Also notify admins/principals for visibility (exclude super_admin - manages all nurseries)
-  const staffUsers = await db.getStaffUsers();
+  const staffUsers = await db.getStaffUsers(organizationId);
   const adminIds = staffUsers
     .filter((u: any) => ['admin', 'owner', 'principal', 'receptionist'].includes(u.role))
     .map((u: any) => u.id);

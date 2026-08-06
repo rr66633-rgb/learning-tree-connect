@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { ArrowRight, Upload, User, Briefcase, GraduationCap, CreditCard, Phone as PhoneIcon, Save } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 export default function EditStaff() {
@@ -85,10 +86,8 @@ export default function EditStaff() {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      formData.append('file', await compressImage(file));
+      const data = await uploadWithProgress(apiUrl('/api/upload-photo'), formData);
       setForm(f => ({ ...f, photo: data.url }));
       setPhotoPreview(data.url);
       toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");

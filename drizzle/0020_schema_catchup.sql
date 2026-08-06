@@ -973,7 +973,7 @@ DEALLOCATE PREPARE stmt;
 SET @s = (SELECT IF(
 	(SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'children' AND COLUMN_NAME = 'attendanceDays') > 0,
 	'SELECT 1',
-	'ALTER TABLE `children` ADD COLUMN `attendanceDays` json DEFAULT [0, 1, 2, 3, 4]'
+	'ALTER TABLE `children` ADD COLUMN `attendanceDays` json DEFAULT (''[0, 1, 2, 3, 4]'')'
 ));
 --> statement-breakpoint
 PREPARE stmt FROM @s;

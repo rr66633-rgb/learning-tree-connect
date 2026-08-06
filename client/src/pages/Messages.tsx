@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 export default function Messages() {
@@ -88,9 +89,7 @@ export default function Messages() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error((isAr ? "فشل الرفع" : "Upload failed"));
-      const data = await res.json();
+      const data = await uploadWithProgress(apiUrl('/api/upload-document'), formData);
       const attachmentType = file.type.startsWith("image/") ? "image" : "document";
       sendMsg.mutate(
         {

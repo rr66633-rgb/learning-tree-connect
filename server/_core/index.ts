@@ -15,11 +15,11 @@ import { registerStorageProxy } from "./storageProxy";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 const _r2Client = new S3Client({
   region: 'auto',
-  endpoint: process.env.S3_ENDPOINT ,
+  endpoint: process.env.S3_ENDPOINT!,
   forcePathStyle: true,
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID ,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ,
+    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
   },
 });
 async function storagePut(relKey: string, data: Buffer | Uint8Array | string, contentType = 'application/octet-stream'): Promise<{ key: string; url: string }> {
@@ -28,7 +28,7 @@ async function storagePut(relKey: string, data: Buffer | Uint8Array | string, co
   const key = lastDot === -1 ? `${relKey}_${hash}` : `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
   const body = typeof data === 'string' ? Buffer.from(data, 'utf-8') : Buffer.from(data);
   await _r2Client.send(new PutObjectCommand({
-    Bucket: process.env.S3_BUCKET ,
+    Bucket: process.env.S3_BUCKET!,
     Key: key,
     Body: body,
     ContentType: contentType,
@@ -212,9 +212,22 @@ async function startServer() {
     if (err.code === 'EBADCSRFTOKEN' || err.message === 'invalid csrf token') {
       return res.status(403).json({ error: 'invalid csrf token', code: 'EBADCSRFTOKEN' });
     }
-    // For other errors on API routes, also return JSON
+    // For other errors on API routes, also return JSON.
+    //
+    // SECURITY/UX FIX: this returned `err.message` verbatim. For anything
+    // thrown by the storage SDK, the database driver or a third-party client,
+    // that message carries internal detail -- storage endpoint hostnames
+    // (which name the storage provider outright), SQL fragments, file paths.
+    // It is also raw English technical text shown to an Arabic-speaking user.
+    // Client-side validation errors (4xx we raised ourselves) are safe and
+    // already user-facing, so those are kept; unexpected 5xx failures are
+    // logged server-side and replaced with a neutral message.
     const status = err.status || err.statusCode || 500;
-    return res.status(status).json({ error: err.message || 'Internal server error' });
+    if (status >= 500) {
+      console.error('[API] unhandled error:', err);
+      return res.status(status).json({ error: 'تعذّر إتمام العملية، يرجى المحاولة مرة أخرى' });
+    }
+    return res.status(status).json({ error: err.message || 'تعذّر إتمام العملية' });
   });
 
   // tRPC's httpBatchLink expects every response -- including error responses --
@@ -279,6 +292,18 @@ async function startServer() {
     legacyHeaders: false,
   });
 
+  // Direct R2 uploads only pass a small presign request through tRPC, but the
+  // signer still needs its own limit so a compromised account cannot mint an
+  // unlimited number of upload URLs. A batch may legitimately contain 20
+  // files, hence the slightly larger allowance.
+  const directUploadRateLimit = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 40,
+    handler: trpcRateLimitHandler("تم تجاوز الحد المؤقت لروابط الرفع. انتظر دقيقة ثم حاول مجدداً."),
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Rate limit for export/download (10 per minute)
   const exportRateLimit = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
@@ -300,6 +325,16 @@ async function startServer() {
     legacyHeaders: false,
   });
 
+  // Public visitor chat is intentionally stricter than authenticated AI tools:
+  // it does not require an account and every successful request has LLM cost.
+  const visitorAssistantRateLimit = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 8,
+    handler: trpcRateLimitHandler("وصلت إلى حد المحادثة المؤقت. يرجى المحاولة بعد 10 دقائق."),
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // Apply rate limits to auth endpoints
   app.use('/api/trpc/auth.login', authRateLimit);
   app.use('/api/trpc/auth.register', authRateLimit);
@@ -314,6 +349,7 @@ async function startServer() {
   app.use('/api/upload-logo', uploadRateLimit);
   app.use('/api/upload-media', uploadRateLimit);
   app.use('/api/upload-media-batch', uploadRateLimit);
+  app.use('/api/trpc/media.createUploadUrl', directUploadRateLimit);
 
   // Apply rate limits to export endpoints
   app.use('/api/export-staff', exportRateLimit);
@@ -323,6 +359,7 @@ async function startServer() {
   // Apply rate limits to AI endpoints
   app.use('/api/trpc/ai.', aiRateLimit);
   app.use('/api/trpc/weeklyPlan.generate', aiRateLimit);
+  app.use('/api/trpc/visitorAssistant.chat', visitorAssistantRateLimit);
 
   // General API rate limit (more permissive)
   const generalRateLimit = rateLimit({
@@ -400,10 +437,6 @@ async function startServer() {
 
   // Debug: test R2 upload directly
   // test-r2 endpoint removed for security
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message, stack: error.stack?.split('\n').slice(0,3) });
-    }
-  });
 
   app.post('/api/upload-photo', upload.single('file'), async (req, res) => {
     try {
@@ -734,7 +767,7 @@ async function startServer() {
       res.json({ success: true, imported, failed: errors.length, errors });
     } catch (error: any) {
       console.error('Staff import error:', error);
-      res.status(500).json({ error: 'فشل استيراد الملف: ' + (error.message || '') });
+      res.status(500).json({ error: 'تعذّر استيراد الملف، يرجى التأكد من صيغة الملف والمحاولة مرة أخرى' });
     }
   });
 
@@ -1006,7 +1039,7 @@ async function startServer() {
       res.json({ success: true, imported, parentsCreated, welcomeEmailsSent, failed: importErrors.length, errors: importErrors });
     } catch (error: any) {
       console.error('Children import error:', error);
-      res.status(500).json({ error: 'فشل استيراد الملف: ' + (error.message || '') });
+      res.status(500).json({ error: 'تعذّر استيراد الملف، يرجى التأكد من صيغة الملف والمحاولة مرة أخرى' });
     }
   });
 
@@ -1323,9 +1356,18 @@ async function startServer() {
   // routes stay open (matching the old behavior) but log a warning --
   // strongly recommended to set it once running outside Manus.
   const requireCronSecret = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // SECURITY FIX: this used to `return next()` when CRON_SECRET was unset,
+    // logging a warning and then running the job anyway. That is fail-OPEN on
+    // the most destructive routes in the app -- /api/scheduled/account-cleanup
+    // permanently deletes user accounts, daily-backup dumps the database, and
+    // the reminder jobs blast notifications to every parent. A single missing
+    // environment variable in a deployment silently exposed all of them to the
+    // public internet, and a warning in a log nobody reads is not a control.
+    // Refuse instead: a scheduled job that cannot be authenticated must not run.
     if (!ENV.cronSecret) {
-      console.warn(`[Scheduled] CRON_SECRET is not set -- ${req.path} is unauthenticated. Set CRON_SECRET once running outside Manus.`);
-      return next();
+      console.error(`[Scheduled] refusing ${req.path}: CRON_SECRET is not configured`);
+      res.status(503).json({ error: 'Scheduled tasks are not configured' });
+      return;
     }
     const authHeader = req.headers.authorization || '';
     if (authHeader !== `Bearer ${ENV.cronSecret}`) {
@@ -1376,7 +1418,8 @@ async function startServer() {
       const result = await verifyEmailConnection();
       return res.json({ status: result.connected ? 'connected' : 'error', ...result });
     } catch (err: any) {
-      return res.status(500).json({ status: 'error', error: err.message });
+      console.error('[Email] verify failed:', err);
+      return res.status(500).json({ status: 'error', error: 'تعذّر التحقق من إعدادات البريد' });
     }
   });
 

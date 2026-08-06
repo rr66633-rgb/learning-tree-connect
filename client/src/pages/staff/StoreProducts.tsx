@@ -16,6 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 
 export default function StoreProducts() {
   const { t, i18n } = useTranslation();
@@ -71,10 +72,8 @@ export default function StoreProducts() {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData, credentials: "include" });
-      if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
-      const { url } = await res.json();
+      formData.append('file', await compressImage(file));
+      const { url } = await uploadWithProgress(apiUrl('/api/upload-photo'), formData);
       setImageUrl(url);
       toast.success(isAr ? "تم رفع الصورة" : "Photo uploaded");
     } catch {

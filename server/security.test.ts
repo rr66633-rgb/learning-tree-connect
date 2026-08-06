@@ -3,11 +3,16 @@ import { appRouter } from "./routers";
 import { TRPCError } from "@trpc/server";
 
 // Helper to create a mock context for different roles
-function createMockContext(role: "admin" | "teacher" | "parent", userId: number = 1) {
+// organizationId is part of the real context (server/_core/context.ts always
+// derives it from the authenticated user), and tenant-scoped procedures reject
+// a request without it. Omitting it here made these fixtures unrepresentative
+// of any real request.
+function createMockContext(role: "admin" | "teacher" | "parent", userId: number = 1, organizationId: number = 1) {
   return {
     req: {} as any,
     res: { clearCookie: () => {} } as any,
-    user: { id: userId, openId: `user-${userId}`, name: `Test ${role}`, role, email: null, loginMethod: null, lastSignedIn: new Date(), createdAt: new Date() },
+    user: { id: userId, openId: `user-${userId}`, name: `Test ${role}`, role, email: null, loginMethod: null, lastSignedIn: new Date(), createdAt: new Date(), organizationId },
+    organizationId,
   };
 }
 

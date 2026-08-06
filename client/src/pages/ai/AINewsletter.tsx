@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export default function AINewsletter() {
   const { i18n } = useTranslation();
+  const { runTask } = useAiTask();
   const isAr = i18n.language === "ar";
   const [month, setMonth] = useState("");
   const [highlights, setHighlights] = useState("");
@@ -38,7 +40,28 @@ export default function AINewsletter() {
 
   const handleGenerate = () => {
     if (!month.trim()) { toast.error(isAr ? "يرجى إدخال الشهر" : "Please enter month"); return; }
-    generateMutation.mutate({ month, highlights: highlights.split("\n").filter(Boolean), language });
+    runTask({
+      title: "جارٍ إعداد النشرة",
+      titleEn: "Preparing the newsletter",
+      stages: [
+        { label: "ترتيب أبرز أحداث الشهر", labelEn: "Organising the month's highlights" },
+        { label: "صياغة النشرة", labelEn: "Writing the newsletter" },
+        { label: "المراجعة النهائية", labelEn: "Final review" },
+      ],
+      stageSeconds: [3, 10],
+      run: () => generateMutation.mutateAsync({ month, highlights: highlights.split("\n").filter(Boolean), language }),
+      onDone: () => ({
+        title: "تم إعداد النشرة",
+        titleEn: "Newsletter ready",
+        actionLabel: "عرض النشرة",
+        actionLabelEn: "View newsletter",
+        // The result renders inline below the form; bring it into view
+        // rather than leaving the user staring at the inputs.
+        onAction: () => requestAnimationFrame(() =>
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        ),
+      }),
+    }).catch(() => { /* the card reports the failure; the toast already fired */ });
   };
 
   const handleExportPDF = () => {

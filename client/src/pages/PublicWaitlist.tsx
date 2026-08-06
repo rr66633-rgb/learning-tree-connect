@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Loader2, TreePine, Baby, User, Phone, Mail, Calendar, BookOpen, StickyNote, Building2 } from "lucide-react";
 
 export default function PublicWaitlist() {
+  const pathSlug = decodeURIComponent(window.location.pathname.split('/').filter(Boolean)[1] || '');
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     childName: "",
@@ -19,11 +20,13 @@ export default function PublicWaitlist() {
     dateOfBirth: "",
     preferredClass: "",
     notes: "",
-    organizationId: "",
+    organizationSlug: pathSlug,
   });
 
   // Fetch organizations for the dropdown
-  const { data: organizations, isLoading: orgsLoading } = trpc.waitingList.publicOrganizations.useQuery();
+  const { data: organizations, isLoading: orgsLoading } = trpc.waitingList.publicOrganizations.useQuery(undefined, {
+    staleTime: 30 * 60 * 1000,
+  });
 
   const registerMutation = trpc.waitingList.publicRegister.useMutation({
     onSuccess: () => {
@@ -37,7 +40,7 @@ export default function PublicWaitlist() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.childName.trim() || !form.parentName.trim() || !form.phone.trim()) {
+    if (!form.organizationSlug || !form.childName.trim() || !form.parentName.trim() || !form.phone.trim()) {
       toast.error("يرجى تعبئة الحقول المطلوبة");
       return;
     }
@@ -49,7 +52,7 @@ export default function PublicWaitlist() {
       dateOfBirth: form.dateOfBirth || undefined,
       preferredClass: form.preferredClass || undefined,
       notes: form.notes.trim() || undefined,
-      organizationId: form.organizationId ? Number(form.organizationId) : undefined,
+      orgSlug: form.organizationSlug,
     });
   };
 
@@ -67,7 +70,7 @@ export default function PublicWaitlist() {
                 شكراً لتسجيلكم في قائمة الانتظار. سيتم التواصل معكم قريباً لتأكيد التسجيل.
               </p>
             </div>
-            <Button onClick={() => { setSubmitted(false); setForm({ childName: "", parentName: "", phone: "", email: "", dateOfBirth: "", preferredClass: "", notes: "", organizationId: "" }); }} variant="outline" className="w-full">
+            <Button onClick={() => { setSubmitted(false); setForm({ childName: "", parentName: "", phone: "", email: "", dateOfBirth: "", preferredClass: "", notes: "", organizationSlug: pathSlug }); }} variant="outline" className="w-full">
               تسجيل طفل آخر
             </Button>
           </CardContent>
@@ -98,13 +101,13 @@ export default function PublicWaitlist() {
                   <Building2 className="h-4 w-4 text-emerald-600" />
                   الحضانة <span className="text-red-500">*</span>
                 </Label>
-                <Select value={form.organizationId} onValueChange={(v) => setForm({ ...form, organizationId: v })}>
+                <Select value={form.organizationSlug} onValueChange={(v) => setForm({ ...form, organizationSlug: v })}>
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder={orgsLoading ? "جاري تحميل الحضانات..." : "اختر الحضانة"} />
                   </SelectTrigger>
                   <SelectContent>
                     {organizations?.map((org) => (
-                      <SelectItem key={org.id} value={String(org.id)}>
+                      <SelectItem key={org.slug} value={org.slug}>
                         {org.nameAr || org.name}{org.city ? ` - ${org.city}` : ''}
                       </SelectItem>
                     ))}

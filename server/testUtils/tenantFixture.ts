@@ -194,7 +194,7 @@ async function buildOrg(label: "A" | "B"): Promise<OrgFixture> {
     parentId,
     amount: "115.00",
     method: "cash",
-    status: "pending",
+    status: "initiated",
   } as any);
   const paymentId = paymentResult.insertId;
 

@@ -14,6 +14,7 @@ import { Baby, Heart, Phone, AlertTriangle, Camera, Edit, FileText, Upload, Chec
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 function ChildEmergencyContacts({ childId }: { childId: number }) {
@@ -59,10 +60,8 @@ function ChildDocumentsSection({ childId }: { childId: number }) {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-document'), { method: "POST", body: formData });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.error || (isAr ? "فشل الرفع" : "Upload failed")); }
-      const { url, mimeType } = await res.json();
+      formData.append('file', file);
+      const { url, mimeType } = await uploadWithProgress(apiUrl('/api/upload-document'), formData);
       await createDoc.mutateAsync({ childId, type: docType as any, name: docName.trim(), fileUrl: url, mimeType });
       setDocName("");
       setDocType("other");
@@ -232,10 +231,8 @@ export default function ParentChildren() {
     setUploadingPhoto(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetchWithCsrf(apiUrl('/api/upload-photo'), { method: "POST", body: formData });
-      if (!res.ok) throw new Error((isAr ? "فشل رفع الصورة" : "Image upload failed"));
-      const { url } = await res.json();
+      formData.append('file', await compressImage(file));
+      const { url } = await uploadWithProgress(apiUrl('/api/upload-photo'), formData);
       await updateChild.mutateAsync({ id: childId, photo: url });
       toast.success(isAr ? "تم تحديث الصورة" : "Photo updated");
     } catch (e: any) {

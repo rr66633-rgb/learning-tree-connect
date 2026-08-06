@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useAiTask } from "@/components/AiTaskOverlay";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export default function AIReport() {
   const { i18n } = useTranslation();
+  const { runTask } = useAiTask();
   const isAr = i18n.language === "ar";
   const [childId, setChildId] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
@@ -38,7 +40,28 @@ export default function AIReport() {
 
   const handleGenerate = () => {
     if (!childId) { toast.error(isAr ? "يرجى اختيار الطفل" : "Please select a child"); return; }
-    generateMutation.mutate({ childId: Number(childId), language });
+    runTask({
+      title: "جارٍ إعداد تقرير التقدم",
+      titleEn: "Preparing the progress report",
+      stages: [
+        { label: "جمع بيانات الطفل", labelEn: "Collecting the child's data" },
+        { label: "تحليل مؤشرات التقدم", labelEn: "Analysing progress indicators" },
+        { label: "صياغة التقرير", labelEn: "Writing the report" },
+      ],
+      stageSeconds: [3, 10],
+      run: () => generateMutation.mutateAsync({ childId: Number(childId), language }),
+      onDone: () => ({
+        title: "تم إعداد التقرير",
+        titleEn: "Report ready",
+        actionLabel: "عرض التقرير",
+        actionLabelEn: "View report",
+        // The result renders inline below the form; bring it into view
+        // rather than leaving the user staring at the inputs.
+        onAction: () => requestAnimationFrame(() =>
+          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+        ),
+      }),
+    }).catch(() => { /* the card reports the failure; the toast already fired */ });
   };
 
   const handleExportPDF = () => {

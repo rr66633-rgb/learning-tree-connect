@@ -64,15 +64,30 @@ async function main() {
       console.log(`Applying: ${file}...`);
       const sql = readFileSync(join(DRIZZLE_DIR, file), "utf-8");
 
-      // Split by statement separator and execute each
+      // Split by statement separator and execute each.
+      // BUGFIX: also drop chunks that contain nothing but SQL comments. Several
+      // migrations open with a multi-line `--` explanation before their first
+      // `--> statement-breakpoint`, which produced a comment-only chunk that
+      // MySQL rejects as an empty query.
+      const isOnlyComments = (s) =>
+        !s.split("\n").some((l) => l.trim() && !l.trim().startsWith("--"));
       const statements = sql
         .split("--> statement-breakpoint")
         .map((s) => s.trim())
-        .filter((s) => s.length > 0);
+        .filter((s) => s.length > 0 && !isOnlyComments(s));
 
       for (const stmt of statements) {
         try {
-          await connection.execute(stmt);
+          // BUGFIX: this was `connection.execute(stmt)`, which sends the
+          // statement over MySQL's PREPARED-STATEMENT protocol. Migrations
+          // 0019, 0020 and 0024 guard their DDL with PREPARE / EXECUTE /
+          // DEALLOCATE PREPARE (the standard workaround for MySQL's lack of
+          // "ADD COLUMN IF NOT EXISTS"), and MySQL refuses to run those
+          // statements inside the prepared-statement protocol -- it fails with
+          // "This command is not supported in the prepared statement protocol
+          // yet". That made this script unable to migrate any database past
+          // 0018. `query()` uses the text protocol and runs them correctly.
+          await connection.query(stmt);
         } catch (err) {
           // Skip "already exists" errors for idempotency
           if (err.code === "ER_TABLE_EXISTS_ERROR" || err.code === "ER_DUP_FIELDNAME") {

@@ -10,6 +10,7 @@ import { ArrowRight, Copy, Loader2, Sparkles, Upload, Video, X } from "lucide-re
 import { Link } from "wouter";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
+import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 export default function AIMarketingMediaCaption() {
@@ -71,10 +72,14 @@ export default function AIMarketingMediaCaption() {
       if (files.length > 0) {
         const formData = new FormData();
         formData.append("files", files[0]);
-        const res = await fetchWithCsrf(apiUrl('/api/upload-media'), { method: "POST", body: formData });
-        if (res.ok) {
-          const data = await res.json();
+        // Best-effort by design: if the upload fails the caption is still
+        // generated from the written context, so a failure here must not throw.
+        // uploadWithProgress rejects on non-2xx, hence the explicit catch.
+        try {
+          const data: any = await uploadWithProgress(apiUrl('/api/upload-media'), formData);
           mediaUrl = data.urls?.[0] || data.url || "";
+        } catch {
+          mediaUrl = "";
         }
         mediaType = files[0].type.startsWith("video") ? "video" : "photo";
       }

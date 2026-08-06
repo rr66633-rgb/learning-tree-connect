@@ -1,19 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { trackCompleteRegistration } from "@/lib/metaPixel";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, User, Mail, Phone, Lock } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, User, Mail, Phone, Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function Register() {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
+  const [orgSlug, setOrgSlug] = useState(() => new URLSearchParams(window.location.search).get('org') || '');
   const [step, setStep] = useState<"form" | "otp" | "success">("form");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -25,6 +27,13 @@ export default function Register() {
   const [countdown, setCountdown] = useState(0);
   const [canResend, setCanResend] = useState(false);
   const [otpExpiryCountdown, setOtpExpiryCountdown] = useState(300);
+  const { data: organizations, isLoading: organizationsLoading } = trpc.waitingList.publicOrganizations.useQuery(undefined, {
+    staleTime: 30 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!orgSlug && organizations?.length === 1) setOrgSlug(organizations[0].slug);
+  }, [orgSlug, organizations]);
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
@@ -90,7 +99,7 @@ export default function Register() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !email || !password) {
+    if (!orgSlug || !name || !phone || !email || !password) {
       toast.error(isAr ? "يرجى إدخال جميع البيانات المطلوبة" : "Please enter all required data");
       return;
     }
@@ -102,7 +111,7 @@ export default function Register() {
       toast.error(isAr ? "كلمتا المرور غير متطابقتين" : "Passwords do not match");
       return;
     }
-    registerMutation.mutate({ name, phone, email, password });
+    registerMutation.mutate({ orgSlug, name, phone, email, password });
   };
 
   const handleVerifyOtp = (e: React.FormEvent) => {
@@ -138,6 +147,24 @@ export default function Register() {
           {/* Step 1: Registration Form */}
           {step === "form" && (
             <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  {isAr ? "الحضانة" : "Nursery"}
+                </Label>
+                <Select value={orgSlug} onValueChange={setOrgSlug} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder={organizationsLoading ? (isAr ? "جاري التحميل..." : "Loading...") : (isAr ? "اختر الحضانة" : "Select nursery")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations?.map(org => (
+                      <SelectItem key={org.slug} value={org.slug}>
+                        {isAr ? org.nameAr : org.name}{org.city ? ` - ${org.city}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="name">{isAr ? "الاسم الكامل" : "Full Name"}</Label>
                 <div className="relative">

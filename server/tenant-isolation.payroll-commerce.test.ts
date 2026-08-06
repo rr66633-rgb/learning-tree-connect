@@ -96,6 +96,7 @@ describe("Tenant isolation: subscriptionPaymentRouter", () => {
   it("P4: Org A admin cannot activate/check status of Org B's subscription", async () => {
     await expect(
       callerAsOrgAAdmin().subscriptionPayment.activate({
+        moyasarPaymentId: "tenant-isolation-payment",
         organizationId: fixture.orgB.organizationId,
         planId: 1,
         billingCycle: "monthly",
