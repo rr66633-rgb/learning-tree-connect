@@ -15,11 +15,11 @@ import { registerStorageProxy } from "./storageProxy";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 const _r2Client = new S3Client({
   region: 'auto',
-  endpoint: process.env.S3_ENDPOINT || 'https://12f27c10f3facdef54519307c717b23f.r2.cloudflarestorage.com',
+  endpoint: process.env.S3_ENDPOINT ,
   forcePathStyle: true,
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID || '0124dd1c7734d75bd7e304bdf980a23a',
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'a3e9a76e03376b98da7d31fa1bf0d67aa87d3a881f1be857d2500c04f6e3d0f5',
+    accessKeyId: process.env.S3_ACCESS_KEY_ID ,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ,
   },
 });
 async function storagePut(relKey: string, data: Buffer | Uint8Array | string, contentType = 'application/octet-stream'): Promise<{ key: string; url: string }> {
@@ -28,7 +28,7 @@ async function storagePut(relKey: string, data: Buffer | Uint8Array | string, co
   const key = lastDot === -1 ? `${relKey}_${hash}` : `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
   const body = typeof data === 'string' ? Buffer.from(data, 'utf-8') : Buffer.from(data);
   await _r2Client.send(new PutObjectCommand({
-    Bucket: process.env.S3_BUCKET || 'naashah-storage',
+    Bucket: process.env.S3_BUCKET ,
     Key: key,
     Body: body,
     ContentType: contentType,
@@ -399,10 +399,7 @@ async function startServer() {
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
   // Debug: test R2 upload directly
-  app.get('/api/test-r2', async (req, res) => {
-    try {
-      const result = await storagePut('test/ping.txt', Buffer.from('hello ' + Date.now()), 'text/plain');
-      res.json({ success: true, result });
+  // test-r2 endpoint removed for security
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message, stack: error.stack?.split('\n').slice(0,3) });
     }

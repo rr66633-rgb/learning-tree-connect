@@ -1,11 +1,11 @@
 import type { Express } from "express";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-const S3_BUCKET = process.env.S3_BUCKET || "naashah-storage";
+const S3_BUCKET = process.env.S3_BUCKET !;
 const S3_REGION = process.env.S3_REGION || "auto";
-const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID || "0124dd1c7734d75bd7e304bdf980a23a";
-const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || "a3e9a76e03376b98da7d31fa1bf0d67aa87d3a881f1be857d2500c04f6e3d0f5";
-const S3_ENDPOINT = process.env.S3_ENDPOINT || "https://12f27c10f3facdef54519307c717b23f.r2.cloudflarestorage.com";
+const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID !;
+const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY !;
+const S3_ENDPOINT = process.env.S3_ENDPOINT !;
 
 let _client: S3Client | null = null;
 
