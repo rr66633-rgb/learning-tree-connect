@@ -1054,8 +1054,8 @@ export default function WeeklyPlanPage() {
 
           <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="space-y-6">
             {PLAN_SECTION_GROUPS.map((group, groupIndex) => (
-              <section key={group.id} className="overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-50/70 shadow-[0_16px_45px_-38px_rgba(15,23,42,0.55)]">
-                <header className="flex items-start gap-3 border-b border-slate-200/70 bg-white/75 px-4 py-4 md:px-5">
+              <section key={group.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100/70 shadow-[0_16px_45px_-38px_rgba(15,23,42,0.55)]">
+                <header className="flex items-start gap-3 border-b border-slate-200 bg-slate-100 px-4 py-4 md:px-5">
                   <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-xl bg-[#1A1F36] text-xs font-black text-white shadow-sm">
                     {groupIndex + 1}
                   </span>
