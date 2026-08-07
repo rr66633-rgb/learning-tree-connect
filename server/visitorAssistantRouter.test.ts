@@ -44,7 +44,7 @@ describe("visitor assistant boundaries", () => {
     expect(prompt).toContain("/register-nursery");
     expect(prompt).toContain("Never ask for or process passwords");
     expect(prompt).toContain("Reply only in Arabic");
-    expect(prompt).toContain("Return one valid JSON object only");
+    expect(prompt).toContain("Return only one valid JSON object matching the supplied schema");
     expect(prompt).toContain("Every row must have the same number of cells as headers");
   });
 

@@ -135,7 +135,7 @@ function StructuredAnswer({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[340px] border-collapse text-start text-[11px] leading-5">
               <thead>
-                <tr className="bg-gradient-to-r from-[#E9FFFC] to-[#F3F0FF]">
+                <tr className="bg-gradient-to-r from-[#E9FFFC] to-[#EEF2F4]">
                   {response.comparison.headers.map(header => (
                     <th key={header} className="border-b border-[#DCE7E5] px-3 py-2.5 text-start font-extrabold text-[#263247]">
                       {header}
@@ -183,6 +183,7 @@ export default function VisitorAssistant() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sentCount, setSentCount] = useState(0);
+  const [thinkingStage, setThinkingStage] = useState(0);
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const nextIdRef = useRef(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -194,6 +195,20 @@ export default function VisitorAssistant() {
     retry: 1,
   });
   const chatMutation = trpc.visitorAssistant.chat.useMutation();
+
+  useEffect(() => {
+    if (!chatMutation.isPending) {
+      setThinkingStage(0);
+      return;
+    }
+
+    const timers = [
+      window.setTimeout(() => setThinkingStage(1), 700),
+      window.setTimeout(() => setThinkingStage(2), 1_800),
+      window.setTimeout(() => setThinkingStage(3), 3_800),
+    ];
+    return () => timers.forEach(timer => window.clearTimeout(timer));
+  }, [chatMutation.isPending]);
 
   useEffect(() => {
     if (open) {
@@ -220,7 +235,12 @@ export default function VisitorAssistant() {
     privacy: isAr
       ? "لا ترسل بيانات شخصية أو مالية. نُمى تقدم إرشاداً عاماً عن المنصة."
       : "Do not send personal or financial data. Numa provides general platform guidance.",
-    thinking: isAr ? "نُمى ترتب الإجابة..." : "Numa is preparing the answer...",
+    thinkingStages: isAr
+      ? ["استلمت سؤالك", "أفهم ما تحتاجه", "أرتب لك إجابة واضحة", "أراجع العرض النهائي"]
+      : ["Question received", "Understanding what you need", "Preparing a clear answer", "Finalizing the presentation"],
+    thinkingHint: isAr
+      ? "يمكنك إغلاق المحادثة مؤقتًا، وستظهر الإجابة هنا فور اكتمالها."
+      : "You can close the chat for now; the answer will appear here when ready.",
     limit: isAr
       ? "وصلت إلى حد هذه المحادثة. يمكنك بدء محادثة جديدة."
       : "You've reached this conversation's limit. You can start a new conversation.",
@@ -236,14 +256,14 @@ export default function VisitorAssistant() {
   const suggestions = useMemo<Suggestion[]>(() => isAr
     ? [
         { label: "عرّفني على خدمات نشأة", icon: LayoutGrid, color: "text-[#00A99A] bg-[#E9FFFC]" },
-        { label: "ما الفرق بين الباقات؟", icon: Layers3, color: "text-[#7057E8] bg-[#F0EDFF]" },
-        { label: "كيف أبدأ التجربة؟", icon: Rocket, color: "text-[#E24D91] bg-[#FFF0F7]" },
+        { label: "ما الفرق بين الباقات؟", icon: Layers3, color: "text-[#1A1F36] bg-[#EEF1F5]" },
+        { label: "كيف أبدأ التجربة؟", icon: Rocket, color: "text-[#008F83] bg-[#E5FAF7]" },
         { label: "أريد حجز عرض تعريفي", icon: CalendarCheck2, color: "text-[#D88700] bg-[#FFF7E6]" },
       ]
     : [
         { label: "Tell me about Nashaa's services", icon: LayoutGrid, color: "text-[#00A99A] bg-[#E9FFFC]" },
-        { label: "Compare the plans", icon: Layers3, color: "text-[#7057E8] bg-[#F0EDFF]" },
-        { label: "How do I start the trial?", icon: Rocket, color: "text-[#E24D91] bg-[#FFF0F7]" },
+        { label: "Compare the plans", icon: Layers3, color: "text-[#1A1F36] bg-[#EEF1F5]" },
+        { label: "How do I start the trial?", icon: Rocket, color: "text-[#008F83] bg-[#E5FAF7]" },
         { label: "I want to book a demo", icon: CalendarCheck2, color: "text-[#D88700] bg-[#FFF7E6]" },
       ], [isAr]);
 
@@ -324,7 +344,7 @@ export default function VisitorAssistant() {
           aria-label={copy.button}
           className={`group fixed bottom-6 z-40 flex h-[68px] items-center rounded-full border border-white/80 bg-white p-1.5 shadow-[0_12px_38px_rgba(26,31,54,0.22)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_44px_rgba(0,201,183,0.28)] active:translate-y-0 ${isAr ? "right-4 sm:right-6" : "left-4 sm:left-6"}`}
         >
-          <span className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#E8FFFC] to-[#F0ECFF] ring-1 ring-[#00C9B7]/20">
+          <span className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#E8FFFC] to-[#EEF2F4] ring-1 ring-[#00C9B7]/20">
             <img
               src={NUMA_IMAGE}
               alt=""
@@ -342,7 +362,7 @@ export default function VisitorAssistant() {
         dir={isAr ? "rtl" : "ltr"}
         className={`w-full gap-0 overflow-hidden border-[#00C9B7]/15 bg-[#F7FAFC] p-0 sm:max-w-[460px] [&>button]:top-5 [&>button]:z-10 [&>button]:rounded-full [&>button]:bg-white/80 [&>button]:p-2 [&>button]:opacity-100 [&>button]:shadow-sm ${isAr ? "[&>button]:right-auto [&>button]:left-4" : "[&>button]:right-4"}`}
       >
-        <SheetHeader className="relative min-h-[104px] border-b border-white/70 bg-gradient-to-br from-[#E9FFFC] via-white to-[#F1EDFF] px-5 py-4 pe-14 text-start">
+        <SheetHeader className="relative min-h-[104px] border-b border-white/70 bg-gradient-to-br from-[#E9FFFC] via-white to-[#EEF2F4] px-5 py-4 pe-14 text-start">
           <div className="flex items-center gap-3">
             <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/80 ring-1 ring-[#00C9B7]/15">
               <img src={NUMA_IMAGE} alt={copy.name} className="h-[88px] w-[88px] max-w-none translate-y-2 object-contain" />
@@ -363,7 +383,7 @@ export default function VisitorAssistant() {
               {messages.length === 0 && (
                 <div className="my-auto space-y-5 py-3">
                   <div className="mx-auto max-w-[350px] rounded-3xl border border-[#00C9B7]/10 bg-white px-5 py-4 text-center shadow-[0_8px_30px_rgba(33,48,75,0.07)]">
-                    <span className="mx-auto mb-2 flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#E8FFFC] to-[#F0EDFF] text-[#00A99A]">
+                    <span className="mx-auto mb-2 flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#E8FFFC] to-[#EEF2F4] text-[#00A99A]">
                       <Sparkles className="size-4" />
                     </span>
                     <h2 className="text-sm font-extrabold text-[#1D273A]">{copy.welcomeTitle}</h2>
@@ -404,7 +424,7 @@ export default function VisitorAssistant() {
                     >
                       {message.role === "assistant" ? (
                         <>
-                          <div className="h-1 w-full bg-gradient-to-r from-[#00C9B7] via-[#7B61FF] to-[#FF5CA8]" />
+                          <div className="h-1 w-full bg-gradient-to-r from-[#00C9B7] via-[#1A1F36] to-[#00A99A]" />
                           <div className="px-4 py-4">
                             {message.structured ? (
                               <StructuredAnswer response={message.structured} isAr={isAr} onNavigate={() => setOpen(false)} />
@@ -433,13 +453,28 @@ export default function VisitorAssistant() {
               ))}
 
               {chatMutation.isPending && (
-                <div className="me-auto flex max-w-[88%] items-center gap-2">
+                <div className="me-auto flex w-full items-start gap-2" role="status" aria-live="polite">
                   <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-[#00C9B7]/20">
                     <img src={NUMA_IMAGE} alt="" aria-hidden="true" className="h-12 w-12 max-w-none translate-y-1 object-contain" />
                   </div>
-                  <div className="flex items-center gap-2 rounded-2xl rounded-es-md border border-gray-100 bg-white px-4 py-3 text-xs text-[#667085] shadow-sm">
-                    <Loader2 className="size-4 animate-spin text-[#00AFA0]" />
-                    {copy.thinking}
+                  <div className="min-w-0 flex-1 rounded-2xl rounded-es-md border border-[#DDE8E6] bg-white px-4 py-3 shadow-[0_7px_24px_rgba(31,42,68,0.06)]">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#E7FAF7] text-[#009E91]">
+                        <Loader2 className="size-4 animate-spin" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-extrabold text-[#263247]">{copy.thinkingStages[thinkingStage]}</p>
+                        <p className="mt-0.5 text-[10px] leading-4 text-[#7A8497]">{copy.thinkingHint}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-4 gap-1.5" aria-hidden="true">
+                      {copy.thinkingStages.map((_, index) => (
+                        <span
+                          key={index}
+                          className={`h-1 rounded-full transition-colors duration-300 ${index <= thinkingStage ? "bg-[#00AFA0]" : "bg-[#E6EAEE]"}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
