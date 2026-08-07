@@ -6,6 +6,9 @@ import {
   buildCtx,
   type TenantFixture,
 } from "./testUtils/tenantFixture";
+import { aiGeneratedContent } from "../drizzle/schema";
+import { getDb } from "./db";
+import { eq } from "drizzle-orm";
 
 /**
  * Tenant isolation regression suite -- curriculumRouter.ts, weeklyPlanRouter.ts,
@@ -31,6 +34,9 @@ function callerAsOrgATeacher() {
 }
 function callerAsOrgAParent() {
   return appRouter.createCaller(buildCtx("parent", fixture.orgA.parentId, fixture.orgA.organizationId));
+}
+function callerAsOrgBTeacher() {
+  return appRouter.createCaller(buildCtx("teacher", fixture.orgB.teacherId, fixture.orgB.organizationId));
 }
 
 async function expectRejected(promise: Promise<any>) {
@@ -88,6 +94,48 @@ describe("Tenant isolation: weeklyPlanRouter (regression: classId + parentList, 
   it("P2: Org A's own list never includes Org B's plan", async () => {
     const list = await callerAsOrgATeacher().weeklyPlan.list({});
     expect(list.some((p: any) => p.id === fixture.orgB.weeklyPlanId)).toBe(false);
+  });
+});
+
+describe("Tenant isolation: personal AI request history", () => {
+  it("includes the teacher's historical weekly plans and excludes every other tenant/user", async () => {
+    const teacherHistory = await callerAsOrgATeacher().ai.getRequestHistory({
+      type: "weekly_plan",
+      limit: 50,
+      offset: 0,
+    });
+    const keys = teacherHistory.items.map(item => item.key);
+    expect(keys).toContain(`legacy-weekly-plan-${fixture.orgA.weeklyPlanId}`);
+    expect(keys).toContain(`legacy-weekly-plan-${fixture.orgA.publishedWeeklyPlanId}`);
+    expect(keys).not.toContain(`legacy-weekly-plan-${fixture.orgB.weeklyPlanId}`);
+
+    const adminHistory = await callerAsOrgAStaff().ai.getRequestHistory({
+      type: "weekly_plan",
+      limit: 50,
+      offset: 0,
+    });
+    expect(adminHistory.items.some(item => item.sourceId === fixture.orgA.weeklyPlanId)).toBe(false);
+  });
+
+  it("scopes AI content reads by both organization and creator", async () => {
+    const db = (await getDb())!;
+    const [created] = await db.insert(aiGeneratedContent).values({
+      type: "activity",
+      title: "Personal AI fixture",
+      content: { result: "private" },
+      language: "ar",
+      createdBy: fixture.orgA.teacherId,
+      organizationId: fixture.orgA.organizationId,
+    });
+
+    try {
+      const own = await callerAsOrgATeacher().ai.getById({ id: created.insertId });
+      expect(own.id).toBe(created.insertId);
+      await expectRejected(callerAsOrgAStaff().ai.getById({ id: created.insertId }));
+      await expectRejected(callerAsOrgBTeacher().ai.getById({ id: created.insertId }));
+    } finally {
+      await db.delete(aiGeneratedContent).where(eq(aiGeneratedContent.id, created.insertId));
+    }
   });
 });
 

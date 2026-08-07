@@ -1,11 +1,13 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { tenantProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
+import { aiGeneratedContent } from "../drizzle/schema";
+import { getDb } from "./db";
 // Image generation is handled by posterGenerator.ts
 
 // Only staff can use marketing features
-const marketingProcedure = protectedProcedure.use(({ ctx, next }) => {
+const marketingProcedure = tenantProcedure.use(({ ctx, next }) => {
   const role = ctx.user?.role;
   if (role !== 'admin' && role !== 'super_admin' && role !== 'principal' && role !== 'owner' && role !== 'teacher' && role !== 'assistant') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Marketing features are restricted to staff members' });
@@ -29,6 +31,34 @@ const BRAND_GUIDELINES = `
 - المحتوى يجب أن يكون مناسباً لأولياء الأمور
 `;
 
+function parseMarketingContent(content: string) {
+  try {
+    return JSON.parse(content);
+  } catch {
+    return { raw: content };
+  }
+}
+
+async function saveMarketingResult(ctx: any, input: {
+  title: string;
+  subType: string;
+  content: Record<string, unknown>;
+  request: Record<string, unknown>;
+  language: "ar" | "en" | "both";
+}) {
+  const db = (await getDb())!;
+  const [saved] = await db.insert(aiGeneratedContent).values({
+    organizationId: ctx.organizationId,
+    createdBy: ctx.user!.id,
+    type: "marketing",
+    title: input.title,
+    content: { subType: input.subType, ...input.content },
+    inputPrompt: JSON.stringify(input.request),
+    language: input.language === "both" ? "bilingual" : input.language,
+  });
+  return saved.insertId;
+}
+
 export const aiMarketingRouter = router({
   // ============ EVENT CONTENT GENERATOR ============
   generateEventContent: marketingProcedure.input(z.object({
@@ -40,7 +70,7 @@ export const aiMarketingRouter = router({
     location: z.string().optional(),
     description: z.string().min(1),
     language: z.enum(["ar", "en", "both"]).default("both"),
-  })).mutation(async ({ input }) => {
+  })).mutation(async ({ input, ctx }) => {
     const prompt = `
 ${BRAND_GUIDELINES}
 
@@ -76,13 +106,15 @@ ${input.location ? `- المكان: ${input.location}` : ''}
       response_format: { type: "json_object" },
     });
 
-    const content = response.choices?.[0]?.message?.content as string;
-    try {
-      const parsed = JSON.parse(content);
-      return { content: parsed };
-    } catch {
-      return { content: { raw: content } };
-    }
+    const content = parseMarketingContent(response.choices?.[0]?.message?.content as string);
+    const id = await saveMarketingResult(ctx, {
+      title: `محتوى فعالية: ${input.eventName}`,
+      subType: "event_content",
+      content,
+      request: input,
+      language: input.language,
+    });
+    return { id, content };
   }),
 
   // ============ EVENT SUMMARY GENERATOR ============
@@ -93,7 +125,7 @@ ${input.location ? `- المكان: ${input.location}` : ''}
     attendeesCount: z.number().optional(),
     highlights: z.string().min(1),
     language: z.enum(["ar", "en", "both"]).default("both"),
-  })).mutation(async ({ input }) => {
+  })).mutation(async ({ input, ctx }) => {
     const prompt = `
 ${BRAND_GUIDELINES}
 
@@ -124,13 +156,15 @@ ${input.attendeesCount ? `- عدد الحضور: ${input.attendeesCount}` : ''}
       response_format: { type: "json_object" },
     });
 
-    const content = response.choices?.[0]?.message?.content as string;
-    try {
-      const parsed = JSON.parse(content);
-      return { content: parsed };
-    } catch {
-      return { content: { raw: content } };
-    }
+    const content = parseMarketingContent(response.choices?.[0]?.message?.content as string);
+    const id = await saveMarketingResult(ctx, {
+      title: `ملخص فعالية: ${input.eventName}`,
+      subType: "event_summary",
+      content,
+      request: input,
+      language: input.language,
+    });
+    return { id, content };
   }),
 
   // ============ SOCIAL MEDIA CONTENT GENERATOR ============
@@ -140,7 +174,7 @@ ${input.attendeesCount ? `- عدد الحضور: ${input.attendeesCount}` : ''}
     tone: z.enum(["professional", "fun", "educational", "promotional"]).default("professional"),
     language: z.enum(["ar", "en", "both"]).default("both"),
     additionalNotes: z.string().optional(),
-  })).mutation(async ({ input }) => {
+  })).mutation(async ({ input, ctx }) => {
     const platformNames: Record<string, string> = {
       instagram_post: "بوست انستقرام",
       instagram_story: "ستوري انستقرام",
@@ -180,13 +214,15 @@ ${input.additionalNotes ? `ملاحظات إضافية: ${input.additionalNotes}
       response_format: { type: "json_object" },
     });
 
-    const content = response.choices?.[0]?.message?.content as string;
-    try {
-      const parsed = JSON.parse(content);
-      return { content: parsed };
-    } catch {
-      return { content: { raw: content } };
-    }
+    const content = parseMarketingContent(response.choices?.[0]?.message?.content as string);
+    const id = await saveMarketingResult(ctx, {
+      title: `محتوى تسويقي: ${input.topic}`,
+      subType: "social_content",
+      content,
+      request: input,
+      language: input.language,
+    });
+    return { id, content };
   }),
 
   // ============ MEDIA CAPTION GENERATOR ============
@@ -196,7 +232,7 @@ ${input.additionalNotes ? `ملاحظات إضافية: ${input.additionalNotes}
     context: z.string().optional(),
     platform: z.enum(["instagram", "tiktok", "snapchat", "whatsapp", "all"]).default("all"),
     language: z.enum(["ar", "en", "both"]).default("ar"),
-  })).mutation(async ({ input }) => {
+  })).mutation(async ({ input, ctx }) => {
     const prompt = `
 ${BRAND_GUIDELINES}
 
@@ -231,13 +267,21 @@ ${BRAND_GUIDELINES}
     }
 
     const response = await invokeLLM({ messages, response_format: { type: "json_object" } });
-    const content = response.choices?.[0]?.message?.content as string;
-    try {
-      const parsed = JSON.parse(content);
-      return { content: parsed };
-    } catch {
-      return { content: { raw: content } };
-    }
+    const content = parseMarketingContent(response.choices?.[0]?.message?.content as string);
+    const id = await saveMarketingResult(ctx, {
+      title: `وصف ${input.mediaType === "photo" ? "صورة" : "فيديو"}${input.context ? `: ${input.context.slice(0, 120)}` : ""}`,
+      subType: "media_caption",
+      content,
+      // Signed media URLs are intentionally not persisted in history.
+      request: {
+        mediaType: input.mediaType,
+        context: input.context,
+        platform: input.platform,
+        language: input.language,
+      },
+      language: input.language,
+    });
+    return { id, content };
   }),
 
   // ============ POSTER GENERATOR ============
@@ -249,7 +293,7 @@ ${BRAND_GUIDELINES}
     ageGroup: z.string().optional(),
     template: z.string().optional(),
     language: z.enum(["ar", "en"]).default("ar"),
-  })).mutation(async ({ input }) => {
+  })).mutation(async ({ input, ctx }) => {
     try {
       const { generatePoster: genPoster } = await import('./posterGenerator');
       const { posterUrl } = await genPoster({
@@ -261,7 +305,14 @@ ${BRAND_GUIDELINES}
         template: input.template,
         language: input.language,
       });
-      return { posterUrl };
+      const id = await saveMarketingResult(ctx, {
+        title: `بوستر: ${input.title}`,
+        subType: "poster",
+        content: { posterUrl },
+        request: input,
+        language: input.language,
+      });
+      return { id, posterUrl };
     } catch (error: any) {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',

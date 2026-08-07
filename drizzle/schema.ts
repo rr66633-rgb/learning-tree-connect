@@ -962,7 +962,7 @@ export type InsertFcmToken = typeof fcmTokens.$inferInsert;
 // ============ AI GENERATED CONTENT ============
 export const aiGeneratedContent = mysqlTable("ai_generated_content", {
   id: int("id").autoincrement().primaryKey(),
-  type: mysqlEnum("type", ["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story"]).notNull(),
+  type: mysqlEnum("type", ["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story", "marketing"]).notNull(),
   title: varchar("title", { length: 500 }).notNull(),
   content: json("content").notNull(),
   language: mysqlEnum("language", ["ar", "en", "bilingual"]).default("bilingual").notNull(),
@@ -981,7 +981,10 @@ export const aiGeneratedContent = mysqlTable("ai_generated_content", {
   organizationId: int("organizationId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_ai_content_org_user_created").on(table.organizationId, table.createdBy, table.createdAt),
+  index("idx_ai_content_org_type_created").on(table.organizationId, table.type, table.createdAt),
+]);
 export type AiGeneratedContent = typeof aiGeneratedContent.$inferSelect;
 export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
 
@@ -989,13 +992,15 @@ export type InsertAiGeneratedContent = typeof aiGeneratedContent.$inferInsert;
 export const aiLibrary = mysqlTable("ai_library", {
   id: int("id").autoincrement().primaryKey(),
   contentId: int("contentId").notNull(),
-  category: mysqlEnum("category", ["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story"]).notNull(),
+  category: mysqlEnum("category", ["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story", "marketing"]).notNull(),
   tags: json("tags"),
   isFavorite: boolean("isFavorite").default(false).notNull(),
   usageCount: int("usageCount").default(0).notNull(),
   savedBy: int("savedBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_ai_library_user_created").on(table.savedBy, table.createdAt),
+]);
 export type AiLibrary = typeof aiLibrary.$inferSelect;
 export type InsertAiLibrary = typeof aiLibrary.$inferInsert;
 
@@ -1069,6 +1074,39 @@ export const weeklyPlans = mysqlTable("weekly_plans", {
 ]);
 export type WeeklyPlan = typeof weeklyPlans.$inferSelect;
 export type InsertWeeklyPlan = typeof weeklyPlans.$inferInsert;
+
+// ============ WEEKLY PLAN GENERATION JOBS ============
+// Long AI generations must not be tied to the browser's HTTP connection. The
+// job is accepted immediately, processed in the background and polled by its
+// owner. Persisting it here also lets the UI recover after navigation/refresh.
+export const weeklyPlanGenerationJobs = mysqlTable("weekly_plan_generation_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  requestId: varchar("requestId", { length: 36 }).notNull().unique(),
+  organizationId: int("organizationId").notNull(),
+  teacherId: int("teacherId").notNull(),
+  classId: int("classId"),
+  ageGroup: mysqlEnum("ageGroup", ["nursery", "kg1", "kg2", "kg3"]).notNull(),
+  weekStartDate: varchar("weekStartDate", { length: 10 }).notNull(),
+  weekEndDate: varchar("weekEndDate", { length: 10 }).notNull(),
+  theme: varchar("theme", { length: 300 }).notNull(),
+  language: mysqlEnum("language", ["ar", "en", "bilingual"]).default("ar").notNull(),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+  stage: mysqlEnum("stage", ["queued", "generating", "validating", "saving", "completed", "failed"]).default("queued").notNull(),
+  progress: int("progress").default(5).notNull(),
+  planId: int("planId"),
+  errorCode: varchar("errorCode", { length: 50 }),
+  errorMessage: text("errorMessage"),
+  attempts: int("attempts").default(0).notNull(),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_weekly_plan_jobs_org_user_created").on(table.organizationId, table.teacherId, table.createdAt),
+  index("idx_weekly_plan_jobs_status_updated").on(table.status, table.updatedAt),
+]);
+export type WeeklyPlanGenerationJob = typeof weeklyPlanGenerationJobs.$inferSelect;
+export type InsertWeeklyPlanGenerationJob = typeof weeklyPlanGenerationJobs.$inferInsert;
 
 
 // ============ ORGANIZATIONS (Multi-Tenant) ============
@@ -1267,7 +1305,9 @@ export const schoolReadinessScores = mysqlTable("school_readiness_scores", {
   organizationId: int("organizationId").notNull(),
   assessedAt: timestamp("assessedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_readiness_org_user_ai_created").on(table.organizationId, table.assessedBy, table.aiGenerated, table.createdAt),
+]);
 export type SchoolReadinessScore = typeof schoolReadinessScores.$inferSelect;
 
 // AI Development Analysis (AI-generated insights per child)

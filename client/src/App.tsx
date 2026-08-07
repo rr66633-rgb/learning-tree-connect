@@ -10,7 +10,8 @@ import { useAuth } from "./_core/hooks/useAuth";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { useNativeInit } from "./hooks/useNativeInit";
 import { useWeeklyPlanPdf } from "./hooks/useWeeklyPlanPdf";
-import { lazy, Suspense, useState, useCallback, useEffect } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
+import { lazyWithRetry } from "./lib/lazyWithRetry";
 import i18n from "./lib/i18n";
 import { SplashScreen } from "./components/SplashScreen";
 import { useMetaPixelPageView } from "./hooks/useMetaPixel";
@@ -18,162 +19,163 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AiTaskProvider } from "./components/AiTaskOverlay";
 
 // Landing Page
-const Landing = lazy(() => import("./pages/Landing"));
-const Pricing = lazy(() => import("./pages/Pricing"));
-const NurseriesLanding = lazy(() => import("./pages/NurseriesLanding"));
-const VisitorAssistant = lazy(() => import("./components/VisitorAssistant"));
+const Landing = lazyWithRetry(() => import("./pages/Landing"));
+const Pricing = lazyWithRetry(() => import("./pages/Pricing"));
+const NurseriesLanding = lazyWithRetry(() => import("./pages/NurseriesLanding"));
+const VisitorAssistant = lazyWithRetry(() => import("./components/VisitorAssistant"));
 
 // Staff/Admin Pages
-const StaffDashboard = lazy(() => import("./pages/staff/Dashboard"));
-const StaffChildren = lazy(() => import("./pages/staff/Children"));
-const StaffClasses = lazy(() => import("./pages/staff/Classes"));
-const ClassDetail = lazy(() => import("./pages/staff/ClassDetail"));
-const StaffAttendance = lazy(() => import("./pages/staff/Attendance"));
-const StaffStaffAttendance = lazy(() => import("./pages/staff/StaffAttendance"));
-const StaffDailyLog = lazy(() => import("./pages/staff/DailyLog"));
-const StaffDailyReports = lazy(() => import("./pages/staff/DailyReports"));
-const StaffMessages = lazy(() => import("./pages/staff/Messages"));
-const StaffFinance = lazy(() => import("./pages/staff/Finance"));
-const StaffEnrollment = lazy(() => import("./pages/staff/Enrollment"));
-const StaffCalendar = lazy(() => import("./pages/staff/Calendar"));
-const StaffAnnouncements = lazy(() => import("./pages/staff/Announcements"));
-const StaffDocuments = lazy(() => import("./pages/staff/Documents"));
-const StaffNotifications = lazy(() => import("./pages/staff/Notifications"));
-const StaffUsers = lazy(() => import("./pages/staff/Users"));
-const StaffSettings = lazy(() => import("./pages/staff/Settings"));
-const StaffNotificationSettings = lazy(() => import("./pages/staff/NotificationSettings"));
-const StaffPendingApprovals = lazy(() => import("./pages/staff/PendingApprovals"));
-const StaffMediaUpload = lazy(() => import("./pages/staff/MediaUpload"));
-const InvoiceDetail = lazy(() => import("./pages/staff/InvoiceDetail"));
-const ChildProfile = lazy(() => import("./pages/staff/ChildProfile"));
-const StaffPickup = lazy(() => import("./pages/staff/Pickup"));
-const StaffAssessments = lazy(() => import("./pages/staff/Assessments"));
-const StaffDevelopmentalAssessment = lazy(() => import("./pages/staff/DevelopmentalAssessment"));
-const StaffAuditLog = lazy(() => import("./pages/staff/AuditLog"));
-const StaffWeeklyPlan = lazy(() => import("./pages/staff/WeeklyPlan"));
+const StaffDashboard = lazyWithRetry(() => import("./pages/staff/Dashboard"));
+const StaffChildren = lazyWithRetry(() => import("./pages/staff/Children"));
+const StaffClasses = lazyWithRetry(() => import("./pages/staff/Classes"));
+const ClassDetail = lazyWithRetry(() => import("./pages/staff/ClassDetail"));
+const StaffAttendance = lazyWithRetry(() => import("./pages/staff/Attendance"));
+const StaffStaffAttendance = lazyWithRetry(() => import("./pages/staff/StaffAttendance"));
+const StaffDailyLog = lazyWithRetry(() => import("./pages/staff/DailyLog"));
+const StaffDailyReports = lazyWithRetry(() => import("./pages/staff/DailyReports"));
+const StaffMessages = lazyWithRetry(() => import("./pages/staff/Messages"));
+const StaffFinance = lazyWithRetry(() => import("./pages/staff/Finance"));
+const StaffEnrollment = lazyWithRetry(() => import("./pages/staff/Enrollment"));
+const StaffCalendar = lazyWithRetry(() => import("./pages/staff/Calendar"));
+const StaffAnnouncements = lazyWithRetry(() => import("./pages/staff/Announcements"));
+const StaffDocuments = lazyWithRetry(() => import("./pages/staff/Documents"));
+const StaffNotifications = lazyWithRetry(() => import("./pages/staff/Notifications"));
+const StaffUsers = lazyWithRetry(() => import("./pages/staff/Users"));
+const StaffSettings = lazyWithRetry(() => import("./pages/staff/Settings"));
+const StaffNotificationSettings = lazyWithRetry(() => import("./pages/staff/NotificationSettings"));
+const StaffPendingApprovals = lazyWithRetry(() => import("./pages/staff/PendingApprovals"));
+const StaffMediaUpload = lazyWithRetry(() => import("./pages/staff/MediaUpload"));
+const InvoiceDetail = lazyWithRetry(() => import("./pages/staff/InvoiceDetail"));
+const ChildProfile = lazyWithRetry(() => import("./pages/staff/ChildProfile"));
+const StaffPickup = lazyWithRetry(() => import("./pages/staff/Pickup"));
+const StaffAssessments = lazyWithRetry(() => import("./pages/staff/Assessments"));
+const StaffDevelopmentalAssessment = lazyWithRetry(() => import("./pages/staff/DevelopmentalAssessment"));
+const StaffAuditLog = lazyWithRetry(() => import("./pages/staff/AuditLog"));
+const StaffWeeklyPlan = lazyWithRetry(() => import("./pages/staff/WeeklyPlan"));
 
 // Staff Management System
-const StaffDirectory = lazy(() => import("./pages/staff/StaffDirectory"));
-const AddStaff = lazy(() => import("./pages/staff/AddStaff"));
-const EditStaff = lazy(() => import("./pages/staff/EditStaff"));
-const StaffProfilePage = lazy(() => import("./pages/staff/StaffProfile"));
-const LeaveManagement = lazy(() => import("./pages/staff/LeaveManagement"));
-const ImportStaff = lazy(() => import("./pages/staff/ImportStaff"));
-const ImportChildren = lazy(() => import("./pages/staff/ImportChildren"));
-const StaffCurriculumManagement = lazy(() => import("./pages/staff/CurriculumManagement"));
-const StaffCustomAssessments = lazy(() => import("./pages/staff/CustomAssessments"));
-const StaffApplyAssessment = lazy(() => import("./pages/staff/ApplyAssessment"));
+const StaffDirectory = lazyWithRetry(() => import("./pages/staff/StaffDirectory"));
+const AddStaff = lazyWithRetry(() => import("./pages/staff/AddStaff"));
+const EditStaff = lazyWithRetry(() => import("./pages/staff/EditStaff"));
+const StaffProfilePage = lazyWithRetry(() => import("./pages/staff/StaffProfile"));
+const LeaveManagement = lazyWithRetry(() => import("./pages/staff/LeaveManagement"));
+const ImportStaff = lazyWithRetry(() => import("./pages/staff/ImportStaff"));
+const ImportChildren = lazyWithRetry(() => import("./pages/staff/ImportChildren"));
+const StaffCurriculumManagement = lazyWithRetry(() => import("./pages/staff/CurriculumManagement"));
+const StaffCustomAssessments = lazyWithRetry(() => import("./pages/staff/CustomAssessments"));
+const StaffApplyAssessment = lazyWithRetry(() => import("./pages/staff/ApplyAssessment"));
 
 // Development Center Pages
-const DevelopmentDashboard = lazy(() => import("./pages/staff/DevelopmentDashboard"));
-const ChildDevelopmentProfile = lazy(() => import("./pages/staff/ChildDevelopmentProfile"));
-const NewObservation = lazy(() => import("./pages/staff/NewObservation"));
-const EngagementAnalytics = lazy(() => import("./pages/staff/EngagementAnalytics"));
-const ParentSubmissionsReview = lazy(() => import("./pages/staff/ParentSubmissionsReview"));
-const EngagementReports = lazy(() => import("./pages/staff/EngagementReports"));
+const DevelopmentDashboard = lazyWithRetry(() => import("./pages/staff/DevelopmentDashboard"));
+const ChildDevelopmentProfile = lazyWithRetry(() => import("./pages/staff/ChildDevelopmentProfile"));
+const NewObservation = lazyWithRetry(() => import("./pages/staff/NewObservation"));
+const EngagementAnalytics = lazyWithRetry(() => import("./pages/staff/EngagementAnalytics"));
+const ParentSubmissionsReview = lazyWithRetry(() => import("./pages/staff/ParentSubmissionsReview"));
+const EngagementReports = lazyWithRetry(() => import("./pages/staff/EngagementReports"));
 
 // Super Admin Pages
-const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
-const OrganizationDetail = lazy(() => import("./pages/superadmin/OrganizationDetail"));
-const CreateOrganization = lazy(() => import("./pages/superadmin/CreateOrganization"));
-const OrganizationsList = lazy(() => import("./pages/superadmin/OrganizationsList"));
-const OnboardingWizard = lazy(() => import("./pages/OnboardingWizard"));
-const SubscriptionPlans = lazy(() => import("./pages/SubscriptionPlans"));
-const SuperAdminBranding = lazy(() => import("./pages/superadmin/Branding"));
-const SuperAdminUsers = lazy(() => import("./pages/superadmin/Users"));
-const SuperAdminSettings = lazy(() => import("./pages/superadmin/Settings"));
-const SubscriptionsManagement = lazy(() => import("./pages/superadmin/SubscriptionsManagement"));
-const PaymentsReport = lazy(() => import("./pages/superadmin/PaymentsReport"));
-const NurseryRegistrations = lazy(() => import("./pages/superadmin/NurseryRegistrations"));
+const SuperAdminDashboard = lazyWithRetry(() => import("./pages/superadmin/SuperAdminDashboard"));
+const OrganizationDetail = lazyWithRetry(() => import("./pages/superadmin/OrganizationDetail"));
+const CreateOrganization = lazyWithRetry(() => import("./pages/superadmin/CreateOrganization"));
+const OrganizationsList = lazyWithRetry(() => import("./pages/superadmin/OrganizationsList"));
+const OnboardingWizard = lazyWithRetry(() => import("./pages/OnboardingWizard"));
+const SubscriptionPlans = lazyWithRetry(() => import("./pages/SubscriptionPlans"));
+const SuperAdminBranding = lazyWithRetry(() => import("./pages/superadmin/Branding"));
+const SuperAdminUsers = lazyWithRetry(() => import("./pages/superadmin/Users"));
+const SuperAdminSettings = lazyWithRetry(() => import("./pages/superadmin/Settings"));
+const SubscriptionsManagement = lazyWithRetry(() => import("./pages/superadmin/SubscriptionsManagement"));
+const PaymentsReport = lazyWithRetry(() => import("./pages/superadmin/PaymentsReport"));
+const NurseryRegistrations = lazyWithRetry(() => import("./pages/superadmin/NurseryRegistrations"));
 
 // AI Pages
-const AIHub = lazy(() => import("./pages/ai/AIHub"));
-const AIObservation = lazy(() => import("./pages/ai/AIObservation"));
-const AIPlanner = lazy(() => import("./pages/ai/AIPlanner"));
-const AIActivity = lazy(() => import("./pages/ai/AIActivity"));
-const AIReport = lazy(() => import("./pages/ai/AIReport"));
-const AIMessage = lazy(() => import("./pages/ai/AIMessage"));
-const AINewsletter = lazy(() => import("./pages/ai/AINewsletter"));
-const AIStory = lazy(() => import("./pages/ai/AIStory"));
-const AILibrary = lazy(() => import("./pages/ai/AILibrary"));
-const AIAssistant = lazy(() => import("./pages/ai/AIAssistant"));
-const AIMarketing = lazy(() => import("./pages/ai/AIMarketing"));
-const AIMarketingEventContent = lazy(() => import("./pages/ai/AIMarketingEventContent"));
-const AIMarketingEventSummary = lazy(() => import("./pages/ai/AIMarketingEventSummary"));
-const AIMarketingPoster = lazy(() => import("./pages/ai/AIMarketingPoster"));
-const AIMarketingSocial = lazy(() => import("./pages/ai/AIMarketingSocial"));
-const AIMarketingMediaCaption = lazy(() => import("./pages/ai/AIMarketingMediaCaption"));
+const AIHub = lazyWithRetry(() => import("./pages/ai/AIHub"));
+const AIObservation = lazyWithRetry(() => import("./pages/ai/AIObservation"));
+const AIPlanner = lazyWithRetry(() => import("./pages/ai/AIPlanner"));
+const AIActivity = lazyWithRetry(() => import("./pages/ai/AIActivity"));
+const AIReport = lazyWithRetry(() => import("./pages/ai/AIReport"));
+const AIMessage = lazyWithRetry(() => import("./pages/ai/AIMessage"));
+const AINewsletter = lazyWithRetry(() => import("./pages/ai/AINewsletter"));
+const AIStory = lazyWithRetry(() => import("./pages/ai/AIStory"));
+const AILibrary = lazyWithRetry(() => import("./pages/ai/AILibrary"));
+const AIRequests = lazyWithRetry(() => import("./pages/ai/AIRequests"));
+const AIAssistant = lazyWithRetry(() => import("./pages/ai/AIAssistant"));
+const AIMarketing = lazyWithRetry(() => import("./pages/ai/AIMarketing"));
+const AIMarketingEventContent = lazyWithRetry(() => import("./pages/ai/AIMarketingEventContent"));
+const AIMarketingEventSummary = lazyWithRetry(() => import("./pages/ai/AIMarketingEventSummary"));
+const AIMarketingPoster = lazyWithRetry(() => import("./pages/ai/AIMarketingPoster"));
+const AIMarketingSocial = lazyWithRetry(() => import("./pages/ai/AIMarketingSocial"));
+const AIMarketingMediaCaption = lazyWithRetry(() => import("./pages/ai/AIMarketingMediaCaption"));
 
 // Legal Pages (public, no auth required)
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const TermsOfService = lazy(() => import("./pages/TermsOfService"));
-const PublicWaitlist = lazy(() => import("./pages/PublicWaitlist"));
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazyWithRetry(() => import("./pages/TermsOfService"));
+const PublicWaitlist = lazyWithRetry(() => import("./pages/PublicWaitlist"));
 
 // Payment Pages
-const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
-const PaymentCallback = lazy(() => import("./pages/PaymentCallback"));
-const StorePaymentCallback = lazy(() => import("./pages/StorePaymentCallback"));
+const SubscriptionCheckout = lazyWithRetry(() => import("./pages/SubscriptionCheckout"));
+const PaymentCallback = lazyWithRetry(() => import("./pages/PaymentCallback"));
+const StorePaymentCallback = lazyWithRetry(() => import("./pages/StorePaymentCallback"));
 
 
 // Auth Pages
-const Login = lazy(() => import("./pages/auth/Login"));
-const Register = lazy(() => import("./pages/auth/Register"));
-const NurseryRegister = lazy(() => import("./pages/auth/NurseryRegister"));
-const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
-const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
-const RecoverAccount = lazy(() => import("./pages/auth/RecoverAccount"));
+const Login = lazyWithRetry(() => import("./pages/auth/Login"));
+const Register = lazyWithRetry(() => import("./pages/auth/Register"));
+const NurseryRegister = lazyWithRetry(() => import("./pages/auth/NurseryRegister"));
+const ForgotPassword = lazyWithRetry(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazyWithRetry(() => import("./pages/auth/ResetPassword"));
+const RecoverAccount = lazyWithRetry(() => import("./pages/auth/RecoverAccount"));
 
 // Parent Pages
-const ParentDashboard = lazy(() => import("./pages/parent/Dashboard"));
-const ParentChildren = lazy(() => import("./pages/parent/Children"));
-const ParentTimeline = lazy(() => import("./pages/parent/Timeline"));
-const ParentAttendance = lazy(() => import("./pages/parent/Attendance"));
-const ParentReports = lazy(() => import("./pages/parent/Reports"));
-const ParentDailyReport = lazy(() => import("./pages/parent/DailyReport"));
-const ParentCalendar = lazy(() => import("./pages/parent/Calendar"));
-const ParentMessages = lazy(() => import("./pages/parent/Messages"));
-const ParentFinance = lazy(() => import("./pages/parent/Finance"));
-const ParentDocuments = lazy(() => import("./pages/parent/Documents"));
-const ParentNotifications = lazy(() => import("./pages/parent/Notifications"));
-const ParentAnnouncements = lazy(() => import("./pages/parent/Announcements"));
-const ParentMedical = lazy(() => import("./pages/parent/Medical"));
-const ParentPhotos = lazy(() => import("./pages/parent/Photos"));
-const ParentPickup = lazy(() => import("./pages/parent/Pickup"));
-const ParentObservations = lazy(() => import("./pages/parent/Observations"));
-const ParentWeeklyPlan = lazy(() => import("./pages/parent/WeeklyPlan"));
-const ParentDevelopment = lazy(() => import("./pages/parent/Development"));
-const ParentDevelopmentalAssessment = lazy(() => import("./pages/parent/DevelopmentalAssessment"));
-const ParentAssessments = lazy(() => import("./pages/parent/Assessments"));
-const ParentEngagement = lazy(() => import("./pages/parent/EngagementDashboard"));
-const ParentEngagementActivities = lazy(() => import("./pages/parent/EngagementActivities"));
-const ParentEngagementChallenges = lazy(() => import("./pages/parent/EngagementChallenges"));
-const ParentEngagementJournal = lazy(() => import("./pages/parent/EngagementJournal"));
-const ParentEngagementChatbot = lazy(() => import("./pages/parent/EngagementChatbot"));
-const ParentEngagementGoals = lazy(() => import("./pages/parent/EngagementGoals"));
-const ParentEngagementObservations = lazy(() => import("./pages/parent/EngagementObservations"));
-const ParentEngagementScore = lazy(() => import("./pages/parent/EngagementScore"));
-const ParentEngagementBadges = lazy(() => import("./pages/parent/EngagementBadges"));
-const ParentCurriculumLibrary = lazy(() => import("./pages/parent/CurriculumLibrary"));
-const AccountSettings = lazy(() => import("./pages/AccountSettings"));
-const StoreProducts = lazy(() => import("./pages/staff/StoreProducts"));
-const StoreOrders = lazy(() => import("./pages/staff/StoreOrders"));
-const StoreSalesReport = lazy(() => import("./pages/staff/StoreSalesReport"));
-const ParentStore = lazy(() => import("./pages/parent/Store"));
-const ParentCart = lazy(() => import("./pages/parent/Cart"));
-const ParentStoreOrders = lazy(() => import("./pages/parent/StoreOrders"));
-const StoreCheckout = lazy(() => import("./pages/parent/StoreCheckout"));
-const SuperAdminStore = lazy(() => import("./pages/superadmin/Store"));
+const ParentDashboard = lazyWithRetry(() => import("./pages/parent/Dashboard"));
+const ParentChildren = lazyWithRetry(() => import("./pages/parent/Children"));
+const ParentTimeline = lazyWithRetry(() => import("./pages/parent/Timeline"));
+const ParentAttendance = lazyWithRetry(() => import("./pages/parent/Attendance"));
+const ParentReports = lazyWithRetry(() => import("./pages/parent/Reports"));
+const ParentDailyReport = lazyWithRetry(() => import("./pages/parent/DailyReport"));
+const ParentCalendar = lazyWithRetry(() => import("./pages/parent/Calendar"));
+const ParentMessages = lazyWithRetry(() => import("./pages/parent/Messages"));
+const ParentFinance = lazyWithRetry(() => import("./pages/parent/Finance"));
+const ParentDocuments = lazyWithRetry(() => import("./pages/parent/Documents"));
+const ParentNotifications = lazyWithRetry(() => import("./pages/parent/Notifications"));
+const ParentAnnouncements = lazyWithRetry(() => import("./pages/parent/Announcements"));
+const ParentMedical = lazyWithRetry(() => import("./pages/parent/Medical"));
+const ParentPhotos = lazyWithRetry(() => import("./pages/parent/Photos"));
+const ParentPickup = lazyWithRetry(() => import("./pages/parent/Pickup"));
+const ParentObservations = lazyWithRetry(() => import("./pages/parent/Observations"));
+const ParentWeeklyPlan = lazyWithRetry(() => import("./pages/parent/WeeklyPlan"));
+const ParentDevelopment = lazyWithRetry(() => import("./pages/parent/Development"));
+const ParentDevelopmentalAssessment = lazyWithRetry(() => import("./pages/parent/DevelopmentalAssessment"));
+const ParentAssessments = lazyWithRetry(() => import("./pages/parent/Assessments"));
+const ParentEngagement = lazyWithRetry(() => import("./pages/parent/EngagementDashboard"));
+const ParentEngagementActivities = lazyWithRetry(() => import("./pages/parent/EngagementActivities"));
+const ParentEngagementChallenges = lazyWithRetry(() => import("./pages/parent/EngagementChallenges"));
+const ParentEngagementJournal = lazyWithRetry(() => import("./pages/parent/EngagementJournal"));
+const ParentEngagementChatbot = lazyWithRetry(() => import("./pages/parent/EngagementChatbot"));
+const ParentEngagementGoals = lazyWithRetry(() => import("./pages/parent/EngagementGoals"));
+const ParentEngagementObservations = lazyWithRetry(() => import("./pages/parent/EngagementObservations"));
+const ParentEngagementScore = lazyWithRetry(() => import("./pages/parent/EngagementScore"));
+const ParentEngagementBadges = lazyWithRetry(() => import("./pages/parent/EngagementBadges"));
+const ParentCurriculumLibrary = lazyWithRetry(() => import("./pages/parent/CurriculumLibrary"));
+const AccountSettings = lazyWithRetry(() => import("./pages/AccountSettings"));
+const StoreProducts = lazyWithRetry(() => import("./pages/staff/StoreProducts"));
+const StoreOrders = lazyWithRetry(() => import("./pages/staff/StoreOrders"));
+const StoreSalesReport = lazyWithRetry(() => import("./pages/staff/StoreSalesReport"));
+const ParentStore = lazyWithRetry(() => import("./pages/parent/Store"));
+const ParentCart = lazyWithRetry(() => import("./pages/parent/Cart"));
+const ParentStoreOrders = lazyWithRetry(() => import("./pages/parent/StoreOrders"));
+const StoreCheckout = lazyWithRetry(() => import("./pages/parent/StoreCheckout"));
+const SuperAdminStore = lazyWithRetry(() => import("./pages/superadmin/Store"));
 
 // Loyalty Pages
-const LoyaltyAdmin = lazy(() => import("./pages/LoyaltyAdmin"));
-const LoyaltyCard = lazy(() => import("./pages/LoyaltyCard"));
+const LoyaltyAdmin = lazyWithRetry(() => import("./pages/LoyaltyAdmin"));
+const LoyaltyCard = lazyWithRetry(() => import("./pages/LoyaltyCard"));
 
 // Payroll & Performance
-const Payroll = lazy(() => import("./pages/Payroll"));
-const PerformanceEvaluation = lazy(() => import("./pages/PerformanceEvaluation"));
-const PerformanceComparison = lazy(() => import("./pages/PerformanceComparison"));
-const PerformanceGoals = lazy(() => import("./pages/PerformanceGoals"));
-const HRDashboard = lazy(() => import("./pages/HRDashboard"));
+const Payroll = lazyWithRetry(() => import("./pages/Payroll"));
+const PerformanceEvaluation = lazyWithRetry(() => import("./pages/PerformanceEvaluation"));
+const PerformanceComparison = lazyWithRetry(() => import("./pages/PerformanceComparison"));
+const PerformanceGoals = lazyWithRetry(() => import("./pages/PerformanceGoals"));
+const HRDashboard = lazyWithRetry(() => import("./pages/HRDashboard"));
 
 function PageLoader() {
   return (
@@ -518,6 +520,9 @@ function RoleRouter() {
         </Route>
         <Route path="/ai/library">
           {isStaffRole(userRole) ? <AILibrary /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/requests">
+          {isStaffRole(userRole) ? <AIRequests /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/ai/assistant">
           <AIAssistant />

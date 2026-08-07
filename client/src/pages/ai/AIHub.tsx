@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { 
   Sparkles, Eye, CalendarDays, Lightbulb, BarChart3, 
-  MessageSquare, Newspaper, BookOpen, Library, Megaphone, Zap, ArrowUpRight
+  MessageSquare, Newspaper, BookOpen, Library, Megaphone, Zap, ArrowUpRight, History
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +79,15 @@ export default function AIHub() {
     tag: isAr ? "جديد" : "New",
   },
   {
+    id: "requests",
+    title: isAr ? "أعمالي الذكية" : "My AI Work",
+    description: isAr ? "مساحة موحدة لكل الخطط والتقارير والمحتوى الذي أنشأته بالمساعد" : "One place for every plan, report and piece of content you created with AI",
+    icon: History,
+    bgColor: "bg-violet-100",
+    iconColor: "text-violet-600",
+    tag: isAr ? "سجل كامل" : "Full history",
+  },
+  {
     id: "library",
     title: isAr ? "المكتبة" : "Library",
     description: isAr ? "حفظ واسترجاع جميع المحتوى المُنشأ" : "Save and Restore All Created Content",
@@ -142,7 +151,7 @@ export default function AIHub() {
             <span className="text-sm font-semibold text-violet-800">{isAr ? "نصيحة سريعة" : "Quick Tip"}</span>
           </div>
           <p className="text-sm text-violet-700/80 leading-relaxed">
-            {isAr ? "جميع المحتوى المُنشأ يُحفظ تلقائياً في المكتبة. يمكنك إعادة استخدامه أو تعديله لاحقاً." : "All created content is automatically saved in the library. You can reuse or modify it later."}
+            {isAr ? "كل طلب ونتيجة يُحفظان تلقائياً في أعمالي الذكية، ويمكنك الرجوع إلى المصدر أو فتح النتيجة في أي وقت. المكتبة مخصصة للمحتوى الذي تختار الاحتفاظ به كمفضلة." : "Every request and result is saved automatically in My AI Work, where you can reopen its source or result. The library is for content you intentionally keep as a favorite."}
             {isAr ? "اللغة العربية هي الافتراضية لجميع الأدوات مع دعم كامل للإنجليزية." : "Arabic is the default language for all tools with full English support."}
           </p>
         </CardContent>

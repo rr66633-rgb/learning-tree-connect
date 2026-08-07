@@ -13,6 +13,7 @@ import {
   achievementBadges,
   parentBadges,
   familyEngagementConfig,
+  aiGeneratedContent,
   children,
 } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
@@ -968,7 +969,18 @@ Return as JSON: {"title": "Report title", "sections": [{"heading": "Section head
         });
 
         const report = JSON.parse(String(response.choices[0].message.content) || "{}");
-        return { report, child: { name: `${child.firstName} ${child.lastName}`, age: ageMonths }, score: score || null };
+        const childName = child.arabicName || `${child.firstName} ${child.lastName}`;
+        const [saved] = await db.insert(aiGeneratedContent).values({
+          type: "progress_report",
+          title: report.title || `تقرير مشاركة الأسرة - ${childName}`,
+          content: { subType: "family_engagement_report", report, score: score || null },
+          language: input.language,
+          childId: input.childId,
+          inputPrompt: JSON.stringify({ childId: input.childId, period: input.period, language: input.language }),
+          createdBy: ctx.user.id,
+          organizationId: orgId,
+        });
+        return { id: saved.insertId, report, child: { name: childName, age: ageMonths }, score: score || null };
       }),
   }),
 

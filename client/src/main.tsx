@@ -70,16 +70,31 @@ const trpcClient = trpc.createClient({
         return {};
       },
       async fetch(input, init) {
-        // Retry logic for network failures (handles cold start / slow connections)
-        const MAX_RETRIES = 4;
-        const TIMEOUT_MS = 30000;
+        const requestUrl = typeof input === "string"
+          ? input
+          : input instanceof Request
+            ? input.url
+            : String(input);
+        const requestMethod = (init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
+        const decodedUrl = decodeURIComponent(requestUrl);
+        const isAiGeneration = ["/ai.", "/aiMarketing.", "/weeklyPlan."].some(prefix => decodedUrl.includes(prefix));
+
+        // Never replay mutations at the transport layer: the first request may
+        // have reached the server even when its response was interrupted. The
+        // old four-attempt loop generated duplicate plans and multiplied OpenAI
+        // work. Queries may retry once; the legacy long route gets a generous
+        // timeout while the UI now uses the background-job route instead.
+        const maxAttempts = requestMethod === "GET" ? 2 : 1;
+        const timeoutMs = isAiGeneration ? 10 * 60_000 : 30_000;
         let response: Response;
         let lastError: Error | null = null;
         
-        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const controller = new AbortController();
+          const timeoutId = window.setTimeout(() => {
+            controller.abort(new DOMException("انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى", "TimeoutError"));
+          }, timeoutMs);
           try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
             response = await fetch(
               input as string,
               {
@@ -88,15 +103,16 @@ const trpcClient = trpc.createClient({
                 signal: controller.signal,
               }
             );
-            clearTimeout(timeoutId);
             lastError = null;
             break;
           } catch (err: any) {
             lastError = err;
-            console.warn(`[tRPC] Fetch failed (attempt ${attempt}/${MAX_RETRIES}):`, err.message);
-            if (attempt < MAX_RETRIES) {
-              await new Promise(r => setTimeout(r, 2000 * attempt));
+            console.warn(`[tRPC] Fetch failed (attempt ${attempt}/${maxAttempts}):`, err.message);
+            if (attempt < maxAttempts) {
+              await new Promise(r => setTimeout(r, 1000 * attempt));
             }
+          } finally {
+            window.clearTimeout(timeoutId);
           }
         }
         if (lastError) {

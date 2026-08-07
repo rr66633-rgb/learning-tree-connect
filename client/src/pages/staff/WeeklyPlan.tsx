@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { 
   CalendarDays, Sparkles, Copy, Download, Save, Loader2, BookOpen, 
   Clock, FileText, Trash2, Send, Plus, ChevronLeft, Edit3, Eye,
   BookMarked, Palette, FlaskConical, Music, Home, MessageSquare,
-  Calculator, Dumbbell, Hand, Moon, LayoutGrid, X
+  Calculator, Dumbbell, Hand, Moon, LayoutGrid, X, PackageOpen,
+  ListChecks, Target, Languages, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,16 @@ const SECTION_ICONS: Record<string, { icon: any; color: string }> = {
   home_activity: { icon: Home, color: "bg-lime-50 border-lime-200 text-lime-800" },
   parent_notes: { icon: MessageSquare, color: "bg-cyan-50 border-cyan-200 text-cyan-800" },
 };
+
+const WIDE_SECTION_KEYS = new Set([
+  "arabic_activities",
+  "english_activities",
+  "math_activities",
+  "science_activities",
+  "art_activities",
+  "sensory_activities",
+  "physical_activities",
+]);
 
 // Map section keys to i18n keys
 const SECTION_LABEL_KEYS: Record<string, string> = {
@@ -178,6 +189,101 @@ function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
   );
 }
 
+const ACTIVITY_FIELD = /^\s*([^:：\n]{2,42})\s*[:：]\s*(.*)$/;
+const ACTIVITY_NUMBER = /^\s*([0-9٠-٩]+)\s*[.)\-–:]?\s+(.+)$/;
+const ACTIVITY_LABELS = /(?:الوصف بالعربية|الوصف|English description|Description|المواد المطلوبة|المواد|Materials needed|Materials|المدة|Duration|طريقة التنفيذ|خطوات التنفيذ|التنفيذ|Procedure|Implementation|Steps|طريقة التقييم|التقييم|Assessment|المفهوم الرياضي|Math concept|الملاحظات المتوقعة|Expected observations|الحواس المستهدفة|Targeted senses|المهارات المستهدفة|Targeted skills)\s*[:：]/gi;
+
+function fieldVisual(label: string, isAr: boolean) {
+  const value = label.toLocaleLowerCase();
+  if (/مدة|duration/.test(value)) return { Icon: Clock, tone: "bg-sky-50 text-sky-700 border-sky-100", label: isAr ? "المدة" : "Duration" };
+  if (/مواد|materials/.test(value)) return { Icon: PackageOpen, tone: "bg-amber-50 text-amber-700 border-amber-100", label };
+  if (/تقييم|assessment/.test(value)) return { Icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-700 border-emerald-100", label };
+  if (/تنفيذ|خطوات|procedure|implementation|steps/.test(value)) return { Icon: ListChecks, tone: "bg-violet-50 text-violet-700 border-violet-100", label };
+  if (/وصف|description/.test(value)) return { Icon: Languages, tone: "bg-blue-50 text-blue-700 border-blue-100", label };
+  return { Icon: Target, tone: "bg-slate-50 text-slate-700 border-slate-100", label };
+}
+
+function textDirection(value: string): "rtl" | "ltr" {
+  return /[\u0600-\u06FF]/.test(value) ? "rtl" : "ltr";
+}
+
+/**
+ * Turns both new and historical model output into scannable activity cards.
+ * The parser only adds presentation structure; every original line remains
+ * visible, including unknown labels, so an older plan never loses content.
+ */
+function RichFormattedText({ text, isAr }: { text: string; isAr: boolean }) {
+  const normalized = text
+    .replace(/\r/g, "")
+    .replace(ACTIVITY_LABELS, match => `\n${match}`)
+    .replace(/\s+(?=\d+\s*[.)\-–:]\s+)/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  const lines = normalized.split("\n").map(line => line.trim()).filter(Boolean);
+  type ActivityGroup = { number: string; title: string; details: string[] };
+  const intro: string[] = [];
+  const groups: ActivityGroup[] = [];
+  let current: ActivityGroup | null = null;
+
+  for (const line of lines) {
+    const numbered = line.match(ACTIVITY_NUMBER);
+    if (numbered) {
+      current = { number: numbered[1], title: numbered[2], details: [] };
+      groups.push(current);
+    } else if (current) {
+      current.details.push(line);
+    } else {
+      intro.push(line);
+    }
+  }
+
+  const hasDetailedActivities = groups.some(group => group.details.length > 0);
+  if (!hasDetailedActivities) return <FormattedText text={text} isAr={isAr} />;
+
+  return (
+    <div className="space-y-5">
+      {intro.length > 0 && (
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+          <FormattedText text={intro.join("\n")} isAr={isAr} />
+        </div>
+      )}
+      <div className="grid gap-4 xl:grid-cols-2">
+        {groups.map((group, groupIndex) => (
+          <article key={`${group.number}-${groupIndex}`} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_-24px_rgba(15,23,42,0.45)]">
+            <header className="flex items-start gap-3 border-b border-slate-100 bg-gradient-to-l from-slate-50 to-white px-4 py-3.5">
+              <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 px-2 text-xs font-black text-white shadow-sm">
+                {group.number}
+              </span>
+              <h4 className="pt-1 text-[15px] font-bold leading-6 text-slate-900" dir={textDirection(group.title)}>{group.title}</h4>
+            </header>
+            <div className="grid gap-3 p-4 sm:grid-cols-2">
+              {group.details.map((detail, detailIndex) => {
+                const matched = detail.match(ACTIVITY_FIELD);
+                if (!matched) {
+                  return <p key={detailIndex} className="sm:col-span-2 whitespace-pre-wrap text-sm leading-7 text-slate-700" dir={textDirection(detail)}>{detail}</p>;
+                }
+                const label = matched[1].trim();
+                const value = matched[2].trim();
+                const visual = fieldVisual(label, isAr);
+                const isLong = /وصف|description|تنفيذ|خطوات|procedure|implementation|steps|تقييم|assessment/.test(label.toLocaleLowerCase()) || value.length > 150;
+                return (
+                  <section key={detailIndex} className={`rounded-xl border p-3.5 ${visual.tone} ${isLong ? "sm:col-span-2" : ""}`} dir={textDirection(`${label} ${value}`)}>
+                    <div className="mb-1.5 flex items-center gap-2 text-xs font-bold">
+                      <visual.Icon className="h-3.5 w-3.5" />
+                      <span>{label}</span>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{value || "—"}</p>
+                  </section>
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: string; t: (key: string) => string }) {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
@@ -190,7 +296,7 @@ function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: 
   // block. FormattedText below gives that structure back without changing a
   // single word of the content.
   if (typeof content === "string") {
-    return <FormattedText text={content} isAr={isAr} />;
+    return <RichFormattedText text={content} isAr={isAr} />;
   }
 
   // Handle array content (like learning_objectives or activities)
@@ -320,7 +426,7 @@ export default function WeeklyPlanPage() {
   ];
 
   // Queries
-  const { runTask } = useAiTask();
+  const { trackWeeklyPlanTask, hasActiveWeeklyPlanTask } = useAiTask();
   const classesQuery = trpc.classes.list.useQuery();
   const plansQuery = trpc.weeklyPlan.list.useQuery({ limit: 50 });
   const selectedPlan = trpc.weeklyPlan.get.useQuery(
@@ -328,16 +434,43 @@ export default function WeeklyPlanPage() {
     { enabled: !!selectedPlanId }
   );
 
-  // Mutations
-  const generateMutation = trpc.weeklyPlan.generate.useMutation({
-    onSuccess: (data) => {
-      toast.success(t('weeklyPlan.planCreatedSuccess'));
-      setSelectedPlanId(data.id);
+  // The background tracker opens a completed plan through a stable URL. This
+  // also makes generated results bookmarkable instead of only reachable from
+  // transient component state.
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("planId");
+    const planId = value ? Number(value) : NaN;
+    if (Number.isInteger(planId) && planId > 0) {
+      setSelectedPlanId(planId);
       setView("preview");
-      plansQuery.refetch();
+    }
+  }, []);
+
+  // Mutations
+  const generateMutation = trpc.weeklyPlan.startGeneration.useMutation({
+    onSuccess: (data) => {
+      trackWeeklyPlanTask({
+        jobId: data.jobId,
+        title: "نُنشئ خطتك الأسبوعية",
+        titleEn: "Creating your weekly plan",
+        stages: [
+          { label: "استلام الطلب وحفظه", labelEn: "Accepting and saving the request" },
+          { label: "فهم الموضوع والفئة العمرية", labelEn: "Understanding the theme and age group" },
+          { label: "صياغة أهداف التعلم وفق EYFS", labelEn: "Crafting EYFS learning objectives" },
+          { label: "تصميم الأنشطة التعليمية", labelEn: "Designing learning activities" },
+          { label: "تنسيق الأقسام الأربعة عشر", labelEn: "Formatting all 14 sections" },
+          { label: "مراجعة الجودة والتناسق", labelEn: "Reviewing quality and consistency" },
+          { label: "حفظ المسودة وتجهيز العرض", labelEn: "Saving the draft and preparing the view" },
+        ],
+      });
+      toast.success(isAr ? "تم استلام الطلب، وسنبلغك عند اكتمال الخطة" : "Request accepted. We will notify you when the plan is ready.");
     },
     onError: (err) => {
-      toast.error(err.message || t('weeklyPlan.planCreateError'));
+      const raw = (err.message || "").toLowerCase();
+      const message = raw.includes("abort") || raw.includes("signal") || raw.includes("fetch")
+        ? (isAr ? "تعذّر إرسال الطلب بسبب انقطاع الاتصال. أعد المحاولة، ولن يتم إنشاء طلب مكرر." : "The request could not be sent because the connection was interrupted. Please try again.")
+        : (err.message || t('weeklyPlan.planCreateError'));
+      toast.error(message);
     },
   });
 
@@ -384,38 +517,19 @@ export default function WeeklyPlanPage() {
       toast.error(t('weeklyPlan.fillAllRequired'));
       return;
     }
-    // Handed to the app-level task runner rather than fired here, so the work
-    // survives navigating away from this page and the user gets a staged
-    // progress card instead of a spinner on a button.
-    runTask({
-      title: "جارٍ إنشاء الخطة الأسبوعية",
-      titleEn: "Creating the weekly plan",
-      stages: [
-        { label: "تجهيز بيانات الأسبوع", labelEn: "Preparing week details" },
-        { label: "بناء الأنشطة والأهداف", labelEn: "Building activities and objectives" },
-        { label: "مراجعة الأقسام الأربعة عشر", labelEn: "Reviewing the 14 sections" },
-        { label: "حفظ الخطة", labelEn: "Saving the plan" },
-      ],
-      stageSeconds: [4, 22, 10],
-      run: () => generateMutation.mutateAsync({
-        classId: classId ? parseInt(classId) : undefined,
-        ageGroup: ageGroup as any,
-        weekStartDate: weekStart,
-        weekEndDate: weekEnd,
-        theme,
-        language: language as any,
-      }),
-      onDone: (plan: any) => ({
-        title: "تم إنشاء الخطة الأسبوعية",
-        titleEn: "Weekly plan ready",
-        actionLabel: "عرض الخطة",
-        actionLabelEn: "View plan",
-        // The mutation's onSuccess already switches to the preview; this makes
-        // that jump explicit and puts the new plan on screen even if the user
-        // wandered off to another page while it was generating.
-        onAction: () => { setSelectedPlanId(plan.id); setView("preview"); },
-      }),
-    }).catch(() => { /* the card shows the failure; the toast already fired */ });
+    if (hasActiveWeeklyPlanTask || generateMutation.isPending) {
+      toast.info(isAr ? "يوجد طلب خطة قيد التنفيذ بالفعل" : "A weekly plan request is already running");
+      return;
+    }
+    generateMutation.mutate({
+      requestId: crypto.randomUUID(),
+      classId: classId ? parseInt(classId) : undefined,
+      ageGroup: ageGroup as any,
+      weekStartDate: weekStart,
+      weekEndDate: weekEnd,
+      theme,
+      language: language as any,
+    });
   };
 
   const handleSaveEdits = () => {
@@ -686,11 +800,11 @@ export default function WeeklyPlanPage() {
             <div className="pt-4 border-t">
               <Button 
                 onClick={handleGenerate} 
-                disabled={generateMutation.isPending}
+                disabled={generateMutation.isPending || hasActiveWeeklyPlanTask}
                 className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-lg py-6 px-8"
                 size="lg"
               >
-                {generateMutation.isPending ? (
+                {generateMutation.isPending || hasActiveWeeklyPlanTask ? (
                   <>
                     <Loader2 className={`h-5 w-5 ${isEn ? 'mr-2' : 'ml-2'} animate-spin`} />
                     {t('weeklyPlan.generatingPlan')}
@@ -702,9 +816,9 @@ export default function WeeklyPlanPage() {
                   </>
                 )}
               </Button>
-              {generateMutation.isPending && (
+              {(generateMutation.isPending || hasActiveWeeklyPlanTask) && (
                 <p className="text-sm text-gray-500 mt-3">
-                  {t('weeklyPlan.aiGeneratingDescription')}
+                  {isAr ? "طلبك محفوظ ويجري تنفيذه في الخلفية. يمكنك متابعة استخدام التطبيق." : "Your request is saved and running in the background. You can keep using the app."}
                 </p>
               )}
             </div>
@@ -721,19 +835,22 @@ export default function WeeklyPlanPage() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-[0_20px_60px_-42px_rgba(6,78,59,0.55)] md:p-6">
+        <div className="pointer-events-none absolute -start-12 -top-16 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => { setView("list"); setSelectedPlanId(null); setIsEditing(false); setEditedSections({}); }}>
+          <Button variant="outline" size="icon" className="shrink-0 rounded-2xl border-white bg-white/85 shadow-sm" onClick={() => { setView("list"); setSelectedPlanId(null); setIsEditing(false); setEditedSections({}); }}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{plan?.theme || "..."}</h1>
-            <div className="flex items-center gap-3 mt-1">
+          <div className="min-w-0">
+            <div className="mb-1.5 flex items-center gap-2 text-xs font-bold text-emerald-700"><Sparkles className="h-3.5 w-3.5" />{isAr ? "رحلة تعلم أسبوعية" : "Weekly learning journey"}</div>
+            <h1 className="truncate text-2xl font-black tracking-tight text-slate-950">{plan?.theme || "..."}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant={plan?.status === "published" ? "default" : "secondary"} className={plan?.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
                 {plan?.status === "published" ? (isEn ? "Published" : (isAr ? "منشورة" : "Published")) : (isEn ? "Draft" : (isAr ? "مسودة" : "Draft"))}
               </Badge>
-              <span className="text-xs text-gray-500">{plan?.weekStartDate} - {plan?.weekEndDate}</span>
-              <span className="text-xs text-gray-500">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-xs text-slate-600 ring-1 ring-slate-200/70"><CalendarDays className="h-3.5 w-3.5" />{plan?.weekStartDate} - {plan?.weekEndDate}</span>
+              <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs text-slate-600 ring-1 ring-slate-200/70">
                 {AGE_GROUPS.find(g => g.value === plan?.ageGroup)?.label || plan?.ageGroup}
               </span>
             </div>
@@ -741,7 +858,7 @@ export default function WeeklyPlanPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 rounded-2xl bg-white/65 p-2 ring-1 ring-white/90 backdrop-blur-sm">
           {plan?.status === "draft" && (
             <>
               {!isEditing ? (
@@ -783,6 +900,7 @@ export default function WeeklyPlanPage() {
             </Button>
           )}
         </div>
+        </div>
       </div>
 
       {/* Plan Sections */}
@@ -791,22 +909,40 @@ export default function WeeklyPlanPage() {
           <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
         </div>
       ) : sections ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {Object.entries(SECTION_ICONS).map(([key, config]) => {
+        <div className="space-y-5">
+          <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm" aria-label={isAr ? "أقسام الخطة" : "Plan sections"}>
+            {Object.entries(SECTION_ICONS).map(([key, config], index) => {
+              const Icon = config.icon;
+              const labelKey = SECTION_LABEL_KEYS[key];
+              return (
+                <a key={key} href={`#plan-section-${key}`} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950">
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="text-slate-400">{index + 1}</span>
+                  {t(`weeklyPlan.${labelKey}`)}
+                </a>
+              );
+            })}
+          </nav>
+
+          <div className="grid items-start gap-5 md:grid-cols-2">
+          {Object.entries(SECTION_ICONS).map(([key, config], sectionIndex) => {
             const Icon = config.icon;
             const sectionContent = sections[key];
             const colorClasses = config.color.split(" ");
             const labelKey = SECTION_LABEL_KEYS[key];
 
             return (
-              <Card key={key} className={`border ${colorClasses[1] || ""}`}>
-                <CardHeader className={`py-3 px-4 ${colorClasses[0] || ""}`}>
-                  <CardTitle className={`text-sm font-bold flex items-center gap-2 ${colorClasses[2] || ""}`}>
-                    <Icon className="h-4 w-4" />
-                    {t(`weeklyPlan.${labelKey}`)}
+              <Card id={`plan-section-${key}`} key={key} className={`scroll-mt-24 overflow-hidden rounded-3xl border bg-white shadow-[0_14px_45px_-32px_rgba(15,23,42,0.5)] ${colorClasses[1] || ""} ${WIDE_SECTION_KEYS.has(key) ? "md:col-span-2" : ""}`}>
+                <CardHeader className={`border-b px-5 py-4 ${colorClasses[0] || ""}`}>
+                  <CardTitle className={`flex items-center gap-3 text-sm font-bold ${colorClasses[2] || ""}`}>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 shadow-sm ring-1 ring-black/5">
+                      <Icon className="h-4.5 w-4.5" />
+                    </span>
+                    <span className="flex-1">{t(`weeklyPlan.${labelKey}`)}</span>
+                    <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-white/70 px-2 text-[11px] font-black opacity-65">{sectionIndex + 1}</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
+                <CardContent className="p-4 md:p-5">
                   {isEditing ? (
                     <SectionEditor 
                       content={editedSections[key] !== undefined ? editedSections[key] : sectionContent}
@@ -819,6 +955,7 @@ export default function WeeklyPlanPage() {
               </Card>
             );
           })}
+          </div>
         </div>
       ) : (
         <div className="text-center py-10 text-gray-400">{t('weeklyPlan.noContent')}</div>

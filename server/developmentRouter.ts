@@ -10,6 +10,7 @@ import {
   developmentRecommendations,
   developmentAlerts,
   childDevelopmentSummary,
+  aiGeneratedContent,
   children,
   users,
 } from "../drizzle/schema";
@@ -471,6 +472,17 @@ Important: Ensure all Arabic content is culturally appropriate and respects Isla
       // Update summary
       await updateChildSummary(input.childId, orgId);
 
+      await db.insert(aiGeneratedContent).values({
+        type: "progress_report",
+        title: `تحليل النمو - ${child.arabicName || `${child.firstName} ${child.lastName}`}`,
+        content: { subType: "development_analysis", ...analysis },
+        language: "bilingual",
+        childId: input.childId,
+        inputPrompt: JSON.stringify({ childId: input.childId, sourceObservations: observations.length }),
+        createdBy: ctx.user.id,
+        organizationId: orgId,
+      });
+
       return { analysis, message: "تم إنشاء التحليل بنجاح" };
     }),
 
@@ -857,7 +869,17 @@ Return the report as a JSON object:
       });
 
       const report = JSON.parse(String(response.choices[0].message.content) || "{}");
-      return { report, child: { name: childName, age: calculateAgeMonths(child.dateOfBirth as any) } };
+      const [saved] = await db.insert(aiGeneratedContent).values({
+        type: "progress_report",
+        title: report.title || `${isProfessional ? "تقرير نمو مهني" : "تقرير نمو للأسرة"} - ${childName}`,
+        content: { subType: "development_report", report },
+        language: input.language,
+        childId: input.childId,
+        inputPrompt: JSON.stringify({ childId: input.childId, language: input.language, reportType: input.type }),
+        createdBy: ctx.user.id,
+        organizationId: orgId,
+      });
+      return { id: saved.insertId, report, child: { name: childName, age: calculateAgeMonths(child.dateOfBirth as any) } };
     }),
 });
 

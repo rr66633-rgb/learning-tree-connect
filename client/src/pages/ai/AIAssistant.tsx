@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
-import { ArrowLeft, Send, Sparkles, BookOpen, Star, Brain, Rocket, HelpCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, BookOpen, Star, Brain, Rocket, HelpCircle, RotateCcw, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,57 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  /** Present only on a failure bubble: the question to resend on retry. */
+  failedPrompt?: string;
+}
+
+/**
+ * Renders an assistant reply with the structure it already contains.
+ *
+ * The model answers with numbered steps and **bold** emphasis, but the bubble
+ * printed it as one pre-wrapped blob -- so a memorisation plan arrived as an
+ * unreadable wall. Nothing is rewritten here; the existing shape is just made
+ * visible. Anything unrecognised falls through as a normal line, so no part of
+ * an answer can ever be dropped.
+ */
+function AssistantText({ text }: { text: string }) {
+  const lines = text.split(/\r?\n/);
+  const bold = (s: string) =>
+    s.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+      part.startsWith("**") && part.endsWith("**")
+        ? <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
+        : <span key={i}>{part}</span>
+    );
+
+  return (
+    <div className="space-y-1.5">
+      {lines.map((raw, i) => {
+        const line = raw.trim();
+        if (!line) return <div key={i} className="h-1" />;
+        const num = line.match(/^(\d+)\s*[.)-]\s*(.+)$/);
+        if (num) {
+          return (
+            <div key={i} className="flex gap-2 items-start">
+              <span className="mt-0.5 shrink-0 h-5 min-w-5 px-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold flex items-center justify-center tabular-nums">
+                {num[1]}
+              </span>
+              <span className="text-sm leading-relaxed">{bold(num[2])}</span>
+            </div>
+          );
+        }
+        const bullet = line.match(/^[-•*]\s+(.+)$/);
+        if (bullet) {
+          return (
+            <div key={i} className="flex gap-2 items-start">
+              <span className="mt-2 shrink-0 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="text-sm leading-relaxed">{bold(bullet[1])}</span>
+            </div>
+          );
+        }
+        return <p key={i} className="text-sm leading-relaxed">{bold(line)}</p>;
+      })}
+    </div>
+  );
 }
 
 const getQuickActions = (isAr: boolean) => ([
@@ -86,11 +137,38 @@ export default function AIAssistant() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
+      // Every failure used to produce the same sentence, so the child (or the
+      // teacher helping them) could not tell "wait a moment" from "this will
+      // never work". The reason is classified into the few outcomes a user can
+      // actually act on -- the raw provider text is never shown, only the
+      // sanitised message the server already sent.
+      const raw = String(error?.message || "").toLowerCase();
+      let content: string;
+      if (raw.includes("429") || raw.includes("مشغول") || raw.includes("too many") || raw.includes("الحد الأقصى")) {
+        content = isAr
+          ? "المساعد مشغول قليلاً الآن 🌙 انتظر لحظة ثم أرسل سؤالك مرة أخرى."
+          : "The assistant is a little busy right now. Wait a moment and send your question again.";
+      } else if (raw.includes("غير مفعّلة") || raw.includes("not enabled") || raw.includes("مسؤول النظام")) {
+        content = isAr
+          ? "المساعد غير مفعّل حالياً. أخبري معلمتك أو مسؤول النظام ✨"
+          : "The assistant is not enabled right now. Please tell your teacher or the administrator.";
+      } else if (raw.includes("timeout") || raw.includes("وقتاً") || raw.includes("network") || raw.includes("اتصال")) {
+        content = isAr
+          ? "يبدو أن الاتصال ضعيف 🌐 تأكد من الإنترنت ثم حاول مرة أخرى."
+          : "The connection looks weak. Check your internet and try again.";
+      } else {
+        content = isAr
+          ? "عذراً، لم أستطع الإجابة هذه المرة. جرّب مرة أخرى! 🌟"
+          : "Sorry, I couldn't answer this time. Please try again!";
+      }
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: (isAr ? "عذراً، حدث خطأ. حاول مرة أخرى! 🌟" : "Sorry, an error occurred. Please try again!"),
+        content,
         timestamp: new Date(),
+        // Remember the question so it can be resent with one tap instead of
+        // being retyped -- previously a failure simply swallowed it.
+        failedPrompt: text.trim(),
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -188,7 +266,23 @@ export default function AIAssistant() {
                       : "bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  {message.role === "assistant" && !message.failedPrompt ? (
+                    <AssistantText text={message.content} />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  )}
+                  {message.failedPrompt && (
+                    // One tap resends the question that failed, instead of
+                    // making the user retype it.
+                    <button
+                      onClick={() => sendMessage(message.failedPrompt!)}
+                      disabled={isLoading}
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-800 disabled:opacity-50"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      {isAr ? "إعادة المحاولة" : "Try again"}
+                    </button>
+                  )}
                   <p className={`text-[10px] mt-1 ${message.role === "user" ? "text-emerald-200" : "text-gray-400"}`}>
                     {message.timestamp.toLocaleTimeString(isAr ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" })}
                   </p>

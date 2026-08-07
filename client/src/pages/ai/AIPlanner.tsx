@@ -196,7 +196,7 @@ export default function AIPlanner() {
   const [result, setResult] = useState<any>(null);
   const [contentId, setContentId] = useState<number | null>(null);
 
-  const generateMutation = trpc.ai.generateWeeklyPlan.useMutation({
+  const generateMutation = trpc.ai.generateWeeklyPlanFast.useMutation({
     onSuccess: (data: any) => {
       // Validate completeness: must have exactly 5 days with required fields
       const requiredDays = 5;
@@ -714,11 +714,15 @@ export default function AIPlanner() {
       title: "جارٍ إنشاء الخطة الأسبوعية",
       titleEn: "Creating the weekly plan",
       stages: [
-        { label: "تجهيز بيانات الأسبوع", labelEn: "Preparing week details" },
-        { label: "بناء الأنشطة اليومية", labelEn: "Building daily activities" },
-        { label: "مراجعة الخطة", labelEn: "Reviewing the plan" },
+        { label: "استلام متطلبات الخطة", labelEn: "Accepting plan requirements" },
+        { label: "فهم الموضوع والفئة العمرية", labelEn: "Understanding theme and age group" },
+        { label: "صياغة أهداف EYFS", labelEn: "Crafting EYFS objectives" },
+        { label: "تصميم رحلة الأيام الخمسة", labelEn: "Designing the five-day journey" },
+        { label: "تنسيق الأنشطة والتعليمات", labelEn: "Formatting activities and instructions" },
+        { label: "مراجعة اكتمال جميع الحقول", labelEn: "Validating every required field" },
+        { label: "حفظ النتيجة في أعمالي الذكية", labelEn: "Saving the result to My AI Work" },
       ],
-      stageSeconds: [4, 20],
+      stageSeconds: [3, 7, 12, 28, 18, 8],
       run: () => generateMutation.mutateAsync({
         ageGroup,
         theme,

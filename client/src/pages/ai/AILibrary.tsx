@@ -20,12 +20,13 @@ const typeColors: Record<string, string> = {
   parent_message: "bg-pink-100 text-pink-700",
   newsletter: "bg-indigo-100 text-indigo-700",
   story: "bg-teal-100 text-teal-700",
+  marketing: "bg-rose-100 text-rose-700",
 };
 
 export default function AILibrary() {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
-  const typeLabels: Record<string, string> = { activity: t("aiLibrary.activity"), story: t("aiLibrary.story"), song: t("aiLibrary.song"), game: t("aiLibrary.game"), experiment: t("aiLibrary.experiment"), craft: t("aiLibrary.craft"), observation: i18n.language === "ar" ? (isAr ? "ملاحظة" : "Note") : "Observation", weekly_plan: i18n.language === "ar" ? "خطة أسبوعية" : "Weekly Plan", progress_report: i18n.language === "ar" ? "تقرير تقدم" : "Progress Report", parent_message: i18n.language === "ar" ? "رسالة لولي الأمر" : "Parent Message", newsletter: i18n.language === "ar" ? "نشرة" : "Newsletter" };
+  const typeLabels: Record<string, string> = { activity: t("aiLibrary.activity"), story: t("aiLibrary.story"), song: t("aiLibrary.song"), game: t("aiLibrary.game"), experiment: t("aiLibrary.experiment"), craft: t("aiLibrary.craft"), observation: i18n.language === "ar" ? (isAr ? "ملاحظة" : "Note") : "Observation", weekly_plan: i18n.language === "ar" ? "خطة أسبوعية" : "Weekly Plan", progress_report: i18n.language === "ar" ? "تقرير تقدم" : "Progress Report", parent_message: i18n.language === "ar" ? "رسالة لولي الأمر" : "Parent Message", newsletter: i18n.language === "ar" ? "نشرة" : "Newsletter", marketing: isAr ? "محتوى تسويقي" : "Marketing Content" };
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -76,6 +77,7 @@ export default function AILibrary() {
             <SelectItem value="parent_message">{isAr ? "رسائل" : "Messages"}</SelectItem>
             <SelectItem value="newsletter">{isAr ? "نشرات" : "Bulletins"}</SelectItem>
             <SelectItem value="story">{isAr ? "قصص" : "Stories"}</SelectItem>
+            <SelectItem value="marketing">{isAr ? "محتوى تسويقي" : "Marketing"}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -89,7 +91,7 @@ export default function AILibrary() {
         <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
           <Library className="h-16 w-16 mb-4 opacity-20" />
           <p className="text-lg font-medium">{isAr ? "المكتبة فارغة" : "Library is empty"}</p>
-          <p className="text-sm mt-1">{isAr ? "المحتوى المُنشأ بالذكاء الاصطناعي سيظهر هنا تلقائياً" : "AI-generated content will appear here automatically"}</p>
+          <p className="text-sm mt-1">{isAr ? "احفظ من أعمالي الذكية المحتوى الذي تريد إضافته إلى مكتبتك" : "Save content from My AI Work when you want it in your library"}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

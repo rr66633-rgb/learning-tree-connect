@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
-import { weeklyPlans, children, parentChildren, classes, notifications, pushSubscriptions } from "../drizzle/schema";
+import { weeklyPlans, weeklyPlanGenerationJobs, children, parentChildren, classes, notifications, pushSubscriptions } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { sendPushToUsers } from "./_core/webPush";
 import { getDb } from "./db";
@@ -109,7 +109,7 @@ const AGE_GROUP_LABELS: Record<string, { ar: string; en: string }> = {
   kg3: { ar: "تمهيدي ثالث (٥-٦ سنوات)", en: "KG3 (5-6 years)" },
 };
 
-function buildGenerationPrompt(input: { ageGroup: string; theme: string; language: string; weekStart: string; weekEnd: string }) {
+function buildGenerationPromptLegacy(input: { ageGroup: string; theme: string; language: string; weekStart: string; weekEnd: string }) {
   const ageLabel = AGE_GROUP_LABELS[input.ageGroup] || { ar: input.ageGroup, en: input.ageGroup };
   const isArabic = input.language === "ar";
   const isBilingual = input.language === "bilingual";
@@ -144,7 +144,239 @@ ${CULTURAL_GUIDELINES}
 {
   ${sectionsList}
 }
+`;
+  }
+  return "";
+}
 
+const WEEKLY_PLAN_INPUT_SCHEMA = z.object({
+  classId: z.number().optional(),
+  ageGroup: z.enum(["nursery", "kg1", "kg2", "kg3"]),
+  weekStartDate: z.string().min(1),
+  weekEndDate: z.string().min(1),
+  theme: z.string().trim().min(1).max(300),
+  language: z.enum(["ar", "en", "bilingual"]).default("ar"),
+});
+
+type WeeklyPlanGenerationInput = z.infer<typeof WEEKLY_PLAN_INPUT_SCHEMA>;
+
+type GenerationStage = "queued" | "generating" | "validating" | "saving" | "completed" | "failed";
+
+function userFacingGenerationError(error: unknown, language: WeeklyPlanGenerationInput["language"]) {
+  const raw = error instanceof Error ? error.message : String(error || "");
+  const normalized = raw.toLowerCase();
+  const isAr = language !== "en";
+
+  if (normalized.includes("timed out") || normalized.includes("abort") || normalized.includes("deadline")) {
+    return {
+      code: "GENERATION_TIMEOUT",
+      message: isAr
+        ? "استغرق إعداد الخطة وقتاً أطول من المعتاد. لم يتم حفظ نتيجة ناقصة؛ يمكنك إعادة المحاولة وسيبدأ الطلب من جديد."
+        : "The plan took longer than usual. No partial result was saved; please try again.",
+    };
+  }
+  if (normalized.includes("429") || normalized.includes("rate limit") || normalized.includes("quota")) {
+    return {
+      code: "AI_BUSY",
+      message: isAr
+        ? "خدمة إنشاء الخطط مشغولة حالياً. انتظر دقيقة ثم أعد المحاولة."
+        : "The plan generator is busy right now. Please try again in a minute.",
+    };
+  }
+  if (normalized.includes("401") || normalized.includes("api key") || normalized.includes("no llm api key")) {
+    return {
+      code: "AI_NOT_CONFIGURED",
+      message: isAr
+        ? "ميزة إنشاء الخطط غير مفعلة حالياً. يرجى التواصل مع مسؤول النظام."
+        : "Plan generation is not configured. Please contact the administrator.",
+    };
+  }
+  if (normalized.includes("max completion tokens") || normalized.includes("finish_reason=length")) {
+    return {
+      code: "INCOMPLETE_OUTPUT",
+      message: isAr
+        ? "لم تكتمل جميع أقسام الخطة، لذلك لم نحفظ محتوى ناقصاً. أعد المحاولة للحصول على خطة مكتملة."
+        : "Not all plan sections were completed, so no partial content was saved. Please try again.",
+    };
+  }
+  return {
+    code: "GENERATION_FAILED",
+    message: isAr
+      ? "تعذّر إكمال الخطة هذه المرة. لم يتم حفظ أي محتوى ناقص، ويمكنك إعادة المحاولة."
+      : "The plan could not be completed this time. No partial content was saved; please try again.",
+  };
+}
+
+async function generateWeeklyPlanSections(
+  input: WeeklyPlanGenerationInput,
+  onStage?: (stage: GenerationStage, progress: number) => Promise<void>,
+) {
+  const prompt = buildGenerationPrompt({
+    ageGroup: input.ageGroup,
+    theme: input.theme,
+    language: input.language,
+    weekStart: input.weekStartDate,
+    weekEnd: input.weekEndDate,
+  });
+
+  await onStage?.("generating", 18);
+  const response = await invokeLLM({
+    messages: [
+      {
+        role: "system",
+        content: "You are an expert Saudi kindergarten curriculum planner. Produce a complete, practical EYFS weekly plan that follows every requested quality and cultural requirement. The response schema is authoritative; do not omit or abbreviate any section.",
+      },
+      { role: "user", content: prompt },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: WEEKLY_PLAN_OUTPUT_SCHEMA,
+    },
+    // This is intentionally a generous ceiling. It prevents incomplete plans,
+    // while the model still stops naturally when the full plan is finished.
+    max_tokens: 32_000,
+    // Weekly planning is a structured content task, not a hard reasoning task.
+    // GPT-5.6 otherwise defaults to medium reasoning, adding latency and using
+    // completion budget before it writes any visible plan content.
+    reasoning_effort: /^gpt-5\.6/i.test(ENV.openaiDefaultModel) ? "none" : undefined,
+    // The browser no longer waits for this call, so allow a genuinely large
+    // plan to finish. Provider timeouts are never automatically duplicated.
+    requestTimeoutMs: 8 * 60_000,
+    totalDeadlineMs: 9 * 60_000,
+    maxRetries: 1,
+  });
+
+  await onStage?.("validating", 86);
+  const choice = response.choices[0];
+  if (choice?.finish_reason === "length") {
+    throw new Error("finish_reason=length: max completion tokens reached");
+  }
+
+  const rawContent = (choice?.message?.content as string) || "{}";
+  const parsed = safeJsonParse(rawContent);
+  if (!parsed.success || !parsed.data) {
+    throw new Error(`JSON parse failed: ${parsed.error || "unknown"}`);
+  }
+
+  const data = parsed.data as Record<string, unknown>;
+  const presentSections = SECTION_TYPES.filter(section =>
+    typeof data[section] === "string" && (data[section] as string).trim().length > 0
+  );
+  if (presentSections.length !== SECTION_TYPES.length) {
+    throw new Error(`Only ${presentSections.length}/14 sections generated`);
+  }
+
+  return Object.fromEntries(SECTION_TYPES.map(section => [section, data[section]]));
+}
+
+async function updateGenerationJob(jobId: number, values: {
+  status?: "pending" | "processing" | "completed" | "failed";
+  stage?: GenerationStage;
+  progress?: number;
+  planId?: number | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  startedAt?: Date;
+  completedAt?: Date;
+}) {
+  const db = (await getDb())!;
+  await db.update(weeklyPlanGenerationJobs).set(values).where(eq(weeklyPlanGenerationJobs.id, jobId));
+}
+
+const scheduledGenerationJobs = new Set<number>();
+
+async function processWeeklyPlanGenerationJob(jobId: number) {
+  if (scheduledGenerationJobs.has(jobId)) return;
+  scheduledGenerationJobs.add(jobId);
+
+  try {
+    const db = (await getDb())!;
+    const [claim] = await db.update(weeklyPlanGenerationJobs)
+      .set({
+        status: "processing",
+        stage: "generating",
+        progress: 12,
+        startedAt: new Date(),
+        attempts: sql`${weeklyPlanGenerationJobs.attempts} + 1`,
+        errorCode: null,
+        errorMessage: null,
+      })
+      .where(and(
+        eq(weeklyPlanGenerationJobs.id, jobId),
+        eq(weeklyPlanGenerationJobs.status, "pending"),
+      ));
+
+    if (!(claim as any)?.affectedRows) return;
+
+    const [job] = await db.select().from(weeklyPlanGenerationJobs)
+      .where(eq(weeklyPlanGenerationJobs.id, jobId))
+      .limit(1);
+    if (!job) return;
+
+    const input: WeeklyPlanGenerationInput = {
+      classId: job.classId ?? undefined,
+      ageGroup: job.ageGroup,
+      weekStartDate: job.weekStartDate,
+      weekEndDate: job.weekEndDate,
+      theme: job.theme,
+      language: job.language,
+    };
+
+    const sections = await generateWeeklyPlanSections(input, (stage, progress) =>
+      updateGenerationJob(jobId, { stage, progress })
+    );
+    await updateGenerationJob(jobId, { stage: "saving", progress: 94 });
+
+    await db.transaction(async tx => {
+      const [saved] = await tx.insert(weeklyPlans).values({
+        classId: input.classId || null,
+        teacherId: job.teacherId,
+        organizationId: job.organizationId,
+        ageGroup: input.ageGroup,
+        weekStartDate: input.weekStartDate,
+        weekEndDate: input.weekEndDate,
+        theme: input.theme,
+        language: input.language,
+        status: "draft",
+        sections,
+      });
+      await tx.update(weeklyPlanGenerationJobs).set({
+        status: "completed",
+        stage: "completed",
+        progress: 100,
+        planId: saved.insertId,
+        completedAt: new Date(),
+      }).where(eq(weeklyPlanGenerationJobs.id, jobId));
+    });
+  } catch (error) {
+    console.error(`[WeeklyPlan] background job ${jobId} failed:`, error);
+    const db = (await getDb())!;
+    const [job] = await db.select({ language: weeklyPlanGenerationJobs.language })
+      .from(weeklyPlanGenerationJobs)
+      .where(eq(weeklyPlanGenerationJobs.id, jobId))
+      .limit(1);
+    const safeError = userFacingGenerationError(error, job?.language || "ar");
+    await updateGenerationJob(jobId, {
+      status: "failed",
+      stage: "failed",
+      progress: 100,
+      errorCode: safeError.code,
+      errorMessage: safeError.message,
+      completedAt: new Date(),
+    });
+  } finally {
+    scheduledGenerationJobs.delete(jobId);
+  }
+}
+
+function scheduleWeeklyPlanGeneration(jobId: number) {
+  setImmediate(() => {
+    void processWeeklyPlanGenerationJob(jobId);
+  });
+}
+
+/* Legacy prompt tail kept temporarily as historical context while the active
+   prompt below uses a stable, cache-friendly prefix.
 لكل قسم، اكتبي محتوى مفصلاً وعملياً. التفاصيل المطلوبة لكل قسم:
 
 1. theme_overview: نظرة شاملة عن الموضوع وأهميته وكيف سيتم استكشافه خلال الأسبوع (3-5 جمل)
@@ -213,18 +445,182 @@ Section details required:
 Return JSON only. No text outside JSON.`;
   }
 }
+*/
+
+function buildGenerationPrompt(input: { ageGroup: string; theme: string; language: string; weekStart: string; weekEnd: string }) {
+  const ageLabel = AGE_GROUP_LABELS[input.ageGroup] || { ar: input.ageGroup, en: input.ageGroup };
+  const isEnglish = input.language === "en";
+  const isBilingual = input.language === "bilingual";
+
+  if (isEnglish) {
+    return `Create a complete, detailed and immediately usable kindergarten weekly plan.
+
+Quality contract:
+- Keep every activity age-appropriate and aligned with EYFS.
+- Respect Saudi, Arab and Islamic values. Do not include pigs, alcohol, gambling, magic, Halloween, crosses, churches or rainbows.
+- Use varied, engaging and interactive activities grounded in the Saudi environment.
+- Do not abbreviate sections or replace details with generic advice.
+- For every activity include a clear title, purpose/description, materials, ordered implementation steps, duration and an observable assessment method.
+- Format each section string for professional display using short headings, numbered steps and clean bullet points. Avoid markdown tables inside section strings.
+
+Required depth for the 14 schema sections:
+1. theme_overview: 3-5 sentences explaining the theme and the week's learning journey.
+2. learning_objectives: 5-7 specific measurable objectives linked to EYFS areas.
+3. arabic_activities: 3-4 complete Arabic language activities.
+4. english_activities: 3-4 complete English language activities.
+5. math_activities: 3-4 complete math activities including the math concept.
+6. science_activities: 2-3 exploration activities including expected observations.
+7. art_activities: 3-4 creative activities with ordered steps.
+8. sensory_activities: 2-3 activities naming the targeted senses.
+9. physical_activities: 3-4 activities naming the targeted motor skills.
+10. quran_islamic: memorization, dua, Islamic value and a detailed religious activity.
+11. story_of_week: title, rich summary, discussion questions and lessons.
+12. song_of_week: title, appropriate words or description and accompanying movements.
+13. home_activity: 2-3 detailed activities using simple home materials.
+14. parent_notes: practical guidance for supporting learning at home.
+
+Requested plan:
+- Age group: ${ageLabel.en}
+- Theme: ${input.theme}
+- Week: ${input.weekStart} to ${input.weekEnd}
+- Output language: English only.`;
+  }
+
+  return `أنشئي خطة أسبوعية كاملة ومفصلة وجاهزة للتطبيق المباشر في رياض الأطفال.
+
+عقد الجودة:
+- اجعلي كل نشاط مناسباً للعمر ومتوافقاً مع مجالات إطار EYFS.
+- التزمي بالقيم الإسلامية والعربية والسعودية، ولا تذكري الخنازير أو الكحول أو القمار أو السحر أو الهالوين أو الصلبان أو الكنائس أو قوس قزح.
+- استخدمي أنشطة متنوعة وتفاعلية مرتبطة بالبيئة السعودية، ولا تذكري مبالغ مالية محددة.
+- لا تختصري أي قسم ولا تستبدلي التفاصيل بإرشادات عامة.
+- يجب أن يتضمن كل نشاط عنواناً واضحاً، والهدف أو الوصف، والمواد، وخطوات تنفيذ مرتبة، والمدة، وطريقة تقييم قابلة للملاحظة.
+- نسّقي نص كل قسم للعرض الاحترافي بعناوين قصيرة ونقاط وخطوات مرقمة واضحة، وتجنبي جداول Markdown داخل نصوص الأقسام.
+
+العمق المطلوب للأقسام الأربعة عشر في المخطط:
+1. theme_overview: من 3 إلى 5 جمل تشرح الموضوع ورحلة التعلم خلال الأسبوع.
+2. learning_objectives: من 5 إلى 7 أهداف محددة وقابلة للقياس ومرتبطة بمجالات EYFS.
+3. arabic_activities: من 3 إلى 4 أنشطة لغة عربية مكتملة التفاصيل.
+4. english_activities: من 3 إلى 4 أنشطة لغة إنجليزية مكتملة التفاصيل.
+5. math_activities: من 3 إلى 4 أنشطة رياضيات مع توضيح المفهوم الرياضي.
+6. science_activities: من نشاطين إلى 3 أنشطة استكشاف مع الملاحظات المتوقعة.
+7. art_activities: من 3 إلى 4 أنشطة إبداعية بخطوات مرتبة.
+8. sensory_activities: من نشاطين إلى 3 أنشطة مع ذكر الحواس المستهدفة.
+9. physical_activities: من 3 إلى 4 أنشطة مع ذكر المهارات الحركية المستهدفة.
+10. quran_islamic: حفظ مناسب، ودعاء، وقيمة إسلامية، ونشاط ديني مفصل.
+11. story_of_week: عنوان وملخص ثري وأسئلة مناقشة ودروس مستفادة.
+12. song_of_week: عنوان وكلمات مناسبة أو وصف للنشيد وحركات مصاحبة.
+13. home_activity: من نشاطين إلى 3 أنشطة مفصلة بمواد منزلية بسيطة.
+14. parent_notes: إرشادات عملية لدعم تعلم الطفل في المنزل.
+
+بيانات الخطة المطلوبة:
+- الفئة العمرية: ${ageLabel.ar}
+- الموضوع: ${input.theme}
+- الأسبوع: من ${input.weekStart} إلى ${input.weekEnd}
+- لغة المخرجات: ${isBilingual ? "ثنائية اللغة؛ اكتبي المحتوى العربي أولاً ثم الترجمة الإنجليزية الكاملة داخل كل قسم، دون اختصار أي لغة" : "العربية فقط دون ترجمة إنجليزية"}.`;
+}
 
 export const weeklyPlanRouter = router({
+  // Accept the request immediately. The expensive model call runs independently
+  // of the browser connection, so navigation, refreshes and proxy timeouts do
+  // not discard an otherwise valid plan.
+  startGeneration: staffProcedure
+    .input(WEEKLY_PLAN_INPUT_SCHEMA.extend({ requestId: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+
+      if (input.classId) {
+        const [cls] = await db.select({ id: classes.id }).from(classes)
+          .where(and(eq(classes.id, input.classId), eq(classes.organizationId, ctx.organizationId)))
+          .limit(1);
+        if (!cls) throw new TRPCError({ code: "NOT_FOUND", message: "الفصل غير موجود" });
+      }
+
+      // Idempotency protects against a repeated browser submission without
+      // creating two costly generations or duplicate plans.
+      const [existing] = await db.select().from(weeklyPlanGenerationJobs)
+        .where(and(
+          eq(weeklyPlanGenerationJobs.requestId, input.requestId),
+          eq(weeklyPlanGenerationJobs.organizationId, ctx.organizationId),
+          eq(weeklyPlanGenerationJobs.teacherId, ctx.user!.id),
+        ))
+        .limit(1);
+      if (existing) {
+        if (existing.status === "pending") scheduleWeeklyPlanGeneration(existing.id);
+        return { jobId: existing.id, status: existing.status, accepted: true as const };
+      }
+
+      const [created] = await db.insert(weeklyPlanGenerationJobs).values({
+        requestId: input.requestId,
+        organizationId: ctx.organizationId,
+        teacherId: ctx.user!.id,
+        classId: input.classId || null,
+        ageGroup: input.ageGroup,
+        weekStartDate: input.weekStartDate,
+        weekEndDate: input.weekEndDate,
+        theme: input.theme,
+        language: input.language,
+        status: "pending",
+        stage: "queued",
+        progress: 5,
+      });
+
+      scheduleWeeklyPlanGeneration(created.insertId);
+      return { jobId: created.insertId, status: "pending" as const, accepted: true as const };
+    }),
+
+  generationStatus: staffProcedure
+    .input(z.object({ jobId: z.number().int().positive() }))
+    .query(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      let [job] = await db.select({
+        id: weeklyPlanGenerationJobs.id,
+        status: weeklyPlanGenerationJobs.status,
+        stage: weeklyPlanGenerationJobs.stage,
+        progress: weeklyPlanGenerationJobs.progress,
+        planId: weeklyPlanGenerationJobs.planId,
+        errorCode: weeklyPlanGenerationJobs.errorCode,
+        errorMessage: weeklyPlanGenerationJobs.errorMessage,
+        theme: weeklyPlanGenerationJobs.theme,
+        language: weeklyPlanGenerationJobs.language,
+        createdAt: weeklyPlanGenerationJobs.createdAt,
+        startedAt: weeklyPlanGenerationJobs.startedAt,
+        completedAt: weeklyPlanGenerationJobs.completedAt,
+        updatedAt: weeklyPlanGenerationJobs.updatedAt,
+      }).from(weeklyPlanGenerationJobs).where(and(
+        eq(weeklyPlanGenerationJobs.id, input.jobId),
+        eq(weeklyPlanGenerationJobs.organizationId, ctx.organizationId),
+        eq(weeklyPlanGenerationJobs.teacherId, ctx.user!.id),
+      )).limit(1);
+
+      if (!job) throw new TRPCError({ code: "NOT_FOUND", message: "مهمة إنشاء الخطة غير موجودة" });
+
+      // Recover a queued job after a server restart. Processing jobs get a
+      // generous lease because large bilingual plans are allowed to finish.
+      if (job.status === "pending") {
+        scheduleWeeklyPlanGeneration(job.id);
+      } else if (
+        job.status === "processing" &&
+        Date.now() - new Date(job.updatedAt).getTime() > 11 * 60_000
+      ) {
+        const [released] = await db.update(weeklyPlanGenerationJobs)
+          .set({ status: "pending", stage: "queued", progress: 8 })
+          .where(and(
+            eq(weeklyPlanGenerationJobs.id, job.id),
+            eq(weeklyPlanGenerationJobs.status, "processing"),
+            eq(weeklyPlanGenerationJobs.updatedAt, job.updatedAt),
+          ));
+        if ((released as any)?.affectedRows) {
+          job = { ...job, status: "pending", stage: "queued", progress: 8, updatedAt: new Date() };
+          scheduleWeeklyPlanGeneration(job.id);
+        }
+      }
+
+      return job;
+    }),
+
   // ============ GENERATE WEEKLY PLAN ============
   generate: staffProcedure
-    .input(z.object({
-      classId: z.number().optional(),
-      ageGroup: z.enum(["nursery", "kg1", "kg2", "kg3"]),
-      weekStartDate: z.string().min(1),
-      weekEndDate: z.string().min(1),
-      theme: z.string().min(1),
-      language: z.enum(["ar", "en", "bilingual"]).default("ar"),
-    }))
+    .input(WEEKLY_PLAN_INPUT_SCHEMA)
     .mutation(async ({ input, ctx }) => {
       // SECURITY FIX: previously trusted input.classId with no check that it
       // belongs to the caller's organization -- a saved/published plan with a
@@ -298,7 +694,11 @@ export const weeklyPlanRouter = router({
             // This is a ceiling, not a target: the model stops when done, so
             // raising it does not increase cost for requests that finish
             // early (measured: identical output at 16000 and 32000).
-            max_tokens: 16000,
+            max_tokens: 32_000,
+            reasoning_effort: /^gpt-5\.6/i.test(ENV.openaiDefaultModel) ? "none" : undefined,
+            requestTimeoutMs: 8 * 60_000,
+            totalDeadlineMs: 9 * 60_000,
+            maxRetries: 1,
           });
 
           const choice = response.choices[0];

@@ -69,6 +69,14 @@ export type InvokeParams = {
   model?: string;
   thinking?: Record<string, unknown>;
   reasoning?: Record<string, unknown>;
+  reasoningEffort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
+  reasoning_effort?: "none" | "low" | "medium" | "high" | "xhigh" | "max";
+  /** Per-provider-request timeout. Long background jobs may safely raise it. */
+  requestTimeoutMs?: number;
+  /** Total budget including transient retries. */
+  totalDeadlineMs?: number;
+  /** Number of transient HTTP/network retries; timeouts are never retried. */
+  maxRetries?: number;
 };
 
 export type ToolCall = {
@@ -373,23 +381,35 @@ const TOTAL_DEADLINE_MS = 240_000;  // all attempts combined
 
 const fetchWithBackoff = async (
   url: string,
-  init: FetchInit
+  init: FetchInit,
+  options: {
+    requestTimeoutMs?: number;
+    totalDeadlineMs?: number;
+    maxRetries?: number;
+  } = {},
 ): Promise<Response> => {
+  const requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
+  const totalDeadlineMs = options.totalDeadlineMs ?? TOTAL_DEADLINE_MS;
+  const maxRetries = options.maxRetries ?? RETRY_MAX_RETRIES;
   let lastError: unknown;
   const startedAt = Date.now();
-  const timeLeft = () => TOTAL_DEADLINE_MS - (Date.now() - startedAt);
+  const timeLeft = () => totalDeadlineMs - (Date.now() - startedAt);
 
-  for (let attempt = 0; attempt <= RETRY_MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     // Give the attempt whatever is left of the overall budget, capped at the
     // per-request timeout, so total time can never exceed the deadline.
-    const budget = Math.min(REQUEST_TIMEOUT_MS, timeLeft());
+    const budget = Math.min(requestTimeoutMs, timeLeft());
     if (budget <= 0) break;
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), budget);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort(new Error("LLM_REQUEST_TIMEOUT"));
+    }, budget);
     try {
       const response = await fetch(url, { ...init, signal: controller.signal });
-      if (response.ok || !isRetryableStatus(response.status) || attempt === RETRY_MAX_RETRIES) {
+      if (response.ok || !isRetryableStatus(response.status) || attempt === maxRetries) {
         // Non-retryable failures are returned as-is so the caller can read the
         // provider's message and surface something useful, instead of the user
         // waiting out four pointless retries first.
@@ -407,20 +427,24 @@ const fetchWithBackoff = async (
       const delay = Math.min(computeBackoffDelay(attempt, retryAfterMs), Math.max(0, timeLeft()));
       if (delay <= 0) break;
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after status ${response.status}`
+        `LLM request retry ${attempt + 1}/${maxRetries} after status ${response.status}`
       );
       await sleep(delay);
     } catch (error) {
       lastError = error;
-      const aborted = (error as Error)?.name === "AbortError";
+      const aborted = timedOut || controller.signal.aborted || (error as Error)?.name === "AbortError";
       if (aborted) {
         console.warn(`LLM request attempt ${attempt + 1} timed out after ${Math.round(budget / 1000)}s`);
+        // A timed-out generation can still be running provider-side. Retrying
+        // it would duplicate a long, costly request and make the user wait
+        // even longer. Return one stable error that callers can localize.
+        throw new Error(`LLM request timed out after ${Math.round(budget / 1000)} seconds`);
       }
-      if (attempt === RETRY_MAX_RETRIES || timeLeft() <= 0) break;
+      if (attempt === maxRetries || timeLeft() <= 0) break;
       const delay = Math.min(computeBackoffDelay(attempt), Math.max(0, timeLeft()));
       if (delay <= 0) break;
       console.warn(
-        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`
+        `LLM request retry ${attempt + 1}/${maxRetries} after network error`
       );
       await sleep(delay);
     } finally {
@@ -448,6 +472,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     model,
     thinking,
     reasoning,
+    reasoningEffort,
+    reasoning_effort,
+    requestTimeoutMs,
+    totalDeadlineMs,
+    maxRetries,
     maxTokens,
     max_tokens,
   } = params;
@@ -500,6 +529,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   if (reasoning) {
     payload.reasoning = reasoning;
   }
+  const resolvedReasoningEffort = reasoning_effort ?? reasoningEffort;
+  if (resolvedReasoningEffort) {
+    payload.reasoning_effort = resolvedReasoningEffort;
+  }
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -520,7 +553,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
         authorization: `Bearer ${resolveApiKey()}`,
       },
       body: JSON.stringify(payload),
-    });
+    }, { requestTimeoutMs, totalDeadlineMs, maxRetries });
 
   let response = await send();
 

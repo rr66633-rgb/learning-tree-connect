@@ -3,8 +3,8 @@ import { safeJsonParse, validateWeeklyPlan } from "./jsonParser";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
-import { eq, desc, and, like, inArray, sql } from "drizzle-orm";
-import { aiGeneratedContent, aiLibrary, children, attendance, eyfsAssessments, learningObservations, dailyReports, calendarEvents, announcements, classes } from "../drizzle/schema";
+import { eq, desc, and, or, like, inArray, isNull, sql } from "drizzle-orm";
+import { aiGeneratedContent, aiLibrary, weeklyPlanGenerationJobs, weeklyPlans, schoolReadinessScores, children, attendance, eyfsAssessments, learningObservations, dailyReports, calendarEvents, announcements, classes } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 
@@ -40,6 +40,119 @@ const EYFS_AREAS = [
   "فهم العالم",
   "الفنون التعبيرية والتصميم"
 ];
+
+function normalizeStoredAiContent(value: unknown) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed || (!trimmed.startsWith("{") && !trimmed.startsWith("["))) return value;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+}
+
+const FAST_WEEKLY_PLAN_INPUT = z.object({
+  ageGroup: z.string().min(1),
+  theme: z.string().min(1),
+  learningGoals: z.array(z.string()).optional(),
+  language: z.enum(["ar", "en", "bilingual"]).default("bilingual"),
+  classId: z.number().optional(),
+});
+
+const stringArraySchema = { type: "array", items: { type: "string" } } as const;
+const FAST_WEEKLY_PLAN_SCHEMA = {
+  name: "five_day_weekly_plan",
+  strict: true,
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["title", "theme", "ageGroup", "overview", "learningObjectives", "eyfsAreas", "weeklyMaterials", "parentInvolvement", "weeklyAssessment", "days"],
+    properties: {
+      title: { type: "string" },
+      theme: { type: "string" },
+      ageGroup: { type: "string" },
+      overview: { type: "string" },
+      learningObjectives: stringArraySchema,
+      eyfsAreas: stringArraySchema,
+      weeklyMaterials: stringArraySchema,
+      parentInvolvement: { type: "string" },
+      weeklyAssessment: { type: "string" },
+      days: {
+        type: "array",
+        minItems: 5,
+        maxItems: 5,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["day", "learningObjective", "circleTime", "mainActivity", "storyRecommendation", "discussionQuestions", "materials", "islamicValue", "assessmentOpportunity", "totalDuration"],
+          properties: {
+            day: { type: "string" },
+            learningObjective: { type: "string" },
+            circleTime: {
+              type: "object",
+              additionalProperties: false,
+              required: ["activity", "description", "duration", "teacherInstructions"],
+              properties: {
+                activity: { type: "string" },
+                description: { type: "string" },
+                duration: { type: "string" },
+                teacherInstructions: { type: "string" },
+              },
+            },
+            mainActivity: {
+              type: "object",
+              additionalProperties: false,
+              required: ["title", "description", "duration", "teacherInstructions", "materials", "differentiation"],
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                duration: { type: "string" },
+                teacherInstructions: { type: "string" },
+                materials: stringArraySchema,
+                differentiation: { type: "string" },
+              },
+            },
+            storyRecommendation: {
+              type: "object",
+              additionalProperties: false,
+              required: ["title", "author", "summary", "connection"],
+              properties: {
+                title: { type: "string" },
+                author: { type: "string" },
+                summary: { type: "string" },
+                connection: { type: "string" },
+              },
+            },
+            discussionQuestions: stringArraySchema,
+            materials: stringArraySchema,
+            islamicValue: {
+              type: "object",
+              additionalProperties: false,
+              required: ["value", "connection", "hadithOrAyah"],
+              properties: {
+                value: { type: "string" },
+                connection: { type: "string" },
+                hadithOrAyah: { type: "string" },
+              },
+            },
+            assessmentOpportunity: {
+              type: "object",
+              additionalProperties: false,
+              required: ["what", "how", "indicators"],
+              properties: {
+                what: { type: "string" },
+                how: { type: "string" },
+                indicators: stringArraySchema,
+              },
+            },
+            totalDuration: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+};
 
 export const aiRouter = router({
   // ============ AI OBSERVATION WRITER ============
@@ -125,6 +238,96 @@ Write the response in JSON format with this structure:
     }),
 
   // ============ AI WEEKLY PLANNER ============
+  // Optimized path: one strict structured request on the fast configured
+  // model. The previous path made six sequential model calls (overview + five
+  // days), repeating the same prompt and multiplying latency/cost.
+  generateWeeklyPlanFast: aiProcedure
+    .input(FAST_WEEKLY_PLAN_INPUT)
+    .mutation(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      if (input.classId) {
+        const [cls] = await db.select({ id: classes.id }).from(classes)
+          .where(and(eq(classes.id, input.classId), eq(classes.organizationId, ctx.organizationId)))
+          .limit(1);
+        if (!cls) throw new TRPCError({ code: "NOT_FOUND", message: "الفصل غير موجود" });
+      }
+
+      const isAr = input.language !== "en";
+      const isBilingual = input.language === "bilingual";
+      const days = isAr
+        ? "الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس"
+        : "Sunday, Monday, Tuesday, Wednesday, Thursday";
+      const systemPrompt = `You are an expert Saudi early-years curriculum planner specializing in EYFS.
+Create a coherent five-day learning journey, not five disconnected activities.
+Preserve Saudi, Arab and Islamic values and never include pigs, alcohol, gambling, magic, Halloween, crosses, churches or rainbow-themed activities.
+Every day must be complete and classroom-ready: a measurable objective, detailed circle time, a rich main activity with numbered teacher instructions and differentiation, a safe story recommendation, discussion questions, materials, an Islamic value, and observable assessment indicators.
+Progress the difficulty naturally across the five days, avoid repeated activities, keep all fields substantive, and never use placeholders.
+The response schema is authoritative. Return exactly five days and complete every required field.`;
+      const prompt = `${isAr ? "أنشئي" : "Create"} ${isBilingual ? "خطة ثنائية اللغة؛ كل نص بالعربية ثم ترجمته الإنجليزية الكاملة" : input.language === "ar" ? "الخطة بالعربية فقط" : "the plan in English only"}.
+
+${isAr ? "الفئة العمرية" : "Age group"}: ${input.ageGroup}
+${isAr ? "الموضوع" : "Theme"}: ${input.theme}
+${input.learningGoals?.length ? `${isAr ? "الأهداف الإضافية" : "Additional goals"}: ${input.learningGoals.join("، ")}` : ""}
+${isAr ? "أيام الخطة بالترتيب" : "Days in order"}: ${days}
+
+${isAr
+  ? "اجعلي النظرة العامة والأهداف والمواد وإشراك الأسرة والتقييم الأسبوعي مفصلة وعملية. لكل يوم اكتبي تعليمات المعلمة كخطوات مرقمة واضحة، مع مدة واقعية ومؤشرات تقييم قابلة للملاحظة. لا تختصري أي يوم."
+  : "Make the overview, objectives, materials, parent involvement and weekly assessment detailed and practical. For each day, write clear numbered teacher instructions, a realistic duration and observable assessment indicators. Do not abbreviate any day."}`;
+
+      let response;
+      try {
+        response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
+          response_format: { type: "json_schema", json_schema: FAST_WEEKLY_PLAN_SCHEMA },
+          max_tokens: 32_000,
+          reasoning_effort: /^gpt-5\.6/i.test(ENV.openaiDefaultModel) ? "none" : undefined,
+          requestTimeoutMs: 8 * 60_000,
+          totalDeadlineMs: 9 * 60_000,
+          maxRetries: 1,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message.toLowerCase() : "";
+        if (message.includes("abort") || message.includes("timed out") || message.includes("signal")) {
+          throw new TRPCError({ code: "TIMEOUT", message: isAr ? "استغرق إنشاء الخطة وقتاً أطول من المعتاد. لم يتم حفظ نتيجة ناقصة؛ يرجى إعادة المحاولة." : "The plan took longer than usual. No partial result was saved; please try again." });
+        }
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: isAr ? "تعذّر إكمال الخطة هذه المرة، ولم يتم حفظ أي نتيجة ناقصة." : "The plan could not be completed and no partial result was saved." });
+      }
+
+      const choice = response.choices[0];
+      if (choice?.finish_reason === "length") {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: isAr ? "لم تكتمل جميع أيام الخطة، لذلك لم نحفظ نتيجة ناقصة." : "Not all plan days completed, so no partial result was saved." });
+      }
+      const parsed = safeJsonParse((choice?.message?.content as string) || "{}");
+      if (!parsed.success || !parsed.data || !Array.isArray(parsed.data.days) || parsed.data.days.length !== 5) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: isAr ? "لم تصل الخطة مكتملة بخمسة أيام، لذلك لم نحفظها." : "The plan did not contain five complete days, so it was not saved." });
+      }
+
+      const content = parsed.data;
+      const [saved] = await db.insert(aiGeneratedContent).values({
+        type: "weekly_plan",
+        title: content.title || `${isAr ? "خطة أسبوعية" : "Weekly Plan"}: ${input.theme}`,
+        content,
+        language: input.language,
+        classId: input.classId || null,
+        ageGroup: input.ageGroup,
+        theme: input.theme,
+        inputPrompt: JSON.stringify({
+          ageGroup: input.ageGroup,
+          theme: input.theme,
+          learningGoals: input.learningGoals || [],
+          language: input.language,
+          classId: input.classId || null,
+        }),
+        createdBy: ctx.user!.id,
+        organizationId: ctx.organizationId,
+      });
+
+      return { id: saved.insertId, ...content };
+    }),
+
   generateWeeklyPlan: aiProcedure
     .input(z.object({
       ageGroup: z.string().min(1),
@@ -920,7 +1123,11 @@ Write the response in JSON format:
       // SECURITY FIX: previously fetched by contentId with no
       // organizationId filter -- any staff member could save (and mark
       // isSaved=true on) another organization's AI-generated content by id.
-      const [content] = await db.select().from(aiGeneratedContent).where(and(eq(aiGeneratedContent.id, input.contentId), eq(aiGeneratedContent.organizationId, ctx.organizationId))).limit(1);
+      const [content] = await db.select().from(aiGeneratedContent).where(and(
+        eq(aiGeneratedContent.id, input.contentId),
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      )).limit(1);
       if (!content) throw new TRPCError({ code: 'NOT_FOUND' });
 
       // Mark as saved
@@ -948,7 +1155,11 @@ Write the response in JSON format:
       const [item] = await db.select().from(aiLibrary).where(and(eq(aiLibrary.id, input.id), eq(aiLibrary.savedBy, ctx.user!.id))).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
 
-      await db.update(aiGeneratedContent).set({ isSaved: false }).where(eq(aiGeneratedContent.id, item.contentId));
+      await db.update(aiGeneratedContent).set({ isSaved: false }).where(and(
+        eq(aiGeneratedContent.id, item.contentId),
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      ));
       await db.delete(aiLibrary).where(eq(aiLibrary.id, input.id));
       return { success: true };
     }),
@@ -968,7 +1179,7 @@ Write the response in JSON format:
 
   getLibrary: aiProcedure
     .input(z.object({
-      category: z.enum(["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story"]).optional(),
+      category: z.enum(["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story", "marketing"]).optional(),
       search: z.string().optional(),
       favoritesOnly: z.boolean().optional(),
       limit: z.number().default(20),
@@ -976,7 +1187,11 @@ Write the response in JSON format:
     }))
     .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const conditions: any[] = [eq(aiLibrary.savedBy, ctx.user!.id)];
+      const conditions: any[] = [
+        eq(aiLibrary.savedBy, ctx.user!.id),
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      ];
       
       if (input.category) conditions.push(eq(aiLibrary.category, input.category));
       if (input.favoritesOnly) conditions.push(eq(aiLibrary.isFavorite, true));
@@ -1008,13 +1223,16 @@ Write the response in JSON format:
   // ============ HISTORY ============
   getHistory: aiProcedure
     .input(z.object({
-      type: z.enum(["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story"]).optional(),
+      type: z.enum(["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story", "marketing"]).optional(),
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
     .query(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const conditions: any[] = [eq(aiGeneratedContent.createdBy, ctx.user!.id)];
+      const conditions: any[] = [
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      ];
       if (input.type) conditions.push(eq(aiGeneratedContent.type, input.type));
 
       const items = await db.select()
@@ -1027,6 +1245,333 @@ Write the response in JSON format:
       return items;
     }),
 
+  // A single durable timeline for every generated artifact. Existing AI tools
+  // already persist their final output in ai_generated_content; long weekly
+  // jobs add their pending/processing/failed states from the job table.
+  getRequestHistory: aiProcedure
+    .input(z.object({
+      type: z.enum(["observation", "weekly_plan", "activity", "progress_report", "parent_message", "newsletter", "story", "marketing"]).optional(),
+      status: z.enum(["pending", "processing", "completed", "failed"]).optional(),
+      search: z.string().trim().max(100).optional(),
+      limit: z.number().int().min(1).max(50).default(25),
+      offset: z.number().int().min(0).max(10_000).default(0),
+    }))
+    .query(async ({ input, ctx }) => {
+      const db = (await getDb())!;
+      const fetchLimit = input.offset + input.limit;
+      const searchTerm = input.search ? `%${input.search}%` : null;
+      const contentConditions: any[] = [
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      ];
+      if (input.type) contentConditions.push(eq(aiGeneratedContent.type, input.type));
+      if (searchTerm) contentConditions.push(or(
+        like(aiGeneratedContent.title, searchTerm),
+        like(aiGeneratedContent.theme, searchTerm),
+        like(aiGeneratedContent.inputPrompt, searchTerm),
+      ));
+
+      const generated = input.status && input.status !== "completed" ? [] : await db.select({
+        id: aiGeneratedContent.id,
+        type: aiGeneratedContent.type,
+        title: aiGeneratedContent.title,
+        content: aiGeneratedContent.content,
+        inputPrompt: aiGeneratedContent.inputPrompt,
+        language: aiGeneratedContent.language,
+        childId: aiGeneratedContent.childId,
+        classId: aiGeneratedContent.classId,
+        ageGroup: aiGeneratedContent.ageGroup,
+        theme: aiGeneratedContent.theme,
+        createdAt: aiGeneratedContent.createdAt,
+        updatedAt: aiGeneratedContent.updatedAt,
+      }).from(aiGeneratedContent)
+        .where(and(...contentConditions))
+        .orderBy(desc(aiGeneratedContent.createdAt))
+        .limit(fetchLimit);
+
+      const jobConditions: any[] = [
+        eq(weeklyPlanGenerationJobs.organizationId, ctx.organizationId),
+        eq(weeklyPlanGenerationJobs.teacherId, ctx.user!.id),
+      ];
+      if (input.status) jobConditions.push(eq(weeklyPlanGenerationJobs.status, input.status));
+      if (searchTerm) jobConditions.push(like(weeklyPlanGenerationJobs.theme, searchTerm));
+
+      const jobs = input.type && input.type !== "weekly_plan"
+        ? []
+        : await db.select({
+          id: weeklyPlanGenerationJobs.id,
+          status: weeklyPlanGenerationJobs.status,
+          stage: weeklyPlanGenerationJobs.stage,
+          progress: weeklyPlanGenerationJobs.progress,
+          planId: weeklyPlanGenerationJobs.planId,
+          theme: weeklyPlanGenerationJobs.theme,
+          language: weeklyPlanGenerationJobs.language,
+          ageGroup: weeklyPlanGenerationJobs.ageGroup,
+          classId: weeklyPlanGenerationJobs.classId,
+          weekStartDate: weeklyPlanGenerationJobs.weekStartDate,
+          weekEndDate: weeklyPlanGenerationJobs.weekEndDate,
+          errorMessage: weeklyPlanGenerationJobs.errorMessage,
+          sections: weeklyPlans.sections,
+          createdAt: weeklyPlanGenerationJobs.createdAt,
+          updatedAt: weeklyPlanGenerationJobs.updatedAt,
+          completedAt: weeklyPlanGenerationJobs.completedAt,
+        }).from(weeklyPlanGenerationJobs).leftJoin(weeklyPlans, and(
+          eq(weeklyPlans.id, weeklyPlanGenerationJobs.planId),
+          eq(weeklyPlans.organizationId, ctx.organizationId),
+        )).where(and(...jobConditions)).orderBy(desc(weeklyPlanGenerationJobs.createdAt))
+          .limit(fetchLimit);
+
+      // Plans created before background jobs existed are still part of the
+      // user's AI history. Exclude plans already linked to a job so new plans
+      // appear exactly once.
+      const legacyPlanConditions: any[] = [
+        eq(weeklyPlans.organizationId, ctx.organizationId),
+        eq(weeklyPlans.teacherId, ctx.user!.id),
+        isNull(weeklyPlanGenerationJobs.id),
+      ];
+      if (searchTerm) legacyPlanConditions.push(like(weeklyPlans.theme, searchTerm));
+      const legacyPlans = (input.type && input.type !== "weekly_plan") || (input.status && input.status !== "completed")
+        ? []
+        : await db.select({
+          id: weeklyPlans.id,
+          theme: weeklyPlans.theme,
+          language: weeklyPlans.language,
+          ageGroup: weeklyPlans.ageGroup,
+          classId: weeklyPlans.classId,
+          weekStartDate: weeklyPlans.weekStartDate,
+          weekEndDate: weeklyPlans.weekEndDate,
+          sections: weeklyPlans.sections,
+          createdAt: weeklyPlans.createdAt,
+          updatedAt: weeklyPlans.updatedAt,
+        }).from(weeklyPlans).leftJoin(
+          weeklyPlanGenerationJobs,
+          and(
+            eq(weeklyPlanGenerationJobs.planId, weeklyPlans.id),
+            eq(weeklyPlanGenerationJobs.organizationId, ctx.organizationId),
+          ),
+        ).where(and(...legacyPlanConditions))
+          .orderBy(desc(weeklyPlans.createdAt))
+          .limit(fetchLimit);
+
+      // School-readiness AI results were historically stored in their domain
+      // table rather than ai_generated_content. They remain attributable via
+      // assessedBy, so they can be included without weakening per-user access.
+      const readinessConditions: any[] = [
+        eq(schoolReadinessScores.organizationId, ctx.organizationId),
+        eq(schoolReadinessScores.assessedBy, ctx.user!.id),
+        eq(schoolReadinessScores.aiGenerated, true),
+        eq(children.organizationId, ctx.organizationId),
+      ];
+      if (searchTerm) readinessConditions.push(or(
+        like(schoolReadinessScores.notes, searchTerm),
+        like(children.arabicName, searchTerm),
+        like(children.firstName, searchTerm),
+        like(children.lastName, searchTerm),
+      ));
+      const readinessRows = (input.type && input.type !== "progress_report") || (input.status && input.status !== "completed")
+        ? []
+        : await db.select({
+          id: schoolReadinessScores.id,
+          childId: schoolReadinessScores.childId,
+          childArabicName: children.arabicName,
+          childFirstName: children.firstName,
+          childLastName: children.lastName,
+          languageReadiness: schoolReadinessScores.languageReadiness,
+          socialReadiness: schoolReadinessScores.socialReadiness,
+          emotionalReadiness: schoolReadinessScores.emotionalReadiness,
+          cognitiveReadiness: schoolReadinessScores.cognitiveReadiness,
+          physicalReadiness: schoolReadinessScores.physicalReadiness,
+          overallReadiness: schoolReadinessScores.overallReadiness,
+          notes: schoolReadinessScores.notes,
+          termPeriod: schoolReadinessScores.termPeriod,
+          academicYear: schoolReadinessScores.academicYear,
+          createdAt: schoolReadinessScores.createdAt,
+        }).from(schoolReadinessScores).innerJoin(
+          children,
+          eq(children.id, schoolReadinessScores.childId),
+        ).where(and(...readinessConditions))
+          .orderBy(desc(schoolReadinessScores.createdAt))
+          .limit(fetchLimit);
+
+      const includeGenerated = !input.status || input.status === "completed";
+      const includeWeekly = !input.type || input.type === "weekly_plan";
+      const includeLegacy = includeWeekly && (!input.status || input.status === "completed");
+      const includeReadiness = (!input.type || input.type === "progress_report") && (!input.status || input.status === "completed");
+      const [generatedCountRows, jobCountRows, legacyCountRows, readinessCountRows] = await Promise.all([
+        includeGenerated
+          ? db.select({ count: sql<number>`count(*)` }).from(aiGeneratedContent).where(and(...contentConditions))
+          : Promise.resolve([{ count: 0 }]),
+        includeWeekly
+          ? db.select({ count: sql<number>`count(*)` }).from(weeklyPlanGenerationJobs).where(and(...jobConditions))
+          : Promise.resolve([{ count: 0 }]),
+        includeLegacy
+          ? db.select({ count: sql<number>`count(*)` }).from(weeklyPlans).leftJoin(
+            weeklyPlanGenerationJobs,
+            and(
+              eq(weeklyPlanGenerationJobs.planId, weeklyPlans.id),
+              eq(weeklyPlanGenerationJobs.organizationId, ctx.organizationId),
+            ),
+          ).where(and(...legacyPlanConditions))
+          : Promise.resolve([{ count: 0 }]),
+        includeReadiness
+          ? db.select({ count: sql<number>`count(*)` }).from(schoolReadinessScores).innerJoin(
+            children,
+            eq(children.id, schoolReadinessScores.childId),
+          ).where(and(...readinessConditions))
+          : Promise.resolve([{ count: 0 }]),
+      ]);
+      const total = Number(generatedCountRows[0]?.count || 0)
+        + Number(jobCountRows[0]?.count || 0)
+        + Number(legacyCountRows[0]?.count || 0)
+        + Number(readinessCountRows[0]?.count || 0);
+
+      const destinationByType: Record<string, string> = {
+        observation: "/ai/observation",
+        weekly_plan: "/ai/planner",
+        activity: "/ai/activity",
+        progress_report: "/ai/report",
+        parent_message: "/ai/message",
+        newsletter: "/ai/newsletter",
+        story: "/ai/story",
+        marketing: "/ai/marketing",
+      };
+
+      const contentRows = generated.map(item => {
+        const content = normalizeStoredAiContent(item.content);
+        const storedRequest = normalizeStoredAiContent(item.inputPrompt);
+        const subType = content && typeof content === "object" && !Array.isArray(content)
+          ? String((content as Record<string, unknown>).subType || "")
+          : "";
+        let destinationUrl = `${destinationByType[item.type] || "/ai"}?contentId=${item.id}`;
+        if (["development_report", "development_analysis", "school_readiness"].includes(subType)) {
+          destinationUrl = item.childId ? `/staff/development/child/${item.childId}` : "/staff/development";
+        } else if (subType === "family_engagement_report") {
+          destinationUrl = "/staff/engagement/reports";
+        }
+        return {
+          key: `content-${item.id}`,
+          source: "content" as const,
+          sourceId: item.id,
+          type: item.type,
+          subType: subType || null,
+          title: item.title,
+          status: "completed" as const,
+          stage: "completed" as const,
+          progress: 100,
+          requestDetails: {
+            ...(storedRequest && typeof storedRequest === "object" && !Array.isArray(storedRequest)
+              ? storedRequest as Record<string, unknown>
+              : { prompt: storedRequest }),
+            language: item.language,
+            childId: item.childId,
+            classId: item.classId,
+            ageGroup: item.ageGroup,
+            theme: item.theme,
+          },
+          content,
+          errorMessage: null,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          destinationUrl,
+        };
+      });
+
+      const jobRows = jobs.map(job => ({
+        key: `weekly-job-${job.id}`,
+        source: "weekly_job" as const,
+        sourceId: job.id,
+        type: "weekly_plan" as const,
+        subType: "weekly_plan_background",
+        title: `خطة أسبوعية: ${job.theme}`,
+        status: job.status,
+        stage: job.stage,
+        progress: job.progress,
+        requestDetails: {
+          theme: job.theme,
+          language: job.language,
+          ageGroup: job.ageGroup,
+          classId: job.classId,
+          weekStartDate: job.weekStartDate,
+          weekEndDate: job.weekEndDate,
+        },
+        content: job.sections,
+        errorMessage: job.errorMessage,
+        createdAt: job.createdAt,
+        updatedAt: job.completedAt || job.updatedAt,
+        destinationUrl: job.planId
+          ? `/staff/weekly-plan?planId=${job.planId}`
+          : "/staff/weekly-plan",
+      }));
+
+      const legacyRows = legacyPlans.map(plan => ({
+        key: `legacy-weekly-plan-${plan.id}`,
+        source: "weekly_plan" as const,
+        sourceId: plan.id,
+        type: "weekly_plan" as const,
+        subType: "weekly_plan_legacy",
+        title: `خطة أسبوعية: ${plan.theme}`,
+        status: "completed" as const,
+        stage: "completed" as const,
+        progress: 100,
+        requestDetails: {
+          theme: plan.theme,
+          language: plan.language,
+          ageGroup: plan.ageGroup,
+          classId: plan.classId,
+          weekStartDate: plan.weekStartDate,
+          weekEndDate: plan.weekEndDate,
+        },
+        content: plan.sections,
+        errorMessage: null,
+        createdAt: plan.createdAt,
+        updatedAt: plan.updatedAt,
+        destinationUrl: `/staff/weekly-plan?planId=${plan.id}`,
+      }));
+
+      const readinessHistoryRows = readinessRows.map(item => {
+        const childName = item.childArabicName || `${item.childFirstName} ${item.childLastName}`.trim();
+        return {
+          key: `school-readiness-${item.id}`,
+          source: "school_readiness" as const,
+          sourceId: item.id,
+          type: "progress_report" as const,
+          subType: "school_readiness",
+          title: `درجة الجاهزية المدرسية - ${childName}`,
+          status: "completed" as const,
+          stage: "completed" as const,
+          progress: 100,
+          requestDetails: {
+            childId: item.childId,
+            childName,
+            termPeriod: item.termPeriod,
+            academicYear: item.academicYear,
+          },
+          content: {
+            languageReadiness: item.languageReadiness,
+            socialReadiness: item.socialReadiness,
+            emotionalReadiness: item.emotionalReadiness,
+            cognitiveReadiness: item.cognitiveReadiness,
+            physicalReadiness: item.physicalReadiness,
+            overallReadiness: item.overallReadiness,
+            notes: item.notes,
+          },
+          errorMessage: null,
+          createdAt: item.createdAt,
+          updatedAt: item.createdAt,
+          destinationUrl: `/staff/development/child/${item.childId}`,
+        };
+      });
+
+      const items = [...contentRows, ...jobRows, ...legacyRows, ...readinessHistoryRows]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(input.offset, input.offset + input.limit);
+      return {
+        items,
+        total,
+        hasMore: input.offset + items.length < total,
+      };
+    }),
+
   getById: aiProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input, ctx }) => {
@@ -1035,7 +1580,11 @@ Write the response in JSON format:
       // staff member could read any organization's AI-generated content by
       // id, including progress reports that embed child names, attendance,
       // and assessment data.
-      const [item] = await db.select().from(aiGeneratedContent).where(and(eq(aiGeneratedContent.id, input.id), eq(aiGeneratedContent.organizationId, ctx.organizationId))).limit(1);
+      const [item] = await db.select().from(aiGeneratedContent).where(and(
+        eq(aiGeneratedContent.id, input.id),
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      )).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
       return item;
     }),
@@ -1090,13 +1639,20 @@ Write the response in JSON format:
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = (await getDb())!;
-      const [item] = await db.select().from(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.id)).limit(1);
+      const [item] = await db.select().from(aiGeneratedContent).where(and(
+        eq(aiGeneratedContent.id, input.id),
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      )).limit(1);
       if (!item) throw new TRPCError({ code: 'NOT_FOUND' });
-      if (item.createdBy !== ctx.user!.id) throw new TRPCError({ code: 'FORBIDDEN' });
       
       // Remove from library if saved
       await db.delete(aiLibrary).where(eq(aiLibrary.contentId, input.id));
-      await db.delete(aiGeneratedContent).where(eq(aiGeneratedContent.id, input.id));
+      await db.delete(aiGeneratedContent).where(and(
+        eq(aiGeneratedContent.id, input.id),
+        eq(aiGeneratedContent.organizationId, ctx.organizationId),
+        eq(aiGeneratedContent.createdBy, ctx.user!.id),
+      ));
       return { success: true };
     }),
 
