@@ -39,6 +39,87 @@ const assistantLinkValues = [
 
 const allowedAssistantLinks = new Set<string>(assistantLinkValues);
 
+export const visitorAssistantJsonSchema = {
+  name: "visitor_assistant_response",
+  strict: true,
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      title: { type: "string", minLength: 1, maxLength: 80 },
+      summary: { type: "string", minLength: 1, maxLength: 700 },
+      sections: {
+        type: "array",
+        maxItems: 4,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            heading: { type: "string", minLength: 1, maxLength: 80 },
+            body: {
+              anyOf: [
+                { type: "string", maxLength: 500 },
+                { type: "null" },
+              ],
+            },
+            items: {
+              type: "array",
+              maxItems: 6,
+              items: { type: "string", minLength: 1, maxLength: 240 },
+            },
+            style: { type: "string", enum: ["bullets", "steps"] },
+          },
+          required: ["heading", "body", "items", "style"],
+        },
+      },
+      comparison: {
+        anyOf: [
+          {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              headers: {
+                type: "array",
+                minItems: 2,
+                maxItems: 4,
+                items: { type: "string", minLength: 1, maxLength: 60 },
+              },
+              rows: {
+                type: "array",
+                minItems: 1,
+                maxItems: 6,
+                items: {
+                  type: "array",
+                  minItems: 2,
+                  maxItems: 4,
+                  items: { type: "string", minLength: 1, maxLength: 180 },
+                },
+              },
+            },
+            required: ["headers", "rows"],
+          },
+          { type: "null" },
+        ],
+      },
+      nextStep: {
+        anyOf: [
+          {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              label: { type: "string", minLength: 1, maxLength: 80 },
+              href: { type: "string", enum: assistantLinkValues },
+            },
+            required: ["label", "href"],
+          },
+          { type: "null" },
+        ],
+      },
+    },
+    required: ["title", "summary", "sections", "comparison", "nextStep"],
+  },
+} as const;
+
 const structuredResponseSchema = z.object({
   title: z.string().trim().min(1).max(80),
   summary: z.string().trim().min(1).max(700),
@@ -96,41 +177,55 @@ export function parseVisitorAssistantStructuredResponse(
     .replace(/\s*```$/, "")
     .trim();
 
-  try {
-    const parsed = structuredResponseSchema.safeParse(JSON.parse(normalized));
-    if (!parsed.success) return null;
-    if (
-      parsed.data.comparison
-      && parsed.data.comparison.rows.some(row => row.length !== parsed.data.comparison!.headers.length)
-    ) {
-      return null;
-    }
+  const firstBrace = normalized.indexOf("{");
+  const lastBrace = normalized.lastIndexOf("}");
+  const candidates = [
+    normalized,
+    ...(firstBrace >= 0 && lastBrace > firstBrace
+      ? [normalized.slice(firstBrace, lastBrace + 1)]
+      : []),
+  ];
 
-    return {
-      title: cleanPresentationText(parsed.data.title),
-      summary: cleanPresentationText(parsed.data.summary),
-      sections: parsed.data.sections.map(section => ({
-        heading: cleanPresentationText(section.heading),
-        body: section.body ? cleanPresentationText(section.body) : null,
-        items: section.items.map(cleanPresentationText),
-        style: section.style,
-      })),
-      comparison: parsed.data.comparison
-        ? {
-            headers: parsed.data.comparison.headers.map(cleanPresentationText),
-            rows: parsed.data.comparison.rows.map(row => row.map(cleanPresentationText)),
-          }
-        : null,
-      nextStep: parsed.data.nextStep
-        ? {
-            label: cleanPresentationText(parsed.data.nextStep.label),
-            href: parsed.data.nextStep.href,
-          }
-        : null,
-    };
-  } catch {
-    return null;
+  for (const candidate of Array.from(new Set(candidates))) {
+    try {
+      const parsed = structuredResponseSchema.safeParse(JSON.parse(candidate));
+      if (!parsed.success) continue;
+      if (
+        parsed.data.comparison
+        && parsed.data.comparison.rows.some(row => row.length !== parsed.data.comparison!.headers.length)
+      ) {
+        continue;
+      }
+
+      return {
+        title: cleanPresentationText(parsed.data.title),
+        summary: cleanPresentationText(parsed.data.summary),
+        sections: parsed.data.sections.map(section => ({
+          heading: cleanPresentationText(section.heading),
+          body: section.body ? cleanPresentationText(section.body) : null,
+          items: section.items.map(cleanPresentationText),
+          style: section.style,
+        })),
+        comparison: parsed.data.comparison
+          ? {
+              headers: parsed.data.comparison.headers.map(cleanPresentationText),
+              rows: parsed.data.comparison.rows.map(row => row.map(cleanPresentationText)),
+            }
+          : null,
+        nextStep: parsed.data.nextStep
+          ? {
+              label: cleanPresentationText(parsed.data.nextStep.label),
+              href: parsed.data.nextStep.href,
+            }
+          : null,
+      };
+    } catch {
+      // Try the next JSON candidate. Some compatible providers add a short
+      // sentence before an otherwise valid JSON object.
+    }
   }
+
+  return null;
 }
 
 function structuredResponseToText(response: VisitorAssistantStructuredResponse): string {
@@ -175,21 +270,59 @@ function getVisitorAssistantRefusalPayload(language: "ar" | "en") {
   return { response, structured };
 }
 
-function getVisitorAssistantFormattingFallback(language: "ar" | "en") {
+function getVisitorAssistantSafeTextPayload(rawContent: string, language: "ar" | "en") {
+  const withoutFence = rawContent
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  let fallbackTitle = language === "ar" ? "إجابة نُمى" : "Numa's answer";
+  let readableContent = withoutFence;
+
+  const firstBrace = withoutFence.indexOf("{");
+  const lastBrace = withoutFence.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    try {
+      const partial = JSON.parse(withoutFence.slice(firstBrace, lastBrace + 1)) as Record<string, unknown>;
+      if (typeof partial.title === "string" && partial.title.trim()) {
+        fallbackTitle = cleanPresentationText(partial.title).slice(0, 80);
+      }
+
+      const readableParts = [partial.summary, partial.answer, partial.message, partial.content]
+        .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+      if (readableParts.length > 0) readableContent = readableParts.join("\n");
+    } catch {
+      // The raw text itself remains the safest useful fallback.
+    }
+  }
+
+  const normalized = cleanPresentationText(readableContent).slice(0, 700);
+
+  if (normalized) {
+    const structured: VisitorAssistantStructuredResponse = {
+      title: fallbackTitle,
+      summary: normalized,
+      sections: [],
+      comparison: null,
+      nextStep: null,
+    };
+
+    return { response: structuredResponseToText(structured), structured };
+  }
+
   const structured: VisitorAssistantStructuredResponse = language === "ar"
     ? {
-        title: "خلّني أرتبها لك",
-        summary: "تعذّر تنسيق الإجابة بالشكل المطلوب الآن. أعد إرسال سؤالك باختصار، وسأوضح لك المعلومة بخطوات مرتبة.",
+        title: "نُمى معك",
+        summary: "تعذّر إكمال الإجابة الآن. جرّب مرة أخرى بعد قليل، أو استكشف خدمات نشأة مباشرة.",
         sections: [],
         comparison: null,
-        nextStep: null,
+        nextStep: { label: "استكشف خدمات نشأة", href: "/#features" },
       }
     : {
-        title: "Let's try that again",
-        summary: "I couldn't format the answer properly just now. Please send a shorter version of your question, and I'll explain it in clear steps.",
+        title: "Numa is here",
+        summary: "I couldn't complete the answer just now. Please try again shortly, or explore Nashaa's services directly.",
         sections: [],
         comparison: null,
-        nextStep: null,
+        nextStep: { label: "Explore Nashaa's services", href: "/#features" },
       };
 
   return {
@@ -366,7 +499,11 @@ export const visitorAssistantRouter = router({
         const result = await invokeLLM({
           messages,
           max_tokens: 900,
-          response_format: { type: "json_object" },
+          reasoning_effort: "none",
+          response_format: {
+            type: "json_schema",
+            json_schema: visitorAssistantJsonSchema,
+          },
         });
         const rawContent = result.choices?.[0]?.message?.content;
         const response = typeof rawContent === "string"
@@ -379,18 +516,16 @@ export const visitorAssistantRouter = router({
                 .trim()
             : "";
 
-        const structured = parseVisitorAssistantStructuredResponse(response);
-        const inspectedContent = structured ? structuredResponseToText(structured) : response;
-
-        if (!structured) {
-          return getVisitorAssistantFormattingFallback(input.language);
-        }
-
         if (
-          containsRestrictedAssistantDisclosure(inspectedContent)
-          || containsUnsafeAssistantLink(inspectedContent)
+          containsRestrictedAssistantDisclosure(response)
+          || containsUnsafeAssistantLink(response)
         ) {
           return getVisitorAssistantRefusalPayload(input.language);
+        }
+
+        const structured = parseVisitorAssistantStructuredResponse(response);
+        if (!structured) {
+          return getVisitorAssistantSafeTextPayload(response, input.language);
         }
 
         return {
@@ -399,12 +534,7 @@ export const visitorAssistantRouter = router({
         };
       } catch (error) {
         console.error("[VisitorAssistant] LLM request failed:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: input.language === "ar"
-            ? "تعذّر الرد الآن، يرجى المحاولة بعد قليل"
-            : "I couldn't reply just now. Please try again shortly.",
-        });
+        return getVisitorAssistantSafeTextPayload("", input.language);
       }
     }),
 });

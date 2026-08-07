@@ -6,6 +6,7 @@ import {
   getVisitorAssistantRefusal,
   isVisitorAssistantBoundaryProbe,
   parseVisitorAssistantStructuredResponse,
+  visitorAssistantJsonSchema,
 } from "./visitorAssistantRouter";
 
 describe("visitor assistant boundaries", () => {
@@ -47,6 +48,18 @@ describe("visitor assistant boundaries", () => {
     expect(prompt).toContain("Every row must have the same number of cells as headers");
   });
 
+  it("uses a strict structured-output schema", () => {
+    expect(visitorAssistantJsonSchema.strict).toBe(true);
+    expect(visitorAssistantJsonSchema.schema.additionalProperties).toBe(false);
+    expect(visitorAssistantJsonSchema.schema.required).toEqual([
+      "title",
+      "summary",
+      "sections",
+      "comparison",
+      "nextStep",
+    ]);
+  });
+
   it("returns a safe refusal in the selected language", () => {
     expect(getVisitorAssistantRefusal("ar")).toContain("خصوصية وأمان نشأة");
     expect(getVisitorAssistantRefusal("en")).toContain("privacy and security");
@@ -75,6 +88,19 @@ describe("visitor assistant boundaries", () => {
       nextStep: { label: "ابدأ التسجيل", href: "/register-nursery" },
     });
     expect(response?.sections[0].items).toEqual(["1. اختر الباقة المناسبة", "أنشئ حساب المركز"]);
+  });
+
+  it("recovers a valid JSON object surrounded by provider text", () => {
+    const response = parseVisitorAssistantStructuredResponse(`Here is the answer:\n${JSON.stringify({
+      title: "خدمات نشأة",
+      summary: "إدارة متكاملة للمركز.",
+      sections: [],
+      comparison: null,
+      nextStep: null,
+    })}\nDone`);
+
+    expect(response?.title).toBe("خدمات نشأة");
+    expect(response?.summary).toBe("إدارة متكاملة للمركز.");
   });
 
   it("rejects unapproved actions and malformed comparison tables", () => {
