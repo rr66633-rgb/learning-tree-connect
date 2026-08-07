@@ -1442,7 +1442,11 @@ Write the response in JSON format:
         const subType = content && typeof content === "object" && !Array.isArray(content)
           ? String((content as Record<string, unknown>).subType || "")
           : "";
-        let destinationUrl = `${destinationByType[item.type] || "/ai"}?contentId=${item.id}`;
+        // Saved AI content opens in a read-only result route inside its own
+        // tool section. Sending users back to the generator made the action
+        // look as if it had lost the completed work and was asking for a new
+        // request. Domain records below still deep-link to their actual page.
+        let destinationUrl = `${destinationByType[item.type] || "/ai"}/result/${item.id}`;
         if (["development_report", "development_analysis", "school_readiness"].includes(subType)) {
           destinationUrl = item.childId ? `/staff/development/child/${item.childId}` : "/staff/development";
         } else if (subType === "family_engagement_report") {

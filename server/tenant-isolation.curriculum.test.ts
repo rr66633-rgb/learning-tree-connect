@@ -131,6 +131,14 @@ describe("Tenant isolation: personal AI request history", () => {
     try {
       const own = await callerAsOrgATeacher().ai.getById({ id: created.insertId });
       expect(own.id).toBe(created.insertId);
+      const history = await callerAsOrgATeacher().ai.getRequestHistory({
+        type: "activity",
+        search: "Personal AI fixture",
+        limit: 10,
+        offset: 0,
+      });
+      const historyItem = history.items.find(item => item.sourceId === created.insertId);
+      expect(historyItem?.destinationUrl).toBe(`/ai/activity/result/${created.insertId}`);
       await expectRejected(callerAsOrgAStaff().ai.getById({ id: created.insertId }));
       await expectRejected(callerAsOrgBTeacher().ai.getById({ id: created.insertId }));
     } finally {

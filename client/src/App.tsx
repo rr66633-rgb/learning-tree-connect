@@ -98,6 +98,7 @@ const AINewsletter = lazyWithRetry(() => import("./pages/ai/AINewsletter"));
 const AIStory = lazyWithRetry(() => import("./pages/ai/AIStory"));
 const AILibrary = lazyWithRetry(() => import("./pages/ai/AILibrary"));
 const AIRequests = lazyWithRetry(() => import("./pages/ai/AIRequests"));
+const AIResultDetail = lazyWithRetry(() => import("./pages/ai/AIResultDetail"));
 const AIAssistant = lazyWithRetry(() => import("./pages/ai/AIAssistant"));
 const AIMarketing = lazyWithRetry(() => import("./pages/ai/AIMarketing"));
 const AIMarketingEventContent = lazyWithRetry(() => import("./pages/ai/AIMarketingEventContent"));
@@ -496,6 +497,9 @@ function RoleRouter() {
         {/* AI routes - accessible by staff roles */}
         <Route path="/ai">
           {isStaffRole(userRole) ? <AIHub /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/ai/:section/result/:id">
+          {isStaffRole(userRole) ? <AIResultDetail /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/ai/observation">
           {isStaffRole(userRole) ? <AIObservation /> : <Redirect to={basePath} />}
