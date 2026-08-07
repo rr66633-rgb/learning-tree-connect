@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
 import { 
   CalendarDays, Sparkles, Copy, Download, Save, Loader2, BookOpen, 
-  Clock, FileText, Trash2, Send, Plus, ChevronLeft, Edit3, Eye,
+  Clock, FileText, Trash2, Send, Plus, ChevronLeft, Edit3,
   BookMarked, Palette, FlaskConical, Music, Home, MessageSquare,
-  Calculator, Dumbbell, Hand, Moon, LayoutGrid, X, PackageOpen,
+  Calculator, Dumbbell, Hand, Moon, LayoutGrid, PackageOpen,
   ListChecks, Target, Languages, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,16 +39,6 @@ const SECTION_ICONS: Record<string, { icon: any; color: string }> = {
   parent_notes: { icon: MessageSquare, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
 };
 
-const WIDE_SECTION_KEYS = new Set([
-  "arabic_activities",
-  "english_activities",
-  "math_activities",
-  "science_activities",
-  "art_activities",
-  "sensory_activities",
-  "physical_activities",
-]);
-
 // Map section keys to i18n keys
 const SECTION_LABEL_KEYS: Record<string, string> = {
   theme_overview: "sectionThemeOverview",
@@ -66,6 +56,51 @@ const SECTION_LABEL_KEYS: Record<string, string> = {
   home_activity: "sectionHomeActivity",
   parent_notes: "sectionParentNotes",
 };
+
+const PLAN_SECTION_GROUPS = [
+  {
+    id: "foundation",
+    titleAr: "بوصلة الأسبوع",
+    titleEn: "Week compass",
+    descriptionAr: "الفكرة العامة والأهداف التي تربط رحلة التعلم",
+    descriptionEn: "The theme and objectives connecting the learning journey",
+    keys: ["theme_overview", "learning_objectives"],
+    accent: "#00C9B7",
+    background: "bg-[#00C9B7]/5",
+  },
+  {
+    id: "experiences",
+    titleAr: "تجارب التعلم",
+    titleEn: "Learning experiences",
+    descriptionAr: "أنشطة اللغة والرياضيات والاستكشاف والإبداع والحركة",
+    descriptionEn: "Language, mathematics, discovery, creativity and movement",
+    keys: ["arabic_activities", "english_activities", "math_activities", "science_activities", "art_activities", "sensory_activities", "physical_activities"],
+    accent: "#1A1F36",
+    background: "bg-[#1A1F36]/[0.025]",
+  },
+  {
+    id: "enrichment",
+    titleAr: "القيم والإثراء",
+    titleEn: "Values and enrichment",
+    descriptionAr: "القيم الإسلامية والقصة والنشيد الداعم للموضوع",
+    descriptionEn: "Islamic values, story and theme-supporting song",
+    keys: ["quran_islamic", "story_of_week", "song_of_week"],
+    accent: "#FFB020",
+    background: "bg-[#FFB020]/5",
+  },
+  {
+    id: "home",
+    titleAr: "امتداد التعلم للمنزل",
+    titleEn: "Learning beyond the classroom",
+    descriptionAr: "نشاط منزلي وإرشادات واضحة لتعزيز مشاركة الأسرة",
+    descriptionEn: "Home activity and practical guidance for family involvement",
+    keys: ["home_activity", "parent_notes"],
+    accent: "#FF5CA8",
+    background: "bg-[#FF5CA8]/5",
+  },
+] as const;
+
+const ALL_SECTION_KEYS = PLAN_SECTION_GROUPS.flatMap(group => [...group.keys]);
 
 // Map object keys to i18n label keys
 const OBJECT_LABEL_KEYS: Record<string, string> = {
@@ -90,7 +125,7 @@ const OBJECT_LABEL_KEYS: Record<string, string> = {
 function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
   const LANG_HEADING = /^\s*(العربية|بالعربية|عربي|English|الإنجليزية|بالإنجليزية)\s*[:：]\s*$/;
   const LANG_INLINE = /^\s*(العربية|بالعربية|عربي|English|الإنجليزية|بالإنجليزية)\s*[:：]\s*(.+)$/;
-  const NUMBERED = /^\s*(\d+)\s*[.)\-–]\s*(.+)$/;
+  const NUMBERED = /^\s*([0-9٠-٩]+)\s*[.)\-–]\s*(.+)$/;
   const BULLET = /^\s*[-•*]\s*(.+)$/;
   // A leading "شيء: ..." label, only when it is genuinely short (a label, not a
   // sentence that happens to contain a colon).
@@ -116,14 +151,15 @@ function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
   }
   if (current.lines.some(Boolean)) blocks.push(current);
 
-  const isEnglishLabel = (l: string) => /english/i.test(l);
+  const isEnglishLabel = (label: string) => /english|الإنجليزية|بالإنجليزية/i.test(label);
 
   const renderLine = (line: string, key: number) => {
     if (!line) return null;
     const num = line.match(NUMBERED);
     if (num) {
+      const direction = textDirection(num[2]);
       return (
-        <li key={key} className="flex gap-2.5 items-start">
+        <li key={key} dir={direction} className={`flex items-start gap-2.5 ${direction === "ltr" ? "text-left" : "text-right"}`}>
           <span className="mt-0.5 shrink-0 h-5 min-w-5 px-1 rounded-md bg-gray-100 text-gray-500 text-[11px] font-semibold flex items-center justify-center tabular-nums">
             {num[1]}
           </span>
@@ -133,16 +169,16 @@ function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
     }
     const bullet = line.match(BULLET);
     if (bullet) {
+      const direction = textDirection(bullet[1]);
       return (
-        <li key={key} className="flex gap-2.5 items-start">
+        <li key={key} dir={direction} className={`flex items-start gap-2.5 ${direction === "ltr" ? "text-left" : "text-right"}`}>
           <span className="mt-2 shrink-0 h-1.5 w-1.5 rounded-full bg-gray-300" />
           <span className="text-sm text-gray-700 leading-relaxed">{renderInline(bullet[1])}</span>
         </li>
       );
     }
-    return (
-      <p key={key} className="text-sm text-gray-700 leading-relaxed">{renderInline(line)}</p>
-    );
+    const direction = textDirection(line);
+    return <p key={key} dir={direction} className={`text-sm leading-relaxed text-gray-700 ${direction === "ltr" ? "text-left" : "text-right"}`}>{renderInline(line)}</p>;
   };
 
   // "المواد: كذا" -> label in a lighter weight, value normal.
@@ -163,18 +199,21 @@ function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
         const en = block.lang ? isEnglishLabel(block.lang) : false;
         const items = block.lines.filter(Boolean);
         const allListItems = items.length > 1 && items.every((l) => NUMBERED.test(l) || BULLET.test(l));
+        const blockDirection = block.lang ? (en ? "ltr" : "rtl") : undefined;
         return (
-          <div key={bi} dir={block.lang ? (en ? "ltr" : "rtl") : undefined}
-               className={block.lang && en ? "text-left" : undefined}>
+          <div
+            key={bi}
+            dir={blockDirection}
+            className={block.lang
+              ? `rounded-2xl border border-s-[3px] border-slate-100 border-s-slate-300 bg-slate-50/60 p-3.5 ${en ? "text-left" : "text-right"}`
+              : undefined}
+          >
             {block.lang && (
-              // Deliberately quiet: a small uppercase-ish label with a hairline,
-              // so it separates the two languages without competing with the
-              // section's own heading.
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[11px] font-semibold tracking-wide text-gray-400">
-                  {block.lang}
+              <div className="mb-2.5 flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-500">
+                  {en ? "English" : (isAr ? "العربية" : "Arabic")}
                 </span>
-                <span className="h-px flex-1 bg-gray-100" />
+                <span className="h-px flex-1 bg-slate-200/80" />
               </div>
             )}
             {allListItems ? (
@@ -192,19 +231,54 @@ function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
 const ACTIVITY_FIELD = /^\s*([^:：\n]{2,42})\s*[:：]\s*(.*)$/;
 const ACTIVITY_NUMBER = /^\s*([0-9٠-٩]+)\s*[.)\-–:]?\s+(.+)$/;
 const ACTIVITY_LABELS = /(?:الوصف بالعربية|الوصف|English description|Description|المواد المطلوبة|المواد|Materials needed|Materials|المدة|Duration|طريقة التنفيذ|خطوات التنفيذ|التنفيذ|Procedure|Implementation|Steps|طريقة التقييم|التقييم|Assessment|المفهوم الرياضي|Math concept|الملاحظات المتوقعة|Expected observations|الحواس المستهدفة|Targeted senses|المهارات المستهدفة|Targeted skills)\s*[:：]/gi;
+const ACTIVITY_LANGUAGE_HEADING = /^\s*(?:English|الإنجليزية|بالإنجليزية|العربية|بالعربية|عربي)\s*[:：]?\s*$/i;
 
 function fieldVisual(label: string, isAr: boolean) {
   const value = label.toLocaleLowerCase();
-  if (/مدة|duration/.test(value)) return { Icon: Clock, tone: "bg-[#1A1F36]/5 text-[#1A1F36] border-[#1A1F36]/10", label: isAr ? "المدة" : "Duration" };
-  if (/مواد|materials/.test(value)) return { Icon: PackageOpen, tone: "bg-[#FFB020]/10 text-[#9A6300] border-[#FFB020]/20", label };
-  if (/تقييم|assessment/.test(value)) return { Icon: CheckCircle2, tone: "bg-[#00C9B7]/10 text-[#008F83] border-[#00C9B7]/20", label };
-  if (/تنفيذ|خطوات|procedure|implementation|steps/.test(value)) return { Icon: ListChecks, tone: "bg-[#1A1F36]/5 text-[#1A1F36] border-[#1A1F36]/10", label };
-  if (/وصف|description/.test(value)) return { Icon: Languages, tone: "bg-[#00C9B7]/10 text-[#008F83] border-[#00C9B7]/20", label };
-  return { Icon: Target, tone: "bg-slate-50 text-slate-700 border-slate-100", label };
+  if (/مدة|duration/.test(value)) return { Icon: Clock, label: isAr ? "المدة" : "Duration" };
+  if (/مواد|materials/.test(value)) return { Icon: PackageOpen, label };
+  if (/تقييم|assessment/.test(value)) return { Icon: CheckCircle2, label };
+  if (/تنفيذ|خطوات|procedure|implementation|steps/.test(value)) return { Icon: ListChecks, label };
+  if (/وصف|description/.test(value)) return { Icon: Languages, label };
+  return { Icon: Target, label };
 }
 
 function textDirection(value: string): "rtl" | "ltr" {
-  return /[\u0600-\u06FF]/.test(value) ? "rtl" : "ltr";
+  const firstStrongCharacter = value.match(/[A-Za-z\u0600-\u06FF]/)?.[0];
+  return firstStrongCharacter && /[\u0600-\u06FF]/.test(firstStrongCharacter) ? "rtl" : "ltr";
+}
+
+function splitBilingualTitle(title: string) {
+  const match = title.match(/^(.+?)\s*\(([^()]+)\)\s*$/);
+  if (!match) return { primary: title, translation: "", translationDirection: null as "rtl" | "ltr" | null };
+  const primary = match[1].trim();
+  const translation = match[2].trim();
+  const primaryDirection = textDirection(primary);
+  const translationDirection = textDirection(translation);
+  if (primaryDirection === translationDirection) {
+    return { primary: title, translation: "", translationDirection: null as "rtl" | "ltr" | null };
+  }
+  return { primary, translation, translationDirection };
+}
+
+function sectionPreview(content: unknown, isAr: boolean) {
+  if (content === null || content === undefined || content === "") {
+    return isAr ? "لا يوجد محتوى في هذا القسم" : "No content in this section";
+  }
+  if (Array.isArray(content)) {
+    return isAr ? `${content.length} عناصر مرتبة` : `${content.length} organized items`;
+  }
+  if (typeof content === "object") {
+    const count = Object.values(content as Record<string, unknown>).filter(Boolean).length;
+    return isAr ? `${count} محاور مترابطة` : `${count} connected topics`;
+  }
+  const text = String(content)
+    .replace(/[*#•]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const numberedCount = (String(content).match(/(?:^|\s)[0-9٠-٩]+[.)\-–:]\s/g) || []).length;
+  if (numberedCount > 1) return isAr ? `${numberedCount} عناصر مرتبة داخل القسم` : `${numberedCount} organized items in this section`;
+  return text.length > 125 ? `${text.slice(0, 125).trim()}…` : text;
 }
 
 /**
@@ -212,11 +286,15 @@ function textDirection(value: string): "rtl" | "ltr" {
  * The parser only adds presentation structure; every original line remains
  * visible, including unknown labels, so an older plan never loses content.
  */
-function RichFormattedText({ text, isAr }: { text: string; isAr: boolean }) {
+function RichFormattedText({ text, isAr, sectionKey }: { text: string; isAr: boolean; sectionKey: string }) {
+  const sectionColorClasses = (SECTION_ICONS[sectionKey] || SECTION_ICONS.theme_overview).color.split(" ");
+  const sectionBackground = sectionColorClasses[0] || "bg-slate-50";
+  const sectionBorder = sectionColorClasses[1] || "border-slate-200";
+  const sectionText = sectionColorClasses[2] || "text-slate-900";
   const normalized = text
     .replace(/\r/g, "")
     .replace(ACTIVITY_LABELS, match => `\n${match}`)
-    .replace(/\s+(?=\d+\s*[.)\-–:]\s+)/g, "\n")
+    .replace(/\s+(?=[0-9٠-٩]+\s*[.)\-–:]\s+)/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
   const lines = normalized.split("\n").map(line => line.trim()).filter(Boolean);
@@ -226,6 +304,10 @@ function RichFormattedText({ text, isAr }: { text: string; isAr: boolean }) {
   let current: ActivityGroup | null = null;
 
   for (const line of lines) {
+    if (ACTIVITY_LANGUAGE_HEADING.test(line)) {
+      current = null;
+      continue;
+    }
     const numbered = line.match(ACTIVITY_NUMBER);
     if (numbered) {
       current = { number: numbered[1], title: numbered[2], details: [] };
@@ -237,8 +319,20 @@ function RichFormattedText({ text, isAr }: { text: string; isAr: boolean }) {
     }
   }
 
-  const hasDetailedActivities = groups.some(group => group.details.length > 0);
-  if (!hasDetailedActivities) return <FormattedText text={text} isAr={isAr} />;
+  const hasStructuredActivities = groups.length > 1 || groups.some(group => group.details.length > 0);
+  if (!hasStructuredActivities) return <FormattedText text={text} isAr={isAr} />;
+
+  type ActivityRun = { direction: "rtl" | "ltr"; groups: Array<{ group: ActivityGroup; originalIndex: number }> };
+  const groupRuns: ActivityRun[] = [];
+  groups.forEach((group, originalIndex) => {
+    const direction = textDirection(splitBilingualTitle(group.title).primary);
+    const lastRun = groupRuns[groupRuns.length - 1];
+    if (!lastRun || lastRun.direction !== direction) {
+      groupRuns.push({ direction, groups: [{ group, originalIndex }] });
+    } else {
+      lastRun.groups.push({ group, originalIndex });
+    }
+  });
 
   return (
     <div className="space-y-5">
@@ -247,39 +341,81 @@ function RichFormattedText({ text, isAr }: { text: string; isAr: boolean }) {
           <FormattedText text={intro.join("\n")} isAr={isAr} />
         </div>
       )}
-      <div className="grid gap-4 xl:grid-cols-2">
-        {groups.map((group, groupIndex) => (
-          <article key={`${group.number}-${groupIndex}`} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_-24px_rgba(15,23,42,0.45)]">
-            <header className="flex items-start gap-3 border-b border-slate-100 bg-gradient-to-l from-slate-50 to-white px-4 py-3.5">
-              <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 px-2 text-xs font-black text-white shadow-sm">
-                {group.number}
+      {groupRuns.map((run, runIndex) => (
+        <section key={`${run.direction}-${runIndex}`} dir={run.direction} className="space-y-3">
+          {run.direction !== (isAr ? "rtl" : "ltr") && (
+            <div className="flex items-center gap-3 px-1">
+              <span className="text-[11px] font-black text-slate-500">
+                {run.direction === "ltr" ? "English" : "Arabic"}
               </span>
-              <h4 className="pt-1 text-[15px] font-bold leading-6 text-slate-900" dir={textDirection(group.title)}>{group.title}</h4>
-            </header>
-            <div className="grid gap-3 p-4 sm:grid-cols-2">
-              {group.details.map((detail, detailIndex) => {
-                const matched = detail.match(ACTIVITY_FIELD);
-                if (!matched) {
-                  return <p key={detailIndex} className="sm:col-span-2 whitespace-pre-wrap text-sm leading-7 text-slate-700" dir={textDirection(detail)}>{detail}</p>;
-                }
-                const label = matched[1].trim();
-                const value = matched[2].trim();
-                const visual = fieldVisual(label, isAr);
-                const isLong = /وصف|description|تنفيذ|خطوات|procedure|implementation|steps|تقييم|assessment/.test(label.toLocaleLowerCase()) || value.length > 150;
-                return (
-                  <section key={detailIndex} className={`rounded-xl border p-3.5 ${visual.tone} ${isLong ? "sm:col-span-2" : ""}`} dir={textDirection(`${label} ${value}`)}>
-                    <div className="mb-1.5 flex items-center gap-2 text-xs font-bold">
-                      <visual.Icon className="h-3.5 w-3.5" />
-                      <span>{label}</span>
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{value || "—"}</p>
-                  </section>
-                );
-              })}
+              <span className="h-px flex-1 bg-slate-200" />
             </div>
-          </article>
-        ))}
-      </div>
+          )}
+          <div className="grid items-start gap-4 xl:grid-cols-2">
+            {run.groups.map(({ group, originalIndex }) => {
+              const bilingualTitle = splitBilingualTitle(group.title);
+              const groupDirection = textDirection(bilingualTitle.primary);
+              return (
+                <article key={`${group.number}-${originalIndex}`} dir={groupDirection} className={`self-start overflow-hidden rounded-2xl border bg-white shadow-[0_8px_30px_-24px_rgba(15,23,42,0.45)] ${sectionBorder}`}>
+                  <header className={`flex items-start gap-3 border-b px-4 py-3.5 ${sectionBackground} ${sectionBorder}`}>
+                    <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 px-2 text-xs font-black text-white shadow-sm">
+                      {group.number}
+                    </span>
+                    <h4 className={`min-w-0 flex-1 pt-1 text-[15px] font-black leading-6 ${sectionText} ${groupDirection === "ltr" ? "text-left" : "text-right"}`}>
+                      <span className="block">{bilingualTitle.primary}</span>
+                      {bilingualTitle.translation && bilingualTitle.translationDirection && (
+                        <span
+                          dir={bilingualTitle.translationDirection}
+                          className={`mt-1.5 block text-xs font-semibold leading-5 text-slate-500 ${bilingualTitle.translationDirection === "ltr" ? "text-left" : "text-right"}`}
+                        >
+                          <span className="me-1.5 inline-flex text-[9px] font-black text-slate-400">
+                            {bilingualTitle.translationDirection === "ltr" ? "English" : (isAr ? "العربية" : "Arabic")}
+                          </span>
+                          {bilingualTitle.translation}
+                        </span>
+                      )}
+                    </h4>
+                  </header>
+                  {group.details.length > 0 && (
+                    <div className="grid gap-3 p-4 sm:grid-cols-2">
+                      {group.details.map((detail, detailIndex) => {
+                        const matched = detail.match(ACTIVITY_FIELD);
+                        if (!matched) {
+                          return <p key={detailIndex} className="sm:col-span-2 whitespace-pre-wrap text-sm leading-7 text-slate-700" dir={textDirection(detail)}>{detail}</p>;
+                        }
+                        const label = matched[1].trim();
+                        const value = matched[2].trim();
+                        const visual = fieldVisual(label, isAr);
+                        const isLong = /وصف|description|تنفيذ|خطوات|procedure|implementation|steps|تقييم|assessment/.test(label.toLocaleLowerCase()) || value.length > 150;
+                        const detailDirection = textDirection(`${label} ${value}`);
+                        const isEnglishDetail = groupDirection === "rtl" && detailDirection === "ltr" && /[A-Za-z]/.test(`${label} ${value}`);
+                        return (
+                          <section
+                            key={detailIndex}
+                            className={`rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-slate-700 ${isEnglishDetail ? "border-s-2 border-s-slate-300" : ""} ${isLong ? "sm:col-span-2" : ""}`}
+                            dir={detailDirection}
+                          >
+                            <div className="mb-1.5 flex items-center gap-2 text-xs font-bold text-slate-500">
+                              <visual.Icon className="h-3.5 w-3.5 text-slate-400" />
+                              <span>{label}</span>
+                              {isEnglishDetail && (
+                                <span className="ms-auto text-[9px] font-black text-slate-400">
+                                  English
+                                </span>
+                              )}
+                            </div>
+                            <p className={`whitespace-pre-wrap text-sm leading-7 text-slate-700 ${detailDirection === "ltr" ? "text-left" : "text-right"}`}>{value || "—"}</p>
+                          </section>
+                        );
+                      })}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -296,38 +432,28 @@ function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: 
   // block. FormattedText below gives that structure back without changing a
   // single word of the content.
   if (typeof content === "string") {
-    return <RichFormattedText text={content} isAr={isAr} />;
+    return <RichFormattedText text={content} isAr={isAr} sectionKey={sectionKey} />;
   }
 
   // Handle array content (like learning_objectives or activities)
   if (Array.isArray(content)) {
     return (
       <div className="space-y-3">
-        {content.map((item: any, i: number) => (
-          <div key={i} className="p-3 bg-white rounded-lg border border-gray-100">
-            {typeof item === "string" ? (
-              <p className="text-sm text-gray-700">• {item}</p>
-            ) : (
-              <div className="space-y-1">
-                {item.title && <p className="font-semibold text-sm text-gray-800">{item.title}</p>}
-                {item.description && <p className="text-sm text-gray-600">{item.description}</p>}
-                {item.materials && (
-                  <p className="text-xs text-gray-500">
-                    <span className="font-medium">{t('weeklyPlan.labelMaterials')}:</span> {Array.isArray(item.materials) ? item.materials.join("، ") : item.materials}
-                  </p>
+        {content.map((item: any, i: number) => {
+          const direction = textDirection(typeof item === "string" ? item : String(item?.title || item?.description || ""));
+          return (
+            <div key={i} dir={direction} className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3.5">
+              <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-xl bg-[#1A1F36] px-2 text-[11px] font-black text-white">{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                {typeof item === "string" ? (
+                  <p className={`text-sm leading-7 text-gray-700 ${direction === "ltr" ? "text-left" : "text-right"}`}>{item}</p>
+                ) : (
+                  <SectionContent content={item} sectionKey={sectionKey} t={t} />
                 )}
-                {item.duration && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelDuration')}:</span> {item.duration}</p>}
-                {item.implementation && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelImplementation')}:</span> {item.implementation}</p>}
-                {item.steps && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelSteps')}:</span> {Array.isArray(item.steps) ? item.steps.join(" → ") : item.steps}</p>}
-                {item.concept && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelConcept')}:</span> {item.concept}</p>}
-                {item.math_concept && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelMathConcept')}:</span> {item.math_concept}</p>}
-                {item.experiment && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelExperiment')}:</span> {item.experiment}</p>}
-                {item.targeted_senses && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelTargetedSenses')}:</span> {Array.isArray(item.targeted_senses) ? item.targeted_senses.join("، ") : item.targeted_senses}</p>}
-                {item.targeted_skills && <p className="text-xs text-gray-500"><span className="font-medium">{t('weeklyPlan.labelTargetedSkills')}:</span> {Array.isArray(item.targeted_skills) ? item.targeted_skills.join("، ") : item.targeted_skills}</p>}
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -335,22 +461,22 @@ function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: 
   // Handle object content (like quran_islamic, story_of_week, song_of_week)
   if (typeof content === "object") {
     return (
-      <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {Object.entries(content).map(([key, value]: [string, any]) => {
-          if (!value) return null;
+          if (value === null || value === undefined || value === "") return null;
           const labelKey = OBJECT_LABEL_KEYS[key];
           const displayLabel = labelKey ? t(`weeklyPlan.${labelKey}`) : key;
+          const serializedValue = typeof value === "string" ? value : JSON.stringify(value);
+          const isDetailed = Array.isArray(value) || typeof value === "object" || serializedValue.length > 100;
           return (
-            <div key={key} className="p-2 bg-white rounded border border-gray-50">
-              <span className="text-xs font-semibold text-gray-500">{displayLabel}: </span>
-              {Array.isArray(value) ? (
-                <span className="text-sm text-gray-700">{value.join("، ")}</span>
-              ) : typeof value === "object" ? (
-                <span className="text-sm text-gray-700">{JSON.stringify(value, null, 2)}</span>
+            <section key={key} className={`rounded-2xl border border-slate-100 bg-slate-50/60 p-4 ${isDetailed ? "sm:col-span-2" : ""}`}>
+              <span className="mb-2 block text-[11px] font-black text-slate-500">{displayLabel}</span>
+              {typeof value === "object" ? (
+                <SectionContent content={value} sectionKey={key} t={t} />
               ) : (
-                <span className="text-sm text-gray-700">{String(value)}</span>
+                <FormattedText text={String(value)} isAr={isAr} />
               )}
-            </div>
+            </section>
           );
         })}
       </div>
@@ -406,6 +532,7 @@ export default function WeeklyPlanPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedSections, setEditedSections] = useState<Record<string, any>>({});
+  const [openSections, setOpenSections] = useState<string[]>(["theme_overview"]);
 
   // Form state
   const [classId, setClassId] = useState<string>("");
@@ -445,6 +572,10 @@ export default function WeeklyPlanPage() {
       setView("preview");
     }
   }, []);
+
+  useEffect(() => {
+    if (selectedPlanId) setOpenSections(["theme_overview"]);
+  }, [selectedPlanId]);
 
   // Mutations
   const generateMutation = trpc.weeklyPlan.startGeneration.useMutation({
@@ -862,7 +993,7 @@ export default function WeeklyPlanPage() {
           {plan?.status === "draft" && (
             <>
               {!isEditing ? (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button variant="outline" size="sm" onClick={() => { setIsEditing(true); setOpenSections([...ALL_SECTION_KEYS]); }}>
                   <Edit3 className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
                   {t('weeklyPlan.editBtn')}
                 </Button>
@@ -909,53 +1040,85 @@ export default function WeeklyPlanPage() {
           <Loader2 className="h-8 w-8 animate-spin text-[#00A99A]" />
         </div>
       ) : sections ? (
-        <div className="space-y-5">
-          <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm" aria-label={isAr ? "أقسام الخطة" : "Plan sections"}>
-            {Object.entries(SECTION_ICONS).map(([key, config], index) => {
-              const Icon = config.icon;
-              const labelKey = SECTION_LABEL_KEYS[key];
-              return (
-                <a key={key} href={`#plan-section-${key}`} className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950">
-                  <Icon className="h-3.5 w-3.5" />
-                  <span className="text-slate-400">{index + 1}</span>
-                  {t(`weeklyPlan.${labelKey}`)}
-                </a>
-              );
-            })}
-          </nav>
-
-          <div className="grid items-start gap-5 md:grid-cols-2">
-          {Object.entries(SECTION_ICONS).map(([key, config], sectionIndex) => {
-            const Icon = config.icon;
-            const sectionContent = sections[key];
-            const colorClasses = config.color.split(" ");
-            const labelKey = SECTION_LABEL_KEYS[key];
-
-            return (
-              <Card id={`plan-section-${key}`} key={key} className={`scroll-mt-24 overflow-hidden rounded-3xl border bg-white shadow-[0_14px_45px_-32px_rgba(15,23,42,0.5)] ${colorClasses[1] || ""} ${WIDE_SECTION_KEYS.has(key) ? "md:col-span-2" : ""}`}>
-                <CardHeader className={`border-b px-5 py-4 ${colorClasses[0] || ""}`}>
-                  <CardTitle className={`flex items-center gap-3 text-sm font-bold ${colorClasses[2] || ""}`}>
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 shadow-sm ring-1 ring-black/5">
-                      <Icon className="h-4.5 w-4.5" />
-                    </span>
-                    <span className="flex-1">{t(`weeklyPlan.${labelKey}`)}</span>
-                    <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-white/70 px-2 text-[11px] font-black opacity-65">{sectionIndex + 1}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 md:p-5">
-                  {isEditing ? (
-                    <SectionEditor 
-                      content={editedSections[key] !== undefined ? editedSections[key] : sectionContent}
-                      onChange={(val) => setEditedSections(prev => ({ ...prev, [key]: val }))}
-                    />
-                  ) : (
-                    <SectionContent content={sectionContent} sectionKey={key} t={t} />
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between md:px-5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1A1F36] text-white"><LayoutGrid className="h-4.5 w-4.5" /></span>
+              <div>
+                <h2 className="font-black text-slate-950">{isAr ? "خريطة الخطة" : "Plan map"}</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {isAr ? "أربعة مسارات مترابطة و١٤ قسماً؛ افتح ما تحتاجه وابقِ بقية الخطة مختصرة." : "Four connected paths and 14 sections; open what you need and keep the rest compact."}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button type="button" size="sm" variant="outline" className="rounded-xl" onClick={() => setOpenSections([...ALL_SECTION_KEYS])} disabled={openSections.length === ALL_SECTION_KEYS.length}>
+                {isAr ? "فتح الكل" : "Expand all"}
+              </Button>
+              <Button type="button" size="sm" variant="outline" className="rounded-xl" onClick={() => setOpenSections([])} disabled={openSections.length === 0}>
+                {isAr ? "طي الكل" : "Collapse all"}
+              </Button>
+            </div>
           </div>
+
+          <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="space-y-6">
+            {PLAN_SECTION_GROUPS.map((group, groupIndex) => (
+              <section key={group.id} className={`overflow-hidden rounded-3xl border border-slate-200/80 ${group.background} shadow-[0_16px_45px_-38px_rgba(15,23,42,0.55)]`}>
+                <header className="flex items-start gap-3 border-b border-slate-200/70 bg-white/75 px-4 py-4 md:px-5">
+                  <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black text-white shadow-sm" style={{ backgroundColor: group.accent }}>
+                    {groupIndex + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-black text-slate-950">{isAr ? group.titleAr : group.titleEn}</h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{isAr ? group.descriptionAr : group.descriptionEn}</p>
+                  </div>
+                  <Badge variant="outline" className="shrink-0 border-slate-200 bg-white/80 text-slate-500">
+                    {group.keys.length} {isAr ? "أقسام" : "sections"}
+                  </Badge>
+                </header>
+
+                <div className="space-y-2.5 p-2.5 md:p-3">
+                  {group.keys.map(key => {
+                    const config = SECTION_ICONS[key];
+                    const Icon = config.icon;
+                    const sectionContent = sections[key];
+                    const colorClasses = config.color.split(" ");
+                    const labelKey = SECTION_LABEL_KEYS[key];
+                    const sectionIndex = ALL_SECTION_KEYS.indexOf(key);
+
+                    return (
+                      <AccordionItem id={`plan-section-${key}`} key={key} value={key} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-white shadow-sm ${colorClasses[1] || ""}`}>
+                        <AccordionTrigger dir={isEn ? "ltr" : "rtl"} className={`px-3.5 py-3.5 text-start hover:no-underline md:px-4 ${colorClasses[0] || ""}`}>
+                          <span className="flex min-w-0 flex-1 items-start gap-3">
+                            <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-xl bg-white/85 px-2 text-[11px] font-black text-slate-500 shadow-sm ring-1 ring-black/5">
+                              {sectionIndex + 1}
+                            </span>
+                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/85 shadow-sm ring-1 ring-black/5 ${colorClasses[2] || ""}`}>
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className={`block text-sm font-black ${colorClasses[2] || ""}`}>{t(`weeklyPlan.${labelKey}`)}</span>
+                              {!isEditing && <span className="mt-1 block truncate text-xs font-normal text-slate-500">{sectionPreview(sectionContent, isAr)}</span>}
+                            </span>
+                          </span>
+                        </AccordionTrigger>
+                        <AccordionContent className="border-t border-slate-100 bg-white px-4 pb-5 pt-4 md:px-6 md:pb-6 md:pt-5">
+                          {isEditing ? (
+                            <SectionEditor
+                              content={editedSections[key] !== undefined ? editedSections[key] : sectionContent}
+                              onChange={(val) => setEditedSections(prev => ({ ...prev, [key]: val }))}
+                            />
+                          ) : (
+                            <SectionContent content={sectionContent} sectionKey={key} t={t} />
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </Accordion>
         </div>
       ) : (
         <div className="text-center py-10 text-gray-400">{t('weeklyPlan.noContent')}</div>

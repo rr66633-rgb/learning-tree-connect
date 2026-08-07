@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, CalendarDays, Copy, FileText, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Copy, FileText, Loader2, Printer, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
@@ -57,7 +57,7 @@ export default function AIResultDetail() {
   const result = resultQuery.data;
   return (
     <main className="mx-auto w-full max-w-[1180px] space-y-5 p-4 sm:p-6 lg:p-8" dir={isAr ? "rtl" : "ltr"}>
-      <header className="relative overflow-hidden rounded-3xl bg-[#1A1F36] px-5 py-6 text-white shadow-xl md:px-8 md:py-8">
+      <header className="relative overflow-hidden rounded-3xl bg-[#1A1F36] px-5 py-6 text-white shadow-xl md:px-8 md:py-8 print-hide">
         <div className="absolute -start-16 -top-20 h-52 w-52 rounded-full bg-[#00C9B7]/25 blur-3xl" />
         <div className="absolute -bottom-20 end-12 h-40 w-40 rounded-full bg-[#FFB020]/10 blur-3xl" />
         <div className="relative">
@@ -86,11 +86,29 @@ export default function AIResultDetail() {
             <CalendarDays className="h-3.5 w-3.5" />
             {new Intl.DateTimeFormat(isAr ? "ar-SA" : "en-GB", { dateStyle: "full", timeStyle: "short" }).format(new Date(result.createdAt))}
           </span>
-          <Button size="sm" variant="outline" className="ms-auto rounded-xl" onClick={copyResult}>
-            <Copy className="me-1.5 h-3.5 w-3.5" />{isAr ? "نسخ النتيجة" : "Copy result"}
-          </Button>
+          <div className="ms-auto flex items-center gap-2 print-hide">
+            <Button size="sm" variant="outline" className="rounded-xl" onClick={copyResult}>
+              <Copy className="me-1.5 h-3.5 w-3.5" />{isAr ? "نسخ النتيجة" : "Copy result"}
+            </Button>
+            {/* Printing is done by the browser against this very page -- no
+                popup window, no server round-trip, no second copy of the HTML
+                to keep in sync. What is on screen is what comes out. */}
+            <Button size="sm" className="rounded-xl" onClick={() => window.print()}>
+              <Printer className="me-1.5 h-3.5 w-3.5" />{isAr ? "طباعة" : "Print"}
+            </Button>
+          </div>
         </div>
-        <div className="p-4 sm:p-6 md:p-8">
+        <div className="p-4 sm:p-6 md:p-8 print-area">
+          {/* Paper has no header bar, so the printed sheet carries its own
+              title, type and date -- otherwise it arrives unidentifiable. */}
+          <div className="print-only mb-6 border-b pb-4">
+            <h1 className="text-2xl font-bold text-black">{result.title}</h1>
+            <p className="mt-1 text-sm text-neutral-600">
+              {typeLabels[result.type] || result.type}
+              {" · "}
+              {new Intl.DateTimeFormat(isAr ? "ar-SA" : "en-GB", { dateStyle: "long" }).format(new Date(result.createdAt))}
+            </p>
+          </div>
           <AIResultContent value={result.content} isAr={isAr} />
         </div>
       </section>

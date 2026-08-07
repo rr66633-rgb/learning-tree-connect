@@ -154,6 +154,27 @@ export function humanizeAiFieldKey(key: string, isAr: boolean) {
   return key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ").replace(/^./, char => char.toUpperCase());
 }
 
+function firstReadableText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = firstReadableText(item);
+      if (found) return found;
+    }
+  } else if (value && typeof value === "object") {
+    for (const nested of Object.values(value as Record<string, unknown>)) {
+      const found = firstReadableText(nested);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
+function resultDirection(value: unknown): "rtl" | "ltr" {
+  const firstStrongCharacter = firstReadableText(value).match(/[A-Za-z\u0600-\u06FF]/)?.[0];
+  return firstStrongCharacter && /[\u0600-\u06FF]/.test(firstStrongCharacter) ? "rtl" : "ltr";
+}
+
 export function AIResultContent({ value, depth = 0, isAr, fieldKey }: { value: unknown; depth?: number; isAr: boolean; fieldKey?: string }) {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value === "string") {
@@ -167,7 +188,7 @@ export function AIResultContent({ value, depth = 0, isAr, fieldKey }: { value: u
     }
     const readable = trimmed.replace(/\s+(?=[0-9٠-٩]+[.)]\s+)/g, "\n");
     return (
-      <div className="prose prose-slate max-w-none text-[15px] leading-8 prose-p:my-2 prose-li:my-1 prose-ul:my-2 prose-ol:my-2 prose-headings:font-bold prose-headings:text-slate-900" dir={/[\u0600-\u06FF]/.test(readable) ? "rtl" : "ltr"}>
+      <div className="prose prose-slate max-w-none text-[15px] leading-8 prose-p:my-2 prose-li:my-1 prose-ul:my-2 prose-ol:my-2 prose-headings:font-bold prose-headings:text-slate-900" dir={resultDirection(readable)}>
         <Streamdown>{readable}</Streamdown>
       </div>
     );
@@ -182,7 +203,7 @@ export function AIResultContent({ value, depth = 0, isAr, fieldKey }: { value: u
     return (
       <div className={`grid gap-2.5 ${value.some(item => typeof item === "object" && item !== null) ? "xl:grid-cols-2" : ""}`}>
         {value.map((item, index) => (
-          <div key={index} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white px-3.5 py-3 shadow-[0_8px_25px_-24px_rgba(15,23,42,0.45)]">
+          <div key={index} dir={resultDirection(item)} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white px-3.5 py-3 shadow-[0_8px_25px_-24px_rgba(15,23,42,0.45)]">
             <span className="mt-0.5 flex h-6 min-w-6 shrink-0 items-center justify-center rounded-lg bg-[#1A1F36] px-1.5 text-[10px] font-black text-white">{index + 1}</span>
             <div className="min-w-0 flex-1"><AIResultContent value={item} depth={depth + 1} isAr={isAr} /></div>
           </div>

@@ -373,3 +373,113 @@
     transform: none;
   }
 }
+
+/* ===========================================================================
+   Printing
+   ---------------------------------------------------------------------------
+   Printing happens entirely in the browser: the page already renders the
+   content correctly (including Arabic and RTL), so printing it directly is
+   both simpler and more faithful than the older approach used elsewhere in
+   this app -- opening a blank window and rebuilding the HTML by hand with
+   document.write. That approach is blocked by popup blockers, drops every
+   style the app defines, and has to be re-written for each page.
+
+   Two classes drive it:
+     .print-hide  -- chrome that must not appear on paper (nav, buttons, decor)
+     .print-area  -- the block that IS the document being printed
+   Anything not marked stays as-is, so pages without print support are
+   unaffected.
+   =========================================================================== */
+@media print {
+  /* Paper is white and ink is expensive: drop the app's dark chrome and let
+     colours print truthfully rather than being stripped by the browser. */
+  html, body {
+    background: #fff !important;
+    color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-hide,
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-gap"],
+  [data-sidebar="rail"],
+  nav,
+  button,
+  [role="dialog"],
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  /* The printed document must own the full width AND collapse to its content
+     height. The on-screen shell is a full-viewport flex column with its own
+     scroller (min-h-svh / flex-1 / overflow-y-auto); left intact, that shell
+     prints as one viewport-tall box and pushes the real content onto later
+     sheets, leaving a nearly blank first page. Flattening it lets the content
+     start at the top of page 1 and flow naturally. */
+  [data-slot="sidebar-wrapper"],
+  [data-slot="sidebar-inset"],
+  main {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: none !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  /* The app's sticky top bar is chrome, not content. */
+  header,
+  [class*="sticky"] {
+    position: static !important;
+  }
+
+  .print-area {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
+  /* Keep a heading with the text it introduces, and never split a card across
+     two sheets -- an activity cut in half is unusable to a teacher. */
+  h1, h2, h3, h4 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+  /* Only opt-in blocks resist splitting. This rule used to include `section`
+     and `article`, but those wrap the ENTIRE document on these pages -- and a
+     container that cannot fit on one sheet is pushed WHOLE to the next one,
+     which is exactly what left the first page blank with only an empty border
+     on it. Keeping the scope small means individual cards stay intact while
+     the document itself flows from the top of page one. */
+  .print-block {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  /* Long content should flow, not scroll: any scroll container would otherwise
+     print only its first visible slice. */
+  * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  a[href]::after { content: ""; }
+
+  @page {
+    margin: 16mm 14mm;
+  }
+}
+
+/* Header shown only on the printed sheet, so the page keeps its own title on
+   screen while paper still identifies what was printed and when. */
+.print-only { display: none; }
+@media print {
+  .print-only { display: block !important; }
+}
