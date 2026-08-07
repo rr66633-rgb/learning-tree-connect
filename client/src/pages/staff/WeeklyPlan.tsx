@@ -22,21 +22,24 @@ import { useTranslation } from "react-i18next";
 import { WEEKLY_PLAN_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesForAgeGroup, type WeeklyPlanTemplate } from "@/lib/weeklyPlanTemplates";
 
 // Section config without labels (labels come from i18n)
+const DEEP_TEAL_HEADER = "border-[#005B55] bg-gradient-to-l from-[#007F75] to-[#005B55]";
+const DEEP_NAVY_HEADER = "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]";
+
 const SECTION_ICONS: Record<string, { icon: any; header: string }> = {
-  theme_overview: { icon: BookOpen, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
-  learning_objectives: { icon: FileText, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
-  arabic_activities: { icon: BookMarked, header: "border-[#8A5700] bg-gradient-to-l from-[#A96D00] to-[#8A5700]" },
-  english_activities: { icon: BookMarked, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
-  math_activities: { icon: Calculator, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
-  science_activities: { icon: FlaskConical, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
-  art_activities: { icon: Palette, header: "border-[#A9205A] bg-gradient-to-l from-[#C92C73] to-[#A9205A]" },
-  sensory_activities: { icon: Hand, header: "border-[#8A5700] bg-gradient-to-l from-[#A96D00] to-[#8A5700]" },
-  physical_activities: { icon: Dumbbell, header: "border-[#A9205A] bg-gradient-to-l from-[#C92C73] to-[#A9205A]" },
-  quran_islamic: { icon: Moon, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
-  story_of_week: { icon: BookOpen, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
-  song_of_week: { icon: Music, header: "border-[#8A5700] bg-gradient-to-l from-[#A96D00] to-[#8A5700]" },
-  home_activity: { icon: Home, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
-  parent_notes: { icon: MessageSquare, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
+  theme_overview: { icon: BookOpen, header: DEEP_TEAL_HEADER },
+  learning_objectives: { icon: FileText, header: DEEP_TEAL_HEADER },
+  arabic_activities: { icon: BookMarked, header: DEEP_NAVY_HEADER },
+  english_activities: { icon: BookMarked, header: DEEP_NAVY_HEADER },
+  math_activities: { icon: Calculator, header: DEEP_NAVY_HEADER },
+  science_activities: { icon: FlaskConical, header: DEEP_NAVY_HEADER },
+  art_activities: { icon: Palette, header: DEEP_NAVY_HEADER },
+  sensory_activities: { icon: Hand, header: DEEP_NAVY_HEADER },
+  physical_activities: { icon: Dumbbell, header: DEEP_NAVY_HEADER },
+  quran_islamic: { icon: Moon, header: DEEP_TEAL_HEADER },
+  story_of_week: { icon: BookOpen, header: DEEP_TEAL_HEADER },
+  song_of_week: { icon: Music, header: DEEP_TEAL_HEADER },
+  home_activity: { icon: Home, header: DEEP_NAVY_HEADER },
+  parent_notes: { icon: MessageSquare, header: DEEP_NAVY_HEADER },
 };
 
 // Map section keys to i18n keys
