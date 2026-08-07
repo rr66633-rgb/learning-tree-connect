@@ -22,21 +22,21 @@ import { useTranslation } from "react-i18next";
 import { WEEKLY_PLAN_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesForAgeGroup, type WeeklyPlanTemplate } from "@/lib/weeklyPlanTemplates";
 
 // Section config without labels (labels come from i18n)
-const SECTION_ICONS: Record<string, { icon: any; color: string }> = {
-  theme_overview: { icon: BookOpen, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
-  learning_objectives: { icon: FileText, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
-  arabic_activities: { icon: BookMarked, color: "bg-[#FFB020]/12 border-[#FFB020]/30 text-[#9A6300]" },
-  english_activities: { icon: BookMarked, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
-  math_activities: { icon: Calculator, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
-  science_activities: { icon: FlaskConical, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
-  art_activities: { icon: Palette, color: "bg-[#FF5CA8]/10 border-[#FF5CA8]/25 text-[#C92C73]" },
-  sensory_activities: { icon: Hand, color: "bg-[#FFB020]/12 border-[#FFB020]/30 text-[#9A6300]" },
-  physical_activities: { icon: Dumbbell, color: "bg-[#FF5CA8]/10 border-[#FF5CA8]/25 text-[#C92C73]" },
-  quran_islamic: { icon: Moon, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
-  story_of_week: { icon: BookOpen, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
-  song_of_week: { icon: Music, color: "bg-[#FFB020]/12 border-[#FFB020]/30 text-[#9A6300]" },
-  home_activity: { icon: Home, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
-  parent_notes: { icon: MessageSquare, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
+const SECTION_ICONS: Record<string, { icon: any; header: string }> = {
+  theme_overview: { icon: BookOpen, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
+  learning_objectives: { icon: FileText, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
+  arabic_activities: { icon: BookMarked, header: "border-[#8A5700] bg-gradient-to-l from-[#A96D00] to-[#8A5700]" },
+  english_activities: { icon: BookMarked, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
+  math_activities: { icon: Calculator, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
+  science_activities: { icon: FlaskConical, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
+  art_activities: { icon: Palette, header: "border-[#A9205A] bg-gradient-to-l from-[#C92C73] to-[#A9205A]" },
+  sensory_activities: { icon: Hand, header: "border-[#8A5700] bg-gradient-to-l from-[#A96D00] to-[#8A5700]" },
+  physical_activities: { icon: Dumbbell, header: "border-[#A9205A] bg-gradient-to-l from-[#C92C73] to-[#A9205A]" },
+  quran_islamic: { icon: Moon, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
+  story_of_week: { icon: BookOpen, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
+  song_of_week: { icon: Music, header: "border-[#8A5700] bg-gradient-to-l from-[#A96D00] to-[#8A5700]" },
+  home_activity: { icon: Home, header: "border-[#006E66] bg-gradient-to-l from-[#007F75] to-[#006E66]" },
+  parent_notes: { icon: MessageSquare, header: "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]" },
 };
 
 // Map section keys to i18n keys
@@ -65,8 +65,6 @@ const PLAN_SECTION_GROUPS = [
     descriptionAr: "الفكرة العامة والأهداف التي تربط رحلة التعلم",
     descriptionEn: "The theme and objectives connecting the learning journey",
     keys: ["theme_overview", "learning_objectives"],
-    accent: "#00C9B7",
-    background: "bg-[#00C9B7]/5",
   },
   {
     id: "experiences",
@@ -75,8 +73,6 @@ const PLAN_SECTION_GROUPS = [
     descriptionAr: "أنشطة اللغة والرياضيات والاستكشاف والإبداع والحركة",
     descriptionEn: "Language, mathematics, discovery, creativity and movement",
     keys: ["arabic_activities", "english_activities", "math_activities", "science_activities", "art_activities", "sensory_activities", "physical_activities"],
-    accent: "#1A1F36",
-    background: "bg-[#1A1F36]/[0.025]",
   },
   {
     id: "enrichment",
@@ -85,8 +81,6 @@ const PLAN_SECTION_GROUPS = [
     descriptionAr: "القيم الإسلامية والقصة والنشيد الداعم للموضوع",
     descriptionEn: "Islamic values, story and theme-supporting song",
     keys: ["quran_islamic", "story_of_week", "song_of_week"],
-    accent: "#FFB020",
-    background: "bg-[#FFB020]/5",
   },
   {
     id: "home",
@@ -95,8 +89,6 @@ const PLAN_SECTION_GROUPS = [
     descriptionAr: "نشاط منزلي وإرشادات واضحة لتعزيز مشاركة الأسرة",
     descriptionEn: "Home activity and practical guidance for family involvement",
     keys: ["home_activity", "parent_notes"],
-    accent: "#FF5CA8",
-    background: "bg-[#FF5CA8]/5",
   },
 ] as const;
 
@@ -205,12 +197,12 @@ function FormattedText({ text, isAr }: { text: string; isAr: boolean }) {
             key={bi}
             dir={blockDirection}
             className={block.lang
-              ? `rounded-2xl border border-s-[3px] border-slate-100 border-s-slate-300 bg-slate-50/60 p-3.5 ${en ? "text-left" : "text-right"}`
+              ? `rounded-2xl border border-s-[3px] p-3.5 ${en ? "border-[#1A1F36]/10 border-s-[#00C9B7] bg-[#1A1F36]/[0.025] text-left" : "border-[#00C9B7]/15 border-s-[#00C9B7] bg-[#00C9B7]/[0.035] text-right"}`
               : undefined}
           >
             {block.lang && (
               <div className="mb-2.5 flex items-center gap-2">
-                <span className="text-[10px] font-black text-slate-500">
+                <span className={`rounded-lg px-2.5 py-1 text-[10px] font-black ${en ? "bg-[#1A1F36] text-white" : "bg-[#00C9B7] text-white"}`}>
                   {en ? "English" : (isAr ? "العربية" : "Arabic")}
                 </span>
                 <span className="h-px flex-1 bg-slate-200/80" />
@@ -235,12 +227,12 @@ const ACTIVITY_LANGUAGE_HEADING = /^\s*(?:English|الإنجليزية|بالإ�
 
 function fieldVisual(label: string, isAr: boolean) {
   const value = label.toLocaleLowerCase();
-  if (/مدة|duration/.test(value)) return { Icon: Clock, label: isAr ? "المدة" : "Duration" };
-  if (/مواد|materials/.test(value)) return { Icon: PackageOpen, label };
-  if (/تقييم|assessment/.test(value)) return { Icon: CheckCircle2, label };
-  if (/تنفيذ|خطوات|procedure|implementation|steps/.test(value)) return { Icon: ListChecks, label };
-  if (/وصف|description/.test(value)) return { Icon: Languages, label };
-  return { Icon: Target, label };
+  if (/مدة|duration/.test(value)) return { Icon: Clock, tone: "bg-[#1A1F36]/5 text-[#1A1F36] border-[#1A1F36]/10", label: isAr ? "المدة" : "Duration" };
+  if (/مواد|materials/.test(value)) return { Icon: PackageOpen, tone: "bg-[#FFB020]/10 text-[#9A6300] border-[#FFB020]/20", label };
+  if (/تقييم|assessment/.test(value)) return { Icon: CheckCircle2, tone: "bg-[#00C9B7]/10 text-[#008F83] border-[#00C9B7]/20", label };
+  if (/تنفيذ|خطوات|procedure|implementation|steps/.test(value)) return { Icon: ListChecks, tone: "bg-[#1A1F36]/5 text-[#1A1F36] border-[#1A1F36]/10", label };
+  if (/وصف|description/.test(value)) return { Icon: Languages, tone: "bg-[#00C9B7]/10 text-[#008F83] border-[#00C9B7]/20", label };
+  return { Icon: Target, tone: "bg-slate-50 text-slate-700 border-slate-100", label };
 }
 
 function textDirection(value: string): "rtl" | "ltr" {
@@ -286,11 +278,7 @@ function sectionPreview(content: unknown, isAr: boolean) {
  * The parser only adds presentation structure; every original line remains
  * visible, including unknown labels, so an older plan never loses content.
  */
-function RichFormattedText({ text, isAr, sectionKey }: { text: string; isAr: boolean; sectionKey: string }) {
-  const sectionColorClasses = (SECTION_ICONS[sectionKey] || SECTION_ICONS.theme_overview).color.split(" ");
-  const sectionBackground = sectionColorClasses[0] || "bg-slate-50";
-  const sectionBorder = sectionColorClasses[1] || "border-slate-200";
-  const sectionText = sectionColorClasses[2] || "text-slate-900";
+function RichFormattedText({ text, isAr }: { text: string; isAr: boolean }) {
   const normalized = text
     .replace(/\r/g, "")
     .replace(ACTIVITY_LABELS, match => `\n${match}`)
@@ -356,19 +344,19 @@ function RichFormattedText({ text, isAr, sectionKey }: { text: string; isAr: boo
               const bilingualTitle = splitBilingualTitle(group.title);
               const groupDirection = textDirection(bilingualTitle.primary);
               return (
-                <article key={`${group.number}-${originalIndex}`} dir={groupDirection} className={`self-start overflow-hidden rounded-2xl border bg-white shadow-[0_8px_30px_-24px_rgba(15,23,42,0.45)] ${sectionBorder}`}>
-                  <header className={`flex items-start gap-3 border-b px-4 py-3.5 ${sectionBackground} ${sectionBorder}`}>
+                <article key={`${group.number}-${originalIndex}`} dir={groupDirection} className="self-start overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_-24px_rgba(15,23,42,0.45)]">
+                  <header className="flex items-start gap-3 border-b border-slate-100 bg-gradient-to-l from-slate-50 to-white px-4 py-3.5">
                     <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 px-2 text-xs font-black text-white shadow-sm">
                       {group.number}
                     </span>
-                    <h4 className={`min-w-0 flex-1 pt-1 text-[15px] font-black leading-6 ${sectionText} ${groupDirection === "ltr" ? "text-left" : "text-right"}`}>
+                    <h4 className={`min-w-0 flex-1 pt-1 text-[15px] font-bold leading-6 text-slate-900 ${groupDirection === "ltr" ? "text-left" : "text-right"}`}>
                       <span className="block">{bilingualTitle.primary}</span>
                       {bilingualTitle.translation && bilingualTitle.translationDirection && (
                         <span
                           dir={bilingualTitle.translationDirection}
                           className={`mt-1.5 block text-xs font-semibold leading-5 text-slate-500 ${bilingualTitle.translationDirection === "ltr" ? "text-left" : "text-right"}`}
                         >
-                          <span className="me-1.5 inline-flex text-[9px] font-black text-slate-400">
+                          <span className="me-1.5 inline-flex rounded-md bg-[#00C9B7]/10 px-2 py-0.5 text-[9px] font-black text-[#008F83]">
                             {bilingualTitle.translationDirection === "ltr" ? "English" : (isAr ? "العربية" : "Arabic")}
                           </span>
                           {bilingualTitle.translation}
@@ -392,14 +380,14 @@ function RichFormattedText({ text, isAr, sectionKey }: { text: string; isAr: boo
                         return (
                           <section
                             key={detailIndex}
-                            className={`rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-slate-700 ${isEnglishDetail ? "border-s-2 border-s-slate-300" : ""} ${isLong ? "sm:col-span-2" : ""}`}
+                            className={`rounded-xl border border-s-[3px] p-3.5 ${visual.tone} ${isEnglishDetail ? "border-s-[#00C9B7]" : ""} ${isLong ? "sm:col-span-2" : ""}`}
                             dir={detailDirection}
                           >
-                            <div className="mb-1.5 flex items-center gap-2 text-xs font-bold text-slate-500">
-                              <visual.Icon className="h-3.5 w-3.5 text-slate-400" />
+                            <div className="mb-1.5 flex items-center gap-2 text-xs font-bold">
+                              <visual.Icon className="h-3.5 w-3.5" />
                               <span>{label}</span>
                               {isEnglishDetail && (
-                                <span className="ms-auto text-[9px] font-black text-slate-400">
+                                <span className="ms-auto rounded-md bg-[#1A1F36] px-2 py-0.5 text-[9px] font-black text-white">
                                   English
                                 </span>
                               )}
@@ -432,7 +420,7 @@ function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: 
   // block. FormattedText below gives that structure back without changing a
   // single word of the content.
   if (typeof content === "string") {
-    return <RichFormattedText text={content} isAr={isAr} sectionKey={sectionKey} />;
+    return <RichFormattedText text={content} isAr={isAr} />;
   }
 
   // Handle array content (like learning_objectives or activities)
@@ -470,7 +458,7 @@ function SectionContent({ content, sectionKey, t }: { content: any; sectionKey: 
           const isDetailed = Array.isArray(value) || typeof value === "object" || serializedValue.length > 100;
           return (
             <section key={key} className={`rounded-2xl border border-slate-100 bg-slate-50/60 p-4 ${isDetailed ? "sm:col-span-2" : ""}`}>
-              <span className="mb-2 block text-[11px] font-black text-slate-500">{displayLabel}</span>
+              <span className="mb-2 block text-[11px] font-black text-[#008F83]">{displayLabel}</span>
               {typeof value === "object" ? (
                 <SectionContent content={value} sectionKey={key} t={t} />
               ) : (
@@ -1063,9 +1051,9 @@ export default function WeeklyPlanPage() {
 
           <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="space-y-6">
             {PLAN_SECTION_GROUPS.map((group, groupIndex) => (
-              <section key={group.id} className={`overflow-hidden rounded-3xl border border-slate-200/80 ${group.background} shadow-[0_16px_45px_-38px_rgba(15,23,42,0.55)]`}>
+              <section key={group.id} className="overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-50/70 shadow-[0_16px_45px_-38px_rgba(15,23,42,0.55)]">
                 <header className="flex items-start gap-3 border-b border-slate-200/70 bg-white/75 px-4 py-4 md:px-5">
-                  <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black text-white shadow-sm" style={{ backgroundColor: group.accent }}>
+                  <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-xl bg-[#1A1F36] text-xs font-black text-white shadow-sm">
                     {groupIndex + 1}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -1082,23 +1070,25 @@ export default function WeeklyPlanPage() {
                     const config = SECTION_ICONS[key];
                     const Icon = config.icon;
                     const sectionContent = sections[key];
-                    const colorClasses = config.color.split(" ");
                     const labelKey = SECTION_LABEL_KEYS[key];
                     const sectionIndex = ALL_SECTION_KEYS.indexOf(key);
 
                     return (
-                      <AccordionItem id={`plan-section-${key}`} key={key} value={key} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-white shadow-sm ${colorClasses[1] || ""}`}>
-                        <AccordionTrigger dir={isEn ? "ltr" : "rtl"} className={`px-3.5 py-3.5 text-start hover:no-underline md:px-4 ${colorClasses[0] || ""}`}>
+                      <AccordionItem id={`plan-section-${key}`} key={key} value={key} className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                        <AccordionTrigger
+                          dir={isEn ? "ltr" : "rtl"}
+                          className={`rounded-none px-3.5 py-3.5 text-start text-white hover:no-underline hover:brightness-105 data-[state=open]:shadow-[0_10px_30px_-22px_rgba(15,23,42,0.85)] md:px-4 [&>svg]:text-white/75 ${config.header}`}
+                        >
                           <span className="flex min-w-0 flex-1 items-start gap-3">
-                            <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-xl bg-white/85 px-2 text-[11px] font-black text-slate-500 shadow-sm ring-1 ring-black/5">
+                            <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-xl bg-white/15 px-2 text-[11px] font-black tabular-nums text-white shadow-sm ring-1 ring-white/20">
                               {sectionIndex + 1}
                             </span>
-                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/85 shadow-sm ring-1 ring-black/5 ${colorClasses[2] || ""}`}>
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white shadow-sm ring-1 ring-white/20">
                               <Icon className="h-4 w-4" />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className={`block text-sm font-black ${colorClasses[2] || ""}`}>{t(`weeklyPlan.${labelKey}`)}</span>
-                              {!isEditing && <span className="mt-1 block truncate text-xs font-normal text-slate-500">{sectionPreview(sectionContent, isAr)}</span>}
+                              <span className="block text-sm font-black text-white">{t(`weeklyPlan.${labelKey}`)}</span>
+                              {!isEditing && <span className="mt-1 block truncate text-xs font-normal text-white/70">{sectionPreview(sectionContent, isAr)}</span>}
                             </span>
                           </span>
                         </AccordionTrigger>
