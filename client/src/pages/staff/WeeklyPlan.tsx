@@ -23,7 +23,7 @@ import { WEEKLY_PLAN_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesForAgeGroup, ty
 
 // Section config without labels (labels come from i18n)
 const DEEP_TEAL_HEADER = "border-[#005B55] bg-gradient-to-l from-[#007F75] to-[#005B55]";
-const DEEP_NAVY_HEADER = "border-[#1A1F36] bg-gradient-to-l from-[#252B47] to-[#1A1F36]";
+const DEEP_NAVY_HEADER = "border-[#2A314E] bg-gradient-to-l from-[#3F4868] to-[#2A314E]";
 
 const SECTION_ICONS: Record<string, { icon: any; header: string }> = {
   theme_overview: { icon: BookOpen, header: DEEP_TEAL_HEADER },
