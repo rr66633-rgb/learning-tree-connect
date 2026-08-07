@@ -385,7 +385,7 @@ function AiTaskCard({
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="h-1 bg-muted">
-            <div className="h-full bg-gradient-to-r from-primary via-fuchsia-500 to-amber-400 transition-all duration-1000" style={{ width: `${state.progress}%` }} />
+            <div className="h-full bg-gradient-to-r from-[#00C9B7] via-[#FF5CA8] to-[#FFB020] transition-all duration-1000" style={{ width: `${state.progress}%` }} />
           </div>
         </button>
       </div>
@@ -395,7 +395,7 @@ function AiTaskCard({
   return (
     <div className="fixed bottom-4 left-4 right-4 z-[100] sm:right-auto sm:w-[440px] pointer-events-none" aria-live="polite">
       <section className="pointer-events-auto overflow-hidden rounded-3xl border border-border/70 bg-background/95 shadow-[0_24px_80px_-24px_rgba(15,23,42,0.45)] backdrop-blur-xl">
-        <header className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-fuchsia-500/10 to-amber-400/10 px-5 pb-4 pt-5">
+        <header className="relative overflow-hidden bg-gradient-to-br from-[#00C9B7]/15 via-[#FF5CA8]/8 to-[#FFB020]/10 px-5 pb-4 pt-5">
           <div className="absolute -right-12 -top-16 h-36 w-36 rounded-full bg-primary/15 blur-3xl" />
           <div className="relative flex items-start gap-3">
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
@@ -456,7 +456,7 @@ function AiTaskCard({
                 <span className="tabular-nums text-muted-foreground">{state.progress}% <span className="opacity-70">{isAr ? "تقديري" : "estimated"}</span></span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div className="relative h-full rounded-full bg-gradient-to-r from-primary via-fuchsia-500 to-amber-400 transition-all duration-1000 ease-out" style={{ width: `${state.progress}%` }}>
+                <div className="relative h-full rounded-full bg-gradient-to-r from-[#00C9B7] via-[#FF5CA8] to-[#FFB020] transition-all duration-1000 ease-out" style={{ width: `${state.progress}%` }}>
                   <span className="absolute inset-0 animate-pulse bg-white/20" />
                 </div>
               </div>

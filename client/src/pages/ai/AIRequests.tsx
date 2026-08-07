@@ -37,14 +37,14 @@ const TYPE_OPTIONS = [
 ] as const;
 
 const TYPE_STYLES: Record<string, string> = {
-  observation: "bg-violet-100 text-violet-700 border-violet-200",
-  weekly_plan: "bg-blue-100 text-blue-700 border-blue-200",
-  activity: "bg-amber-100 text-amber-700 border-amber-200",
-  progress_report: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  parent_message: "bg-pink-100 text-pink-700 border-pink-200",
-  newsletter: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  story: "bg-teal-100 text-teal-700 border-teal-200",
-  marketing: "bg-rose-100 text-rose-700 border-rose-200",
+  observation: "border-[#00C9B7]/25 bg-[#00C9B7]/10 text-[#008F83]",
+  weekly_plan: "border-[#00C9B7]/25 bg-[#00C9B7]/10 text-[#008F83]",
+  activity: "border-[#FFB020]/30 bg-[#FFB020]/12 text-[#9A6300]",
+  progress_report: "border-[#00C9B7]/25 bg-[#00C9B7]/10 text-[#008F83]",
+  parent_message: "border-[#FF5CA8]/25 bg-[#FF5CA8]/10 text-[#C92C73]",
+  newsletter: "border-[#FFB020]/30 bg-[#FFB020]/12 text-[#9A6300]",
+  story: "border-[#00C9B7]/25 bg-[#00C9B7]/10 text-[#008F83]",
+  marketing: "border-[#FF5CA8]/25 bg-[#FF5CA8]/10 text-[#C92C73]",
 };
 
 function humanizeKey(key: string, isAr: boolean) {
@@ -242,7 +242,7 @@ function StructuredContent({ value, depth = 0, isAr, fieldKey }: { value: unknow
               ? `self-start overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_35px_-28px_rgba(15,23,42,0.5)] ${longField ? "md:col-span-2" : ""}`
               : "border-s border-slate-200 ps-3"}>
               <div className={depth === 0 ? "flex items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-4 py-3" : "mb-1.5"}>
-                {depth === 0 && <span className="h-2 w-2 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400" />}
+                {depth === 0 && <span className="h-2 w-2 rounded-full bg-[#00C9B7]" />}
                 <h4 className="text-xs font-black tracking-wide text-slate-600">{humanizeKey(key, isAr)}</h4>
               </div>
               <div className={depth === 0 ? "p-4 md:p-5" : ""}>
@@ -308,7 +308,7 @@ export default function AIRequests() {
   const statusBadge = (status: string, progress: number) => {
     if (status === "completed") return <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700"><CheckCircle2 className="me-1 h-3 w-3" />{isAr ? "مكتمل" : "Completed"}</Badge>;
     if (status === "failed") return <Badge className="border-red-200 bg-red-50 text-red-700"><AlertCircle className="me-1 h-3 w-3" />{isAr ? "تعذّر" : "Failed"}</Badge>;
-    return <Badge className="border-violet-200 bg-violet-50 text-violet-700"><Loader2 className="me-1 h-3 w-3 animate-spin" />{isAr ? `قيد التنفيذ ${progress}%` : `Running ${progress}%`}</Badge>;
+    return <Badge className="border-[#00C9B7]/25 bg-[#00C9B7]/10 text-[#008F83]"><Loader2 className="me-1 h-3 w-3 animate-spin" />{isAr ? `قيد التنفيذ ${progress}%` : `Running ${progress}%`}</Badge>;
   };
 
   const copyResult = async () => {
@@ -322,13 +322,14 @@ export default function AIRequests() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6 lg:p-8" dir={isAr ? "rtl" : "ltr"}>
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-violet-950 to-slate-900 p-6 text-white md:p-8">
-        <div className="absolute -left-16 -top-20 h-56 w-56 rounded-full bg-violet-500/20 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl bg-[#1A1F36] p-6 text-white md:p-8">
+        <div className="absolute -left-16 -top-20 h-56 w-56 rounded-full bg-[#00C9B7]/25 blur-3xl" />
+        <div className="absolute -bottom-24 -right-12 h-48 w-48 rounded-full bg-[#FFB020]/10 blur-3xl" />
         <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <Link href="/ai"><Button variant="ghost" size="sm" className="mb-4 -ms-2 text-white/70 hover:bg-white/10 hover:text-white">{isAr ? <ArrowRight className="me-2 h-4 w-4" /> : <ArrowLeft className="me-2 h-4 w-4" />}{isAr ? "العودة للمساعد" : "Back to AI"}</Button></Link>
             <div className="mb-3 flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15"><Clock3 className="h-6 w-6 text-violet-200" /></span>
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00C9B7]/15 ring-1 ring-[#00C9B7]/30"><Clock3 className="h-6 w-6 text-[#57E2D6]" /></span>
               <div>
                 <h1 className="text-2xl font-black md:text-3xl">{isAr ? "سجل أعمالي الذكية" : "My AI Work"}</h1>
                 <p className="mt-1 text-sm text-slate-300">{isAr ? "كل خططك وتقاريرك ومحتواك الذكي محفوظة ومنظمة وقابلة للعودة" : "Every AI plan, report and content result—organized, preserved and easy to revisit"}</p>
@@ -357,7 +358,7 @@ export default function AIRequests() {
       </Card>
 
       {historyQuery.isLoading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-violet-500" /></div>
+        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#00C9B7]" /></div>
       ) : rows.length === 0 ? (
         <Card className="border-dashed"><CardContent className="flex flex-col items-center py-16 text-center"><Sparkles className="mb-4 h-12 w-12 text-muted-foreground/25" /><h2 className="font-bold">{isAr ? "لا توجد أعمال مطابقة" : "No matching work"}</h2><p className="mt-1 text-sm text-muted-foreground">{isAr ? "ستظهر هنا كل النتائج التي تنشئها تلقائياً" : "Every generated result will appear here automatically"}</p></CardContent></Card>
       ) : (
@@ -394,14 +395,19 @@ export default function AIRequests() {
       )}
 
       <Dialog open={!!selected} onOpenChange={open => !open && setSelected(null)}>
-        <DialogContent className="max-h-[92vh] max-w-6xl gap-0 overflow-hidden border-0 bg-slate-50 p-0 shadow-2xl [&_[data-slot=dialog-close]]:z-20 [&_[data-slot=dialog-close]]:text-white" dir={isAr ? "rtl" : "ltr"}>
-          <div className="max-h-[92vh] overflow-y-auto">
-            <DialogHeader className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-violet-950 to-slate-900 px-6 pb-6 pt-7 text-white md:px-8">
-              <div className="absolute -start-16 -top-20 h-52 w-52 rounded-full bg-violet-500/20 blur-3xl" />
+        <DialogContent
+          className="max-h-[90vh] max-w-none gap-0 overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl [&_[data-slot=dialog-close]]:z-20 [&_[data-slot=dialog-close]]:text-white"
+          style={{ width: "min(1180px, calc(100vw - 32px))", maxWidth: "1180px" }}
+          dir={isAr ? "rtl" : "ltr"}
+        >
+          <div className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="relative overflow-hidden bg-[#1A1F36] px-6 pb-6 pt-7 text-white md:px-9">
+              <div className="absolute -start-16 -top-20 h-52 w-52 rounded-full bg-[#00C9B7]/25 blur-3xl" />
+              <div className="absolute -bottom-20 end-16 h-40 w-40 rounded-full bg-[#FFB020]/10 blur-3xl" />
               <div className="relative flex items-start gap-4 pe-9">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15"><Sparkles className="h-6 w-6 text-violet-200" /></span>
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#00C9B7]/15 ring-1 ring-[#00C9B7]/30"><Sparkles className="h-6 w-6 text-[#57E2D6]" /></span>
                 <div className="min-w-0">
-                  <p className="mb-1.5 text-xs font-bold text-violet-200">{isAr ? "نتيجة محفوظة في أعمالي الذكية" : "Saved in My AI Work"}</p>
+                  <p className="mb-1.5 text-xs font-bold text-[#57E2D6]">{isAr ? "نتيجة محفوظة في أعمالي الذكية" : "Saved in My AI Work"}</p>
                   <DialogTitle className="text-start text-xl font-black leading-8 text-white md:text-2xl">{selected?.title}</DialogTitle>
                 </div>
               </div>
@@ -414,7 +420,7 @@ export default function AIRequests() {
                 {selected && <Button size="sm" className="rounded-xl" asChild><a href={selected.destinationUrl}><ExternalLink className="me-1.5 h-3.5 w-3.5" />{isAr ? "فتح في قسمه" : "Open source"}</a></Button>}
               </div>
             </div>
-            <div className="p-4 md:p-7">
+            <div className="p-4 sm:p-6 md:p-8 lg:p-10">
               <StructuredContent value={selected?.content} isAr={isAr} />
             </div>
           </div>

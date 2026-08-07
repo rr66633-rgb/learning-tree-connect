@@ -23,20 +23,20 @@ import { WEEKLY_PLAN_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesForAgeGroup, ty
 
 // Section config without labels (labels come from i18n)
 const SECTION_ICONS: Record<string, { icon: any; color: string }> = {
-  theme_overview: { icon: BookOpen, color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
-  learning_objectives: { icon: FileText, color: "bg-blue-50 border-blue-200 text-blue-800" },
-  arabic_activities: { icon: BookMarked, color: "bg-amber-50 border-amber-200 text-amber-800" },
-  english_activities: { icon: BookMarked, color: "bg-indigo-50 border-indigo-200 text-indigo-800" },
-  math_activities: { icon: Calculator, color: "bg-purple-50 border-purple-200 text-purple-800" },
-  science_activities: { icon: FlaskConical, color: "bg-teal-50 border-teal-200 text-teal-800" },
-  art_activities: { icon: Palette, color: "bg-pink-50 border-pink-200 text-pink-800" },
-  sensory_activities: { icon: Hand, color: "bg-orange-50 border-orange-200 text-orange-800" },
-  physical_activities: { icon: Dumbbell, color: "bg-red-50 border-red-200 text-red-800" },
-  quran_islamic: { icon: Moon, color: "bg-emerald-50 border-emerald-200 text-emerald-800" },
-  story_of_week: { icon: BookOpen, color: "bg-violet-50 border-violet-200 text-violet-800" },
-  song_of_week: { icon: Music, color: "bg-sky-50 border-sky-200 text-sky-800" },
-  home_activity: { icon: Home, color: "bg-lime-50 border-lime-200 text-lime-800" },
-  parent_notes: { icon: MessageSquare, color: "bg-cyan-50 border-cyan-200 text-cyan-800" },
+  theme_overview: { icon: BookOpen, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
+  learning_objectives: { icon: FileText, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
+  arabic_activities: { icon: BookMarked, color: "bg-[#FFB020]/12 border-[#FFB020]/30 text-[#9A6300]" },
+  english_activities: { icon: BookMarked, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
+  math_activities: { icon: Calculator, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
+  science_activities: { icon: FlaskConical, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
+  art_activities: { icon: Palette, color: "bg-[#FF5CA8]/10 border-[#FF5CA8]/25 text-[#C92C73]" },
+  sensory_activities: { icon: Hand, color: "bg-[#FFB020]/12 border-[#FFB020]/30 text-[#9A6300]" },
+  physical_activities: { icon: Dumbbell, color: "bg-[#FF5CA8]/10 border-[#FF5CA8]/25 text-[#C92C73]" },
+  quran_islamic: { icon: Moon, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
+  story_of_week: { icon: BookOpen, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
+  song_of_week: { icon: Music, color: "bg-[#FFB020]/12 border-[#FFB020]/30 text-[#9A6300]" },
+  home_activity: { icon: Home, color: "bg-[#00C9B7]/10 border-[#00C9B7]/25 text-[#008F83]" },
+  parent_notes: { icon: MessageSquare, color: "bg-[#1A1F36]/5 border-[#1A1F36]/15 text-[#1A1F36]" },
 };
 
 const WIDE_SECTION_KEYS = new Set([
@@ -195,11 +195,11 @@ const ACTIVITY_LABELS = /(?:الوصف بالعربية|الوصف|English descr
 
 function fieldVisual(label: string, isAr: boolean) {
   const value = label.toLocaleLowerCase();
-  if (/مدة|duration/.test(value)) return { Icon: Clock, tone: "bg-sky-50 text-sky-700 border-sky-100", label: isAr ? "المدة" : "Duration" };
-  if (/مواد|materials/.test(value)) return { Icon: PackageOpen, tone: "bg-amber-50 text-amber-700 border-amber-100", label };
-  if (/تقييم|assessment/.test(value)) return { Icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-700 border-emerald-100", label };
-  if (/تنفيذ|خطوات|procedure|implementation|steps/.test(value)) return { Icon: ListChecks, tone: "bg-violet-50 text-violet-700 border-violet-100", label };
-  if (/وصف|description/.test(value)) return { Icon: Languages, tone: "bg-blue-50 text-blue-700 border-blue-100", label };
+  if (/مدة|duration/.test(value)) return { Icon: Clock, tone: "bg-[#1A1F36]/5 text-[#1A1F36] border-[#1A1F36]/10", label: isAr ? "المدة" : "Duration" };
+  if (/مواد|materials/.test(value)) return { Icon: PackageOpen, tone: "bg-[#FFB020]/10 text-[#9A6300] border-[#FFB020]/20", label };
+  if (/تقييم|assessment/.test(value)) return { Icon: CheckCircle2, tone: "bg-[#00C9B7]/10 text-[#008F83] border-[#00C9B7]/20", label };
+  if (/تنفيذ|خطوات|procedure|implementation|steps/.test(value)) return { Icon: ListChecks, tone: "bg-[#1A1F36]/5 text-[#1A1F36] border-[#1A1F36]/10", label };
+  if (/وصف|description/.test(value)) return { Icon: Languages, tone: "bg-[#00C9B7]/10 text-[#008F83] border-[#00C9B7]/20", label };
   return { Icon: Target, tone: "bg-slate-50 text-slate-700 border-slate-100", label };
 }
 
@@ -569,7 +569,7 @@ export default function WeeklyPlanPage() {
             <h1 className="text-2xl font-bold text-gray-900">{t('weeklyPlan.title')}</h1>
             <p className="text-sm text-gray-500 mt-1">{t('weeklyPlan.subtitle')}</p>
           </div>
-          <Button onClick={() => setView("generate")} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={() => setView("generate")} className="bg-[#00A99A] hover:bg-[#008F83]">
             <Plus className={`h-4 w-4 ${isEn ? 'mr-2' : 'ml-2'}`} />
             {t('weeklyPlan.createNewPlan')}
           </Button>
@@ -578,7 +578,7 @@ export default function WeeklyPlanPage() {
         {/* Plans List */}
         {plansQuery.isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#00A99A]" />
           </div>
         ) : !plansQuery.data?.length ? (
           <Card className="border-dashed">
@@ -644,18 +644,18 @@ export default function WeeklyPlanPage() {
         </div>
 
         {/* Template Selector */}
-        <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white">
+        <Card className="border-[#00C9B7]/20 bg-gradient-to-br from-[#00C9B7]/8 to-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-emerald-600" />
+                <LayoutGrid className="h-5 w-5 text-[#00A99A]" />
                 <h3 className="font-bold text-gray-800">{t('weeklyPlan.readyTemplates')}</h3>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowTemplates(!showTemplates)}
-                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                className="text-[#00A99A] hover:bg-[#00C9B7]/10 hover:text-[#008F83]"
               >
                 {showTemplates ? t('weeklyPlan.hideTemplates') : t('weeklyPlan.showTemplates')}
               </Button>
@@ -670,7 +670,7 @@ export default function WeeklyPlanPage() {
                     variant={templateCategory === "" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setTemplateCategory("")}
-                    className={templateCategory === "" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                    className={templateCategory === "" ? "bg-[#00A99A] hover:bg-[#008F83]" : ""}
                   >
                     {t('weeklyPlan.allTemplates')}
                   </Button>
@@ -680,7 +680,7 @@ export default function WeeklyPlanPage() {
                       variant={templateCategory === cat.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => setTemplateCategory(cat.id)}
-                      className={templateCategory === cat.id ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                      className={templateCategory === cat.id ? "bg-[#00A99A] hover:bg-[#008F83]" : ""}
                     >
                       {isEn ? (cat.labelEn || cat.labelAr) : cat.labelAr}
                     </Button>
@@ -801,7 +801,7 @@ export default function WeeklyPlanPage() {
               <Button 
                 onClick={handleGenerate} 
                 disabled={generateMutation.isPending || hasActiveWeeklyPlanTask}
-                className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-lg py-6 px-8"
+                className="w-full bg-[#00A99A] px-8 py-6 text-lg hover:bg-[#008F83] md:w-auto"
                 size="lg"
               >
                 {generateMutation.isPending || hasActiveWeeklyPlanTask ? (
@@ -835,15 +835,15 @@ export default function WeeklyPlanPage() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-[0_20px_60px_-42px_rgba(6,78,59,0.55)] md:p-6">
-        <div className="pointer-events-none absolute -start-12 -top-16 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl border border-[#00C9B7]/20 bg-gradient-to-br from-[#00C9B7]/10 via-white to-[#FFB020]/8 p-5 shadow-[0_20px_60px_-42px_rgba(0,201,183,0.55)] md:p-6">
+        <div className="pointer-events-none absolute -start-12 -top-16 h-40 w-40 rounded-full bg-[#00C9B7]/20 blur-3xl" />
         <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="icon" className="shrink-0 rounded-2xl border-white bg-white/85 shadow-sm" onClick={() => { setView("list"); setSelectedPlanId(null); setIsEditing(false); setEditedSections({}); }}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
-            <div className="mb-1.5 flex items-center gap-2 text-xs font-bold text-emerald-700"><Sparkles className="h-3.5 w-3.5" />{isAr ? "رحلة تعلم أسبوعية" : "Weekly learning journey"}</div>
+            <div className="mb-1.5 flex items-center gap-2 text-xs font-bold text-[#008F83]"><Sparkles className="h-3.5 w-3.5" />{isAr ? "رحلة تعلم أسبوعية" : "Weekly learning journey"}</div>
             <h1 className="truncate text-2xl font-black tracking-tight text-slate-950">{plan?.theme || "..."}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant={plan?.status === "published" ? "default" : "secondary"} className={plan?.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
@@ -872,7 +872,7 @@ export default function WeeklyPlanPage() {
                   {t('weeklyPlan.saveEdits')}
                 </Button>
               )}
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handlePublish} disabled={publishMutation.isPending}>
+              <Button size="sm" className="bg-[#00A99A] hover:bg-[#008F83]" onClick={handlePublish} disabled={publishMutation.isPending}>
                 <Send className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />
                 {t('weeklyPlan.publishAndNotify')}
               </Button>
@@ -906,7 +906,7 @@ export default function WeeklyPlanPage() {
       {/* Plan Sections */}
       {selectedPlan.isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#00A99A]" />
         </div>
       ) : sections ? (
         <div className="space-y-5">

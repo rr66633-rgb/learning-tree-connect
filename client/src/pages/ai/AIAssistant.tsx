@@ -68,11 +68,11 @@ function AssistantText({ text }: { text: string }) {
 }
 
 const getQuickActions = (isAr: boolean) => ([
-  { id: "memorize", label: (isAr ? "ساعدني في الحفظ" : "Help me save"), icon: BookOpen, color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
-  { id: "test", label: (isAr ? "اختبرني" : "Test Me"), icon: Brain, color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
-  { id: "review", label: (isAr ? "مراجعة درس اليوم" : "Review Today's Lesson"), icon: RotateCcw, color: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" },
-  { id: "challenge", label: (isAr ? "تحدي اليوم" : "Today's Challenge"), icon: Star, color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
-  { id: "question", label: (isAr ? "اسأل سؤالاً" : "Ask a Question"), icon: HelpCircle, color: "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100" },
+  { id: "memorize", label: (isAr ? "ساعدني في الحفظ" : "Help me save"), icon: BookOpen, color: "border-[#00C9B7]/25 bg-[#00C9B7]/10 text-[#008F83] hover:bg-[#00C9B7]/15" },
+  { id: "test", label: (isAr ? "اختبرني" : "Test Me"), icon: Brain, color: "border-[#00C9B7]/25 bg-[#00C9B7]/10 text-[#008F83] hover:bg-[#00C9B7]/15" },
+  { id: "review", label: (isAr ? "مراجعة درس اليوم" : "Review Today's Lesson"), icon: RotateCcw, color: "border-[#1A1F36]/15 bg-[#1A1F36]/5 text-[#1A1F36] hover:bg-[#1A1F36]/10" },
+  { id: "challenge", label: (isAr ? "تحدي اليوم" : "Today's Challenge"), icon: Star, color: "border-[#FFB020]/30 bg-[#FFB020]/12 text-[#9A6300] hover:bg-[#FFB020]/20" },
+  { id: "question", label: (isAr ? "اسأل سؤالاً" : "Ask a Question"), icon: HelpCircle, color: "border-[#FF5CA8]/25 bg-[#FF5CA8]/10 text-[#C92C73] hover:bg-[#FF5CA8]/15" },
 ]);
 
 const getQuickActionPrompts = (isAr: boolean): Record<string, string>  => ({
