@@ -18,6 +18,7 @@ import { useLocation } from "wouter";
 import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
 import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
+import { saveOrShareFile } from "@/lib/fileExport";
 
 
 const initialFormState = {
@@ -142,8 +143,9 @@ export default function StaffChildren() {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error(isAr ? 'يرجى اختيار صورة' : 'Please choose an image'); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error(isAr ? 'حجم الصورة يجب أن يكون أقل من 10 ميغابايت' : 'Image size must be less than 10 MB'); return; }
+    const hasImageExtension = /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(file.name);
+    if (!file.type.startsWith('image/') && !hasImageExtension) { toast.error(isAr ? 'يرجى اختيار صورة' : 'Please choose an image'); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error(isAr ? 'حجم الصورة يجب أن يكون أقل من 20 ميغابايت' : 'Image size must be less than 20 MB'); return; }
     setUploadingPhoto(true);
     try {
       const formData = new FormData();
@@ -161,7 +163,7 @@ export default function StaffChildren() {
 
   const renderForm = () => (
     <Tabs defaultValue="personal" className="w-full" dir="rtl">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
         <TabsTrigger value="personal">{t('children.personalData')}</TabsTrigger>
         <TabsTrigger value="parent">{t('children.parentInfo')}</TabsTrigger>
         <TabsTrigger value="medical">{t('children.medicalInfo')}</TabsTrigger>
@@ -185,13 +187,12 @@ export default function StaffChildren() {
           </div>
           <div>
             <p className="font-medium text-sm">{form.photo ? isAr ? 'تغيير الصورة' : 'Change Image' : isAr ? 'إضافة صورة الطفل' : 'Add Child Photo'}</p>
-            <p className="text-xs text-muted-foreground">{uploadingPhoto ? isAr ? 'جارٍ الرفع...' : 'Uploading...' : isAr ? 'اضغط لرفع صورة أو التقاطها من الكاميرا' : 'Click to upload or take photo from camera'}</p>
+            <p className="text-xs text-muted-foreground">{uploadingPhoto ? isAr ? 'جارٍ الرفع...' : 'Uploading...' : isAr ? 'اضغط لاختيار صورة من جهازك' : 'Choose a photo from your device'}</p>
           </div>
           <input
             ref={photoInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={handlePhotoUpload}
           />
@@ -351,26 +352,25 @@ export default function StaffChildren() {
           <Button
             variant="outline"
             className="gap-2 rounded-xl"
-            onClick={() => {
+            onClick={async () => {
               const params = new URLSearchParams();
               if (classFilter !== 'all') params.set('classId', classFilter);
               if (statusFilter !== 'all') params.set('status', statusFilter);
               const url = `/api/export-children${params.toString() ? '?' + params.toString() : ''}`;
               toast.info(t('children.exportDownloading'));
-              fetch(url, { credentials: 'include' })
-                .then(r => {
-                  if (!r.ok) throw new Error('export failed');
-                  return r.blob();
-                })
-                .then(blob => {
-                  const a = document.createElement('a');
-                  a.href = URL.createObjectURL(blob);
-                  a.download = `children_export_${new Date().toISOString().split('T')[0]}.xlsx`;
-                  a.click();
-                  URL.revokeObjectURL(a.href);
-                  toast.success(t('children.exportSuccess'));
-                })
-                .catch(() => toast.error(t('children.exportFailed')));
+              try {
+                const response = await fetch(url, { credentials: 'include' });
+                if (!response.ok) throw new Error('export failed');
+                const result = await saveOrShareFile(
+                  await response.blob(),
+                  `children_export_${new Date().toISOString().split('T')[0]}.xlsx`,
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                  t('children.title'),
+                );
+                if (result !== 'cancelled') toast.success(t('children.exportSuccess'));
+              } catch {
+                toast.error(t('children.exportFailed'));
+              }
             }}
           >
             <Download className="h-4 w-4" />

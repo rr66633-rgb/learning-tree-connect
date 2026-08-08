@@ -229,10 +229,14 @@ export default function Payroll() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     if (payrollQuery.data && summary) {
-                      exportPayrollToExcel(payrollQuery.data as any, summary, selectedMonth, selectedYear);
-                      toast.success(isAr ? "تم تصدير ملف Excel" : "Excel exported");
+                      try {
+                        const result = await exportPayrollToExcel(payrollQuery.data as any, summary, selectedMonth, selectedYear);
+                        if (result !== "cancelled") toast.success(isAr ? "تم تجهيز ملف Excel للحفظ" : "Excel file ready to save");
+                      } catch {
+                        toast.error(isAr ? "تعذّر تصدير ملف Excel" : "Could not export Excel file");
+                      }
                     }
                   }}
                 >
@@ -243,8 +247,12 @@ export default function Payroll() {
                   variant="outline"
                   onClick={async () => {
                     if (payrollQuery.data && summary) {
-                      await exportPayrollToPdf(payrollQuery.data as any, summary, selectedMonth, selectedYear);
-                      toast.success(isAr ? "تم تصدير ملف PDF" : "PDF exported");
+                      try {
+                        const result = await exportPayrollToPdf(payrollQuery.data as any, summary, selectedMonth, selectedYear);
+                        if (result !== "cancelled") toast.success(isAr ? "تم تجهيز ملف PDF للحفظ" : "PDF ready to save");
+                      } catch {
+                        toast.error(isAr ? "تعذّر تصدير ملف PDF" : "Could not export PDF file");
+                      }
                     }
                   }}
                 >
@@ -566,9 +574,13 @@ function AnnualReportTab({ isAr }: { isAr: boolean }) {
           <>
             <Button
               variant="outline"
-              onClick={() => {
-                exportAnnualPayrollToExcel(records as any, monthlySummary, annualTotal, reportYear);
-                toast.success(isAr ? "تم تصدير التقرير السنوي Excel" : "Annual report exported");
+              onClick={async () => {
+                try {
+                  const result = await exportAnnualPayrollToExcel(records as any, monthlySummary, annualTotal, reportYear);
+                  if (result !== "cancelled") toast.success(isAr ? "تم تجهيز التقرير السنوي للحفظ" : "Annual report ready to save");
+                } catch {
+                  toast.error(isAr ? "تعذّر تصدير التقرير السنوي" : "Could not export annual report");
+                }
               }}
             >
               <FileSpreadsheet className="w-4 h-4 me-2" />
@@ -577,8 +589,12 @@ function AnnualReportTab({ isAr }: { isAr: boolean }) {
             <Button
               variant="outline"
               onClick={async () => {
-                await exportAnnualPayrollToPdf(monthlySummary, annualTotal, reportYear);
-                toast.success(isAr ? "تم تصدير التقرير السنوي PDF" : "Annual report exported");
+                try {
+                  const result = await exportAnnualPayrollToPdf(monthlySummary, annualTotal, reportYear);
+                  if (result !== "cancelled") toast.success(isAr ? "تم تجهيز التقرير السنوي للحفظ" : "Annual report ready to save");
+                } catch {
+                  toast.error(isAr ? "تعذّر تصدير التقرير السنوي" : "Could not export annual report");
+                }
               }}
             >
               <FileDown className="w-4 h-4 me-2" />

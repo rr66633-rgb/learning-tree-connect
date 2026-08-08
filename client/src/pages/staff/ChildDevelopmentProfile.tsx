@@ -150,7 +150,7 @@ export default function ChildDevelopmentProfile() {
       </div>
 
       <Tabs defaultValue="progress" className="space-y-4">
-        <TabsList className="bg-muted/50 p-1 rounded-lg">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-lg bg-muted/50 p-1 md:grid-cols-3 xl:grid-cols-6">
           <TabsTrigger value="progress" className="rounded-md">
             <BarChart3 className="w-4 h-4 ml-1" />
             {isAr ? "التقدم" : "Progress"}

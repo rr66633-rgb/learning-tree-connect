@@ -580,7 +580,7 @@ function DashboardLayoutContent({
         />
       </div>
 
-      <SidebarInset className="overflow-y-auto bg-background">
+      <SidebarInset className="min-w-0 overflow-x-hidden overflow-y-auto bg-background">
         {/* Desktop top bar */}
         {!isMobile && (
           <div className="flex border-b border-border/50 h-14 items-center justify-between bg-background/80 px-5 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40">
@@ -620,7 +620,7 @@ function DashboardLayoutContent({
         <PushNotificationRequired />
         <PushNotificationBanner />
         <OperationalAlert />
-        <main className="flex-1 p-4 md:p-6 page-enter">{children}</main>
+        <main className="min-w-0 flex-1 p-3 sm:p-4 md:p-6 page-enter">{children}</main>
       </SidebarInset>
     </>
   );

@@ -15,6 +15,7 @@ import { Plus, CreditCard, TrendingUp, Clock, AlertTriangle, Send, RefreshCw, Do
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { createCsv, saveOrShareFile } from "@/lib/fileExport";
 
 const getStatusLabels = (isAr: boolean): Record<string, string>  => ({ pending: "معلقة", paid: "مدفوعة", overdue: "متأخرة", cancelled: "ملغاة", partially_paid: "مدفوعة جزئياً" });
 const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = { pending: "secondary", paid: "default", overdue: "destructive", cancelled: "outline", partially_paid: "secondary" };
@@ -130,7 +131,7 @@ export default function Finance() {
     });
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (!invoices) return;
     const headers = ["رقم الفاتورة", (isAr ? "الطفل" : "Child"), "ولي الأمر", "الوصف", "المبلغ", "الضريبة", (isAr ? "الإجمالي" : "Total"), "الحالة", "تاريخ الاستحقاق", (isAr ? "تاريخ الدفع" : "Payment Date")];
     const rows = invoices.map(inv => [
@@ -145,15 +146,17 @@ export default function Finance() {
       new Date(inv.dueDate).toLocaleDateString('ar-SA'),
       inv.paidAt ? new Date(inv.paidAt).toLocaleDateString('ar-SA') : "",
     ]);
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoices_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(isAr ? "تم تصدير التقرير" : "Report exported");
+    try {
+      const result = await saveOrShareFile(
+        createCsv(headers, rows),
+        `invoices_${new Date().toISOString().split('T')[0]}.csv`,
+        "text/csv;charset=utf-8",
+        isAr ? "المالية والمدفوعات" : "Finance & Payments",
+      );
+      if (result !== "cancelled") toast.success(isAr ? "تم تصدير التقرير" : "Report exported");
+    } catch {
+      toast.error(isAr ? "تعذّر تصدير الملف، حاول مرة أخرى" : "Could not export the file. Please try again.");
+    }
   };
 
   // Get parent for selected child
@@ -161,9 +164,9 @@ export default function Finance() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">{isAr ? "المالية والمدفوعات" : "Finance & Payments"}</h1>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <Button variant="outline" onClick={handleExportCSV} disabled={!invoices?.length}>
             <Download className="h-4 w-4 ml-2" />{isAr ? "تصدير" : "Export"}
           </Button>
@@ -234,7 +237,7 @@ export default function Finance() {
 
       {/* Tabs */}
       <Tabs defaultValue="invoices" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-5">
           <TabsTrigger value="invoices"><FileText className="h-4 w-4 ml-1" />{isAr ? "الفواتير" : "Invoices"}</TabsTrigger>
           <TabsTrigger value="transactions"><Receipt className="h-4 w-4 ml-1" />{isAr ? "المعاملات" : "Transactions"}</TabsTrigger>
           <TabsTrigger value="refunds"><Undo2 className="h-4 w-4 ml-1" />{isAr ? "الاستردادات" : "Refunds"}</TabsTrigger>

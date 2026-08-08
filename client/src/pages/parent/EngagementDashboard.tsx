@@ -115,7 +115,7 @@ export default function EngagementDashboard() {
       </Link>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-4">
         <Link href="/parent/engagement/activities">
           <Card className="text-center p-3 cursor-pointer hover:shadow-md transition-all active:scale-95">
             <BookOpen className="h-5 w-5 mx-auto text-blue-500 mb-1" />

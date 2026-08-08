@@ -17,6 +17,7 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { createCsv, saveOrShareFile } from "@/lib/fileExport";
 
 export default function StaffFinance() {
   const { t, i18n } = useTranslation();
@@ -147,7 +148,7 @@ export default function StaffFinance() {
     });
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (!invoices) return;
     const headers = [t('finance.invoiceNumber'), t('finance.child'), t('finance.parent'), t('finance.description'), t('finance.amount'), t('finance.vat'), t('finance.total'), t('finance.status'), t('finance.dueDate'), t('finance.paidDate')];
     const rows = invoices.map((inv: any) => [
@@ -162,20 +163,22 @@ export default function StaffFinance() {
       new Date(inv.dueDate).toLocaleDateString(locale),
       inv.paidAt ? new Date(inv.paidAt).toLocaleDateString(locale) : "",
     ]);
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoices_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(t('finance.exported'));
+    try {
+      const result = await saveOrShareFile(
+        createCsv(headers, rows),
+        `invoices_${new Date().toISOString().split('T')[0]}.csv`,
+        "text/csv;charset=utf-8",
+        t('finance.title'),
+      );
+      if (result !== "cancelled") toast.success(t('finance.exported'));
+    } catch {
+      toast.error(isAr ? "تعذّر تصدير الملف، حاول مرة أخرى" : "Could not export the file. Please try again.");
+    }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center">
             <CreditCard className="h-5 w-5 text-orange-600" />
@@ -185,7 +188,7 @@ export default function StaffFinance() {
             <p className="text-sm text-muted-foreground">{t('finance.subtitle')}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <Button variant="outline" onClick={handleExportCSV} disabled={!invoices?.length}>
             <Download className={`h-4 w-4 ${isEn ? 'mr-2' : 'ml-2'}`} />{t('finance.export')}
           </Button>
@@ -256,7 +259,7 @@ export default function StaffFinance() {
 
       {/* Tabs */}
       <Tabs defaultValue="invoices" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-5">
           <TabsTrigger value="invoices"><FileText className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />{t('finance.invoices')}</TabsTrigger>
           <TabsTrigger value="transactions"><Receipt className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />{t('finance.transactions')}</TabsTrigger>
           <TabsTrigger value="refunds"><Undo2 className={`h-4 w-4 ${isEn ? 'mr-1' : 'ml-1'}`} />{t('finance.refunds')}</TabsTrigger>
@@ -267,15 +270,15 @@ export default function StaffFinance() {
         {/* INVOICES TAB */}
         <TabsContent value="invoices">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>{t('finance.invoices')}</CardTitle>
-              <div className="flex gap-2">
+              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
                 <div className="relative">
                   <Search className={`absolute ${isEn ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground`} />
-                  <Input className={`${isEn ? 'pl-9' : 'pr-9'} w-[200px]`} placeholder={t('finance.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                  <Input className={`${isEn ? 'pl-9' : 'pr-9'} w-full sm:w-[200px]`} placeholder={t('finance.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]"><SelectValue placeholder={t('finance.filterStatus')} /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[140px]"><SelectValue placeholder={t('finance.filterStatus')} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('finance.all')}</SelectItem>
                     <SelectItem value="pending">{t('finance.statusPending')}</SelectItem>
@@ -287,7 +290,8 @@ export default function StaffFinance() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
+              <div className="w-full overflow-x-auto">
+              <Table className="min-w-[920px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className={isEn ? 'text-left' : 'text-right'}>{t('finance.invoiceNumber')}</TableHead>
@@ -332,8 +336,8 @@ export default function StaffFinance() {
                                 <Undo2 className={`h-3 w-3 ${isEn ? 'mr-1' : 'ml-1'}`} />{t('finance.refund')}
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={async () => { try { await generateInvoicePDF(inv as any, { centerName: centerSettings?.centerName, phone: centerSettings?.phone || undefined, email: centerSettings?.email || undefined, address: centerSettings?.address || undefined, vatNumber: (centerSettings as any)?.vatNumber || undefined, commercialRegister: (centerSettings as any)?.commercialRegister || undefined, logoUrl: (centerSettings as any)?.logoUrl || undefined }); 
-toast.success(t('finance.pdfDownloaded')); } catch (err) { console.error('PDF generation error:', err); toast.error(t('finance.pdfError') + ': ' + (err instanceof Error ? err.message : '')); } }}>
+                            <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50" onClick={async () => { try { const result = await generateInvoicePDF(inv as any, { centerName: centerSettings?.centerName, phone: centerSettings?.phone || undefined, email: centerSettings?.email || undefined, address: centerSettings?.address || undefined, vatNumber: (centerSettings as any)?.vatNumber || undefined, commercialRegister: (centerSettings as any)?.commercialRegister || undefined, logoUrl: (centerSettings as any)?.logoUrl || undefined });
+if (result !== 'cancelled') toast.success(t('finance.pdfDownloaded')); } catch (err) { console.error('PDF generation error:', err); toast.error(t('finance.pdfError') + ': ' + (err instanceof Error ? err.message : '')); } }}>
                               <Download className={`h-3 w-3 ${isEn ? 'mr-1' : 'ml-1'}`} />{t('finance.downloadPdf')}
                             </Button>
                             <Button size="sm" variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50" onClick={async () => { try { await printInvoice(inv as any, { centerName: centerSettings?.centerName, phone: centerSettings?.phone || undefined, email: centerSettings?.email || undefined, address: centerSettings?.address || undefined, vatNumber: (centerSettings as any)?.vatNumber || undefined, commercialRegister: (centerSettings as any)?.commercialRegister || undefined, logoUrl: (centerSettings as any)?.logoUrl || undefined }); } catch (err) { toast.error(t('finance.printError')); } }}>
@@ -351,6 +355,7 @@ toast.success(t('finance.pdfDownloaded')); } catch (err) { console.error('PDF ge
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import type { jsPDF } from "jspdf";
+import { saveOrShareFile } from "@/lib/fileExport";
 
 interface PayrollRecord {
   id: number;
@@ -40,7 +41,7 @@ const statusLabels: Record<string, string> = {
 /**
  * Export payroll data to Excel file
  */
-export function exportPayrollToExcel(records: PayrollRecord[], summary: PayrollSummary, month: number, year: number) {
+export async function exportPayrollToExcel(records: PayrollRecord[], summary: PayrollSummary, month: number, year: number) {
   const monthName = monthNames[month - 1];
   
   // Main payroll data
@@ -100,7 +101,13 @@ export function exportPayrollToExcel(records: PayrollRecord[], summary: PayrollS
     XLSX.utils.book_append_sheet(wb, bankWs, "تحويلات بنكية");
   }
 
-  XLSX.writeFile(wb, `مسيّر_الرواتب_${monthName}_${year}.xlsx`);
+  const bytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  return saveOrShareFile(
+    bytes,
+    `مسيّر_الرواتب_${monthName}_${year}.xlsx`,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    `مسيّر الرواتب ${monthName} ${year}`,
+  );
 }
 
 /**
@@ -218,7 +225,12 @@ export async function exportPayrollToPdf(records: PayrollRecord[], summary: Payr
   doc.setFontSize(8);
   doc.text("وثيقة سرية - للاستخدام الداخلي فقط", pageWidth / 2, pageHeight - 5, { align: "center" });
 
-  doc.save(`مسيّر_الرواتب_${monthName}_${year}.pdf`);
+  return saveOrShareFile(
+    doc.output("blob"),
+    `مسيّر_الرواتب_${monthName}_${year}.pdf`,
+    "application/pdf",
+    `مسيّر الرواتب ${monthName} ${year}`,
+  );
 }
 
 interface MonthlySummary {
@@ -242,7 +254,7 @@ interface AnnualTotal {
 /**
  * Export annual payroll report to Excel
  */
-export function exportAnnualPayrollToExcel(
+export async function exportAnnualPayrollToExcel(
   records: PayrollRecord[],
   monthlySummary: MonthlySummary[],
   annualTotal: AnnualTotal,
@@ -330,7 +342,13 @@ export function exportAnnualPayrollToExcel(
   ];
   XLSX.utils.book_append_sheet(wb, empWs, "ملخص الموظفين");
 
-  XLSX.writeFile(wb, `التقرير_السنوي_للرواتب_${year}.xlsx`);
+  const bytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  return saveOrShareFile(
+    bytes,
+    `التقرير_السنوي_للرواتب_${year}.xlsx`,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    `التقرير السنوي للرواتب ${year}`,
+  );
 }
 
 /**
@@ -423,5 +441,10 @@ export async function exportAnnualPayrollToPdf(
   doc.setFontSize(8);
   doc.text("وثيقة سرية - للاستخدام الداخلي فقط", pageWidth / 2, pageHeight - 5, { align: "center" });
 
-  doc.save(`التقرير_السنوي_للرواتب_${year}.pdf`);
+  return saveOrShareFile(
+    doc.output("blob"),
+    `التقرير_السنوي_للرواتب_${year}.pdf`,
+    "application/pdf",
+    `التقرير السنوي للرواتب ${year}`,
+  );
 }

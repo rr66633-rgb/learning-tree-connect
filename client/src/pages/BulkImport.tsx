@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { saveOrShareFile } from "@/lib/fileExport";
 
 type EntityType = 'children' | 'parents' | 'teachers' | 'staff';
 
@@ -106,13 +107,15 @@ export default function BulkImport() {
       }
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: result.mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = result.fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(isAr ? "تم تحميل القالب بنجاح" : "Template uploaded successfully");
+      const exportResult = await saveOrShareFile(
+        blob,
+        result.fileName,
+        result.mimeType,
+        isAr ? "قالب الاستيراد" : "Import template",
+      );
+      if (exportResult !== 'cancelled') {
+        toast.success(isAr ? "تم تجهيز القالب للحفظ" : "Template ready to save");
+      }
     } catch (err: any) {
       toast.error(isAr ? "حدث خطأ أثناء تحميل القالب" : "An error occurred while loading the template");
     }

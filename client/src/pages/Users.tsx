@@ -14,6 +14,7 @@ import * as XLSX from "xlsx";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { saveOrShareFile } from "@/lib/fileExport";
 
 type UserRole = "admin" | "principal" | "teacher" | "parent" | "assistant" | "accountant" | "receptionist";
 type UserForm = { name: string; email: string; phone: string; role: UserRole; password: string };
@@ -155,31 +156,44 @@ export default function UsersPage() {
     }));
   }, [users]);
 
-  const exportToExcel = useCallback(() => {
+  const exportToExcel = useCallback(async () => {
     const data = getExportData();
     if (data.length === 0) { toast.error(isAr ? 'لا توجد بيانات للتصدير' : 'No data to export'); return; }
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, isAr ? 'المستخدمون' : 'Users');
-    XLSX.writeFile(wb, `${isAr ? "قائمة" : "List"}_${isAr ? "المستخدمين" : "Users"}_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success(isAr ? 'تم تصدير الملف بنجاح' : 'File exported successfully');
-  }, [getExportData]);
+    try {
+      const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const result = await saveOrShareFile(
+        bytes,
+        `${isAr ? "قائمة" : "List"}_${isAr ? "المستخدمين" : "Users"}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        isAr ? 'قائمة المستخدمين' : 'Users list',
+      );
+      if (result !== 'cancelled') toast.success(isAr ? 'تم تجهيز الملف للحفظ' : 'File ready to save');
+    } catch {
+      toast.error(isAr ? 'تعذّر تصدير الملف' : 'Could not export the file');
+    }
+  }, [getExportData, isAr]);
 
-  const exportToCSV = useCallback(() => {
+  const exportToCSV = useCallback(async () => {
     const data = getExportData();
     if (data.length === 0) { toast.error(isAr ? 'لا توجد بيانات للتصدير' : 'No data to export'); return; }
     const ws = XLSX.utils.json_to_sheet(data);
     const csv = XLSX.utils.sheet_to_csv(ws);
     const bom = '\uFEFF';
-    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${isAr ? "قائمة" : "List"}_${isAr ? "المستخدمين" : "Users"}_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(isAr ? 'تم تصدير الملف بنجاح' : 'File exported successfully');
-  }, [getExportData]);
+    try {
+      const result = await saveOrShareFile(
+        bom + csv,
+        `${isAr ? "قائمة" : "List"}_${isAr ? "المستخدمين" : "Users"}_${new Date().toISOString().slice(0, 10)}.csv`,
+        'text/csv;charset=utf-8',
+        isAr ? 'قائمة المستخدمين' : 'Users list',
+      );
+      if (result !== 'cancelled') toast.success(isAr ? 'تم تجهيز الملف للحفظ' : 'File ready to save');
+    } catch {
+      toast.error(isAr ? 'تعذّر تصدير الملف' : 'Could not export the file');
+    }
+  }, [getExportData, isAr]);
 
   return (
     <div className="space-y-6">

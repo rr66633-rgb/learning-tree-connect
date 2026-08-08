@@ -15,8 +15,40 @@ import {
   X, Image as ImageIcon, Film, Plus, Trash2,
   Eye, Loader2, CheckCircle2, Sparkles, Wand2, UserCheck, CloudUpload,
   Images, Play, CalendarDays, ShieldCheck, HardDriveUpload,
-  FolderOpen, Maximize2, Link2, Camera, Video, Search
+  FolderOpen, Maximize2, Link2, Search
 } from "lucide-react";
+
+const PHOTO_MAX_BYTES = 20 * 1024 * 1024;
+const VIDEO_MAX_BYTES = 250 * 1024 * 1024;
+
+function normalizeMediaFile(original: File): { file: File; type: 'photo' | 'video' } | null {
+  const extension = original.name.split('.').pop()?.toLowerCase() || '';
+  const typeByExtension: Record<string, string> = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+    webp: 'image/webp', heic: 'image/heic', heif: 'image/heif',
+    mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/x-m4v', webm: 'video/webm',
+  };
+  let contentType = original.type.toLowerCase().trim();
+  if (contentType === 'image/jpg') contentType = 'image/jpeg';
+  if (!contentType || contentType === 'application/octet-stream') {
+    contentType = typeByExtension[extension] || '';
+  }
+
+  const type = contentType.startsWith('image/')
+    ? 'photo'
+    : contentType.startsWith('video/')
+      ? 'video'
+      : null;
+  if (!type) return null;
+
+  const file = contentType === original.type
+    ? original
+    : new File([original], original.name, {
+        type: contentType,
+        lastModified: original.lastModified,
+      });
+  return { file, type };
+}
 
 interface UploadedFile {
   file: File;
@@ -109,28 +141,28 @@ export default function StaffMediaUpload() {
 
     const newFiles: UploadedFile[] = [];
     for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
-      const isVideo = file.type.startsWith('video/');
-      const isImage = file.type.startsWith('image/');
-      
-      if (!isVideo && !isImage) {
-        toast.error(t('mediaUpload.uploadError'));
+      const normalized = normalizeMediaFile(selectedFiles[i]);
+      if (!normalized) {
+        toast.error(isEn
+          ? `${selectedFiles[i].name}: unsupported image or video format`
+          : `${selectedFiles[i].name}: صيغة الصورة أو الفيديو غير مدعومة`);
         continue;
       }
+      const { file, type } = normalized;
 
-      if (isVideo && file.size > 50 * 1024 * 1024) {
-        toast.error(isEn ? `${file.name}: video limit is 50 MB` : `${file.name}: الحد الأقصى للفيديو 50 ميجابايت`);
+      if (type === 'video' && file.size > VIDEO_MAX_BYTES) {
+        toast.error(isEn ? `${file.name}: video limit is 250 MB` : `${file.name}: الحد الأقصى للفيديو 250 ميجابايت`);
         continue;
       }
-      if (isImage && file.size > 10 * 1024 * 1024) {
-        toast.error(isEn ? `${file.name}: image limit is 10 MB` : `${file.name}: الحد الأقصى للصورة 10 ميجابايت`);
+      if (type === 'photo' && file.size > PHOTO_MAX_BYTES) {
+        toast.error(isEn ? `${file.name}: image limit is 20 MB` : `${file.name}: الحد الأقصى للصورة 20 ميجابايت`);
         continue;
       }
 
       newFiles.push({
         file,
         preview: URL.createObjectURL(file),
-        type: isVideo ? 'video' : 'photo',
+        type,
         caption: '',
         uploading: false,
         uploaded: false });
@@ -502,7 +534,7 @@ export default function StaffMediaUpload() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/gif,image/heic,image/heif,image/webp,video/mp4,video/quicktime,video/webm"
+              accept="image/jpeg,image/png,image/gif,image/heic,image/heif,image/webp,video/mp4,video/quicktime,video/x-m4v,video/webm"
               multiple
               onChange={handleFileSelect}
               className="hidden"
@@ -511,7 +543,6 @@ export default function StaffMediaUpload() {
               ref={cameraInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -519,7 +550,6 @@ export default function StaffMediaUpload() {
               ref={videoInputRef}
               type="file"
               accept="video/*"
-              capture="environment"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -550,23 +580,23 @@ export default function StaffMediaUpload() {
                     onClick={() => cameraInputRef.current?.click()}
                     className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[#D8EFEA] bg-[#F4FFFD] px-3 text-xs font-bold text-[#087F75] transition hover:-translate-y-0.5 hover:border-[#00B7A7] hover:shadow-sm"
                   >
-                    <Camera className="size-4" />
-                    {isEn ? 'Take a photo' : 'التقاط صورة'}
+                    <Images className="size-4" />
+                    {isEn ? 'Choose photos' : 'اختيار صور'}
                   </button>
                   <button
                     type="button"
                     onClick={() => videoInputRef.current?.click()}
                     className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[#E5DFFC] bg-[#F8F6FF] px-3 text-xs font-bold text-[#6750C9] transition hover:-translate-y-0.5 hover:border-[#8A74E8] hover:shadow-sm"
                   >
-                    <Video className="size-4" />
-                    {isEn ? 'Record a video' : 'تسجيل فيديو'}
+                    <Film className="size-4" />
+                    {isEn ? 'Choose videos' : 'اختيار فيديوهات'}
                   </button>
                 </div>
                 <p className="flex items-center gap-1.5 text-[11px] text-[#8992A3]">
                   <ShieldCheck className="size-3.5 text-[#00A99A]" />
                   {isEn ? 'Direct encrypted upload to Cloudflare R2' : 'رفع مباشر ومشفّر إلى Cloudflare R2'}
                 </p>
-                <p className="text-[10px] text-[#9AA3B2]">{isEn ? 'Images up to 10 MB · Videos up to 50 MB' : 'الصور حتى 10 م.ب · الفيديو حتى 50 م.ب'}</p>
+                <p className="text-[10px] text-[#9AA3B2]">{isEn ? 'Images up to 20 MB · Videos up to 250 MB' : 'الصور حتى 20 م.ب · الفيديو حتى 250 م.ب'}</p>
               </div>
             </div>
 

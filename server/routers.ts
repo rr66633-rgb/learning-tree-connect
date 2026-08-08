@@ -3009,8 +3009,8 @@ export const appRouter = router({
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: input.type === 'video'
-              ? 'حجم الفيديو يتجاوز الحد المسموح (50 ميجابايت)'
-              : 'حجم الصورة يتجاوز الحد المسموح (10 ميجابايت)',
+              ? 'حجم الفيديو يتجاوز الحد المسموح (250 ميجابايت)'
+              : 'حجم الصورة يتجاوز الحد المسموح (20 ميجابايت)',
           });
         }
         console.error('[Media] Failed to create direct upload URL:', error);

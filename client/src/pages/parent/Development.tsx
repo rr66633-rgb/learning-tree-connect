@@ -173,7 +173,7 @@ export default function ParentDevelopment() {
       )}
 
       <Tabs defaultValue="progress" className="space-y-4">
-        <TabsList className="bg-muted/50 p-1 rounded-lg">
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-1 rounded-lg bg-muted/50 p-1 min-[420px]:grid-cols-3">
           <TabsTrigger value="progress" className="rounded-md">
             <TrendingUp className="w-4 h-4 ml-1" />
             {isAr ? "التقدم" : "Progress"}

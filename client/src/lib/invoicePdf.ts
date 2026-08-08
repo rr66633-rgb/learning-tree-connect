@@ -3,6 +3,8 @@
  * يستخدم jsPDF مع طريقة iframe print كـ fallback
  */
 
+import { saveOrShareFile, type ExportResult } from "@/lib/fileExport";
+
 interface InvoiceData {
   id: number;
   invoiceNumber: string;
@@ -309,7 +311,7 @@ async function generateQRDataUrl(invoice: InvoiceData, centerInfo?: CenterInfo):
  * Generate invoice PDF using html2canvas + jsPDF
  * Falls back to opening a print-friendly page if html2canvas fails
  */
-export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<void> {
+export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: CenterInfo): Promise<ExportResult> {
   console.log('[PDF] Starting PDF generation...');
 
   // Pre-fetch assets
@@ -400,13 +402,22 @@ export async function generateInvoicePDF(invoice: InvoiceData, centerInfo?: Cent
     }
 
     const fileName = `فاتورة-${invoice.invoiceNumber}.pdf`;
-    pdf.save(fileName);
-    console.log('[PDF] Done! Saved as:', fileName);
+    const result = await saveOrShareFile(
+      pdf.output('blob'),
+      fileName,
+      'application/pdf',
+      `فاتورة ${invoice.invoiceNumber}`,
+    );
+    console.log('[PDF] Export completed:', fileName, result);
+    return result;
 
   } catch (err) {
     console.warn('[PDF] html2canvas approach failed, using fallback print method:', err);
+    if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
+    if (err instanceof Error && err.message === 'MOBILE_FILE_EXPORT_UNAVAILABLE') throw err;
     // Fallback: open in a new window and trigger save as PDF via print dialog
     fallbackPdfDownload(invoice, invoiceHtml);
+    return 'cancelled';
   }
 }
 

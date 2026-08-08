@@ -96,7 +96,7 @@ export default function InvoiceDetail() {
   const handleDownloadPDF = async () => {
     if (!invoice) return;
     try {
-      await generateInvoicePDF(invoice as any, {
+      const result = await generateInvoicePDF(invoice as any, {
         centerName: centerSettings?.centerName,
         phone: centerSettings?.phone || undefined,
         email: centerSettings?.email || undefined,
@@ -105,7 +105,9 @@ export default function InvoiceDetail() {
         commercialRegister: (centerSettings as any)?.commercialRegister || undefined,
         logoUrl: (centerSettings as any)?.logoUrl || undefined,
       });
-      toast.success(isAr ? 'تم تحميل الفاتورة بنجاح' : 'Invoice uploaded successfully');
+      if (result !== 'cancelled') {
+        toast.success(isAr ? 'تم تجهيز الفاتورة للحفظ بنجاح' : 'Invoice ready to save');
+      }
     } catch (err) {
       console.error('PDF generation error:', err);
       toast.error(isAr ? 'حدث خطأ أثناء توليد الفاتورة' : 'An error occurred while generating the invoice');

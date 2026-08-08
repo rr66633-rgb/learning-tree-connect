@@ -10,8 +10,8 @@ const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY!;
 const S3_ENDPOINT = process.env.S3_ENDPOINT!;
 
 export const MEDIA_UPLOAD_LIMITS = {
-  photo: 10 * 1024 * 1024,
-  video: 50 * 1024 * 1024,
+  photo: 20 * 1024 * 1024,
+  video: 250 * 1024 * 1024,
 } as const;
 
 export const MEDIA_CONTENT_TYPES = {
@@ -23,6 +23,7 @@ export const MEDIA_CONTENT_TYPES = {
   "image/heif": { type: "photo", extension: "heif" },
   "video/mp4": { type: "video", extension: "mp4" },
   "video/quicktime": { type: "video", extension: "mov" },
+  "video/x-m4v": { type: "video", extension: "m4v" },
   "video/webm": { type: "video", extension: "webm" },
 } as const;
 
@@ -49,6 +50,7 @@ const DIRECT_ASSET_CONTENT_TYPES = {
   "image/svg+xml": "svg",
   "video/mp4": "mp4",
   "video/quicktime": "mov",
+  "video/x-m4v": "m4v",
   "video/webm": "webm",
   "application/pdf": "pdf",
   "application/msword": "doc",
@@ -56,10 +58,10 @@ const DIRECT_ASSET_CONTENT_TYPES = {
 } as const;
 
 const DIRECT_ASSET_LIMITS: Record<DirectAssetPurpose, number> = {
-  photo: 10 * 1024 * 1024,
+  photo: 20 * 1024 * 1024,
   document: 20 * 1024 * 1024,
   logo: 10 * 1024 * 1024,
-  media: 50 * 1024 * 1024,
+  media: 250 * 1024 * 1024,
   curriculum: 20 * 1024 * 1024,
 };
 
@@ -88,7 +90,9 @@ export function validateDirectAssetUpload(
   if (!extension || !allowedForPurpose) {
     throw new Error("UNSUPPORTED_ASSET_TYPE");
   }
-  const maxBytes = DIRECT_ASSET_LIMITS[purpose];
+  const maxBytes = purpose === "media" && isImage
+    ? MEDIA_UPLOAD_LIMITS.photo
+    : DIRECT_ASSET_LIMITS[purpose];
   if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > maxBytes) {
     throw new Error("INVALID_ASSET_SIZE");
   }

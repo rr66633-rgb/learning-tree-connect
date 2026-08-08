@@ -30,7 +30,7 @@ export default function DevelopmentDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6" dir="rtl">
+      <div className="space-y-4 sm:space-y-6" dir="rtl">
         <div className="flex items-center gap-3 mb-6">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div>
@@ -38,7 +38,7 @@ export default function DevelopmentDashboard() {
             <Skeleton className="h-4 w-40 mt-1" />
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -52,34 +52,34 @@ export default function DevelopmentDashboard() {
   if (!dashboard) return null;
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="min-w-0 space-y-4 sm:space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg sm:h-12 sm:w-12">
             <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{isAr ? "مركز النمو والتطور" : "Growth and Development Center"}</h1>
+            <h1 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">{isAr ? "مركز النمو والتطور" : "Growth and Development Center"}</h1>
             <p className="text-sm text-muted-foreground">{isAr ? "لوحة المعلم - متابعة تطور الأطفال" : "Teacher Dashboard - Child Development Tracking"}</p>
           </div>
         </div>
-        <Button onClick={() => navigate("/staff/development/observations/new")} className="bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={() => navigate("/staff/development/observations/new")} className="w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto">
           <ClipboardList className="w-4 h-4 ml-2" />
           {isAr ? "ملاحظة جديدة" : "New Note"}
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{isAr ? "إجمالي الأطفال" : "Total Children"}</p>
-                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300 mt-1">{dashboard.totalChildren}</p>
+                <p className="text-xs font-medium text-blue-600 dark:text-blue-400 sm:text-sm">{isAr ? "إجمالي الأطفال" : "Total Children"}</p>
+                <p className="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-300 sm:text-3xl">{dashboard.totalChildren}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-200/50 dark:bg-blue-800/30 flex items-center justify-center">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-200/50 dark:bg-blue-800/30 sm:h-12 sm:w-12">
                 <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
@@ -87,13 +87,13 @@ export default function DevelopmentDashboard() {
         </Card>
 
         <Card className="border-0 shadow-md bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">{isAr ? "يحتاجون اهتمام" : "Need Attention"}</p>
-                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300 mt-1">{dashboard.childrenNeedingAttention}</p>
+                <p className="text-xs font-medium text-amber-600 dark:text-amber-400 sm:text-sm">{isAr ? "يحتاجون اهتمام" : "Need Attention"}</p>
+                <p className="mt-1 text-2xl font-bold text-amber-700 dark:text-amber-300 sm:text-3xl">{dashboard.childrenNeedingAttention}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-amber-200/50 dark:bg-amber-800/30 flex items-center justify-center">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-200/50 dark:bg-amber-800/30 sm:h-12 sm:w-12">
                 <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
@@ -101,13 +101,13 @@ export default function DevelopmentDashboard() {
         </Card>
 
         <Card className="border-0 shadow-md bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{isAr ? "يتفوقون" : "Excelling"}</p>
-                <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mt-1">{dashboard.childrenExceeding}</p>
+                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 sm:text-sm">{isAr ? "يتفوقون" : "Excelling"}</p>
+                <p className="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-300 sm:text-3xl">{dashboard.childrenExceeding}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-emerald-200/50 dark:bg-emerald-800/30 flex items-center justify-center">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-200/50 dark:bg-emerald-800/30 sm:h-12 sm:w-12">
                 <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
@@ -115,13 +115,13 @@ export default function DevelopmentDashboard() {
         </Card>
 
         <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/20">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium">{isAr ? "تنبيهات نشطة" : "Active Alerts"}</p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300 mt-1">{dashboard.activeAlerts}</p>
+                <p className="text-xs font-medium text-red-600 dark:text-red-400 sm:text-sm">{isAr ? "تنبيهات نشطة" : "Active Alerts"}</p>
+                <p className="mt-1 text-2xl font-bold text-red-700 dark:text-red-300 sm:text-3xl">{dashboard.activeAlerts}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-red-200/50 dark:bg-red-800/30 flex items-center justify-center">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-200/50 dark:bg-red-800/30 sm:h-12 sm:w-12">
                 <Bell className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
@@ -131,20 +131,20 @@ export default function DevelopmentDashboard() {
 
       {/* Main Content */}
       <Tabs defaultValue="attention" className="space-y-4">
-        <TabsList className="bg-muted/50 p-1 rounded-lg">
-          <TabsTrigger value="attention" className="rounded-md">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-muted/50 p-1 sm:grid-cols-4">
+          <TabsTrigger value="attention" className="min-w-0 whitespace-normal rounded-lg px-2 py-2 text-xs sm:text-sm">
             <AlertTriangle className="w-4 h-4 ml-1" />
             {isAr ? "يحتاجون اهتمام" : "Need Attention"}
           </TabsTrigger>
-          <TabsTrigger value="exceeding" className="rounded-md">
+          <TabsTrigger value="exceeding" className="min-w-0 whitespace-normal rounded-lg px-2 py-2 text-xs sm:text-sm">
             <Star className="w-4 h-4 ml-1" />
             {isAr ? "يتفوقون" : "Excelling"}
           </TabsTrigger>
-          <TabsTrigger value="below" className="rounded-md">
+          <TabsTrigger value="below" className="min-w-0 whitespace-normal rounded-lg px-2 py-2 text-xs sm:text-sm">
             <TrendingDown className="w-4 h-4 ml-1" />
             {isAr ? "أقل من المتوقع" : "Below Expected"}
           </TabsTrigger>
-          <TabsTrigger value="missing" className="rounded-md">
+          <TabsTrigger value="missing" className="min-w-0 whitespace-normal rounded-lg px-2 py-2 text-xs sm:text-sm">
             <ClipboardList className="w-4 h-4 ml-1" />
             {isAr ? "تقييمات ناقصة" : "Missing Evaluations"}
           </TabsTrigger>

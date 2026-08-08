@@ -14,6 +14,7 @@ import {
   Briefcase, MapPin, Phone, Mail, ChevronLeft, ChevronRight, Filter, Download
 } from "lucide-react";
 import { toast } from "sonner";
+import { saveOrShareFile } from "@/lib/fileExport";
 
 export default function StaffDirectory() {
   const { t, i18n } = useTranslation();
@@ -74,27 +75,26 @@ export default function StaffDirectory() {
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() => {
+            onClick={async () => {
               const params = new URLSearchParams();
               if (jobFilter !== 'all') params.set('jobTitle', jobFilter);
               if (statusFilter !== 'all') params.set('status', statusFilter);
               if (departmentFilter !== 'all') params.set('department', departmentFilter);
               const url = `/api/export-staff${params.toString() ? '?' + params.toString() : ''}`;
               toast.info(isAr ? 'جاري تحميل ملف التصدير...' : 'Downloading export file...');
-              fetch(url, { credentials: 'include' })
-                .then(r => {
-                  if (!r.ok) throw new Error(isAr ? 'فشل التصدير' : 'Export failed');
-                  return r.blob();
-                })
-                .then(blob => {
-                  const a = document.createElement('a');
-                  a.href = URL.createObjectURL(blob);
-                  a.download = `staff_export_${new Date().toISOString().split('T')[0]}.xlsx`;
-                  a.click();
-                  URL.revokeObjectURL(a.href);
-                  toast.success(isAr ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully');
-                })
-                .catch(() => toast.error(isAr ? 'حدث خطأ أثناء التصدير' : 'Export error'));
+              try {
+                const response = await fetch(url, { credentials: 'include' });
+                if (!response.ok) throw new Error(isAr ? 'فشل التصدير' : 'Export failed');
+                const result = await saveOrShareFile(
+                  await response.blob(),
+                  `staff_export_${new Date().toISOString().split('T')[0]}.xlsx`,
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                  isAr ? 'بيانات الموظفين' : 'Staff data',
+                );
+                if (result !== 'cancelled') toast.success(isAr ? 'تم تجهيز الملف للحفظ' : 'File ready to save');
+              } catch {
+                toast.error(isAr ? 'حدث خطأ أثناء التصدير' : 'Export error');
+              }
             }}
           >
             <Download className="h-4 w-4" />

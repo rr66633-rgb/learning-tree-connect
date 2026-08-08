@@ -17,6 +17,7 @@ import { apiUrl } from "@/lib/apiBase";
 import { fetchWithCsrf } from "@/lib/csrf";
 import { loadMoyasar } from "@/lib/externalResources";
 import { useTranslation } from "react-i18next";
+import { saveOrShareFile } from "@/lib/fileExport";
 
 declare global {
   interface Window {
@@ -174,7 +175,7 @@ export default function ParentFinance() {
     setOpenDetailDialog(true);
   };
 
-  const handleDownloadPDF = (invoice: any) => {
+  const handleDownloadPDF = async (invoice: any) => {
     // Generate a simple PDF-like receipt
     const content = `
 فاتورة رقم: ${invoice.invoiceNumber}
@@ -189,14 +190,17 @@ export default function ParentFinance() {
 ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Date(invoice.paidAt).toLocaleDateString(locale)}` : ''}
     `.trim();
     
-    const blob = new Blob(["\uFEFF" + content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoice_${invoice.invoiceNumber}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(isAr ? "تم تحميل الفاتورة" : "Invoice downloaded");
+    try {
+      const result = await saveOrShareFile(
+        "\uFEFF" + content,
+        `invoice_${invoice.invoiceNumber}.txt`,
+        "text/plain;charset=utf-8",
+        isAr ? `فاتورة ${invoice.invoiceNumber}` : `Invoice ${invoice.invoiceNumber}`,
+      );
+      if (result !== "cancelled") toast.success(isAr ? "تم تحميل الفاتورة" : "Invoice downloaded");
+    } catch {
+      toast.error(isAr ? "تعذّر تحميل الفاتورة، حاول مرة أخرى" : "Could not download the invoice. Please try again.");
+    }
   };
 
   return (

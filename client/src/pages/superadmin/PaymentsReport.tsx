@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Download, CreditCard, TrendingUp, AlertCircle, Clock, Filter, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { createCsv, saveOrShareFile } from "@/lib/fileExport";
 
 const statusColors: Record<string, string> = {
   initiated: "bg-yellow-100 text-yellow-800",
@@ -32,6 +33,8 @@ export default function PaymentsReport() {
   const [status, setStatus] = useState<string>("all");
   const [method, setMethod] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
+  const utils = trpc.useUtils();
 
   const { data, isLoading } = trpc.superAdmin.paymentsReport.useQuery({
     dateFrom: dateFrom || undefined,
@@ -42,53 +45,74 @@ export default function PaymentsReport() {
     limit: 50,
   });
 
-  const handleExportCSV = () => {
-    if (!data?.payments?.length) {
+  const handleExportCSV = async () => {
+    if (!data?.total) {
       toast.error(isAr ? "لا توجد بيانات للتصدير" : "No data to export");
       return;
     }
 
-    const headers = ["رقم العملية", (isAr ? "رقم الفاتورة" : "Invoice Number"), "اسم ولي الأمر", t("superadmin.amount"), t("superadmin.paymentMethod"), t("common.status"), "تاريخ الإنشاء", "تاريخ الدفع"];
-    const rows = data.payments.map((p: any) => [
-      p.moyasarPaymentId || p.id,
-      p.invoiceNumber || "-",
-      p.parentName || "-",
-      `${Number(p.amount).toFixed(2)} ${isAr ? "ر.س" : "SAR"}`,
-      methodLabels[p.method] || p.method,
-      statusLabels[p.status] || p.status,
-      p.createdAt ? new Date(p.createdAt).toLocaleDateString(locale) : "-",
-      p.paidAt ? new Date(p.paidAt).toLocaleDateString(locale) : "-",
-    ]);
+    setIsExporting(true);
+    try {
+      const chunkSize = 5_000;
+      const allPayments: any[] = [];
+      const pages = Math.ceil(data.total / chunkSize);
+      for (let exportPage = 1; exportPage <= pages; exportPage++) {
+        const result = await utils.superAdmin.paymentsReport.fetch({
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+          status: status as any,
+          method: method as any,
+          page: exportPage,
+          limit: chunkSize,
+        });
+        allPayments.push(...result.payments);
+      }
 
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `payments-report-${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success(isAr ? "تم تصدير التقرير بنجاح" : "Report exported successfully");
+      const headers = ["رقم العملية", (isAr ? "رقم الفاتورة" : "Invoice Number"), "اسم ولي الأمر", t("superadmin.amount"), t("superadmin.paymentMethod"), t("common.status"), "تاريخ الإنشاء", "تاريخ الدفع"];
+      const rows = allPayments.map((p: any) => [
+        p.moyasarPaymentId || p.id,
+        p.invoiceNumber || "-",
+        p.parentName || "-",
+        `${Number(p.amount).toFixed(2)} ${isAr ? "ر.س" : "SAR"}`,
+        methodLabels[p.method] || p.method,
+        statusLabels[p.status] || p.status,
+        p.createdAt ? new Date(p.createdAt).toLocaleDateString(locale) : "-",
+        p.paidAt ? new Date(p.paidAt).toLocaleDateString(locale) : "-",
+      ]);
+      const result = await saveOrShareFile(
+        createCsv(headers, rows),
+        `payments-report-${new Date().toISOString().split("T")[0]}.csv`,
+        "text/csv;charset=utf-8",
+        isAr ? "تقرير المدفوعات" : "Payments report",
+      );
+      if (result !== "cancelled") {
+        toast.success(isAr ? "تم تصدير التقرير بنجاح" : "Report exported successfully");
+      }
+    } catch {
+      toast.error(isAr ? "تعذّر تصدير الملف، حاول مرة أخرى" : "Could not export the file. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const totalPages = data ? Math.ceil(data.total / data.limit) : 1;
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="min-w-0 space-y-4 sm:space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{isAr ? "تقرير المدفوعات" : "Payments Report"}</h1>
           <p className="text-muted-foreground text-sm mt-1">{isAr ? "جميع عمليات الدفع عبر بوابة ميسر" : "All Payments via Maysar Gateway"}</p>
         </div>
-        <Button onClick={handleExportCSV} variant="outline" className="gap-2">
-          <Download className="h-4 w-4" />
-          تصدير CSV
+        <Button onClick={handleExportCSV} disabled={isExporting || !data?.total} variant="outline" className="w-full gap-2 sm:w-auto">
+          {isExporting ? <Clock className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          {isExporting ? (isAr ? "جارٍ تجهيز الملف..." : "Preparing file...") : "تصدير CSV"}
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">

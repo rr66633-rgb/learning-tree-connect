@@ -151,12 +151,15 @@ function getDirectUploadInput(
 }
 
 function inferContentType(file: File): string {
-  if (file.type) return file.type.toLowerCase();
+  const reportedType = file.type.toLowerCase().trim();
+  if (reportedType && reportedType !== 'application/octet-stream') {
+    return reportedType === 'image/jpg' ? 'image/jpeg' : reportedType;
+  }
   const extension = file.name.split('.').pop()?.toLowerCase();
   const byExtension: Record<string, string> = {
     jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
     webp: 'image/webp', heic: 'image/heic', heif: 'image/heif', svg: 'image/svg+xml',
-    mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', pdf: 'application/pdf',
+    mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/x-m4v', webm: 'video/webm', pdf: 'application/pdf',
     doc: 'application/msword',
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   };
@@ -168,11 +171,18 @@ async function uploadFileDirectly<T>(
   purpose: DirectAssetPurpose,
   opts: UploadOptions,
 ): Promise<T> {
+  const originalContentType = inferContentType(originalFile);
+  const normalizedOriginal = originalContentType && originalContentType !== originalFile.type
+    ? new File([originalFile], originalFile.name, {
+        type: originalContentType,
+        lastModified: originalFile.lastModified,
+      })
+    : originalFile;
   const shouldCompress =
     purpose !== 'logo' &&
-    originalFile.type.startsWith('image/') &&
-    originalFile.type !== 'image/gif';
-  let file = shouldCompress ? await compressImage(originalFile) : originalFile;
+    normalizedOriginal.type.startsWith('image/') &&
+    normalizedOriginal.type !== 'image/gif';
+  let file = shouldCompress ? await compressImage(normalizedOriginal) : normalizedOriginal;
   const contentType = inferContentType(file);
   if (!file.type && contentType) {
     file = new File([file], file.name, { type: contentType, lastModified: file.lastModified });

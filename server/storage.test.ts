@@ -40,6 +40,7 @@ describe("direct R2 media upload validation", () => {
     expect(validateDirectAssetUpload("document", "application/pdf", 1024)).toMatchObject({ extension: "pdf" });
     expect(validateDirectAssetUpload("media", "video/mp4", 1024)).toMatchObject({ extension: "mp4" });
     expect(() => validateDirectAssetUpload("curriculum", "image/png", 1024)).toThrow("UNSUPPORTED_ASSET_TYPE");
-    expect(() => validateDirectAssetUpload("photo", "image/jpeg", 10 * 1024 * 1024 + 1)).toThrow("INVALID_ASSET_SIZE");
+    expect(() => validateDirectAssetUpload("photo", "image/jpeg", MEDIA_UPLOAD_LIMITS.photo + 1)).toThrow("INVALID_ASSET_SIZE");
+    expect(() => validateDirectAssetUpload("media", "video/mp4", MEDIA_UPLOAD_LIMITS.video + 1)).toThrow("INVALID_ASSET_SIZE");
   });
 });
