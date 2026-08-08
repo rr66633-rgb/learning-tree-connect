@@ -150,7 +150,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: BarChart3, label: "لوحة الموارد البشرية", labelEn: "HR Dashboard", path: "/hr-dashboard", color: "#0EA5E9" },
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
-  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/payment-settings", color: "#F59E0B" },
+  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/staff/payment-settings", color: "#F59E0B" },
 ];
 
 /**

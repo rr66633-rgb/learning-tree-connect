@@ -240,7 +240,7 @@ function StaffRouter() {
         <Route path="/staff/users" component={StaffUsers} />
         <Route path="/staff/pending-approvals" component={StaffPendingApprovals} />
         <Route path="/staff/settings" component={StaffSettings} />
-        <Route path="/payment-settings" component={PaymentSettings} />
+        <Route path="/staff/payment-settings" component={PaymentSettings} />
         <Route path="/staff/notification-settings" component={StaffNotificationSettings} />
         <Route path="/staff/pickup" component={StaffPickup} />
         <Route path="/staff/assessments" component={StaffAssessments} />
