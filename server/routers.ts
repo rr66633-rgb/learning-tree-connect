@@ -127,37 +127,81 @@ export const appRouter = router({
       .input(z.object({
         identifier: z.string().min(1), // email or phone
         password: z.string().min(1),
+        accountId: z.number().int().positive().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const ip = ctx.req.headers['x-forwarded-for'] as string || ctx.req.socket.remoteAddress || '';
         
-        // Find user by email or phone
-        const user = await db.findUserByIdentifier(input.identifier);
-        if (!user) {
+        // Legacy production data can contain the same email/phone on more
+        // than one account. Verify credentials against all candidates before
+        // choosing an account; selecting the first row here caused valid old
+        // users to be rejected and incremented failures on the wrong account.
+        const candidates = await db.findUsersByIdentifier(input.identifier);
+        if (candidates.length === 0) {
           await authService.recordLoginAttempt({ identifier: input.identifier, ip, success: false, reason: 'user_not_found' });
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'بيانات الدخول غير صحيحة' });
         }
+
+        const candidatesToVerify = input.accountId
+          ? candidates.filter(candidate => candidate.id === input.accountId)
+          : candidates;
+        if (candidatesToVerify.length === 0) {
+          await authService.recordLoginAttempt({ identifier: input.identifier, ip, success: false, reason: 'invalid_account_selection' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'بيانات الدخول غير صحيحة' });
+        }
+
+        const passwordCandidates = candidatesToVerify.filter(candidate => Boolean(candidate.password));
+        if (passwordCandidates.length === 0) {
+          await authService.recordLoginAttempt({ identifier: input.identifier, ip, success: false, reason: 'password_not_set' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'لم يتم تعيين كلمة مرور لهذا الحساب. استخدم رمز التحقق أو تواصل مع الإدارة.' });
+        }
+
+        const matchingUsers = await authService.findPasswordMatches(input.password, passwordCandidates);
+        if (matchingUsers.length === 0) {
+          // Only increment a per-account lockout counter when the identifier
+          // maps unambiguously to one password account. Otherwise an attacker
+          // could lock several tenants' users through one shared identifier.
+          const failureTarget = passwordCandidates.length === 1 ? passwordCandidates[0] : undefined;
+          if (failureTarget) {
+            const result = await authService.handleFailedLogin(failureTarget.id);
+            await authService.recordLoginAttempt({ userId: failureTarget.id, identifier: input.identifier, ip, success: false, reason: 'wrong_password' });
+            if (result.locked) {
+              throw new TRPCError({ code: 'FORBIDDEN', message: `تم قفل الحساب بعد ${authService.AUTH_CONSTANTS.MAX_FAILED_LOGIN_ATTEMPTS} محاولات فاشلة. يرجى المحاولة بعد ${authService.AUTH_CONSTANTS.ACCOUNT_LOCKOUT_MINUTES} دقيقة.` });
+            }
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: `بيانات الدخول غير صحيحة. المحاولات المتبقية: ${result.attemptsRemaining}` });
+          }
+
+          await authService.recordLoginAttempt({ identifier: input.identifier, ip, success: false, reason: 'wrong_password_shared_identifier' });
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'بيانات الدخول غير صحيحة' });
+        }
+
+        if (!input.accountId && matchingUsers.length > 1) {
+          const accounts = await Promise.all(matchingUsers.map(async candidate => {
+            const organization = await db.getOrganizationById(candidate.organizationId);
+            return {
+              accountId: candidate.id,
+              displayName: candidate.name || '',
+              role: candidate.role,
+              organizationName: organization?.nameAr || organization?.name || 'الحضانة',
+            };
+          }));
+          return {
+            success: false as const,
+            requiresAccountSelection: true as const,
+            accounts,
+          };
+        }
+
+        const now = new Date();
+        const user = matchingUsers.find(candidate =>
+          candidate.isActive && (!candidate.accountLockedUntil || candidate.accountLockedUntil <= now),
+        ) || matchingUsers[0];
 
         // Check if account is locked
         const lockStatus = await authService.isAccountLocked(user.id);
         if (lockStatus.locked) {
           const remainingMinutes = Math.ceil((lockStatus.lockedUntil!.getTime() - Date.now()) / 60000);
           throw new TRPCError({ code: 'FORBIDDEN', message: `تم قفل الحساب مؤقتاً. يرجى المحاولة بعد ${remainingMinutes} دقيقة.` });
-        }
-
-        // Verify password
-        if (!user.password) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'لم يتم تعيين كلمة مرور لهذا الحساب. يرجى التواصل مع الإدارة.' });
-        }
-
-        const passwordValid = await authService.verifyPassword(input.password, user.password);
-        if (!passwordValid) {
-          const result = await authService.handleFailedLogin(user.id);
-          await authService.recordLoginAttempt({ userId: user.id, identifier: input.identifier, ip, success: false, reason: 'wrong_password' });
-          if (result.locked) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: `تم قفل الحساب بعد ${authService.AUTH_CONSTANTS.MAX_FAILED_LOGIN_ATTEMPTS} محاولات فاشلة. يرجى المحاولة بعد ${authService.AUTH_CONSTANTS.ACCOUNT_LOCKOUT_MINUTES} دقيقة.` });
-          }
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: `بيانات الدخول غير صحيحة. المحاولات المتبقية: ${result.attemptsRemaining}` });
         }
 
         // Check if account is active
@@ -169,6 +213,14 @@ export const appRouter = router({
         const userAgent = ctx.req.headers['user-agent'] || '';
         await authService.resetFailedAttempts(user.id);
         await authService.recordLoginAttempt({ userId: user.id, identifier: input.identifier, ip, userAgent, success: true });
+
+        if (user.password && authService.needsPasswordRehash(user.password)) {
+          try {
+            await authService.upgradeLegacyPasswordHash(user.id, input.password);
+          } catch (error) {
+            console.error('[Auth] Failed to upgrade legacy password hash:', error);
+          }
+        }
 
         // Check if this is a new device (IP + userAgent combination not seen before)
         try {

@@ -2918,9 +2918,9 @@ export async function getEnhancedFinanceSummary(organizationId: number) {
 
 // ============ AUTHENTICATION HELPERS ============
 
-export async function findUserByIdentifier(identifier: string) {
+export async function findUsersByIdentifier(identifier: string) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return [];
   
   // Priority order for roles: staff roles first, then parent
   const rolePriority = sql`CASE 
@@ -2935,22 +2935,23 @@ export async function findUserByIdentifier(identifier: string) {
     ELSE 9
   END`;
   
-  // Try to find by email first (case-insensitive), prioritize staff roles
   const normalizedIdentifier = identifier.trim();
-  const byEmail = await db.select().from(users)
-    .where(sql`LOWER(${users.email}) = LOWER(${normalizedIdentifier})`)
-    .orderBy(rolePriority)
-    .limit(1);
-  if (byEmail.length > 0) return byEmail[0];
-  
-  // Then try by phone, prioritize staff roles
-  const byPhone = await db.select().from(users)
-    .where(eq(users.phone, identifier))
-    .orderBy(rolePriority)
-    .limit(1);
-  if (byPhone.length > 0) return byPhone[0];
-  
-  return undefined;
+  if (!normalizedIdentifier) return [];
+
+  // An email/phone is not globally unique in the legacy production data.
+  // Return every candidate so authentication can verify the password first,
+  // instead of selecting an unrelated tenant's account by role priority.
+  return db.select().from(users)
+    .where(or(
+      sql`LOWER(TRIM(${users.email})) = LOWER(${normalizedIdentifier})`,
+      sql`TRIM(${users.phone}) = ${normalizedIdentifier}`,
+    ))
+    .orderBy(rolePriority, users.id);
+}
+
+export async function findUserByIdentifier(identifier: string) {
+  const candidates = await findUsersByIdentifier(identifier);
+  return candidates[0];
 }
 
 // SECURITY FIX: this is the public parent self-registration path

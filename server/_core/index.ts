@@ -696,7 +696,7 @@ async function startServer() {
       const db = await getDb();
       if (!db) { res.status(500).json({ error: 'فشل الاتصال بقاعدة البيانات' }); return; }
       const { users: usersTable, staffProfiles } = await import('../../drizzle/schema');
-      const bcrypt = await import('bcryptjs');
+      const { hashPassword } = await import('./authService');
       let imported = 0;
       const errors: { row: number; error: string }[] = [];
       // SECURITY FIX: previously `user.organizationId || 1` -- silently
@@ -715,7 +715,7 @@ async function startServer() {
           const d = item.data;
           // Create user account
           const openId = `staff_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-          const hashedPw = await bcrypt.hash(d.mobile || '123456', 10);
+          const hashedPw = await hashPassword(d.mobile || '123456');
           const roleForUser = d.jobTitle === 'principal' ? 'principal' : d.jobTitle === 'teacher' ? 'teacher' : d.jobTitle === 'assistant' ? 'assistant' : d.jobTitle === 'accountant' ? 'accountant' : d.jobTitle === 'receptionist' ? 'receptionist' : 'teacher';
           const [newUser] = await db.insert(usersTable).values({
             openId,

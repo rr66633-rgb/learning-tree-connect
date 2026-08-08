@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone, Building2, UserRound } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
 
 import { useNativeSessionGate } from "@/contexts/NativeSessionGate";
@@ -14,6 +14,12 @@ import { useTranslation } from "react-i18next";
 
 type LoginMode = "password" | "otp";
 type OtpStep = "phone" | "verify";
+type AccountOption = {
+  accountId: number;
+  displayName: string;
+  role: string;
+  organizationName: string;
+};
 
 export default function Login() {
   const { i18n } = useTranslation();
@@ -27,6 +33,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [accountOptions, setAccountOptions] = useState<AccountOption[] | null>(null);
 
   // OTP login state
   const [phone, setPhone] = useState("");
@@ -53,7 +60,13 @@ export default function Login() {
 
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if ('requiresAccountSelection' in data && data.requiresAccountSelection) {
+        setAccountOptions(data.accounts);
+        setIsLoading(false);
+        toast.info(isAr ? "اختر الحساب الذي تريد الدخول إليه" : "Choose the account you want to access");
+        return;
+      }
       toast.success(isAr ? "تم تسجيل الدخول بنجاح" : "Login successful");
       loginRetryRef.current = 0;
       // Open the network gate so auth.me and branding queries can fire
@@ -138,6 +151,26 @@ export default function Login() {
     loginMutation.mutate({ identifier, password });
   };
 
+  const handleAccountSelection = (accountId: number) => {
+    setIsLoading(true);
+    loginMutation.mutate({ identifier, password, accountId });
+  };
+
+  const roleLabel = (role: string) => {
+    const labels: Record<string, { ar: string; en: string }> = {
+      super_admin: { ar: "مدير النظام", en: "System administrator" },
+      admin: { ar: "مدير", en: "Administrator" },
+      principal: { ar: "مديرة الحضانة", en: "Nursery principal" },
+      owner: { ar: "مالك", en: "Owner" },
+      teacher: { ar: "معلمة", en: "Teacher" },
+      assistant: { ar: "مساعدة", en: "Assistant" },
+      accountant: { ar: "محاسب", en: "Accountant" },
+      receptionist: { ar: "استقبال", en: "Receptionist" },
+      parent: { ar: "ولي أمر", en: "Parent" },
+    };
+    return labels[role]?.[isAr ? "ar" : "en"] || role;
+  };
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || phone.length < 9) {
@@ -214,7 +247,65 @@ export default function Login() {
           </div>
 
           {/* PASSWORD LOGIN */}
-          {loginMode === "password" && (
+          {loginMode === "password" && accountOptions && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => setAccountOptions(null)}
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowRight className="h-4 w-4" />
+                {isAr ? "العودة لبيانات الدخول" : "Back to login details"}
+              </button>
+
+              <div className="rounded-2xl border border-[#00C9B7]/20 bg-[#00C9B7]/[0.06] p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00C9B7] text-white">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-slate-800">
+                      {isAr ? "اختر الحساب" : "Choose an account"}
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {isAr
+                        ? "بيانات الدخول مرتبطة بأكثر من حساب. اختر الوجهة الصحيحة للمتابعة بأمان."
+                        : "These credentials belong to more than one account. Choose the correct destination."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {accountOptions.map(option => (
+                  <button
+                    key={option.accountId}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => handleAccountSelection(option.accountId)}
+                    className="group flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-start shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#00C9B7]/50 hover:shadow-md disabled:pointer-events-none disabled:opacity-60"
+                  >
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors group-hover:bg-[#00C9B7]/10 group-hover:text-[#009E93]">
+                      <UserRound className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold text-slate-800">
+                        {option.organizationName}
+                      </p>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                        {[option.displayName, roleLabel(option.role)].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    {isLoading && (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#00C9B7] border-t-transparent" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {loginMode === "password" && !accountOptions && (
             <form onSubmit={handlePasswordLogin} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="identifier" className="text-sm font-medium">

@@ -3,6 +3,7 @@
  * Handles OTP generation/verification, password reset, account lockout, and registration
  */
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { otpCodes, passwordResetTokens, loginAttempts, users } from '../../drizzle/schema';
 import { getDb as getSharedDb } from '../db';
@@ -45,9 +46,7 @@ export function generateResetToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
-/**
- * Hash a password using bcrypt-compatible approach (using crypto for portability)
- */
+/** Hash a password in the application's current PBKDF2 format. */
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
@@ -58,10 +57,53 @@ export async function hashPassword(password: string): Promise<string> {
  * Verify a password against a stored hash
  */
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  // Legacy and Excel-imported accounts were stored with bcrypt. Supporting
+  // them here restores access without resetting or exposing their passwords.
+  if (/^\$2[aby]\$/.test(storedHash)) {
+    try {
+      return await bcrypt.compare(password, storedHash);
+    } catch {
+      return false;
+    }
+  }
+
   const [salt, hash] = storedHash.split(':');
-  if (!salt || !hash) return false;
-  const verifyHash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
-  return hash === verifyHash;
+  if (!salt || !hash || !/^[0-9a-f]{32}$/i.test(salt) || !/^[0-9a-f]{128}$/i.test(hash)) {
+    return false;
+  }
+
+  try {
+    const expected = Buffer.from(hash, 'hex');
+    const actual = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512');
+    return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+  } catch {
+    return false;
+  }
+}
+
+export async function findPasswordMatches<T extends { password: string | null }>(
+  password: string,
+  candidates: T[],
+): Promise<T[]> {
+  const results = await Promise.all(
+    candidates.map(candidate => candidate.password
+      ? verifyPassword(password, candidate.password)
+      : Promise.resolve(false)),
+  );
+  return candidates.filter((_, index) => results[index]);
+}
+
+export function needsPasswordRehash(storedHash: string): boolean {
+  return /^\$2[aby]\$/.test(storedHash);
+}
+
+/** Upgrade a verified legacy hash without treating it as a password change. */
+export async function upgradeLegacyPasswordHash(userId: number, password: string): Promise<void> {
+  const db = await getDb();
+  const hashedPassword = await hashPassword(password);
+  await db.update(users)
+    .set({ password: hashedPassword })
+    .where(eq(users.id, userId));
 }
 
 // ============ OTP OPERATIONS ============
