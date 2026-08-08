@@ -11,6 +11,12 @@ import cookieParser from "cookie-parser";
 import { doubleCsrf } from "csrf-csrf";
 // OAuth removed - using independent auth system
 import { registerStorageProxy } from "./storageProxy";
+import {
+  createDirectAssetUpload,
+  DIRECT_ASSET_PURPOSES,
+  type DirectAssetPurpose,
+  verifyDirectAssetUpload,
+} from "../storage";
 // Direct R2 upload function - inline to avoid bundling issues
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 const _r2Client = new S3Client({
@@ -349,6 +355,7 @@ async function startServer() {
   app.use('/api/upload-logo', uploadRateLimit);
   app.use('/api/upload-media', uploadRateLimit);
   app.use('/api/upload-media-batch', uploadRateLimit);
+  app.use('/api/direct-asset-upload', uploadRateLimit);
   app.use('/api/trpc/media.createUploadUrl', directUploadRateLimit);
 
   // Apply rate limits to export endpoints
@@ -376,6 +383,106 @@ async function startServer() {
   // Health check endpoint for Railway/Render deploy health checks and uptime monitors.
   app.get('/api/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
+  });
+
+  const authorizeDirectAssetPurpose = (
+    user: { role?: string },
+    purpose: DirectAssetPurpose,
+  ) => {
+    const managementRoles = ['super_admin', 'admin', 'principal', 'owner'];
+    if (purpose === 'logo' && !managementRoles.includes(user.role || '')) return false;
+    if (purpose === 'curriculum' && user.role === 'parent') return false;
+    return true;
+  };
+
+  // All current browser uploads use this two-step flow. Only small JSON
+  // signing/finalization requests reach Railway; file bytes travel directly
+  // from the user's browser to R2 and are then promoted to an immutable key.
+  app.post('/api/direct-asset-upload/create', async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      const user = await sdk.authenticateRequest(req);
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user.organizationId || !Number.isInteger(user.organizationId)) {
+        res.status(403).json({ error: 'لا يوجد حساب مرتبط بحضانة صالحة' });
+        return;
+      }
+
+      const purpose = req.body?.purpose as DirectAssetPurpose;
+      const contentType = String(req.body?.contentType || '').trim().toLowerCase();
+      const fileSize = Number(req.body?.fileSize);
+      if (!DIRECT_ASSET_PURPOSES.includes(purpose)) {
+        res.status(400).json({ error: 'غرض الرفع غير صالح' });
+        return;
+      }
+      if (!authorizeDirectAssetPurpose(user, purpose)) {
+        res.status(403).json({ error: 'ليس لديك صلاحية لرفع هذا النوع من الملفات' });
+        return;
+      }
+
+      const signed = await createDirectAssetUpload({
+        organizationId: user.organizationId,
+        userId: user.id,
+        purpose,
+        contentType,
+        fileSize,
+      });
+      res.json(signed);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'UNSUPPORTED_ASSET_TYPE') {
+        res.status(400).json({ error: 'نوع الملف غير مدعوم في هذا القسم' });
+        return;
+      }
+      if (error instanceof Error && error.message === 'INVALID_ASSET_SIZE') {
+        res.status(400).json({ error: 'حجم الملف يتجاوز الحد المسموح' });
+        return;
+      }
+      console.error('[DirectAsset] Failed to create upload URL:', error);
+      res.status(500).json({ error: 'تعذّر تجهيز رفع الملف حالياً' });
+    }
+  });
+
+  app.post('/api/direct-asset-upload/finalize', async (req, res) => {
+    try {
+      const { sdk } = await import('./sdk');
+      const user = await sdk.authenticateRequest(req);
+      if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
+      if (!user.organizationId || !Number.isInteger(user.organizationId)) {
+        res.status(403).json({ error: 'لا يوجد حساب مرتبط بحضانة صالحة' });
+        return;
+      }
+
+      const purpose = req.body?.purpose as DirectAssetPurpose;
+      const fileKey = String(req.body?.fileKey || '');
+      const originalFileName = String(req.body?.fileName || 'file').slice(0, 255);
+      if (!DIRECT_ASSET_PURPOSES.includes(purpose)) {
+        res.status(400).json({ error: 'غرض الرفع غير صالح' });
+        return;
+      }
+      if (!authorizeDirectAssetPurpose(user, purpose)) {
+        res.status(403).json({ error: 'ليس لديك صلاحية لرفع هذا النوع من الملفات' });
+        return;
+      }
+
+      const verified = await verifyDirectAssetUpload({
+        organizationId: user.organizationId,
+        userId: user.id,
+        purpose,
+        fileKey,
+      });
+      if (purpose === 'curriculum') {
+        res.json({
+          ...verified,
+          fileUrl: verified.url,
+          fileName: originalFileName,
+        });
+        return;
+      }
+      res.json({ ...verified, key: verified.fileKey });
+    } catch (error) {
+      console.error('[DirectAsset] Failed to finalize upload:', error);
+      res.status(400).json({ error: 'تعذّر التحقق من الملف المرفوع؛ أعد رفعه وحاول مجدداً' });
+    }
   });
 
   // File upload endpoint - handles base64 JSON uploads (requires authentication)

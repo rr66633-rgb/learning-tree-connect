@@ -9,8 +9,7 @@ import { toast } from "sonner";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Palette, Save, RotateCcw, Upload, X, Image as ImageIcon } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
-import { fetchWithCsrf } from "@/lib/csrf";
-import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
+import { uploadWithProgress } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 interface LogoUploadProps {
@@ -41,7 +40,7 @@ function LogoUpload({ label, currentUrl, onUpload, onRemove }: LogoUploadProps) 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', await compressImage(file));
+      formData.append('file', file);
       const { url } = await uploadWithProgress(apiUrl('/api/upload-logo'), formData);
       onUpload(url);
       toast.success(isAr ? "تم رفع الشعار بنجاح" : "Logo uploaded successfully");

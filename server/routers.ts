@@ -34,6 +34,7 @@ import { payrollRouter } from "./payrollRouter";
 import { evaluationRouter } from "./evaluationRouter";
 import { goalsRouter } from "./goalsRouter";
 import { visitorAssistantRouter } from "./visitorAssistantRouter";
+import { normalizeEmail } from "./emailIdentity";
 import {
   createDirectMediaUpload,
   getStorageKey,
@@ -665,12 +666,13 @@ export const appRouter = router({
         const updateData: Record<string, any> = {};
 
         // Check if email is already taken by another user
-        if (input.email && input.email !== user.email) {
-          const existing = await db.findUserByIdentifier(input.email);
+        if (input.email && normalizeEmail(input.email) !== user.email) {
+          const normalizedEmail = normalizeEmail(input.email);
+          const existing = await db.findUserByIdentifier(normalizedEmail);
           if (existing && existing.id !== user.id) {
             throw new TRPCError({ code: 'CONFLICT', message: 'البريد الإلكتروني مستخدم من حساب آخر' });
           }
-          updateData.email = input.email;
+          updateData.email = normalizedEmail;
         }
 
         // Check if phone is already taken by another user
@@ -4016,7 +4018,7 @@ export const appRouter = router({
       password: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {
       // Clean email from invisible RTL/LTR characters
-      const cleanEmail = input.email.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
+      const cleanEmail = normalizeEmail(input.email);
       input = { ...input, email: cleanEmail };
       
       // Check for duplicate email

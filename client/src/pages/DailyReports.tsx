@@ -12,7 +12,6 @@ import { Plus, FileText, Loader2, Camera, X, Image as ImageIcon, AlertTriangle }
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { apiUrl } from "@/lib/apiBase";
-import { fetchWithCsrf } from "@/lib/csrf";
 import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
@@ -65,23 +64,12 @@ export default function DailyReports() {
   };
 
   const uploadPhoto = async (file: File): Promise<string> => {
-    // Shrink first: this endpoint takes base64, which inflates whatever it is
-    // given by about a third on the wire. Compressing before encoding is what
-    // makes that acceptable on a phone connection.
     const prepared = await compressImage(file);
-    const base64: string = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(prepared);
-    });
+    const formData = new FormData();
+    formData.append('file', prepared);
     const { url } = await uploadWithProgress<{ url: string }>(
-      apiUrl('/api/upload'),
-      JSON.stringify({
-        data: base64,
-        fileName: `report-${Date.now()}-${prepared.name}`,
-        contentType: prepared.type,
-      }),
+      apiUrl('/api/upload-photo'),
+      formData,
     );
     return url;
   };

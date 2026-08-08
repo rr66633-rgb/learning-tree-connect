@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { staffProfiles, staffLeaves, staffLeaveBalances, staffNotes, staffDocuments, users } from "../drizzle/schema";
 import { eq, and, or, like, desc, asc, sql, inArray } from "drizzle-orm";
+import { EMAIL_ALREADY_USED_MESSAGE, normalizeEmail } from "./emailIdentity";
 
 // Helper: check if user is admin or principal
 function assertAdminOrPrincipal(role: string) {
@@ -152,6 +153,13 @@ export const staffManagementRouter = router({
     if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
     
     const orgId = ctx.organizationId;
+    const normalizedEmail = normalizeEmail(input.email);
+    const [emailOwner] = await db.select({ id: users.id }).from(users)
+      .where(sql`LOWER(TRIM(${users.email})) = ${normalizedEmail}`)
+      .limit(1);
+    if (emailOwner) {
+      throw new TRPCError({ code: 'CONFLICT', message: EMAIL_ALREADY_USED_MESSAGE });
+    }
     
     // Create a user account for this staff member
     const openId = `staff_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -172,7 +180,7 @@ export const staffManagementRouter = router({
     const userResult = await db.insert(users).values({
       openId,
       name: input.fullNameAr,
-      email: input.email,
+      email: normalizedEmail,
       phone: input.mobile,
       role: userRole as any,
       nationalId: input.nationalId || input.iqamaNumber || null,
@@ -196,7 +204,7 @@ export const staffManagementRouter = router({
       maritalStatus: input.maritalStatus || null,
       mobile: input.mobile,
       altPhone: input.altPhone || null,
-      email: input.email,
+      email: normalizedEmail,
       address: input.address || null,
       city: input.city || null,
       jobTitle: input.jobTitle,
@@ -284,6 +292,20 @@ export const staffManagementRouter = router({
       throw new TRPCError({ code: 'NOT_FOUND', message: 'الموظف غير موجود' });
     }
 
+    if (input.email && existing[0].userId) {
+      const normalizedEmail = normalizeEmail(input.email);
+      const [emailOwner] = await db.select({ id: users.id }).from(users)
+        .where(and(
+          sql`LOWER(TRIM(${users.email})) = ${normalizedEmail}`,
+          sql`${users.id} <> ${existing[0].userId}`,
+        ))
+        .limit(1);
+      if (emailOwner) {
+        throw new TRPCError({ code: 'CONFLICT', message: EMAIL_ALREADY_USED_MESSAGE });
+      }
+      input = { ...input, email: normalizedEmail };
+    }
+
     const { id, ...data } = input;
     const updateData: Record<string, any> = {};
 
@@ -306,7 +328,7 @@ export const staffManagementRouter = router({
     if (profile[0]) {
       const userUpdate: Record<string, any> = {};
       if (data.fullNameAr) userUpdate.name = data.fullNameAr;
-      if (data.email) userUpdate.email = data.email;
+      if (data.email) userUpdate.email = normalizeEmail(data.email);
       if (data.mobile) userUpdate.phone = data.mobile;
       if (data.status === 'active') userUpdate.isActive = true;
       if (data.status === 'inactive' || data.status === 'terminated' || data.status === 'resigned') userUpdate.isActive = false;

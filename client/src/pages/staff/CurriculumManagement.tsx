@@ -7,11 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { getCsrfToken, invalidateCsrfToken } from "@/lib/csrf";
 import { FileText, Trash2, Upload, BookOpen, Loader2 } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
-import { fetchWithCsrf } from "@/lib/csrf";
-import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
+import { uploadWithProgress } from "@/lib/uploadWithProgress";
 import { useTranslation } from "react-i18next";
 
 const getLEVEL_LABELS = (isAr: boolean): Record<string, string>  => ({

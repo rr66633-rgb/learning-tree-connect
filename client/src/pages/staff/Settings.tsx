@@ -15,8 +15,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { apiUrl } from "@/lib/apiBase";
-import { fetchWithCsrf } from "@/lib/csrf";
-import { uploadWithProgress, compressImage } from "@/lib/uploadWithProgress";
+import { uploadWithProgress } from "@/lib/uploadWithProgress";
 
 function PickupAlertSettingsSection() {
   const { user } = useAuth();
@@ -301,7 +300,7 @@ export default function StaffSettings() {
                     setUploading(true);
                     try {
                       const formData = new FormData();
-                      formData.append('file', await compressImage(file));
+                      formData.append('file', file);
                       const data: any = await uploadWithProgress(apiUrl('/api/upload-logo'), formData);
                       if (data.url) {
                         setLogoUrl(data.url);

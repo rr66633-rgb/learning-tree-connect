@@ -14,6 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, Edit, UserPlus, Unlink, Calendar, Phone, Heart, AlertTriangle, Bus, Shield, User, FileText, Upload, CheckCircle, XCircle, Download, Trash2, Camera, Plus, IdCard } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { apiUrl } from "@/lib/apiBase";
+import { compressImage, uploadWithProgress } from "@/lib/uploadWithProgress";
 
 export default function ChildProfile() {
   const { t, i18n } = useTranslation();
@@ -88,32 +90,9 @@ export default function ChildProfile() {
   const [form, setForm] = useState<any>({});
 
   const uploadFile = async (file: File, endpoint: string): Promise<{ url: string; key?: string; mimeType?: string }> => {
-    if (endpoint === '/api/upload-document' || endpoint === '/api/upload-photo') {
-      // Use FormData for multer-based endpoints
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch(endpoint, { method: 'POST', body: formData });
-      if (!response.ok) throw new Error('Upload failed');
-      return await response.json();
-    }
-    // Use base64 JSON for the standard /api/upload endpoint
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-      reader.onload = async () => {
-        try {
-          const base64 = (reader.result as string).split(',')[1];
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: base64, fileName: `${Date.now()}-${file.name}`, contentType: file.type }),
-          });
-          if (!response.ok) throw new Error('Upload failed');
-          resolve(await response.json());
-        } catch (err) { reject(err); }
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    const formData = new FormData();
+    formData.append('file', endpoint === '/api/upload-photo' ? await compressImage(file) : file);
+    return uploadWithProgress(apiUrl(endpoint), formData);
   };
 
   const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +114,7 @@ export default function ChildProfile() {
     if (file.size > 10 * 1024 * 1024) { toast.error(isAr ? "حجم الصورة كبير جداً" : "Image size too large"); return; }
     setPhotoUploading(true);
     try {
-      const { url } = await uploadFile(file, '/api/upload');
+      const { url } = await uploadFile(file, '/api/upload-photo');
       await updateChild.mutateAsync({ id: childId, photo: url });
       toast.success(isAr ? "تم تحديث الصورة" : "Photo updated");
     } catch { toast.error(isAr ? "فشل رفع الصورة" : "Failed to upload image"); }

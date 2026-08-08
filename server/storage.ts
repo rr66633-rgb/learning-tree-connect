@@ -29,6 +29,72 @@ export const MEDIA_CONTENT_TYPES = {
 export type MediaUploadType = "photo" | "video";
 export type MediaContentType = keyof typeof MEDIA_CONTENT_TYPES;
 
+export const DIRECT_ASSET_PURPOSES = [
+  "photo",
+  "document",
+  "logo",
+  "media",
+  "curriculum",
+] as const;
+
+export type DirectAssetPurpose = typeof DIRECT_ASSET_PURPOSES[number];
+
+const DIRECT_ASSET_CONTENT_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/gif": "gif",
+  "image/webp": "webp",
+  "image/heic": "heic",
+  "image/heif": "heif",
+  "image/svg+xml": "svg",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/webm": "webm",
+  "application/pdf": "pdf",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+} as const;
+
+const DIRECT_ASSET_LIMITS: Record<DirectAssetPurpose, number> = {
+  photo: 10 * 1024 * 1024,
+  document: 20 * 1024 * 1024,
+  logo: 10 * 1024 * 1024,
+  media: 50 * 1024 * 1024,
+  curriculum: 20 * 1024 * 1024,
+};
+
+export function validateDirectAssetUpload(
+  purpose: DirectAssetPurpose,
+  contentType: string,
+  fileSize: number,
+) {
+  const extension = DIRECT_ASSET_CONTENT_TYPES[
+    contentType as keyof typeof DIRECT_ASSET_CONTENT_TYPES
+  ];
+  const isImage = contentType.startsWith("image/");
+  const isVideo = contentType.startsWith("video/");
+  const isDocument = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ].includes(contentType);
+  const allowedForPurpose =
+    (purpose === "photo" && isImage && contentType !== "image/svg+xml") ||
+    (purpose === "logo" && isImage) ||
+    (purpose === "media" && (isImage || isVideo)) ||
+    (purpose === "document" && (isImage || isDocument)) ||
+    (purpose === "curriculum" && contentType === "application/pdf");
+
+  if (!extension || !allowedForPurpose) {
+    throw new Error("UNSUPPORTED_ASSET_TYPE");
+  }
+  const maxBytes = DIRECT_ASSET_LIMITS[purpose];
+  if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > maxBytes) {
+    throw new Error("INVALID_ASSET_SIZE");
+  }
+  return { extension, maxBytes };
+}
+
 let _client: S3Client | null = null;
 function getS3Client(): S3Client {
   if (_client) return _client;
@@ -226,5 +292,99 @@ export async function verifyDirectMediaUpload(input: {
     url: getStorageUrl(finalKey),
     mimeType: contentType,
     fileSize,
+  };
+}
+
+/**
+ * Creates a short-lived upload URL for every non-gallery asset in the app.
+ * The browser sends the bytes directly to R2; the application server only
+ * signs the request and later verifies metadata before publishing the object.
+ */
+export async function createDirectAssetUpload(input: {
+  organizationId: number;
+  userId: number;
+  purpose: DirectAssetPurpose;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { extension } = validateDirectAssetUpload(
+    input.purpose,
+    input.contentType,
+    input.fileSize,
+  );
+  const now = new Date();
+  const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  const key = [
+    "assets-staging",
+    String(input.organizationId),
+    input.purpose,
+    String(input.userId),
+    month,
+    `${randomUUID()}.${extension}`,
+  ].join("/");
+  const expiresIn = 10 * 60;
+  const uploadUrl = await getSignedUrl(
+    getS3Client(),
+    new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: key,
+      ContentType: input.contentType,
+    }),
+    { expiresIn },
+  );
+
+  return {
+    uploadUrl,
+    fileKey: key,
+    expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+  };
+}
+
+export async function verifyDirectAssetUpload(input: {
+  organizationId: number;
+  userId: number;
+  purpose: DirectAssetPurpose;
+  fileKey: string;
+}) {
+  const key = normalizeKey(input.fileKey);
+  const expectedPrefix = [
+    "assets-staging",
+    String(input.organizationId),
+    input.purpose,
+    String(input.userId),
+    "",
+  ].join("/");
+  if (!key.startsWith(expectedPrefix) || key.includes("..") || key.includes("\\")) {
+    throw new Error("INVALID_ASSET_KEY");
+  }
+
+  const result = await getS3Client().send(new HeadObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: key,
+  }));
+  const contentType = result.ContentType || "";
+  const fileSize = result.ContentLength || 0;
+  validateDirectAssetUpload(input.purpose, contentType, fileSize);
+
+  // Presigned PUT links remain reusable until expiry. Promote to a different,
+  // immutable key so a published child photo/document cannot be replaced by
+  // replaying an old upload URL.
+  const finalKey = key.replace(/^assets-staging\//, "assets/");
+  const copySource = encodeURIComponent(`${S3_BUCKET}/${key}`).replace(/%2F/g, "/");
+  await getS3Client().send(new CopyObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: finalKey,
+    CopySource: copySource,
+    ContentType: contentType,
+    MetadataDirective: "REPLACE",
+  }));
+  await storageDelete(key);
+
+  return {
+    fileKey: finalKey,
+    url: getStorageUrl(finalKey),
+    mimeType: contentType,
+    fileSize,
+    type: contentType.startsWith("video/") ? "video" as const : "photo" as const,
   };
 }

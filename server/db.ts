@@ -8,6 +8,7 @@ import type { InsertNurseryRegistration } from "../drizzle/schema";
 import type { InsertAuthorizedPickupPerson } from "../drizzle/schema";
 import type { InsertDevelopmentalAssessment, InsertAssessmentResponse } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { normalizeEmail } from './emailIdentity';
 
 // ============ SINGLETON CONNECTION POOL ============
 let _pool: ReturnType<typeof mysql2.createPool> | null = null;
@@ -123,7 +124,9 @@ export async function upsertUser(
     const assignNullable = (field: TextField) => {
       const value = user[field];
       if (value === undefined) return;
-      updateSet[field] = value ?? null;
+      updateSet[field] = field === 'email' && value
+        ? normalizeEmail(value)
+        : value ?? null;
     };
 
     textFields.forEach(assignNullable);
@@ -182,7 +185,7 @@ export async function getUserByOpenId(openId: string) {
 export async function getUserByEmail(email: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const result = await db.select().from(users).where(eq(users.email, normalizeEmail(email))).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -1351,7 +1354,7 @@ export async function createUser(data: { name: string; email: string; phone?: st
   const result = await db.insert(users).values({
     openId: data.openId,
     name: data.name,
-    email: data.email,
+    email: normalizeEmail(data.email),
     phone: data.phone || null,
     role: data.role as any,
     nationalId: (data as any).nationalId || null,
@@ -1376,7 +1379,7 @@ export async function updateUser(id: number, data: { name?: string; email?: stri
   }
   const updateData: Record<string, any> = {};
   if (data.name !== undefined) updateData.name = data.name;
-  if (data.email !== undefined) updateData.email = data.email;
+  if (data.email !== undefined) updateData.email = normalizeEmail(data.email);
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.role !== undefined) updateData.role = data.role;
   if (data.nationalId !== undefined) updateData.nationalId = data.nationalId;
@@ -2985,7 +2988,7 @@ export async function createUserWithPassword(data: {
     openId,
     name: data.name,
     phone: data.phone,
-    email: data.email,
+    email: normalizeEmail(data.email),
     password: data.password,
     role: data.role as any,
     isActive: data.isActive,

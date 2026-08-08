@@ -3,6 +3,7 @@ import {
   MEDIA_UPLOAD_LIMITS,
   getStorageKey,
   getStorageUrl,
+  validateDirectAssetUpload,
   validateMediaUpload,
 } from "./storage";
 
@@ -32,5 +33,13 @@ describe("direct R2 media upload validation", () => {
     expect(getStorageKey(url)).toBe(key);
     expect(getStorageKey(`https://naashah.com${url}`)).toBe(key);
     expect(getStorageKey("https://example.com/file.jpg")).toBeNull();
+  });
+
+  it("validates generic asset purposes before signing", () => {
+    expect(validateDirectAssetUpload("photo", "image/jpeg", 1024)).toMatchObject({ extension: "jpg" });
+    expect(validateDirectAssetUpload("document", "application/pdf", 1024)).toMatchObject({ extension: "pdf" });
+    expect(validateDirectAssetUpload("media", "video/mp4", 1024)).toMatchObject({ extension: "mp4" });
+    expect(() => validateDirectAssetUpload("curriculum", "image/png", 1024)).toThrow("UNSUPPORTED_ASSET_TYPE");
+    expect(() => validateDirectAssetUpload("photo", "image/jpeg", 10 * 1024 * 1024 + 1)).toThrow("INVALID_ASSET_SIZE");
   });
 });

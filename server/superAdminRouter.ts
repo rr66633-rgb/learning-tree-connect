@@ -18,6 +18,7 @@ import {
 import { getDb } from "./db";
 import { hashPassword } from "./_core/authService";
 import crypto from "crypto";
+import { normalizeEmail } from "./emailIdentity";
 
 // SECURITY FIX: superAdminProcedure moved to server/_core/trpc.ts as the
 // single canonical cross-organization gate, imported here instead of being
@@ -772,6 +773,7 @@ export const superAdminRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = (await getDb())!;
+      const normalizedEmail = input.email ? normalizeEmail(input.email) : undefined;
 
       // Check org exists
       const [org] = await db
@@ -783,11 +785,11 @@ export const superAdminRouter = router({
 
       // Check if user already exists by email or phone
       let existingUser = null;
-      if (input.email) {
+      if (normalizedEmail) {
         const [found] = await db
           .select()
           .from(users)
-          .where(eq(users.email, input.email));
+          .where(sql`LOWER(TRIM(${users.email})) = ${normalizedEmail}`);
         existingUser = found || null;
       }
       if (!existingUser && input.phone) {
@@ -823,7 +825,7 @@ export const superAdminRouter = router({
         const [result] = await db.insert(users).values({
           openId,
           name: input.name,
-          email: input.email || null,
+          email: normalizedEmail || null,
           phone: input.phone || null,
           role: input.role,
           password: hashedPw,

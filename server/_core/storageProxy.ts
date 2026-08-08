@@ -55,6 +55,26 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
+    // New objects always encode their tenant in the key. Enforce that scope
+    // again at read time: possession (or guessing) of another nursery's key
+    // must never be enough to view its children's files. Legacy keys did not
+    // contain an organization id, so they remain session-protected to avoid
+    // making historical photos disappear while records are progressively
+    // rewritten through the new upload path.
+    if (key.startsWith("assets-staging/") || key.startsWith("media-staging/")) {
+      res.status(404).json({ error: "الملف غير موجود" });
+      return;
+    }
+    const tenantKey = key.match(/^(?:assets|media)\/(\d+)\//);
+    if (
+      tenantKey &&
+      viewer.role !== "super_admin" &&
+      Number(tenantKey[1]) !== viewer.organizationId
+    ) {
+      res.status(404).json({ error: "الملف غير موجود" });
+      return;
+    }
+
     if (!S3_BUCKET || !S3_ACCESS_KEY_ID) {
       // Never surface storage-provider details to the client.
       console.error("[StorageProxy] storage is not configured (missing bucket/credentials)");
@@ -75,6 +95,12 @@ export function registerStorageProxy(app: Express) {
 
       if (result.ContentType) {
         res.set("Content-Type", result.ContentType);
+        if (result.ContentType === "image/svg+xml") {
+          // Uploaded SVG logos are displayed as images. Sandboxing also makes
+          // direct navigation to a malicious SVG inert on the application's
+          // authenticated origin.
+          res.set("Content-Security-Policy", "sandbox");
+        }
       }
       if (result.ContentLength) {
         res.set("Content-Length", String(result.ContentLength));

@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, decimal, index } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, decimal, index, uniqueIndex } from "drizzle-orm/mysql-core";
 
 // ============ USERS ============
 export const users = mysqlTable("users", {
@@ -29,7 +29,7 @@ export const users = mysqlTable("users", {
   deletionScheduledAt: timestamp("deletionScheduledAt"),
 }, (table) => [
   index("idx_users_org_role_active").on(table.organizationId, table.role, table.isActive),
-  index("idx_users_email").on(table.email),
+  uniqueIndex("ux_users_email").on(table.email),
   index("idx_users_phone").on(table.phone),
 ]);
 

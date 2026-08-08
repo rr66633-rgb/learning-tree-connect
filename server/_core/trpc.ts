@@ -2,6 +2,7 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import { EMAIL_ALREADY_USED_MESSAGE, isDuplicateEmailError } from "../emailIdentity";
 
 // ---------------------------------------------------------------------------
 // SECURITY FIX: stop internal detail reaching the browser.
@@ -54,12 +55,18 @@ const t = initTRPC.context<TrpcContext>().create({
     const wrappedUnexpected =
       error.code === "INTERNAL_SERVER_ERROR" && error.cause !== undefined;
 
-    const message =
-      wrappedUnexpected || looksLikeInternalDetail(shape.message)
+    const duplicateEmail = isDuplicateEmailError(error);
+    const message = duplicateEmail
+      ? EMAIL_ALREADY_USED_MESSAGE
+      : wrappedUnexpected || looksLikeInternalDetail(shape.message)
         ? GENERIC_MESSAGE
         : shape.message;
 
-    if (message !== shape.message) {
+    if (duplicateEmail) {
+      // Do not echo the conflicting address from the database driver into
+      // application logs; the index name is enough to diagnose this case.
+      console.warn(`[tRPC] ${(safeData as any).path ?? "unknown"} -> duplicate user email blocked`);
+    } else if (message !== shape.message) {
       // Keep the real reason where it belongs: the server log.
       console.error(
         `[tRPC] ${(safeData as any).path ?? "unknown"} -> ${error.code}:`,

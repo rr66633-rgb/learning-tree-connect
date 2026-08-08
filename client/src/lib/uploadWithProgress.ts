@@ -10,6 +10,7 @@
 // fetch still does not. Everything else (credentials, CSRF token and its
 // one-shot retry) mirrors fetchWithCsrf so behaviour is unchanged.
 import { getCsrfToken, invalidateCsrfToken } from './csrf';
+import { apiUrl } from './apiBase';
 
 export type UploadProgress = {
   /** 0-100, or null while the total size is still unknown. */
@@ -89,6 +90,11 @@ export async function uploadWithProgress<T = any>(
   body: FormData | string,
   opts: UploadOptions = {},
 ): Promise<T> {
+  const direct = getDirectUploadInput(url, body);
+  if (direct) {
+    return await uploadFileDirectly<T>(direct.file, direct.purpose, opts);
+  }
+
   const contentType = typeof body === 'string' ? 'application/json' : null;
 
   let csrf = await getCsrfToken();
@@ -116,6 +122,84 @@ export async function uploadWithProgress<T = any>(
     throw new UploadError(parsed?.error || 'تعذّر رفع الملف، حاول مرة أخرى', res.status);
   }
   return parsed as T;
+}
+
+type DirectAssetPurpose = 'photo' | 'document' | 'logo' | 'media' | 'curriculum';
+
+function getDirectUploadInput(
+  url: string,
+  body: FormData | string,
+): { file: File; purpose: DirectAssetPurpose } | null {
+  if (!(body instanceof FormData) || typeof File === 'undefined') return null;
+  let pathname = url;
+  try {
+    pathname = new URL(url, window.location.origin).pathname;
+  } catch { /* relative path is sufficient */ }
+
+  const purposeByPath: Record<string, DirectAssetPurpose> = {
+    '/api/upload': 'photo',
+    '/api/upload-photo': 'photo',
+    '/api/upload-document': 'document',
+    '/api/upload-logo': 'logo',
+    '/api/upload-media': 'media',
+    '/api/upload-curriculum': 'curriculum',
+  };
+  const purpose = purposeByPath[pathname];
+  if (!purpose) return null;
+  const candidate = body.get('file') ?? body.get('files');
+  return candidate instanceof File ? { file: candidate, purpose } : null;
+}
+
+function inferContentType(file: File): string {
+  if (file.type) return file.type.toLowerCase();
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  const byExtension: Record<string, string> = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+    webp: 'image/webp', heic: 'image/heic', heif: 'image/heif', svg: 'image/svg+xml',
+    mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  };
+  return extension ? byExtension[extension] || '' : '';
+}
+
+async function uploadFileDirectly<T>(
+  originalFile: File,
+  purpose: DirectAssetPurpose,
+  opts: UploadOptions,
+): Promise<T> {
+  const shouldCompress =
+    purpose !== 'logo' &&
+    originalFile.type.startsWith('image/') &&
+    originalFile.type !== 'image/gif';
+  let file = shouldCompress ? await compressImage(originalFile) : originalFile;
+  const contentType = inferContentType(file);
+  if (!file.type && contentType) {
+    file = new File([file], file.name, { type: contentType, lastModified: file.lastModified });
+  }
+
+  const signed = await uploadWithProgress<{
+    uploadUrl: string;
+    fileKey: string;
+  }>(
+    apiUrl('/api/direct-asset-upload/create'),
+    JSON.stringify({ purpose, contentType, fileSize: file.size }),
+    { signal: opts.signal },
+  );
+
+  await uploadDirectToSignedUrl(signed.uploadUrl, file, opts);
+  opts.onProgress?.({
+    percent: 100,
+    loadedBytes: file.size,
+    totalBytes: file.size,
+    processing: true,
+  });
+
+  return await uploadWithProgress<T>(
+    apiUrl('/api/direct-asset-upload/finalize'),
+    JSON.stringify({ purpose, fileKey: signed.fileKey, fileName: originalFile.name }),
+    { signal: opts.signal },
+  );
 }
 
 /**
