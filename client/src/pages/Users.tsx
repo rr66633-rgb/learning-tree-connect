@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, UserX, Link2, Unlink, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, UserX, Link2, Unlink, Download, FileSpreadsheet, FileText, KeyRound, AlertTriangle } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
@@ -83,7 +83,13 @@ export default function UsersPage() {
     if (!selectedUser) return;
     const cleanEmail = editForm.email.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\s]/g, '').trim();
     const cleanPhone = editForm.phone.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
-    updateUser.mutate({ id: selectedUser.id, ...editForm, email: cleanEmail, phone: cleanPhone || undefined });
+    updateUser.mutate({
+      id: selectedUser.id,
+      ...editForm,
+      email: cleanEmail,
+      phone: cleanPhone || undefined,
+      password: editForm.password || undefined,
+    });
   };
 
   const openEdit = (user: any) => {
@@ -297,7 +303,17 @@ export default function UsersPage() {
               <TableBody>
                 {users.map((user: any) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name || "—"}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{user.name || "—"}</span>
+                        {!user.hasPassword && (
+                          <Badge variant="outline" className="gap-1 border-amber-200 bg-amber-50 text-amber-700">
+                            <AlertTriangle className="h-3 w-3" />
+                            {isAr ? "بحاجة كلمة مرور" : "Password needed"}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{user.email || "—"}</TableCell>
                     <TableCell dir="ltr" className="text-right">{user.phone || "—"}</TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
@@ -412,6 +428,28 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label>{isAr ? "رقم الهاتف" : "Phone Number"}</Label>
               <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} dir="ltr" placeholder="+966xxxxxxxxx" />
+            </div>
+            <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+              <Label className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-[#009E93]" />
+                {selectedUser?.hasPassword
+                  ? isAr ? "تعيين كلمة مرور جديدة (اختياري)" : "Set a new password (optional)"
+                  : isAr ? "تعيين كلمة مرور للحساب" : "Set an account password"}
+              </Label>
+              <Input
+                type="password"
+                autoComplete="new-password"
+                minLength={6}
+                value={editForm.password}
+                onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                dir="ltr"
+                placeholder={isAr ? "6 أحرف على الأقل" : "At least 6 characters"}
+              />
+              <p className="text-xs leading-5 text-muted-foreground">
+                {isAr
+                  ? "اترك الحقل فارغاً للاحتفاظ بكلمة المرور الحالية. عند إدخال قيمة جديدة ستُحفظ مشفرة ولن تظهر مرة أخرى."
+                  : "Leave blank to keep the current password. A new value is securely hashed and will not be shown again."}
+              </p>
             </div>
             {selectedUser?.role !== 'super_admin' && (
               <div className="space-y-2">

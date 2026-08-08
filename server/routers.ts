@@ -550,6 +550,14 @@ export const appRouter = router({
         phone: z.string().min(9),
       }))
       .mutation(async ({ input }) => {
+        const deliveryAvailability = authService.getOtpDeliveryAvailability();
+        if (!deliveryAvailability.email && !deliveryAvailability.sms) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'خدمة إرسال رمز التحقق غير مفعلة حالياً. استخدم كلمة المرور أو تواصل مع إدارة الحضانة لتعيين كلمة مرور.',
+          });
+        }
+
         // Rate limit check
         const canRequest = await authService.canRequestOtp(input.phone);
         if (!canRequest.allowed) {
@@ -581,11 +589,22 @@ export const appRouter = router({
           type: 'login_verification',
         });
 
-        // Send OTP via SMS, or email if SMS not configured
-        if (user.email) {
-          await authService.sendEmailOtp(user.email, code, user.name || undefined);
-        } else {
-          await authService.sendSmsOtp(input.phone, code);
+        // Prefer email when it is configured, then fall back to SMS. Never
+        // claim delivery when production has no working provider.
+        let deliveryResult = user.email && deliveryAvailability.email
+          ? await authService.sendEmailOtp(user.email, code, user.name || undefined)
+          : deliveryAvailability.sms
+            ? await authService.sendSmsOtp(input.phone, code)
+            : { sent: false, message: 'No configured delivery channel' };
+
+        if (!deliveryResult.sent && deliveryAvailability.sms) {
+          deliveryResult = await authService.sendSmsOtp(input.phone, code);
+        }
+        if (!deliveryResult.sent) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'تعذر إرسال رمز التحقق الآن. استخدم كلمة المرور أو تواصل مع إدارة الحضانة.',
+          });
         }
 
         return { success: true, message: 'تم إرسال رمز التحقق.', expiresAt: expiresAt.getTime() };
@@ -687,13 +706,17 @@ export const appRouter = router({
     }),
 
     // ============ GET AUTH CONSTANTS (for frontend) ============
-    getAuthConfig: publicProcedure.query(() => ({
-      otpExpiryMinutes: authService.AUTH_CONSTANTS.OTP_EXPIRY_MINUTES,
-      otpCooldownSeconds: authService.AUTH_CONSTANTS.OTP_COOLDOWN_SECONDS,
-      maxFailedAttempts: authService.AUTH_CONSTANTS.MAX_FAILED_LOGIN_ATTEMPTS,
-      lockoutMinutes: authService.AUTH_CONSTANTS.ACCOUNT_LOCKOUT_MINUTES,
-      sessionTimeoutMinutes: authService.AUTH_CONSTANTS.SESSION_TIMEOUT_MINUTES,
-    })),
+    getAuthConfig: publicProcedure.query(() => {
+      const deliveryAvailability = authService.getOtpDeliveryAvailability();
+      return {
+        otpExpiryMinutes: authService.AUTH_CONSTANTS.OTP_EXPIRY_MINUTES,
+        otpCooldownSeconds: authService.AUTH_CONSTANTS.OTP_COOLDOWN_SECONDS,
+        maxFailedAttempts: authService.AUTH_CONSTANTS.MAX_FAILED_LOGIN_ATTEMPTS,
+        lockoutMinutes: authService.AUTH_CONSTANTS.ACCOUNT_LOCKOUT_MINUTES,
+        sessionTimeoutMinutes: authService.AUTH_CONSTANTS.SESSION_TIMEOUT_MINUTES,
+        otpLoginAvailable: deliveryAvailability.email || deliveryAvailability.sms,
+      };
+    }),
 
     // ============ DELETE ACCOUNT ============
     deleteAccount: protectedProcedure
@@ -3972,7 +3995,8 @@ export const appRouter = router({
 
   users: router({
     list: adminProcedure.input(z.object({ role: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input, ctx }) => {
-      return db.getUsersByRole(input?.role, input?.search, ctx.user?.organizationId ?? undefined);
+      const result = await db.getUsersByRole(input?.role, input?.search, ctx.user?.organizationId ?? undefined);
+      return result.map(({ password, ...user }) => ({ ...user, hasPassword: Boolean(password) }));
     }),
     // SECURITY FIX: previously called getUserById with no organizationId --
     // any organization's admin could view any other organization's user's
@@ -3980,7 +4004,8 @@ export const appRouter = router({
     getById: adminProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       const user = await db.getUserById(input.id, ctx.organizationId);
       if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
-      return user;
+      const { password, ...safeUser } = user;
+      return { ...safeUser, hasPassword: Boolean(password) };
     }),
     create: adminProcedure.input(z.object({
       name: z.string().min(1),
@@ -4048,15 +4073,33 @@ export const appRouter = router({
       role: z.enum(['admin', 'principal', 'teacher', 'parent', 'assistant', 'accountant', 'receptionist', 'user']).optional(),
       nationalId: z.string().optional(),
       isActive: z.boolean().optional(),
+      password: z.string().min(6).optional(),
     // SECURITY FIX: previously called updateUser with no organizationId --
     // any organization's admin could update any other organization's user
     // (including role/contact info) by id.
     })).mutation(async ({ input, ctx }) => {
-      const { id, ...data } = input;
-      const result = await db.updateUser(id, data, ctx.organizationId);
-      if (!result) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
-      await db.createAuditLog({ userId: ctx.user!.id, action: 'update_user', resource: 'users', resourceId: id, details: `Updated user #${id}: ${JSON.stringify(data)}`, ipAddress: '' });
-      return result;
+      const { id, password, ...data } = input;
+      const target = await db.getUserById(id, ctx.organizationId);
+      if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+
+      await db.updateUser(id, data, ctx.organizationId);
+      if (password) {
+        await authService.updatePassword(id, password);
+      }
+
+      await db.createAuditLog({
+        userId: ctx.user!.id,
+        action: 'update_user',
+        resource: 'users',
+        resourceId: id,
+        details: `Updated user #${id}: ${JSON.stringify({ ...data, passwordReset: Boolean(password) })}`,
+        ipAddress: '',
+      });
+
+      const updated = await db.getUserById(id, ctx.organizationId);
+      if (!updated) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+      const { password: updatedPassword, ...safeUser } = updated;
+      return { ...safeUser, hasPassword: Boolean(updatedPassword) };
     }),
     // SECURITY FIX: previously called deleteUser with no organizationId --
     // any admin could delete any other organization's user by id.

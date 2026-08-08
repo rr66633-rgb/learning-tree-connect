@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone, Building2, UserRound } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Phone, ArrowRight, Smartphone, Building2, UserRound, AlertTriangle } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
 
 import { useNativeSessionGate } from "@/contexts/NativeSessionGate";
@@ -26,6 +26,7 @@ export default function Login() {
   const isAr = i18n.language === "ar";
   const [, setLocation] = useLocation();
   const { enableNetwork } = useNativeSessionGate();
+  const { data: authConfig } = trpc.auth.getAuthConfig.useQuery();
   const [loginMode, setLoginMode] = useState<LoginMode>("password");
   
   // Password login state
@@ -235,16 +236,28 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode("otp")}
+              disabled={authConfig?.otpLoginAvailable === false}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
                 loginMode === "otp"
                   ? "bg-white text-slate-800 shadow-sm"
                   : "text-muted-foreground hover:text-slate-600"
-              }`}
+              } disabled:cursor-not-allowed disabled:opacity-45`}
             >
               <Smartphone className="h-5 w-5" />
               {isAr ? "رمز التحقق" : "Verification Code"}
             </button>
           </div>
+
+          {authConfig?.otpLoginAvailable === false && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="text-xs leading-5">
+                {isAr
+                  ? "الدخول برمز التحقق غير متاح حالياً. استخدم كلمة المرور، أو تواصل مع إدارة الحضانة لتعيين كلمة مرور لحسابك."
+                  : "Verification-code login is currently unavailable. Use your password or contact the nursery administration to set one."}
+              </p>
+            </div>
+          )}
 
           {/* PASSWORD LOGIN */}
           {loginMode === "password" && accountOptions && (

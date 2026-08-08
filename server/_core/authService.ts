@@ -97,6 +97,13 @@ export function needsPasswordRehash(storedHash: string): boolean {
   return /^\$2[aby]\$/.test(storedHash);
 }
 
+export function getOtpDeliveryAvailability(): { email: boolean; sms: boolean } {
+  return {
+    email: isEmailConfigured(),
+    sms: isSmsConfigured(),
+  };
+}
+
 /** Upgrade a verified legacy hash without treating it as a password change. */
 export async function upgradeLegacyPasswordHash(userId: number, password: string): Promise<void> {
   const db = await getDb();
