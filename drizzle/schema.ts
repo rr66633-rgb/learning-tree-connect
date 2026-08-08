@@ -1132,6 +1132,10 @@ export const organizations = mysqlTable("organizations", {
   trialEndsAt: timestamp("trialEndsAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  // Payment settings (per-organization Moyasar keys)
+  paymentEnabled: boolean("paymentEnabled").default(false).notNull(),
+  moyasarPublishableKey: varchar("moyasarPublishableKey", { length: 255 }),
+  moyasarSecretKey: varchar("moyasarSecretKey", { length: 255 }),
 }, (table) => [
   index("idx_organizations_status_name").on(table.status, table.nameAr),
 ]);

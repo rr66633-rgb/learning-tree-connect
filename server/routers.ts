@@ -34,6 +34,7 @@ import { payrollRouter } from "./payrollRouter";
 import { evaluationRouter } from "./evaluationRouter";
 import { goalsRouter } from "./goalsRouter";
 import { visitorAssistantRouter } from "./visitorAssistantRouter";
+import { paymentSettingsRouter } from "./paymentSettingsRouter";
 import { normalizeEmail } from "./emailIdentity";
 import {
   createDirectMediaUpload,
@@ -1995,11 +1996,30 @@ export const appRouter = router({
       }
       return db.getPaymentsByInvoice(input.invoiceId);
     }),
-    gatewayStatus: publicProcedure.query(async () => {
+    gatewayStatus: protectedProcedure.query(async ({ ctx }) => {
       const { isMoyasarConfigured, getMoyasarPublishableKey } = await import('./_core/moyasar');
+      const db = await import('./db').then(m => m.getDb());
+      let orgPublishableKey: string | null = null;
+      let orgPaymentEnabled = false;
+      if (db && ctx.user.organizationId) {
+        const { organizations } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const [org] = await db.select({
+          paymentEnabled: organizations.paymentEnabled,
+          moyasarPublishableKey: organizations.moyasarPublishableKey,
+        }).from(organizations).where(eq(organizations.id, ctx.user.organizationId));
+        if (org) {
+          orgPaymentEnabled = org.paymentEnabled;
+          orgPublishableKey = org.moyasarPublishableKey;
+        }
+      }
+      // Use org key if available and enabled, otherwise fall back to platform default
+      const publishableKey = (orgPaymentEnabled && orgPublishableKey) 
+        ? orgPublishableKey 
+        : getMoyasarPublishableKey();
       return {
-        isConfigured: isMoyasarConfigured(),
-        publishableKey: getMoyasarPublishableKey(),
+        isConfigured: isMoyasarConfigured() || orgPaymentEnabled,
+        publishableKey,
       };
     }),
   }),
@@ -4788,6 +4808,7 @@ export const appRouter = router({
   subscriptionPayment: subscriptionPaymentRouter,
   // ============ MARKETPLACE / STORE ============
   store: storeRouter,
+  paymentSettings: paymentSettingsRouter,
   // ============ DEMO REQUESTS (Landing Page) ============
   demo: demoRouter,
   // ============ PAYROLL MANAGEMENT ============

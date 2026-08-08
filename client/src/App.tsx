@@ -114,6 +114,7 @@ const PublicWaitlist = lazyWithRetry(() => import("./pages/PublicWaitlist"));
 
 // Payment Pages
 const SubscriptionCheckout = lazyWithRetry(() => import("./pages/SubscriptionCheckout"));
+const PaymentSettings = lazyWithRetry(() => import("./pages/PaymentSettings"));
 const PaymentCallback = lazyWithRetry(() => import("./pages/PaymentCallback"));
 const StorePaymentCallback = lazyWithRetry(() => import("./pages/StorePaymentCallback"));
 
@@ -239,6 +240,7 @@ function StaffRouter() {
         <Route path="/staff/users" component={StaffUsers} />
         <Route path="/staff/pending-approvals" component={StaffPendingApprovals} />
         <Route path="/staff/settings" component={StaffSettings} />
+        <Route path="/payment-settings" component={PaymentSettings} />
         <Route path="/staff/notification-settings" component={StaffNotificationSettings} />
         <Route path="/staff/pickup" component={StaffPickup} />
         <Route path="/staff/assessments" component={StaffAssessments} />

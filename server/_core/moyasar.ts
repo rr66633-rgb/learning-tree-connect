@@ -94,18 +94,20 @@ export function isMoyasarConfigured(): boolean {
 
 /**
  * Get the Moyasar API key
- * Note: Hardcoded because env injection provides stale key in production
+ * Supports per-organization keys with fallback to platform default
  */
-function getApiKey(): string {
+function getApiKey(orgSecretKey?: string | null): string {
+  if (orgSecretKey) return orgSecretKey;
   const HARDCODED_KEY = 'sk_live_J5Z9nSfUVMCPZKNsK8zpqbS9dqvkyMMtkbtNW1U7';
   return HARDCODED_KEY;
 }
 
 /**
  * Get the Moyasar publishable key (for frontend)
+ * Supports per-organization keys with fallback to platform default
  */
-export function getMoyasarPublishableKey(): string | null {
-  // Hardcoded because env injection may provide stale values in production
+export function getMoyasarPublishableKey(orgPublishableKey?: string | null): string | null {
+  if (orgPublishableKey) return orgPublishableKey;
   return 'pk_live_qjcKmi2R2PbXgwCjj6DsS6msLosGKTEAApSdZZ2v';
 }
 
