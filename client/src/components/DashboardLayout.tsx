@@ -150,7 +150,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: BarChart3, label: "لوحة الموارد البشرية", labelEn: "HR Dashboard", path: "/hr-dashboard", color: "#0EA5E9" },
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
-  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/staff/payment-settings", color: "#F59E0B" },
+  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/payment-settings", color: "#F59E0B" },
 ];
 
 /**
@@ -189,7 +189,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: BarChart3, label: "مقارنة الأداء", labelEn: "Performance Comparison", path: "/performance-comparison" },
   { icon: Target, label: "أهداف الأداء", labelEn: "Performance Goals", path: "/performance-goals" },
   { icon: BarChart3, label: "لوحة الموارد البشرية", labelEn: "HR Dashboard", path: "/hr-dashboard" },
-  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/staff/payment-settings", color: "#F59E0B" },
+  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/payment-settings", color: "#F59E0B" },
 ];
 
 /**
@@ -226,7 +226,7 @@ const superAdminMenuItems: MenuItem[] = [
   { icon: Users, label: "المستخدمون", labelEn: "Users", path: "/users", color: "#7C3AED" },
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#00C9B7" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
-  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/staff/payment-settings", color: "#F59E0B" },
+  { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/payment-settings", color: "#F59E0B" },
 ];
 
 
