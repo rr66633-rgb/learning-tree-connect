@@ -401,7 +401,9 @@ async function startServer() {
   app.post('/api/direct-asset-upload/create', async (req, res) => {
     try {
       const { sdk } = await import('./sdk');
-      const user = await sdk.authenticateRequest(req);
+      let user;
+      try { user = await sdk.authenticateRequest(req); }
+      catch { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user.organizationId || !Number.isInteger(user.organizationId)) {
         res.status(403).json({ error: 'لا يوجد حساب مرتبط بحضانة صالحة' });
@@ -445,7 +447,9 @@ async function startServer() {
   app.post('/api/direct-asset-upload/finalize', async (req, res) => {
     try {
       const { sdk } = await import('./sdk');
-      const user = await sdk.authenticateRequest(req);
+      let user;
+      try { user = await sdk.authenticateRequest(req); }
+      catch { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user) { res.status(401).json({ error: 'يجب تسجيل الدخول' }); return; }
       if (!user.organizationId || !Number.isInteger(user.organizationId)) {
         res.status(403).json({ error: 'لا يوجد حساب مرتبط بحضانة صالحة' });
