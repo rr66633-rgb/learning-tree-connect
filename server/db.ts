@@ -1249,8 +1249,10 @@ export async function getDashboardStats(organizationId?: number) {
   const allStaff = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(...staffConditions));
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+  const attendanceConditions: any[] = [gte(attendance.date, today), lte(attendance.date, todayEnd), eq(attendance.status, 'present')];
+  if (organizationId) attendanceConditions.push(eq(attendance.organizationId, organizationId));
   const presentToday = await db.select({ count: sql<number>`count(*)` }).from(attendance)
-    .where(and(gte(attendance.date, today), lte(attendance.date, todayEnd), eq(attendance.status, 'present')));
+    .where(and(...attendanceConditions));
   const invoiceConditions: any[] = [eq(invoices.status, 'paid')];
   if (organizationId) invoiceConditions.push(eq(invoices.organizationId, organizationId));
   const paidInvoices = await db.select().from(invoices).where(and(...invoiceConditions));
