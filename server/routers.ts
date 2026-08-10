@@ -2623,7 +2623,16 @@ export const appRouter = router({
   // before mutating by id.
   classes: router({
     list: tenantProcedure.query(async ({ ctx }) => {
-      return db.getClasses(ctx.organizationId);
+      const classList = await db.getClasses(ctx.organizationId);
+      const enriched = await Promise.all(classList.map(async (cls: any) => {
+        let teacherName = '';
+        if (cls.teacherId) {
+          const teacher = await db.getUserById(cls.teacherId);
+          teacherName = teacher?.name || '';
+        }
+        return { ...cls, teacherName };
+      }));
+      return enriched;
     }),
     getById: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
       const classRecord = await db.getClassById(input.id, ctx.organizationId);

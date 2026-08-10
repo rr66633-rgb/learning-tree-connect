@@ -2773,3 +2773,8 @@ Fix:
 
 ## Pickup Escalation Cron Fix (Aug 5, 2026)
 - [x] Fix sdk.authenticateRequest to read Bearer token from Authorization header (Heartbeat cron system)
+
+## Teacher-Class Assignment UI (Aug 11, 2026)
+- [x] Add teacher selection dropdown to class create form (Classes.tsx)
+- [x] Add teacher selection dropdown to class edit form (Classes.tsx)
+- [x] Enrich classes.list API to return teacherName for display in class cards

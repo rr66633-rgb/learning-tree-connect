@@ -10,11 +10,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function StaffClasses() {
   const { i18n } = useTranslation();
   const isAr = i18n.language === "ar";
   const { data: classes, isLoading } = trpc.classes.list.useQuery();
+  const { data: staffList } = trpc.users.list.useQuery({ role: "teacher" });
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
@@ -24,9 +26,10 @@ export default function StaffClasses() {
   const [name, setName] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
   const [capacity, setCapacity] = useState("12");
+  const [teacherId, setTeacherId] = useState<string>("");
 
   const create = trpc.classes.create.useMutation({
-    onSuccess: () => { utils.classes.list.invalidate(); setOpen(false); setName(""); setAgeGroup(""); setCapacity("12"); toast.success(isAr ? "تم إنشاء الفصل" : "Class created"); },
+    onSuccess: () => { utils.classes.list.invalidate(); setOpen(false); setName(""); setAgeGroup(""); setCapacity("12"); setTeacherId(""); toast.success(isAr ? "تم إنشاء الفصل" : "Class created"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -45,6 +48,7 @@ export default function StaffClasses() {
     setName(cls.name || "");
     setAgeGroup(cls.ageGroup || "");
     setCapacity(String(cls.capacity || 12));
+    setTeacherId(cls.teacherId ? String(cls.teacherId) : "");
     setEditOpen(true);
   };
 
@@ -66,10 +70,24 @@ export default function StaffClasses() {
             <div className="space-y-4">
               <div><Label>{isAr ? "اسم الفصل" : "Class Name"}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={isAr ? "مثال: فصل النجوم" : "e.g. Stars Class"} /></div>
               <div><Label>{isAr ? "الفئة العمرية" : "Age Group"}</Label><Input value={ageGroup} onChange={e => setAgeGroup(e.target.value)} placeholder={isAr ? "مثال: 2-3 سنوات" : "e.g. 2-3 years"} /></div>
-              <div><Label>{isAr ? "السعة" : "Capacity"}</Label><Input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} /></div>
+            <div><Label>{isAr ? "السعة" : "Capacity"}</Label><Input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} /></div>
+              <div>
+                <Label>{isAr ? "المعلمة" : "Teacher"}</Label>
+                <Select value={teacherId} onValueChange={setTeacherId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={isAr ? "اختر المعلمة" : "Select Teacher"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{isAr ? "بدون معلمة" : "No Teacher"}</SelectItem>
+                    {staffList?.map((staff: any) => (
+                      <SelectItem key={staff.id} value={String(staff.id)}>{staff.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => create.mutate({ name, ageGroup, capacity: parseInt(capacity) })} disabled={!name || create.isPending}>
+              <Button onClick={() => create.mutate({ name, ageGroup, capacity: parseInt(capacity), teacherId: teacherId && teacherId !== "none" ? parseInt(teacherId) : undefined })} disabled={!name || create.isPending}>
                 {create.isPending ? (isAr ? "جاري الإنشاء..." : "Creating...") : (isAr ? "إنشاء" : "Create")}
               </Button>
             </DialogFooter>
@@ -114,10 +132,24 @@ export default function StaffClasses() {
             <div><Label>{isAr ? "اسم الفصل" : "Class Name"}</Label><Input value={name} onChange={e => setName(e.target.value)} /></div>
             <div><Label>{isAr ? "الفئة العمرية" : "Age Group"}</Label><Input value={ageGroup} onChange={e => setAgeGroup(e.target.value)} /></div>
             <div><Label>{isAr ? "السعة" : "Capacity"}</Label><Input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} /></div>
+            <div>
+              <Label>{isAr ? "المعلمة" : "Teacher"}</Label>
+              <Select value={teacherId} onValueChange={setTeacherId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isAr ? "اختر المعلمة" : "Select Teacher"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{isAr ? "بدون معلمة" : "No Teacher"}</SelectItem>
+                  {staffList?.map((staff: any) => (
+                    <SelectItem key={staff.id} value={String(staff.id)}>{staff.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>{isAr ? "إلغاء" : "Cancel"}</Button>
-            <Button onClick={() => { if (selectedClass) update.mutate({ id: selectedClass.id, name, ageGroup, capacity: parseInt(capacity) }); }} disabled={!name || update.isPending}>
+            <Button onClick={() => { if (selectedClass) update.mutate({ id: selectedClass.id, name, ageGroup, capacity: parseInt(capacity), teacherId: teacherId && teacherId !== "none" ? parseInt(teacherId) : undefined }); }} disabled={!name || update.isPending}>
               {update.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ" : "Save")}
             </Button>
           </DialogFooter>
