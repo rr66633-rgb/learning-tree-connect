@@ -26,6 +26,9 @@ const SMTP_PASS = process.env.SMTP_PASS || '';
 // SendGrid Configuration (fallback)
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 
+// Resend Configuration
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+
 // Sender Configuration
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@naashah.com';
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'نشأة - Nashaa';
@@ -536,13 +539,9 @@ export async function sendDailyReportEmail(
  * Check if Email service is properly configured
  */
 export function isEmailConfigured(): boolean {
-  if (!EMAIL_ENABLED) return false;
-  if (EMAIL_PROVIDER === 'smtp') {
-    return !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
-  }
-  if (EMAIL_PROVIDER === 'sendgrid') {
-    return !!SENDGRID_API_KEY;
-  }
+  if (RESEND_API_KEY) return true;
+  if (EMAIL_PROVIDER === 'smtp' && SMTP_HOST && SMTP_USER && SMTP_PASS) return true;
+  if (EMAIL_PROVIDER === 'sendgrid' && SENDGRID_API_KEY) return true;
   return false;
 }
 
