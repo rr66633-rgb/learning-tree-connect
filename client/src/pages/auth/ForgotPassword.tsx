@@ -180,12 +180,12 @@ export default function ForgotPassword() {
                 <Label htmlFor="identifier">
                   {method === "sms" ? (isAr ? "رقم الجوال" : "Phone Number") : (isAr ? "البريد الإلكتروني" : "Email")}
                 </Label>
-                <Input
-                  id="identifier"
-                  type={method === "sms" ? "tel" : "email"}
-                  placeholder={method === "sms" ? "05xxxxxxxx" : "example@email.com"}
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+              <Input
+                 id="identifier"
+                  type={method === "sms" ? "tel" : "text"}
+                 placeholder={method === "sms" ? "05xxxxxxxx" : "example@email.com"}
+                 value={identifier}
+                 onChange={(e) => setIdentifier(e.target.value)}
                   dir="ltr"
                   className="text-right"
                 />
