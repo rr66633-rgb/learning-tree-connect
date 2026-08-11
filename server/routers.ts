@@ -412,12 +412,7 @@ export const appRouter = router({
             await authService.sendSmsOtp(userPhone, code);
             return { success: true, message: 'تم إرسال رمز التحقق إلى رقم جوالك.', expiresAt: expiresAt.getTime() };
           }
-          // Generate reset token and send email link + OTP
-          const { token } = await authService.createPasswordResetToken(user.id);
-          const origin = ctx.req.headers.origin || ctx.req.headers.referer || '';
-          const resetLink = `${origin}/reset-password?token=${token}`;
-          await authService.sendPasswordResetEmail(userEmail, resetLink, user.name || undefined);
-          
+          // Generate OTP and send via email (single email to avoid timeout)
           const { code, expiresAt } = await authService.createOtp({
             userId: user.id,
             email: userEmail,
