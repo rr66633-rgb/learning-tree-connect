@@ -1,19 +1,20 @@
 /**
- * Email Service - Production SMTP + SendGrid Support
+ * Email Service - Production Postmark + SMTP + SendGrid Support
  * Handles sending transactional emails (OTP codes, password reset, invitations, notifications)
  * 
- * Supports two providers:
- * 1. SMTP (Nodemailer) - default for production
- * 2. SendGrid API - alternative provider
+ * Supports three providers:
+ * 1. Postmark API - default for production
+ * 2. SMTP (Nodemailer) - fallback
+ * 3. SendGrid API - alternative provider
  * 
- * Set EMAIL_PROVIDER=smtp or EMAIL_PROVIDER=sendgrid to choose
+ * Set EMAIL_PROVIDER=postmark, smtp, or sendgrid to choose
  */
 
 import nodemailer from 'nodemailer';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
-const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'smtp'; // 'smtp' | 'sendgrid'
+const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'postmark'; // 'postmark' | 'smtp' | 'sendgrid'
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== 'false'; // enabled by default
 
 // SMTP Configuration
@@ -26,11 +27,11 @@ const SMTP_PASS = process.env.SMTP_PASS || '';
 // SendGrid Configuration (fallback)
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 
-// Resend Configuration
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+// Postmark Configuration
+const POSTMARK_API_TOKEN = process.env.POSTMARK_API_TOKEN || '';
 
 // Sender Configuration
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@naashah.com';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'info@naashah.com';
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'نشأة - Nashaa';
 
 // App URL for links in emails
@@ -42,6 +43,21 @@ let transporter: nodemailer.Transporter | null = null;
 
 function getTransporter(): nodemailer.Transporter | null {
   if (transporter) return transporter;
+
+  // Postmark via SMTP (recommended)
+  if (EMAIL_PROVIDER === 'postmark' && POSTMARK_API_TOKEN) {
+    transporter = nodemailer.createTransport({
+      host: 'smtp.postmarkapp.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: POSTMARK_API_TOKEN,
+        pass: POSTMARK_API_TOKEN,
+      },
+    });
+    console.log(`[Email Service] Postmark SMTP transport initialized`);
+    return transporter;
+  }
 
   if (EMAIL_PROVIDER === 'smtp' && SMTP_HOST && SMTP_USER && SMTP_PASS) {
     transporter = nodemailer.createTransport({
@@ -539,7 +555,7 @@ export async function sendDailyReportEmail(
  * Check if Email service is properly configured
  */
 export function isEmailConfigured(): boolean {
-  if (RESEND_API_KEY) return true;
+  if (POSTMARK_API_TOKEN) return true;
   if (EMAIL_PROVIDER === 'smtp' && SMTP_HOST && SMTP_USER && SMTP_PASS) return true;
   if (EMAIL_PROVIDER === 'sendgrid' && SENDGRID_API_KEY) return true;
   return false;

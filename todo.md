@@ -2778,3 +2778,9 @@ Fix:
 - [x] Add teacher selection dropdown to class create form (Classes.tsx)
 - [x] Add teacher selection dropdown to class edit form (Classes.tsx)
 - [x] Enrich classes.list API to return teacherName for display in class cards
+
+## Email Service Switch to Postmark (Aug 11, 2026)
+- [x] Replace Resend with Postmark as email provider
+- [x] Update emailService.ts to use Postmark SMTP transport
+- [x] Set POSTMARK_API_TOKEN, EMAIL_PROVIDER=postmark, EMAIL_FROM=info@naashah.com
+- [x] Validate Postmark API token connectivity (test passed)
