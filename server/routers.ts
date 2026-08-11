@@ -418,7 +418,10 @@ export const appRouter = router({
             email: userEmail,
             type: 'password_reset',
           });
-          await authService.sendEmailOtp(userEmail, code, user.name || undefined);
+          // Fire-and-forget: send email in background to avoid mobile timeout
+          authService.sendEmailOtp(userEmail, code, user.name || undefined).catch(err => {
+            console.error('[ForgotPassword] Email send failed:', err);
+          });
           return { success: true, message: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.', expiresAt: expiresAt.getTime() };
         }
       }),

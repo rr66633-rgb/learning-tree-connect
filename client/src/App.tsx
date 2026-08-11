@@ -586,6 +586,9 @@ function RoleRouter() {
         <Route path="/super-admin/store">
           {isSuperAdminRole(userRole) ? <SuperAdminStore /> : <Redirect to={basePath} />}
         </Route>
+        <Route path="/super-admin/payment-settings">
+          {isSuperAdminRole(userRole) ? <PaymentSettings /> : <Redirect to={basePath} />}
+        </Route>
         <Route path="/super-admin">
           {isSuperAdminRole(userRole) ? <SuperAdminDashboard /> : <Redirect to={basePath} />}
         </Route>
