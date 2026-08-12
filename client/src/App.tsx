@@ -83,6 +83,7 @@ const SubscriptionPlans = lazyWithRetry(() => import("./pages/SubscriptionPlans"
 const SuperAdminBranding = lazyWithRetry(() => import("./pages/superadmin/Branding"));
 const SuperAdminUsers = lazyWithRetry(() => import("./pages/superadmin/Users"));
 const SuperAdminSettings = lazyWithRetry(() => import("./pages/superadmin/Settings"));
+const EmailSettings = lazyWithRetry(() => import("./pages/superadmin/EmailSettings"));
 const SubscriptionsManagement = lazyWithRetry(() => import("./pages/superadmin/SubscriptionsManagement"));
 const PaymentsReport = lazyWithRetry(() => import("./pages/superadmin/PaymentsReport"));
 const NurseryRegistrations = lazyWithRetry(() => import("./pages/superadmin/NurseryRegistrations"));
@@ -588,6 +589,9 @@ function RoleRouter() {
         </Route>
         <Route path="/super-admin/payment-settings">
           {isSuperAdminRole(userRole) ? <PaymentSettings /> : <Redirect to={basePath} />}
+        </Route>
+        <Route path="/super-admin/email-settings">
+          {isSuperAdminRole(userRole) ? <EmailSettings /> : <Redirect to={basePath} />}
         </Route>
         <Route path="/super-admin">
           {isSuperAdminRole(userRole) ? <SuperAdminDashboard /> : <Redirect to={basePath} />}

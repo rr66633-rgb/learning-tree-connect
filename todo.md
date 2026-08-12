@@ -2784,3 +2784,7 @@ Fix:
 - [x] Update emailService.ts to use Postmark SMTP transport
 - [x] Set POSTMARK_API_TOKEN, EMAIL_PROVIDER=postmark, EMAIL_FROM=info@naashah.com
 - [x] Validate Postmark API token connectivity (test passed)
+- [x] Switch email service from SMTP to Postmark Email API (X-Postmark-Server-Token header)
+- [x] Use POSTMARK_SERVER_TOKEN env var (not in code/git)
+- [x] Add Super Admin email settings page (/super-admin/email-settings)
+- [x] Add email status, verify connection, and send test email endpoints

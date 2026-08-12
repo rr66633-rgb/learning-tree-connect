@@ -1,97 +1,22 @@
 /**
- * Email Service - Production Postmark + SMTP + SendGrid Support
+/**
+ * Email Service - Postmark Email API
  * Handles sending transactional emails (OTP codes, password reset, invitations, notifications)
  * 
- * Supports three providers:
- * 1. Postmark API - default for production
- * 2. SMTP (Nodemailer) - fallback
- * 3. SendGrid API - alternative provider
- * 
- * Set EMAIL_PROVIDER=postmark, smtp, or sendgrid to choose
+ * Uses Postmark Email API with X-Postmark-Server-Token header
+ * Token stored in POSTMARK_SERVER_TOKEN environment variable (never in code)
+ * Message Stream: outbound
  */
-
-import nodemailer from 'nodemailer';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
-const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'postmark'; // 'postmark' | 'smtp' | 'sendgrid'
+const POSTMARK_SERVER_TOKEN = process.env.POSTMARK_SERVER_TOKEN || '';
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== 'false'; // enabled by default
-
-// SMTP Configuration
-const SMTP_HOST = process.env.SMTP_HOST || '';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
-const SMTP_SECURE = process.env.SMTP_SECURE === 'true'; // true for 465, false for 587
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-
-// SendGrid Configuration (fallback)
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
-
-// Postmark Configuration
-const POSTMARK_API_TOKEN = process.env.POSTMARK_API_TOKEN || '';
-
-// Sender Configuration
 const EMAIL_FROM = process.env.EMAIL_FROM || 'info@naashah.com';
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'نشأة - Nashaa';
-
-// App URL for links in emails
 const APP_URL = process.env.APP_URL || 'https://naashah.com';
-
-// ─── Transport Setup ─────────────────────────────────────────────────────────
-
-let transporter: nodemailer.Transporter | null = null;
-
-function getTransporter(): nodemailer.Transporter | null {
-  if (transporter) return transporter;
-
-  // Postmark via SMTP (recommended)
-  if (EMAIL_PROVIDER === 'postmark' && POSTMARK_API_TOKEN) {
-    transporter = nodemailer.createTransport({
-      host: 'smtp.postmarkapp.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: POSTMARK_API_TOKEN,
-        pass: POSTMARK_API_TOKEN,
-      },
-    });
-    console.log(`[Email Service] Postmark SMTP transport initialized`);
-    return transporter;
-  }
-
-  if (EMAIL_PROVIDER === 'smtp' && SMTP_HOST && SMTP_USER && SMTP_PASS) {
-    transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false, // Allow self-signed certs in some environments
-      },
-    });
-    console.log(`[Email Service] SMTP transport initialized (${SMTP_HOST}:${SMTP_PORT})`);
-    return transporter;
-  }
-
-  if (EMAIL_PROVIDER === 'sendgrid' && SENDGRID_API_KEY) {
-    transporter = nodemailer.createTransport({
-      host: 'smtp.sendgrid.net',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'apikey',
-        pass: SENDGRID_API_KEY,
-      },
-    });
-    console.log(`[Email Service] SendGrid SMTP transport initialized`);
-    return transporter;
-  }
-
-  return null;
-}
+const POSTMARK_MESSAGE_STREAM = 'outbound';
+const POSTMARK_API_URL = 'https://api.postmarkapp.com/email';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -117,30 +42,49 @@ async function sendEmail(
     };
   }
 
-  const transport = getTransporter();
-  if (!transport) {
-    console.warn(`[Email Service] No transport configured. EMAIL_PROVIDER=${EMAIL_PROVIDER}, SMTP_HOST=${SMTP_HOST ? 'set' : 'empty'}`);
+  if (!POSTMARK_SERVER_TOKEN) {
+    console.warn(`[Email Service] POSTMARK_SERVER_TOKEN not configured`);
     return {
       sent: false,
       message: 'خدمة البريد الإلكتروني غير مُعدّة',
-      error: 'No email transport configured',
+      error: 'POSTMARK_SERVER_TOKEN not set',
     };
   }
 
   try {
-    const info = await transport.sendMail({
-      from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
-      to,
-      subject,
-      html: htmlContent,
-      text: textContent || htmlContent.replace(/<[^>]*>/g, ''),
+    const response = await fetch(POSTMARK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Postmark-Server-Token': POSTMARK_SERVER_TOKEN,
+      },
+      body: JSON.stringify({
+        From: `${EMAIL_FROM_NAME} <${EMAIL_FROM}>`,
+        To: to,
+        Subject: subject,
+        HtmlBody: htmlContent,
+        TextBody: textContent || htmlContent.replace(/<[^>]*>/g, ''),
+        MessageStream: POSTMARK_MESSAGE_STREAM,
+      }),
     });
 
-    console.log(`[Email Service] Email sent successfully to ${to}: ${subject} (messageId: ${info.messageId})`);
-    return {
-      sent: true,
-      message: 'تم إرسال البريد الإلكتروني بنجاح',
-    };
+    const data = await response.json();
+
+    if (response.ok && data.MessageID) {
+      console.log(`[Email Service] Email sent successfully to ${to}: ${subject} (MessageID: ${data.MessageID})`);
+      return {
+        sent: true,
+        message: 'تم إرسال البريد الإلكتروني بنجاح',
+      };
+    } else {
+      console.error(`[Email Service] Postmark API error:`, data.Message || data.ErrorCode || JSON.stringify(data));
+      return {
+        sent: false,
+        message: 'فشل في إرسال البريد الإلكتروني',
+        error: data.Message || `ErrorCode: ${data.ErrorCode}`,
+      };
+    }
   } catch (error: any) {
     console.error(`[Email Service] Failed to send email to ${to}:`, error.message);
     return {
@@ -555,24 +499,31 @@ export async function sendDailyReportEmail(
  * Check if Email service is properly configured
  */
 export function isEmailConfigured(): boolean {
-  if (POSTMARK_API_TOKEN) return true;
-  if (EMAIL_PROVIDER === 'smtp' && SMTP_HOST && SMTP_USER && SMTP_PASS) return true;
-  if (EMAIL_PROVIDER === 'sendgrid' && SENDGRID_API_KEY) return true;
-  return false;
+  return !!POSTMARK_SERVER_TOKEN;
 }
 
 /**
- * Verify SMTP connection (useful for health checks)
+ * Verify Postmark connection (useful for health checks)
  */
 export async function verifyEmailConnection(): Promise<{ connected: boolean; error?: string }> {
-  const transport = getTransporter();
-  if (!transport) {
-    return { connected: false, error: 'No transport configured' };
+  if (!POSTMARK_SERVER_TOKEN) {
+    return { connected: false, error: 'POSTMARK_SERVER_TOKEN not configured' };
   }
 
   try {
-    await transport.verify();
-    return { connected: true };
+    const response = await fetch('https://api.postmarkapp.com/server', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-Postmark-Server-Token': POSTMARK_SERVER_TOKEN,
+      },
+    });
+    if (response.ok) {
+      return { connected: true };
+    } else {
+      const data = await response.json();
+      return { connected: false, error: data.Message || 'Invalid token' };
+    }
   } catch (error: any) {
     return { connected: false, error: error.message };
   }
