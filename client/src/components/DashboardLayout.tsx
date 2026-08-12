@@ -151,8 +151,8 @@ const adminMenuItems: MenuItem[] = [
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#7C3AED" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
   { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/payment-settings", color: "#F59E0B" },
-];
   { icon: Mail, label: "سجل الإيميلات", labelEn: "Email Logs", path: "/email-logs", color: "#6366F1" },
+];
 
 /**
  * Principal role - similar to admin but without system settings
@@ -191,8 +191,8 @@ const principalMenuItems: MenuItem[] = [
   { icon: Target, label: "أهداف الأداء", labelEn: "Performance Goals", path: "/performance-goals" },
   { icon: BarChart3, label: "لوحة الموارد البشرية", labelEn: "HR Dashboard", path: "/hr-dashboard" },
   { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/payment-settings", color: "#F59E0B" },
-];
   { icon: Mail, label: "سجل الإيميلات", labelEn: "Email Logs", path: "/email-logs", color: "#6366F1" },
+];
 
 /**
  * Accountant role - finance focused
