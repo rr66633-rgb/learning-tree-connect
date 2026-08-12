@@ -905,4 +905,36 @@ export const superAdminRouter = router({
 
       return { success: true, message: input.isActive ? "تم تفعيل العضو" : "تم تعطيل العضو" };
     }),
+
+  // ─── Email Settings ─────────────────────────────────────────────────────────
+
+  emailStatus: superAdminProcedure.query(async () => {
+    const { isEmailConfigured } = await import('./services/emailService');
+    const token = process.env.POSTMARK_SERVER_TOKEN || '';
+    return {
+      configured: isEmailConfigured(),
+      enabled: process.env.EMAIL_ENABLED !== 'false',
+      fromEmail: process.env.EMAIL_FROM || 'info@naashah.com',
+      fromName: process.env.EMAIL_FROM_NAME || 'نشأة - Nashaa',
+      tokenLast4: token ? token.slice(-4) : '',
+    };
+  }),
+
+  verifyEmailConnection: superAdminProcedure.mutation(async () => {
+    const { verifyEmailConnection } = await import('./services/emailService');
+    return verifyEmailConnection();
+  }),
+
+  sendTestEmail: superAdminProcedure
+    .input(z.object({ email: z.string() }))
+    .mutation(async ({ input }) => {
+      const { sendNotificationEmail } = await import('./services/emailService');
+      const result = await sendNotificationEmail(
+        input.email,
+        'مدير النظام',
+        'إيميل اختبار - نشأة',
+        'هذا إيميل اختبار من منصة نشأة للتأكد من عمل خدمة البريد الإلكتروني (Postmark) بشكل صحيح.',
+      );
+      return result;
+    }),
 });

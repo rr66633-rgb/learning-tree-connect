@@ -2789,3 +2789,7 @@ Fix:
 - [x] Email: Send welcome email after user registration verification
 - [x] Email: Send announcement email to parents when announcement is published
 - [x] Email: Automatic overdue payment reminder (3/7/14 days) via scheduled job
+- [x] Switch email service from SMTP to Postmark Email API (X-Postmark-Server-Token header)
+- [x] Use POSTMARK_SERVER_TOKEN env var (not in code/git)
+- [x] Add Super Admin email settings page (/super-admin/email-settings)
+- [x] Add email status, verify connection, and send test email endpoints

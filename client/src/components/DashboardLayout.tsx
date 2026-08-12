@@ -40,7 +40,7 @@ import { Button } from "./ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTranslation } from "react-i18next";
-import { Globe } from "lucide-react";
+import { Globe, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 type MenuItem = { icon: any; label: string; labelEn: string; path: string; color?: string };
@@ -227,6 +227,7 @@ const superAdminMenuItems: MenuItem[] = [
   { icon: Settings, label: "الإعدادات", labelEn: "Settings", path: "/settings", color: "#00C9B7" },
   { icon: Bell, label: "إعدادات الإشعارات", labelEn: "Notification Settings", path: "/notification-settings", color: "#00C9B7" },
   { icon: CreditCard, label: "إعدادات الدفع", labelEn: "Payment Settings", path: "/payment-settings", color: "#F59E0B" },
+  { icon: Mail, label: "إعدادات البريد", labelEn: "Email Settings", path: "/email-settings", color: "#3B82F6" },
 ];
 
 
