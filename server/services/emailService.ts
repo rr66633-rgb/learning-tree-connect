@@ -927,3 +927,97 @@ export async function sendAccountRecoveryEmail(
 
   return sendEmail(email, subject, baseTemplate(content));
 }
+
+/**
+ * Send payment receipt email after successful payment
+ */
+export async function sendPaymentReceiptEmail(
+  email: string,
+  userName: string,
+  invoiceNumber: string,
+  amount: string,
+  paymentMethod: string,
+  childName: string,
+  paidAt: string
+): Promise<EmailSendResult> {
+  const methodNames: Record<string, string> = {
+    cash: 'نقداً',
+    bank_transfer: 'تحويل بنكي',
+    card: 'بطاقة ائتمان',
+    apple_pay: 'Apple Pay',
+    mada: 'مدى',
+    stc_pay: 'STC Pay',
+  };
+  const subject = `إيصال دفع - الفاتورة ${invoiceNumber}`;
+  const content = `
+    <p class="message">مرحباً ${userName}،</p>
+    <p class="message">تم تسجيل دفعتك بنجاح. إليك تفاصيل الإيصال:</p>
+    <div class="invoice-box">
+      <div class="invoice-row"><span>رقم الفاتورة:</span><span>${invoiceNumber}</span></div>
+      <div class="invoice-row"><span>الطفل:</span><span>${childName}</span></div>
+      <div class="invoice-row"><span>المبلغ المدفوع:</span><span>${amount} ر.س</span></div>
+      <div class="invoice-row"><span>طريقة الدفع:</span><span>${methodNames[paymentMethod] || paymentMethod}</span></div>
+      <div class="invoice-row"><span>تاريخ الدفع:</span><span>${paidAt}</span></div>
+    </div>
+    <p class="message" style="color: #10B981; font-weight: bold;">تم الدفع بنجاح ✓</p>
+    <p class="message">شكراً لك. يمكنك الاطلاع على جميع فواتيرك من خلال التطبيق.</p>
+    <div class="cta">
+      <a href="${APP_URL}/parent/invoices">عرض الفواتير</a>
+    </div>`;
+  return sendEmail(email, subject, baseTemplate(content));
+}
+
+/**
+ * Send overdue payment reminder email
+ */
+export async function sendOverdueReminderEmail(
+  email: string,
+  userName: string,
+  invoiceNumber: string,
+  amount: string,
+  childName: string,
+  dueDate: string,
+  daysOverdue: number
+): Promise<EmailSendResult> {
+  const urgency = daysOverdue >= 14 ? 'أخير' : daysOverdue >= 7 ? 'ثاني' : 'أول';
+  const subject = `تذكير ${urgency} - فاتورة متأخرة ${invoiceNumber}`;
+  const content = `
+    <p class="message">مرحباً ${userName}،</p>
+    <p class="message">نود تذكيرك بأن لديك فاتورة مستحقة لم يتم تسديدها بعد:</p>
+    <div class="invoice-box">
+      <div class="invoice-row"><span>رقم الفاتورة:</span><span>${invoiceNumber}</span></div>
+      <div class="invoice-row"><span>الطفل:</span><span>${childName}</span></div>
+      <div class="invoice-row"><span>المبلغ:</span><span>${amount} ر.س</span></div>
+      <div class="invoice-row"><span>تاريخ الاستحقاق:</span><span>${dueDate}</span></div>
+      <div class="invoice-row"><span>أيام التأخير:</span><span>${daysOverdue} يوم</span></div>
+    </div>
+    <p class="message">يرجى تسديد الفاتورة في أقرب وقت ممكن لتجنب أي إجراءات إضافية.</p>
+    <div class="cta">
+      <a href="${APP_URL}/parent/invoices">دفع الفاتورة الآن</a>
+    </div>`;
+  return sendEmail(email, subject, baseTemplate(content));
+}
+
+/**
+ * Send announcement/event email to parents
+ */
+export async function sendAnnouncementEmail(
+  email: string,
+  userName: string,
+  announcementTitle: string,
+  announcementContent: string,
+  nurseryName: string
+): Promise<EmailSendResult> {
+  const subject = `إعلان جديد من ${nurseryName} - ${announcementTitle}`;
+  const content = `
+    <p class="message">مرحباً ${userName}،</p>
+    <p class="message">لديك إعلان جديد من <strong>${nurseryName}</strong>:</p>
+    <div class="invoice-box">
+      <h3 style="margin: 0 0 10px; color: #333; text-align: right;">${announcementTitle}</h3>
+      <p style="margin: 0; color: #555; text-align: right; line-height: 1.8;">${announcementContent}</p>
+    </div>
+    <div class="cta">
+      <a href="${APP_URL}/parent/announcements">عرض التفاصيل</a>
+    </div>`;
+  return sendEmail(email, subject, baseTemplate(content));
+}

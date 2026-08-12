@@ -523,7 +523,8 @@ export async function getAllConversations(search?: string, organizationId?: numb
   const enriched = [];
   for (const conv of rows) {
     const user1 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantOneId)).limit(1);
-    const user2 = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.id, conv.participantTwoId)).limit(1);
+    const user2 = await db.select({ id: users.id, name: users.name,
+    email: users.email, role: users.role }).from(users).where(eq(users.id, conv.participantTwoId)).limit(1);
     let childName = null;
     if (conv.childId) {
       const child = await db.select({ firstName: children.firstName, lastName: children.lastName }).from(children).where(eq(children.id, conv.childId)).limit(1);
@@ -3456,6 +3457,7 @@ export async function getUsersByRoles(roles: string[], organizationId: number) {
   return db.select({
     id: users.id,
     name: users.name,
+    email: users.email,
     role: users.role,
     phone: users.phone,
   })

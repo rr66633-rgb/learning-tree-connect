@@ -352,6 +352,15 @@ export const appRouter = router({
         // Activate the user account
         if (result.userId) {
           await db.activateUser(result.userId);
+          // Send welcome email (fire-and-forget)
+          try {
+            const user = await db.getUserById(result.userId);
+            if (user?.email) {
+              const { sendWelcomeEmail } = await import("./services/emailService");
+              sendWelcomeEmail(user.email, user.name || "المستخدم")
+                .catch(err => console.error("[Email] Welcome email failed:", err.message));
+            }
+          } catch (e) { /* non-blocking */ }
         }
 
         return { success: true, message: 'تم تفعيل حسابك بنجاح. يمكنك الآن تسجيل الدخول.' };
@@ -1599,6 +1608,21 @@ export const appRouter = router({
         metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
       });
       await db.createAuditLog({ userId: ctx.user!.id, action: 'create_invoice', resource: 'invoices', resourceId: invoice.id, details: `Created invoice ${invoice.invoiceNumber} for ${total.toFixed(2)} SAR`, ipAddress: '' });
+      // Send invoice email to parent (fire-and-forget)
+      try {
+        const parent = await db.getUserById(input.parentId);
+        const child = await db.getChildById(input.childId);
+        if (parent?.email && child) {
+          const { sendInvoiceEmail } = await import('./services/emailService');
+          sendInvoiceEmail(
+            parent.email,
+            parent.name || 'ولي الأمر',
+            child?.firstName || 'الطفل',
+            total,
+            new Date(input.dueDate).toLocaleDateString('ar-SA')
+          ).catch(err => console.error('[Email] Invoice email failed:', err.message));
+        }
+      } catch (e) { /* non-blocking */ }
       return invoice;
     }),
     updateInvoice: adminProcedure.input(z.object({
@@ -1659,15 +1683,32 @@ export const appRouter = router({
       });
       // Notify parent
       await db.createNotification({
-        userId: invoice.parentId,
-        organizationId: ctx.organizationId,
-        title: 'تأكيد الدفع',
-        titleAr: 'تأكيد الدفع',
-        body: `تم تسجيل دفع الفاتورة ${invoice.invoiceNumber} بنجاح`,
-        bodyAr: `تم تسجيل دفع الفاتورة ${invoice.invoiceNumber} بنجاح`,
-        type: 'payment',
-        metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+       userId: invoice.parentId,
+       organizationId: ctx.organizationId,
+       title: 'تأكيد الدفع',
+       titleAr: 'تأكيد الدفع',
+       body: `تم تسجيل دفع الفاتورة ${invoice.invoiceNumber} بنجاح`,
+       bodyAr: `تم تسجيل دفع الفاتورة ${invoice.invoiceNumber} بنجاح`,
+       type: 'payment',
+       metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
       });
+      // Send payment receipt email (fire-and-forget)
+      try {
+        const parent = await db.getUserById(invoice.parentId);
+        const child = await db.getChildById(invoice.childId);
+        if (parent?.email && child) {
+          const { sendPaymentReceiptEmail } = await import('./services/emailService');
+          sendPaymentReceiptEmail(
+            parent.email,
+            parent.name || 'ولي الأمر',
+            invoice.invoiceNumber,
+            invoice.total,
+            input.paymentMethod,
+            child?.firstName || 'الطفل',
+            new Date().toLocaleDateString('ar-SA')
+          ).catch(err => console.error('[Email] Receipt email failed:', err.message));
+        }
+      } catch (e) { /* non-blocking */ }
       return { success: true };
     }),
     markPending: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
@@ -3467,6 +3508,22 @@ export const appRouter = router({
             link: '/parent/announcements',
           });
         }
+        // Send announcement email to parents with email (fire-and-forget)
+        try {
+          const org = await db.getOrganizationById(ctx.organizationId);
+          const { sendAnnouncementEmail } = await import('./services/emailService');
+          for (const parent of parents) {
+            if (parent.email) {
+              sendAnnouncementEmail(
+                parent.email,
+                parent.name || 'ولي الأمر',
+                input.title,
+                input.content,
+                org?.name || 'الحضانة'
+              ).catch(err => console.error('[Email] Announcement email failed:', err.message));
+            }
+          }
+        } catch (e) { /* non-blocking */ }
       }
       return result;
     }),

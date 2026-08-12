@@ -2784,3 +2784,8 @@ Fix:
 - [x] Update emailService.ts to use Postmark SMTP transport
 - [x] Set POSTMARK_API_TOKEN, EMAIL_PROVIDER=postmark, EMAIL_FROM=info@naashah.com
 - [x] Validate Postmark API token connectivity (test passed)
+- [x] Email: Send invoice email to parent when invoice is created
+- [x] Email: Send payment receipt email when payment is confirmed
+- [x] Email: Send welcome email after user registration verification
+- [x] Email: Send announcement email to parents when announcement is published
+- [x] Email: Automatic overdue payment reminder (3/7/14 days) via scheduled job

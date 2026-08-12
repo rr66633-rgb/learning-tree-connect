@@ -1517,6 +1517,11 @@ async function startServer() {
     const { evaluationReminderHandler } = await import('../evaluation-reminder-handler');
     await evaluationReminderHandler(req, res);
   });
+  app.post("/api/scheduled/overdue-reminders", requireCronSecret, async (req, res) => {
+    const { handleOverdueReminders } = await import("../overdue-reminder-handler");
+    const result = await handleOverdueReminders();
+    res.json({ success: true, ...result });
+  });
 
   // Email Health Check API
   app.get('/api/email/health', async (req, res) => {
