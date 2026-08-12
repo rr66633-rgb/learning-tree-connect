@@ -18,6 +18,35 @@ const APP_URL = process.env.APP_URL || 'https://naashah.com';
 const POSTMARK_MESSAGE_STREAM = 'outbound';
 const POSTMARK_API_URL = 'https://api.postmarkapp.com/email';
 
+// ─── Email Logging ──────────────────────────────────────────────────────────
+
+let _logEmailFn: ((log: { organizationId?: number; recipientEmail: string; recipientName?: string; subject: string; type: string; status: string; error?: string; metadata?: any }) => Promise<void>) | null = null;
+
+async function logEmail(data: { organizationId?: number; recipientEmail: string; recipientName?: string; subject: string; type: string; status: string; error?: string; metadata?: any }) {
+  try {
+    if (!_logEmailFn) {
+      const { getDb } = await import('../db');
+      const { emailLogs } = await import('../../drizzle/schema');
+      _logEmailFn = async (log) => {
+        const db = await getDb();
+        if (!db) return;
+        await db.insert(emailLogs).values(log as any);
+      };
+    }
+    await _logEmailFn(data);
+  } catch (e) {
+    // Logging should never break email sending
+    console.error('[Email Log] Failed to log:', e);
+  }
+}
+
+// Context for current email being sent (set by wrapper functions)
+let _currentEmailContext: { type: string; organizationId?: number; recipientName?: string; metadata?: any } = { type: 'general' };
+
+export function setEmailContext(ctx: { type: string; organizationId?: number; recipientName?: string; metadata?: any }) {
+  _currentEmailContext = ctx;
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface EmailSendResult {
@@ -73,12 +102,14 @@ async function sendEmail(
 
     if (response.ok && data.MessageID) {
       console.log(`[Email Service] Email sent successfully to ${to}: ${subject} (MessageID: ${data.MessageID})`);
+      logEmail({ recipientEmail: to, recipientName: _currentEmailContext.recipientName, subject, type: _currentEmailContext.type, status: 'sent', organizationId: _currentEmailContext.organizationId, metadata: _currentEmailContext.metadata });
       return {
         sent: true,
         message: 'تم إرسال البريد الإلكتروني بنجاح',
       };
     } else {
       console.error(`[Email Service] Postmark API error:`, data.Message || data.ErrorCode || JSON.stringify(data));
+      logEmail({ recipientEmail: to, recipientName: _currentEmailContext.recipientName, subject, type: _currentEmailContext.type, status: 'failed', error: data.Message || `ErrorCode: ${data.ErrorCode}`, organizationId: _currentEmailContext.organizationId, metadata: _currentEmailContext.metadata });
       return {
         sent: false,
         message: 'فشل في إرسال البريد الإلكتروني',
@@ -87,6 +118,7 @@ async function sendEmail(
     }
   } catch (error: any) {
     console.error(`[Email Service] Failed to send email to ${to}:`, error.message);
+    logEmail({ recipientEmail: to, recipientName: _currentEmailContext.recipientName, subject, type: _currentEmailContext.type, status: 'failed', error: error.message, organizationId: _currentEmailContext.organizationId, metadata: _currentEmailContext.metadata });
     return {
       sent: false,
       message: 'فشل في إرسال البريد الإلكتروني',

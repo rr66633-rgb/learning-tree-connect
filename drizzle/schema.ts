@@ -2124,3 +2124,19 @@ export const integrationConfig = mysqlTable("integration_config", {
 });
 export type IntegrationConfig = typeof integrationConfig.$inferSelect;
 export type InsertIntegrationConfig = typeof integrationConfig.$inferInsert;
+
+// ============ EMAIL LOGS ============
+export const emailLogs = mysqlTable("email_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId"),
+  recipientEmail: varchar("recipientEmail", { length: 255 }).notNull(),
+  recipientName: varchar("recipientName", { length: 255 }),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'invoice' | 'receipt' | 'welcome' | 'announcement' | 'otp' | 'password_reset' | 'reminder' | 'notification'
+  status: varchar("status", { length: 20 }).notNull().default("sent"), // 'sent' | 'failed' | 'pending'
+  error: text("error"),
+  metadata: json("metadata"), // extra info like invoiceId, announcementId, etc.
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EmailLog = typeof emailLogs.$inferSelect;
+export type InsertEmailLog = typeof emailLogs.$inferInsert;

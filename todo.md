@@ -2793,3 +2793,4 @@ Fix:
 - [x] Use POSTMARK_SERVER_TOKEN env var (not in code/git)
 - [x] Add Super Admin email settings page (/super-admin/email-settings)
 - [x] Add email status, verify connection, and send test email endpoints
+- [x] Email Logs page: shows sent emails with status (sent/failed) for Super Admin and nursery managers

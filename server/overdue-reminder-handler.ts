@@ -55,7 +55,7 @@ export async function handleOverdueReminders() {
           parent.name || 'ولي الأمر',
           invoice.invoiceNumber || `INV-${invoice.id}`,
           invoice.total || '0',
-          child?.name || 'الطفل',
+          child?.firstName || 'الطفل',
           dueDate.toLocaleDateString('ar-SA'),
           daysOverdue
         );

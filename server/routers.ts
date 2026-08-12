@@ -4847,6 +4847,29 @@ export const appRouter = router({
   // ============ AI MARKETING ============
   aiMarketing: aiMarketingRouter,
   // ============ SUPER ADMIN ============
+  emailLogs: router({
+    list: protectedProcedure.input(z.object({ search: z.string().optional(), type: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+      const db2 = await (await import("./db")).getDb();
+      if (!db2) return { items: [], stats: { sent: 0, failed: 0, total: 0 } };
+      const { emailLogs } = await import("../drizzle/schema");
+      const { desc, eq, and, like, or, sql } = await import("drizzle-orm");
+      const conditions: any[] = [];
+      // Staff sees only their org, super_admin sees all
+      if (ctx.user?.role !== "super_admin" && ctx.organizationId) {
+        conditions.push(eq(emailLogs.organizationId, ctx.organizationId));
+      }
+      if (input?.type && input.type !== "all") {
+        conditions.push(eq(emailLogs.type, input.type));
+      }
+      if (input?.search) {
+        conditions.push(or(like(emailLogs.recipientEmail, `%${input.search}%`), like(emailLogs.subject, `%${input.search}%`)));
+      }
+      const where = conditions.length > 0 ? and(...conditions) : undefined;
+      const items = await db2.select().from(emailLogs).where(where).orderBy(desc(emailLogs.createdAt)).limit(100);
+      const [statsResult] = await db2.select({ total: sql<number>`count(*)`, sent: sql<number>`sum(case when status='sent' then 1 else 0 end)`, failed: sql<number>`sum(case when status='failed' then 1 else 0 end)` }).from(emailLogs).where(conditions.length > 0 ? and(...conditions) : undefined);
+      return { items, stats: { total: Number(statsResult?.total || 0), sent: Number(statsResult?.sent || 0), failed: Number(statsResult?.failed || 0) } };
+    }),
+  }),
   superAdmin: superAdminRouter,
   // ============ BRANDING ============
   branding: brandingRouter,
