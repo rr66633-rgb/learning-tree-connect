@@ -120,6 +120,7 @@ export async function upgradeLegacyPasswordHash(userId: number, password: string
  */
 export async function canRequestOtp(identifier: string): Promise<{ allowed: boolean; waitSeconds?: number }> {
   const db = await getDb();
+  identifier = identifier.toLowerCase();
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
   
   const recentOtps = await db.select()
@@ -163,11 +164,11 @@ export async function createOtp(params: {
   const db = await getDb();
   const code = generateOtpCode();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-  
+
   await db.insert(otpCodes).values({
     userId: params.userId || null,
     phone: params.phone || null,
-    email: params.email || null,
+    email: params.email ? params.email.toLowerCase() : null,
     code,
     type: params.type,
     expiresAt,
@@ -188,13 +189,13 @@ export async function verifyOtp(params: {
 }): Promise<{ valid: boolean; error?: string; userId?: number }> {
   const db = await getDb();
   const now = new Date();
-  
+  const normalizedId = params.identifier.toLowerCase();
   // Find the latest OTP for this identifier and type
   const otps = await db.select()
     .from(otpCodes)
     .where(
       and(
-        sql`(${otpCodes.phone} = ${params.identifier} OR ${otpCodes.email} = ${params.identifier})`,
+        sql`(${otpCodes.phone} = ${normalizedId} OR LOWER(${otpCodes.email}) = ${normalizedId})`,
         eq(otpCodes.type, params.type),
         eq(otpCodes.verified, false),
         gt(otpCodes.expiresAt, now)
