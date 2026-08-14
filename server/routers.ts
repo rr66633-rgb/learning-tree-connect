@@ -143,10 +143,10 @@ export const appRouter = router({
         );
 
       // Also include the user's primary organization
-      const orgIds = [...new Set([
+      const orgIds = Array.from(new Set([
         ctx.user!.organizationId,
         ...memberships.map(m => m.organizationId),
-      ])];
+      ]));
 
       if (orgIds.length === 0) return [];
 
