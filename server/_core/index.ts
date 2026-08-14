@@ -1523,6 +1523,11 @@ async function startServer() {
     res.json({ success: true, ...result });
   });
 
+  app.post("/api/scheduled/subscription-check", requireCronSecret, async (req, res) => {
+    const { subscriptionCheckHandler } = await import("../subscription-check-handler");
+    await subscriptionCheckHandler(req, res);
+  });
+
   // Email Health Check API
   app.get('/api/email/health', async (req, res) => {
     try {

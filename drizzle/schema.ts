@@ -1180,6 +1180,9 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
   maxChildren: int("maxChildren").default(30).notNull(),
   maxStaff: int("maxStaff").default(10).notNull(),
   maxClasses: int("maxClasses").default(5).notNull(),
+  maxOrganizations: int("maxOrganizations").default(1).notNull(),
+  pricePerExtraOrg: decimal("pricePerExtraOrg", { precision: 10, scale: 2 }).default("0.00"),
+  trialDays: int("trialDays").default(14).notNull(),
   storageGb: int("storageGb").default(5).notNull(),
   features: json("features").notNull(), // JSON array of feature keys enabled
   hasAiTools: boolean("hasAiTools").default(false).notNull(),
@@ -1194,6 +1197,7 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
   discountPercentage: decimal("discountPercentage", { precision: 5, scale: 2 }).default("0.00"),
   discountEnabled: boolean("discountEnabled").default(false),
   originalPriceYearly: decimal("originalPriceYearly", { precision: 10, scale: 2 }),
+  discountExpiresAt: timestamp("discountExpiresAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1213,6 +1217,9 @@ export const organizationSubscriptions = mysqlTable("organization_subscriptions"
   cancelReason: text("cancelReason"),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
+  moyasarPaymentId: varchar("moyasarPaymentId", { length: 255 }),
+  gracePeriodEnd: timestamp("gracePeriodEnd"),
+  remindersSent: int("remindersSent").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
