@@ -9,8 +9,7 @@ import * as db from "./db";
 import { getDb as getSharedDb } from "./db";
 import * as authService from "./_core/authService";
 import { loginAttempts, integrationConfig, organizations } from "../drizzle/schema";
-import { eq, and, desc, inArray, or } from "drizzle-orm";
-import { organizationMembers, users } from "../drizzle/schema";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { sendNewDeviceLoginAlert } from "./services/emailService";
 import { aiRouter } from "./aiRouter";
 import { weeklyPlanRouter } from "./weeklyPlanRouter";
@@ -124,93 +123,6 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
-
-    // ============ MY ORGANIZATIONS (for multi-org owners) ============
-    myOrganizations: protectedProcedure.query(async ({ ctx }) => {
-      const db = (await getSharedDb())!;
-      // Find all organizations where this user is a member (via organizationMembers table)
-      const memberships = await db
-        .select({
-          organizationId: organizationMembers.organizationId,
-          role: organizationMembers.role,
-        })
-        .from(organizationMembers)
-        .where(
-          and(
-            eq(organizationMembers.userId, ctx.user!.id),
-            eq(organizationMembers.isActive, true)
-          )
-        );
-
-      // Also include the user's primary organization
-      const orgIds = Array.from(new Set([
-        ctx.user!.organizationId,
-        ...memberships.map(m => m.organizationId),
-      ]));
-
-      if (orgIds.length === 0) return [];
-
-      const orgs = await db
-        .select({
-          id: organizations.id,
-          name: organizations.name,
-          nameAr: organizations.nameAr,
-          logoUrl: organizations.logoUrl,
-          city: organizations.city,
-          status: organizations.status,
-        })
-        .from(organizations)
-        .where(inArray(organizations.id, orgIds));
-
-      // Attach role to each org
-      return orgs.map(org => {
-        const membership = memberships.find(m => m.organizationId === org.id);
-        return {
-          ...org,
-          role: membership?.role || ctx.user!.role,
-        };
-      });
-    }),
-
-    // ============ SWITCH ORGANIZATION ============
-    switchOrganization: protectedProcedure
-      .input(z.object({ organizationId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const db = (await getSharedDb())!;
-
-        // Verify user has access to this organization
-        const [membership] = await db
-          .select()
-          .from(organizationMembers)
-          .where(
-            and(
-              eq(organizationMembers.userId, ctx.user!.id),
-              eq(organizationMembers.organizationId, input.organizationId),
-              eq(organizationMembers.isActive, true)
-            )
-          );
-
-        // Also allow if it's their primary org
-        if (!membership && ctx.user!.organizationId !== input.organizationId) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "ليس لديك صلاحية الوصول لهذه المنظمة" });
-        }
-
-        // Update user's current organizationId
-        await db
-          .update(users)
-          .set({ organizationId: input.organizationId })
-          .where(eq(users.id, ctx.user!.id));
-
-        // Re-issue session token with updated user
-        const sessionToken = await sdk.createSessionToken(ctx.user!.openId, {
-          name: ctx.user!.name || '',
-          expiresInMs: ONE_YEAR_MS,
-        });
-        const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-
-        return { success: true, organizationId: input.organizationId };
-      }),
 
     // ============ LOGIN WITH PASSWORD ============
     login: publicProcedure
