@@ -1242,23 +1242,36 @@ export async function createBatchNotifications(data: InsertNotification[]) {
 export async function getDashboardStats(organizationId?: number) {
   const db = await getDb();
   if (!db) return { totalChildren: 0, totalStaff: 0, presentToday: 0, totalRevenue: 0 };
+  // Build conditions for each query
   const childConditions = [eq(children.status, 'active')];
   if (organizationId) childConditions.push(eq(children.organizationId, organizationId));
-  const allChildren = await db.select({ count: sql<number>`count(*)` }).from(children).where(and(...childConditions));
+
   const staffConditions = [sql`${users.role} IN ('admin', 'principal', 'owner', 'teacher', 'assistant', 'accountant', 'receptionist', 'super_admin')`];
   if (organizationId) staffConditions.push(eq(users.organizationId, organizationId));
-  const allStaff = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(...staffConditions));
+
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
   const attendanceConditions: any[] = [gte(attendance.date, today), lte(attendance.date, todayEnd), eq(attendance.status, 'present')];
   if (organizationId) attendanceConditions.push(eq(attendance.organizationId, organizationId));
-  const presentToday = await db.select({ count: sql<number>`count(*)` }).from(attendance)
-    .where(and(...attendanceConditions));
+
   const invoiceConditions: any[] = [eq(invoices.status, 'paid')];
   if (organizationId) invoiceConditions.push(eq(invoices.organizationId, organizationId));
-  const paidInvoices = await db.select().from(invoices).where(and(...invoiceConditions));
-  const totalRevenue = paidInvoices.reduce((sum, i) => sum + Number(i.total), 0);
-  return { totalChildren: allChildren[0]?.count ?? 0, totalStaff: allStaff[0]?.count ?? 0, presentToday: presentToday[0]?.count ?? 0, totalRevenue };
+
+  // Execute ALL queries in parallel (Fix #3: Promise.all instead of sequential)
+  const [allChildren, allStaff, presentToday, revenueResult] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(children).where(and(...childConditions)),
+    db.select({ count: sql<number>`count(*)` }).from(users).where(and(...staffConditions)),
+    db.select({ count: sql<number>`count(*)` }).from(attendance).where(and(...attendanceConditions)),
+    // Fix #1: Use SUM() in SQL instead of fetching all rows and summing in JS
+    db.select({ total: sql<number>`COALESCE(SUM(total), 0)` }).from(invoices).where(and(...invoiceConditions)),
+  ]);
+
+  return {
+    totalChildren: allChildren[0]?.count ?? 0,
+    totalStaff: allStaff[0]?.count ?? 0,
+    presentToday: presentToday[0]?.count ?? 0,
+    totalRevenue: Number(revenueResult[0]?.total ?? 0),
+  };
 }
 
 // ============ USER MANAGEMENT (Admin) ============
@@ -2898,29 +2911,50 @@ export async function getEnhancedFinanceSummary(organizationId: number) {
   const db = await getDb();
   if (!db) return { totalRevenue: 0, pendingAmount: 0, overdueAmount: 0, partiallyPaidAmount: 0, totalInvoices: 0, paidInvoices: 0, pendingInvoices: 0, overdueInvoices: 0, thisMonthRevenue: 0 };
 
-  const allInvoices = await db.select().from(invoices).where(eq(invoices.organizationId, organizationId));
-  
-  const totalRevenue = allInvoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + Number(i.total), 0);
-  const pendingAmount = allInvoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + Number(i.total), 0);
-  const overdueAmount = allInvoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + Number(i.total), 0);
-  const partiallyPaidAmount = allInvoices.filter(i => i.status === 'partially_paid').reduce((sum, i) => sum + (Number(i.total) - Number(i.paidAmount)), 0);
-  
+  // Optimized: Use SQL aggregation instead of fetching all rows into memory
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const thisMonthRevenue = allInvoices
-    .filter(i => i.status === 'paid' && i.paidAt && new Date(i.paidAt) >= startOfMonth)
-    .reduce((sum, i) => sum + Number(i.total), 0);
-  
+
+  const [summaryResult, thisMonthResult] = await Promise.all([
+    db.select({
+      status: invoices.status,
+      count: sql<number>`COUNT(*)`,
+      totalAmount: sql<number>`COALESCE(SUM(total), 0)`,
+      unpaidAmount: sql<number>`COALESCE(SUM(total - COALESCE(paidAmount, 0)), 0)`,
+    }).from(invoices)
+      .where(eq(invoices.organizationId, organizationId))
+      .groupBy(invoices.status),
+    db.select({
+      total: sql<number>`COALESCE(SUM(total), 0)`,
+    }).from(invoices)
+      .where(and(
+        eq(invoices.organizationId, organizationId),
+        eq(invoices.status, 'paid'),
+        gte(invoices.paidAt, startOfMonth)
+      )),
+  ]);
+
+  const byStatus: Record<string, { count: number; totalAmount: number; unpaidAmount: number }> = {};
+  let totalInvoices = 0;
+  for (const row of summaryResult) {
+    byStatus[row.status as string] = {
+      count: Number(row.count),
+      totalAmount: Number(row.totalAmount),
+      unpaidAmount: Number(row.unpaidAmount),
+    };
+    totalInvoices += Number(row.count);
+  }
+
   return {
-    totalRevenue,
-    pendingAmount,
-    overdueAmount,
-    partiallyPaidAmount,
-    totalInvoices: allInvoices.length,
-    paidInvoices: allInvoices.filter(i => i.status === 'paid').length,
-    pendingInvoices: allInvoices.filter(i => i.status === 'pending').length,
-    overdueInvoices: allInvoices.filter(i => i.status === 'overdue').length,
-    thisMonthRevenue,
+    totalRevenue: byStatus['paid']?.totalAmount ?? 0,
+    pendingAmount: byStatus['pending']?.totalAmount ?? 0,
+    overdueAmount: byStatus['overdue']?.totalAmount ?? 0,
+    partiallyPaidAmount: byStatus['partially_paid']?.unpaidAmount ?? 0,
+    totalInvoices,
+    paidInvoices: byStatus['paid']?.count ?? 0,
+    pendingInvoices: byStatus['pending']?.count ?? 0,
+    overdueInvoices: byStatus['overdue']?.count ?? 0,
+    thisMonthRevenue: Number(thisMonthResult[0]?.total ?? 0),
   };
 }
 

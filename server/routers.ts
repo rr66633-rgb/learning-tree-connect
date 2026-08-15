@@ -109,6 +109,9 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Performance: In-memory cache for dashboard stats (30s TTL per org)
+const _dashboardStatsCache: Record<string, { data: any; time: number }> = {};
+
 export const appRouter = router({
   system: systemRouter,
   visitorAssistant: visitorAssistantRouter,
@@ -886,7 +889,16 @@ export const appRouter = router({
           totalRevenue: 0,
         };
       }
-      return db.getDashboardStats(ctx.user?.organizationId ?? undefined);
+      // Fix #5: Cache dashboard stats per org for 30 seconds
+      const orgId = ctx.user?.organizationId;
+      const cacheKey = `dashboard_stats_${orgId ?? 'all'}`;
+      const now = Date.now();
+      if (_dashboardStatsCache[cacheKey] && (now - _dashboardStatsCache[cacheKey].time) < 30000) {
+        return _dashboardStatsCache[cacheKey].data;
+      }
+      const result = await db.getDashboardStats(orgId ?? undefined);
+      _dashboardStatsCache[cacheKey] = { data: result, time: now };
+      return result;
     }),
   }),
 
