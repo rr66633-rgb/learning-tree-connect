@@ -477,6 +477,36 @@ function RoleRouter() {
     return <PendingRolePage />;
   }
 
+  // Payment & checkout routes - render OUTSIDE DashboardLayout (no notification overlay blocking)
+  if (location === "/checkout") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <SubscriptionCheckout />
+      </Suspense>
+    );
+  }
+  if (location === "/payment-callback") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <PaymentCallback />
+      </Suspense>
+    );
+  }
+  if (location === "/store-payment-callback") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <StorePaymentCallback />
+      </Suspense>
+    );
+  }
+  if (location === "/org-select") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <OrgSelector />
+      </Suspense>
+    );
+  }
+
     return (
     <DashboardLayout basePath={basePath}>
       {/* Full-screen alert for staff when parent arrives for pickup */}
@@ -664,7 +694,7 @@ function RoleRouter() {
 function App() {
   const [location] = useLocation();
   const showVisitorAssistant = location === "/" || location === "/nurseries" || location === "/pricing";
-  const isPublicPage = location === "/waitlist" || location === "/pricing" || location === "/privacy" || location === "/terms" || location.startsWith("/waitlist/");
+  const isPublicPage = location === "/waitlist" || location === "/pricing" || location === "/privacy" || location === "/terms" || location.startsWith("/waitlist/") || location === "/checkout" || location === "/payment-callback" || location === "/store-payment-callback" || location === "/org-select";
   const [showSplash, setShowSplash] = useState(() => {
     // Show splash only on first load (not on HMR or navigation)
     // Skip splash for public pages

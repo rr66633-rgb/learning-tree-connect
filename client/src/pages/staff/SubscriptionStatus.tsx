@@ -51,7 +51,7 @@ export default function SubscriptionStatus() {
   const [, navigate] = useLocation();
 
   return (
-    <div className="space-y-6 p-6" dir="rtl">
+    <div className="space-y-6 p-6" dir="rtl"> 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -119,7 +119,11 @@ export default function SubscriptionStatus() {
                 )}
 
                 {/* CTA */}
-                <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
+                <Button 
+                  className="w-full" 
+                  variant={plan.popular ? "default" : "outline"}
+                  onClick={() => navigate(`/checkout?plan=${plan.id}&cycle=yearly`)}
+                >
                   ابدأ الفترة التجريبية
                 </Button>
               </CardContent>
