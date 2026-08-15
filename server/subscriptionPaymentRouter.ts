@@ -9,11 +9,6 @@ import {
 } from "../drizzle/schema";
 import { getDb } from "./db";
 
-// ============ IN-MEMORY CACHE FOR SUBSCRIPTION STATUS ============
-// Cache subscription status per org for 60 seconds to reduce DB queries
-const _subStatusCache = new Map<number, { data: any; time: number }>();
-const SUB_STATUS_CACHE_TTL = 60 * 1000; // 60 seconds
-
 // SECURITY FIX (cross-tenant billing takeover): both routes below previously ran
 // on plain `protectedProcedure` with NO role check at all, and trusted a
 // client-supplied `input.organizationId` directly to look up/insert/update
@@ -143,13 +138,6 @@ export const subscriptionPaymentRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك عرض اشتراك منظمة أخرى" });
       }
 
-      // Check cache first
-      const now = Date.now();
-      const cached = _subStatusCache.get(ctx.organizationId);
-      if (cached && (now - cached.time) < SUB_STATUS_CACHE_TTL) {
-        return cached.data;
-      }
-
       const db = (await getDb())!;
 
       const [subscription] = await db
@@ -158,19 +146,15 @@ export const subscriptionPaymentRouter = router({
         .where(eq(organizationSubscriptions.organizationId, input.organizationId));
 
       if (!subscription) {
-        const result = { hasSubscription: false, status: "none" as const };
-        _subStatusCache.set(ctx.organizationId, { data: result, time: now });
-        return result;
+        return { hasSubscription: false, status: "none" as const };
       }
 
       const isExpired = new Date(subscription.currentPeriodEnd) < new Date();
 
-      const result = {
+      return {
         hasSubscription: true,
         status: isExpired ? "expired" as const : subscription.status,
         subscription,
       };
-      _subStatusCache.set(ctx.organizationId, { data: result, time: now });
-      return result;
     }),
 });

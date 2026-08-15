@@ -12,44 +12,15 @@ import {
 } from "../drizzle/schema";
 import { getDb } from "./db";
 
-// ============ IN-MEMORY CACHE FOR PLANS ============
-// Plans rarely change, so cache them for 5 minutes to avoid DB round-trip on every request
-let _plansCache: any[] | null = null;
-let _plansCacheTime: number = 0;
-const PLANS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-// Export warm-up function for server startup
-export async function warmUpPlansCache() {
-  const db = (await getDb())!;
-  if (!db) return;
-  const plans = await db
-    .select()
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.isActive, true))
-    .orderBy(subscriptionPlans.sortOrder);
-  _plansCache = plans;
-  _plansCacheTime = Date.now();
-  console.log("[Cache] Subscription plans pre-loaded:", plans.length, "plans");
-}
-
 export const onboardingRouter = router({
   // Get available subscription plans for onboarding
   getPlans: publicProcedure.query(async () => {
-    // Return cached plans if still fresh
-    const now = Date.now();
-    if (_plansCache && (now - _plansCacheTime) < PLANS_CACHE_TTL) {
-      return _plansCache;
-    }
     const db = (await getDb())!;
-    const plans = await db
+    return db
       .select()
       .from(subscriptionPlans)
       .where(eq(subscriptionPlans.isActive, true))
       .orderBy(subscriptionPlans.sortOrder);
-    // Update cache
-    _plansCache = plans;
-    _plansCacheTime = now;
-    return plans;
   }),
 
   // Check if slug is available
