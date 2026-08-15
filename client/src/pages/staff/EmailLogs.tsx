@@ -1,12 +1,15 @@
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
-import { Mail, CheckCircle, XCircle, Clock, Search } from "lucide-react";
+import { Mail, CheckCircle, XCircle, Clock, Search, Loader2, AlertCircle } from "lucide-react";
 
 export default function EmailLogs() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   
-  const { data: logs, isLoading } = trpc.emailLogs.list.useQuery({ search, type: typeFilter });
+  const { data: logs, isLoading, isError, error } = trpc.emailLogs.list.useQuery(
+    { search, type: typeFilter },
+    { retry: 1, retryDelay: 1000 }
+  );
 
   const typeLabels: Record<string, string> = {
     invoice: "فاتورة",
@@ -61,8 +64,25 @@ export default function EmailLogs() {
         </select>
       </div>
 
+      {/* Error State */}
+      {isError && (
+        <div className="text-center py-10 bg-red-50 rounded-lg border border-red-200">
+          <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+          <p className="text-red-600 font-medium">حدث خطأ في تحميل السجلات</p>
+          <p className="text-red-500 text-sm mt-1">{error?.message || "يرجى المحاولة لاحقاً"}</p>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="text-center py-10">
+          <Loader2 className="w-8 h-8 text-blue-500 mx-auto mb-2 animate-spin" />
+          <p className="text-gray-500">جاري تحميل السجلات...</p>
+        </div>
+      )}
+
       {/* Stats */}
-      {logs && (
+      {logs && !isError && (
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
             <div className="text-lg font-bold text-green-600">{logs.stats?.sent || 0}</div>
@@ -80,46 +100,46 @@ export default function EmailLogs() {
       )}
 
       {/* Table */}
-      {isLoading ? (
-        <div className="text-center py-10 text-gray-500">جاري التحميل...</div>
-      ) : !logs?.items?.length ? (
-        <div className="text-center py-10 text-gray-500">لا توجد سجلات بريد إلكتروني بعد</div>
-      ) : (
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 py-2 text-right">الحالة</th>
-                <th className="px-3 py-2 text-right">المستلم</th>
-                <th className="px-3 py-2 text-right">الموضوع</th>
-                <th className="px-3 py-2 text-right">النوع</th>
-                <th className="px-3 py-2 text-right">التاريخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.items.map((log: any) => (
-                <tr key={log.id} className="border-t hover:bg-gray-50">
-                  <td className="px-3 py-2">{statusIcon(log.status)}</td>
-                  <td className="px-3 py-2">
-                    <div className="font-medium text-xs">{log.recipientName || "-"}</div>
-                    <div className="text-xs text-gray-500">{log.recipientEmail}</div>
-                  </td>
-                  <td className="px-3 py-2 text-xs max-w-[200px] truncate">{log.subject}</td>
-                  <td className="px-3 py-2">
-                    <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
-                      {typeLabels[log.type] || log.type}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-500">
-                    {new Date(log.createdAt).toLocaleDateString("ar-SA")}
-                    <br />
-                    {new Date(log.createdAt).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
-                  </td>
+      {!isLoading && !isError && logs && (
+        !logs.items?.length ? (
+          <div className="text-center py-10 text-gray-500">لا توجد سجلات بريد إلكتروني بعد</div>
+        ) : (
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-right">الحالة</th>
+                  <th className="px-3 py-2 text-right">المستلم</th>
+                  <th className="px-3 py-2 text-right">الموضوع</th>
+                  <th className="px-3 py-2 text-right">النوع</th>
+                  <th className="px-3 py-2 text-right">التاريخ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {logs.items.map((log: any) => (
+                  <tr key={log.id} className="border-t hover:bg-gray-50">
+                    <td className="px-3 py-2">{statusIcon(log.status)}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-xs">{log.recipientName || "-"}</div>
+                      <div className="text-xs text-gray-500">{log.recipientEmail}</div>
+                    </td>
+                    <td className="px-3 py-2 text-xs max-w-[200px] truncate">{log.subject}</td>
+                    <td className="px-3 py-2">
+                      <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
+                        {typeLabels[log.type] || log.type}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-500">
+                      {new Date(log.createdAt).toLocaleDateString("ar-SA")}
+                      <br />
+                      {new Date(log.createdAt).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
     </div>
   );
