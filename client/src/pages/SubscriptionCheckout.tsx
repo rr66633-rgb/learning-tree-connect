@@ -30,7 +30,8 @@ export default function SubscriptionCheckout() {
   const { data: plans, isLoading: plansLoading } = trpc.onboarding.getPlans.useQuery();
   // For subscription payments, use the platform's publishable key directly
   // Subscriptions are paid TO the platform (Naashah), not to the nursery
-  const platformPublishableKey = import.meta.env.VITE_MOYASAR_PUBLISHABLE_KEY as string;
+  // Publishable key is public (safe to include in client code) - use env var with hardcoded fallback
+  const platformPublishableKey = import.meta.env.VITE_MOYASAR_PUBLISHABLE_KEY || "pk_live_qjcKmi2R2PbXgwCjj6DsS6msLosGKTEAApSdZZ2v";
 
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const moyasarRef = useRef<HTMLDivElement>(null);
