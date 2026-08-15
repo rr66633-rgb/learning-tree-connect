@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/trpc"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,9 @@ export default function SubscriptionCheckout() {
   const orgId = params.get("org");
 
   const { data: plans, isLoading: plansLoading } = trpc.onboarding.getPlans.useQuery();
-  const { data: gatewayStatus } = trpc.payments.gatewayStatus.useQuery();
+  // For subscription payments, use the platform's publishable key directly
+  // Subscriptions are paid TO the platform (Naashah), not to the nursery
+  const platformPublishableKey = import.meta.env.VITE_MOYASAR_PUBLISHABLE_KEY as string;
 
   const [paymentInitiated, setPaymentInitiated] = useState(false);
   const moyasarRef = useRef<HTMLDivElement>(null);
@@ -63,7 +65,7 @@ export default function SubscriptionCheckout() {
   const amountInHalalas = Math.round(amount * 100);
 
   useEffect(() => {
-    if (!selectedPlan || !gatewayStatus?.publishableKey || paymentInitiated) return;
+    if (!selectedPlan || !platformPublishableKey || paymentInitiated) return;
     if (!moyasarRef.current) return;
     if (amountInHalalas < 100) return; // Minimum 1 SAR
 
@@ -80,7 +82,7 @@ export default function SubscriptionCheckout() {
         amount: amountInHalalas,
         currency: "SAR",
         description: `اشتراك ${selectedPlan.nameAr} - ${billingCycle === "yearly" ? isAr ? "سنوي" : "Annual" : isAr ? "شهري" : "Monthly"}`,
-        publishable_api_key: gatewayStatus.publishableKey,
+        publishable_api_key: platformPublishableKey,
         callback_url: `https://naashah.com/payment-callback?plan=${planId}&cycle=${billingCycle}&org=${orgId || ""}`,
         methods: ["creditcard", "applepay"],
         supported_networks: ["visa", "mastercard", "mada"],
@@ -109,7 +111,7 @@ export default function SubscriptionCheckout() {
         toast.error(isAr ? "حدث خطأ في تهيئة بوابة الدفع" : "Error initializing payment gateway");
       }
     });
-  }, [selectedPlan, gatewayStatus, amountInHalalas, planId, billingCycle, orgId, paymentInitiated]);
+  }, [selectedPlan, platformPublishableKey, amountInHalalas, planId, billingCycle, orgId, paymentInitiated]);
 
   if (plansLoading) {
     return (
@@ -139,7 +141,7 @@ export default function SubscriptionCheckout() {
     );
   }
 
-  if (!gatewayStatus?.isConfigured || !gatewayStatus?.publishableKey) {
+  if (!platformPublishableKey) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-background">
         <Card className="w-full max-w-md text-center">
