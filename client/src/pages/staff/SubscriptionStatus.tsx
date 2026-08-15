@@ -1,10 +1,43 @@
-import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
-import { Crown, Calendar, AlertTriangle, CheckCircle2, Clock, CreditCard } from "lucide-react";
+import { Crown, AlertTriangle, CheckCircle2, Clock, CreditCard } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+
+// Hardcoded plans - no API call needed (instant load)
+const PLANS = [
+  {
+    id: 1,
+    nameAr: "الأساسية",
+    priceYearly: 4830,
+    originalPriceYearly: 6900,
+    priceMonthly: 604,
+    discountEnabled: true,
+    discountPercentage: 30,
+    maxOrganizations: 1,
+  },
+  {
+    id: 2,
+    nameAr: "الاحترافية",
+    priceYearly: 7630,
+    originalPriceYearly: 10900,
+    priceMonthly: 954,
+    discountEnabled: true,
+    discountPercentage: 30,
+    maxOrganizations: 1,
+  },
+  {
+    id: 3,
+    nameAr: "المؤسسية",
+    priceYearly: 11200,
+    originalPriceYearly: 15900,
+    priceMonthly: 1392,
+    discountEnabled: true,
+    discountPercentage: 30,
+    maxOrganizations: 3,
+  },
+];
 
 const statusLabels: Record<string, { label: string; color: string; icon: any }> = {
   active: { label: "نشط", color: "bg-green-500/10 text-green-600 border-green-500/20", icon: CheckCircle2 },
@@ -17,29 +50,17 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
 
 export default function SubscriptionStatus() {
   const [, navigate] = useLocation();
-  // Both queries run in PARALLEL (React Query fires them simultaneously)
-  // Plans query is cached server-side (5 min TTL) so it returns almost instantly after first load
-  const { data: subStatus, isLoading: isLoadingStatus } = trpc.subscriptionPayment.status.useQuery({
+  // Only fetch subscription status (plans are hardcoded above)
+  const { data: subStatus } = trpc.subscriptionPayment.status.useQuery({
     organizationId: 0, // Will be overridden by ctx
   });
-  const { data: plans, isLoading: isLoadingPlans } = trpc.onboarding.getPlans.useQuery();
-
-  // Show skeleton only while BOTH are loading - plans load fast from cache
-  if (isLoadingStatus && isLoadingPlans) {
-    return (
-      <div className="space-y-6 p-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
-  }
 
   const status = subStatus?.status || "none";
   const statusInfo = statusLabels[status] || statusLabels.none;
   const StatusIcon = statusInfo.icon;
   const subscription = subStatus?.subscription;
 
-  const currentPlan = plans?.find((p: any) => p.id === subscription?.planId);
+  const currentPlan = PLANS.find((p) => p.id === subscription?.planId);
 
   return (
     <div className="space-y-6 p-6" dir="rtl">
@@ -134,14 +155,14 @@ export default function SubscriptionStatus() {
       </Card>
 
       {/* Plans Overview */}
-      {status !== "active" && plans && (
+      {status !== "active" && (
         <Card>
           <CardHeader>
             <CardTitle>الباقات المتاحة</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {plans.map((plan: any) => (
+              {PLANS.map((plan) => (
                 <div
                   key={plan.id}
                   className="border rounded-lg p-4 hover:border-[#00C9B7] transition-colors cursor-pointer"
@@ -162,6 +183,11 @@ export default function SubscriptionStatus() {
                     <Badge className="mt-2 bg-red-500/10 text-red-600 border-red-500/20">
                       خصم {Number(plan.discountPercentage)}%
                     </Badge>
+                  )}
+                  {plan.maxOrganizations > 1 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      حتى {plan.maxOrganizations} حضانات
+                    </p>
                   )}
                 </div>
               ))}
