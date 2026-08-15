@@ -900,6 +900,46 @@ export const appRouter = router({
       _dashboardStatsCache[cacheKey] = { data: result, time: now };
       return result;
     }),
+    // Combined endpoint: returns ALL dashboard data in ONE call (saves 3 TLS round-trips)
+    all: tenantProcedure.query(async ({ ctx }) => {
+      const orgId = ctx.user?.organizationId;
+      const userId = ctx.user?.id;
+      const role = ctx.user?.role;
+
+      // For parents, return minimal data
+      if (role === 'parent') {
+        const childIds = await db.getChildIdsForParent(userId!);
+        return {
+          stats: { totalChildren: childIds.length, totalStaff: 0, presentToday: 0, totalRevenue: 0 },
+          staffAttendance: null,
+          announcements: [],
+          children: [],
+        };
+      }
+
+      // Cache check for stats
+      const cacheKey = `dashboard_stats_${orgId ?? 'all'}`;
+      const now = Date.now();
+      const cachedStats = _dashboardStatsCache[cacheKey] && (now - _dashboardStatsCache[cacheKey].time) < 30000
+        ? _dashboardStatsCache[cacheKey].data
+        : null;
+
+      // Execute ALL queries in parallel - single DB round-trip batch
+      const isAdmin = role === 'admin' || role === 'principal' || role === 'super_admin' || role === 'owner';
+      const [stats, staffAttendance, announcements, children] = await Promise.all([
+        cachedStats ? Promise.resolve(cachedStats) : db.getDashboardStats(orgId ?? undefined),
+        db.getTodayStaffAttendance(userId!),
+        db.getAnnouncements(orgId, undefined, isAdmin),
+        db.getChildren(undefined, orgId ?? undefined),
+      ]);
+
+      // Update cache
+      if (!cachedStats) {
+        _dashboardStatsCache[cacheKey] = { data: stats, time: Date.now() };
+      }
+
+      return { stats, staffAttendance, announcements, children };
+    }),
   }),
 
   children: router({

@@ -21,10 +21,12 @@ export default function StaffDashboard() {
   const isEn = i18n.language === 'en';
   const locale = isEn ? 'en-US' : 'ar-SA';
   const { user } = useAuth();
-  const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
-  const { data: todayAttendance } = trpc.staffAttendance.today.useQuery();
-  const { data: announcements } = trpc.announcements.list.useQuery();
-  const { data: allChildren } = trpc.children.list.useQuery();
+  // Combined endpoint: 1 API call instead of 4 (saves ~1.5s TLS overhead)
+  const { data: dashboardData, isLoading } = trpc.dashboard.all.useQuery();
+  const stats = dashboardData?.stats;
+  const todayAttendance = dashboardData?.staffAttendance;
+  const announcements = dashboardData?.announcements;
+  const allChildren = dashboardData?.children;
   const checkIn = trpc.staffAttendance.checkIn.useMutation({
     onSuccess: () => toast.success(t('staffDashboard.checkInSuccess')),
     onError: (err) => toast.error(err.message),
