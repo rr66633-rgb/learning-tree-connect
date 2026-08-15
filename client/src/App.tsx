@@ -623,8 +623,8 @@ function RoleRouter() {
         </Route>
         <Route path="/super-admin/payment-settings">
           {isSuperAdminRole(userRole) ? <PaymentSettings /> : <Redirect to={basePath} />}
-        <Route path="/super-admin/email-logs" component={lazyWithRetry(() => import("./pages/staff/EmailLogs"))} />
         </Route>
+        <Route path="/super-admin/email-logs" component={lazyWithRetry(() => import("./pages/staff/EmailLogs"))} />
         <Route path="/super-admin/email-settings">
           {isSuperAdminRole(userRole) ? <EmailSettings /> : <Redirect to={basePath} />}
         </Route>
