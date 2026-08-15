@@ -118,6 +118,8 @@ const SubscriptionCheckout = lazyWithRetry(() => import("./pages/SubscriptionChe
 const PaymentSettings = lazyWithRetry(() => import("./pages/PaymentSettings"));
 const PaymentCallback = lazyWithRetry(() => import("./pages/PaymentCallback"));
 const StorePaymentCallback = lazyWithRetry(() => import("./pages/StorePaymentCallback"));
+const OrgSelector = lazyWithRetry(() => import("./pages/OrgSelector"));
+const SubscriptionStatus = lazyWithRetry(() => import("./pages/staff/SubscriptionStatus"));
 
 
 // Auth Pages
@@ -244,6 +246,7 @@ function StaffRouter() {
         <Route path="/staff/payment-settings" component={PaymentSettings} />
         <Route path="/staff/email-logs" component={lazyWithRetry(() => import("./pages/staff/EmailLogs"))} />
         <Route path="/staff/notification-settings" component={StaffNotificationSettings} />
+        <Route path="/staff/subscription" component={SubscriptionStatus} />
         <Route path="/staff/pickup" component={StaffPickup} />
         <Route path="/staff/assessments" component={StaffAssessments} />
         <Route path="/staff/custom-assessments" component={StaffCustomAssessments} />
@@ -608,6 +611,9 @@ function RoleRouter() {
         </Route>
         <Route path="/store-payment-callback">
           <StorePaymentCallback />
+        </Route>
+        <Route path="/org-select">
+          <OrgSelector />
         </Route>
 
         {/* Onboarding wizard - accessible by authenticated users */}

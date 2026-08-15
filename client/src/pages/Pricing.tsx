@@ -133,14 +133,14 @@ export default function Pricing() {
           {/* Discount Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF5CA8]/10 text-[#FF5CA8] text-xs sm:text-sm font-bold mb-5 sm:mb-7 animate-pulse">
             <Sparkles className="w-4 h-4 flex-shrink-0" />
-            <span>{isAr ? "عرض خاص: خصم 50% لفترة محدودة" : "Special offer: 50% off for a limited time"}</span>
+            <span>{isAr ? "عرض خاص: خصم 30% على الاشتراك السنوي — ينتهي 23 أغسطس" : "Special offer: 30% off annual plans — ends August 23"}</span>
           </div>
 
           <h1 className="text-[26px] leading-[1.35] sm:text-3xl sm:leading-[1.3] md:text-4xl md:leading-[1.25] lg:text-5xl lg:leading-[1.2] font-extrabold text-slate-800 mb-3 sm:mb-4 md:mb-5">
             {isAr ? "اختر الخطة المناسبة لحضانتك" : "Choose the right plan for your nursery"}
           </h1>
           <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-[1.7]">
-            {isAr ? "جميع الخطط تشمل تجربة مجانية ١٤ يوم بدون بطاقة ائتمان. اشتركي هالشهر واحصلي على خصم ٥٠٪" : "All plans include a 14-day free trial without a credit card. Subscribe this month and get a 50% discount"}
+            {isAr ? "جميع الخطط تشمل تجربة مجانية ١٤ يوم بدون بطاقة ائتمان. الباقة المؤسسية تدعم حتى ٣ حضانات." : "All plans include a 14-day free trial. Enterprise plan supports up to 3 nurseries."}
           </p>
 
           {/* Billing Toggle */}
