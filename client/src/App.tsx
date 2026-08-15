@@ -244,7 +244,6 @@ function StaffRouter() {
         <Route path="/staff/pending-approvals" component={StaffPendingApprovals} />
         <Route path="/staff/settings" component={StaffSettings} />
         <Route path="/staff/payment-settings" component={PaymentSettings} />
-        <Route path="/staff/email-logs" component={lazyWithRetry(() => import("./pages/staff/EmailLogs"))} />
         <Route path="/staff/notification-settings" component={StaffNotificationSettings} />
         <Route path="/staff/subscription" component={SubscriptionStatus} />
         <Route path="/staff/pickup" component={StaffPickup} />
@@ -624,7 +623,6 @@ function RoleRouter() {
         <Route path="/super-admin/payment-settings">
           {isSuperAdminRole(userRole) ? <PaymentSettings /> : <Redirect to={basePath} />}
         </Route>
-        <Route path="/super-admin/email-logs" component={lazyWithRetry(() => import("./pages/staff/EmailLogs"))} />
         <Route path="/super-admin/email-settings">
           {isSuperAdminRole(userRole) ? <EmailSettings /> : <Redirect to={basePath} />}
         </Route>
