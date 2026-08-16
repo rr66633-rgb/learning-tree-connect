@@ -1255,8 +1255,8 @@ export const appRouter = router({
         childId: input.childId,
         attendanceId: input.id,
         departureTime: new Date(),
-        pickedUpBy: input.pickedUpBy,
-        relationship: input.relationship,
+        pickedUpBy: input.pickedUpBy || "ولي الأمر",
+        relationship: input.relationship || "mother",
         signatureData: input.signatureData,
         notes: input.notes,
         recordedBy: ctx.user!.id,
@@ -1277,7 +1277,7 @@ export const appRouter = router({
         // Send push notification
         try {
           const { notifyParentCheckOut } = await import('./_core/pushTriggers');
-          await notifyParentCheckOut(child.parentId, `${child.firstName} ${child.lastName}`, input.childId, input.pickedUpBy);
+          await notifyParentCheckOut(child.parentId, `${child.firstName} ${child.lastName}`, input.childId, input.pickedUpBy || "ولي الأمر");
         } catch (e) { /* push failure shouldn't block */ }
       }
       return { success: true };
