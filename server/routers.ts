@@ -1237,8 +1237,8 @@ export const appRouter = router({
     checkOut: teacherProcedure.input(z.object({
       id: z.number(),
       childId: z.number(),
-      pickedUpBy: z.string().min(1),
-      relationship: z.enum(["mother", "father", "driver", "grandparent", "guardian", "other"]),
+      pickedUpBy: z.string().optional(),
+      relationship: z.enum(["mother", "father", "driver", "grandparent", "guardian", "other"]).optional(),
       signatureData: z.string().optional(),
       notes: z.string().optional(),
     })).mutation(async ({ input, ctx }) => {

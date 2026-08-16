@@ -123,15 +123,12 @@ export default function StaffAttendance() {
   }
 
   function handleCheckOutSubmit() {
-    if (!checkOutDialog || !pickedUpBy || !pickupRelationship) {
-      toast.error(t('staffAttendance.fillRequired'));
-      return;
-    }
+    if (!checkOutDialog) return;
     checkOut.mutate({
       id: checkOutDialog.id,
       childId: checkOutDialog.childId,
-      pickedUpBy,
-      relationship: pickupRelationship as any,
+      pickedUpBy: pickedUpBy || undefined,
+      relationship: (pickupRelationship as any) || undefined,
       signatureData: signatureData || undefined,
       notes: checkOutNotes || undefined,
     });
@@ -301,7 +298,9 @@ export default function StaffAttendance() {
                       <div className="flex gap-2">
                         {!record && (
                           <>
-                            <Button size="sm" variant="outline" className="text-green-600 gap-1" onClick={() => setCheckInDialog({ childId: child.id, childName })}>
+                            <Button size="sm" variant="outline" className="text-green-600 gap-1" onClick={() => {
+                              checkIn.mutate({ childId: child.id, date: selectedDate });
+                            }} disabled={checkIn.isPending}>
                               <LogIn className="h-3 w-3" /> {t('staffAttendance.arrivalBtn')}
                             </Button>
                             <Button size="sm" variant="outline" className="text-red-600" onClick={() => setMarkAbsentConfirm({ childId: child.id, childName })} disabled={markAbsent.isPending}>
@@ -310,7 +309,9 @@ export default function StaffAttendance() {
                           </>
                         )}
                         {record && (record.status === 'present' || record.status === 'late' || record.status === 'checked_in') && !record.checkOutTime && (
-                          <Button size="sm" variant="outline" className="text-orange-600 gap-1" onClick={() => setCheckOutDialog({ id: record.id, childId: child.id, childName })}>
+                          <Button size="sm" variant="outline" className="text-orange-600 gap-1" onClick={() => {
+                            checkOut.mutate({ id: record.id, childId: child.id });
+                          }} disabled={checkOut.isPending}>
                             <LogOut className="h-3 w-3" /> {t('staffAttendance.departureBtn')}
                           </Button>
                         )}
