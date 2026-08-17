@@ -4298,12 +4298,18 @@ export const appRouter = router({
       if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
       if (!user.email) throw new TRPCError({ code: 'BAD_REQUEST', message: 'المستخدم ليس لديه بريد إلكتروني' });
       try {
+        // Reset password to default
+        const defaultPassword = 'Aa12341234';
+        const { hashPassword } = await import('./_core/authService');
+        const hashedPassword = await hashPassword(defaultPassword);
+        await db.updateUser(user.id, { password: hashedPassword } as any);
+        // Send invitation email with password
         const { sendInvitationEmail } = await import('./services/emailService');
         await sendInvitationEmail(
           user.email,
           user.name || '',
           user.role || 'parent',
-          undefined,
+          defaultPassword,
           ctx.user?.name || undefined
         );
         return { success: true, message: 'تم إرسال الدعوة بنجاح' };
