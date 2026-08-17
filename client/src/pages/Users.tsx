@@ -70,6 +70,10 @@ export default function UsersPage() {
     },
     onError: (err) => toast.error(err.message),
   });
+  const resendInvitation = trpc.users.resendInvitation.useMutation({
+    onSuccess: () => toast.success(isAr ? "تم إرسال الدعوة بنجاح ✉️" : "Invitation sent successfully"),
+    onError: (err: any) => toast.error(err.message || (isAr ? "فشل إرسال الدعوة" : "Failed to send invitation")),
+  });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -342,6 +346,18 @@ export default function UsersPage() {
                             <Link2 className="h-4 w-4" />
                           </Button>
                         )}
+                        {user.email && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => resendInvitation.mutate({ userId: user.id })}
+                            disabled={resendInvitation.isPending}
+                            title={isAr ? "إعادة إرسال الدعوة" : "Resend Invitation"}
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                        )}
                         {user.role !== 'admin' && (
                           <Button
                             variant="ghost"
@@ -576,3 +592,4 @@ export default function UsersPage() {
     </div>
   );
 }
+import { Mail } from "lucide-react";

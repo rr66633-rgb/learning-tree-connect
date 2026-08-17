@@ -4291,6 +4291,26 @@ export const appRouter = router({
       }
       return user;
     }),
+    resendInvitation: adminProcedure.input(z.object({
+      userId: z.number(),
+    })).mutation(async ({ input, ctx }) => {
+      const user = await db.getUserById(input.userId, ctx.organizationId);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'المستخدم غير موجود' });
+      if (!user.email) throw new TRPCError({ code: 'BAD_REQUEST', message: 'المستخدم ليس لديه بريد إلكتروني' });
+      try {
+        const { sendInvitationEmail } = await import('./services/emailService');
+        await sendInvitationEmail(
+          user.email,
+          user.name || '',
+          user.role || 'parent',
+          undefined,
+          ctx.user?.name || undefined
+        );
+        return { success: true, message: 'تم إرسال الدعوة بنجاح' };
+      } catch (err: any) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إرسال الدعوة: ' + (err.message || '') });
+      }
+    }),
     update: adminProcedure.input(z.object({
       id: z.number(),
       name: z.string().optional(),
