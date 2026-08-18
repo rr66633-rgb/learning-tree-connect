@@ -228,20 +228,50 @@ export async function getAllUsers(organizationId?: number) {
 export async function getChildIdsForParent(parentId: number): Promise<number[]> {
   const db = await getDb();
   if (!db) return [];
-  const result = await db.select({ id: children.id }).from(children).where(eq(children.parentId, parentId));
-  return result.map(r => r.id);
+  // Get children from both children.parentId AND parent_children table
+  const [directChildren, linkedChildren] = await Promise.all([
+    db.select({ id: children.id }).from(children).where(eq(children.parentId, parentId)),
+    db.select({ childId: parentChildren.childId }).from(parentChildren).where(eq(parentChildren.parentId, parentId)),
+  ]);
+  const allIds = new Set([
+    ...directChildren.map(r => r.id),
+    ...linkedChildren.map(r => r.childId),
+  ]);
+  return Array.from(allIds);
 }
 
 // ============ CHILDREN ============
 export async function getChildren(parentId?: number, organizationId?: number, limit?: number, offset?: number) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [];
-  if (parentId) conditions.push(eq(children.parentId, parentId));
-  if (organizationId) conditions.push(eq(children.organizationId, organizationId));
+  
+  if (parentId) {
+    // For parents: find children linked via parent_children table OR via children.parentId
+    const linkedChildIds = await db.select({ childId: parentChildren.childId })
+      .from(parentChildren)
+      .where(eq(parentChildren.parentId, parentId));
+    const linkedIds = linkedChildIds.map(r => r.childId);
+    
+    // Build condition: parentId matches OR childId is in linked list
+    const parentConditions: any[] = [eq(children.parentId, parentId)];
+    if (linkedIds.length > 0) {
+      parentConditions.push(inArray(children.id, linkedIds));
+    }
+    let whereCondition = or(...parentConditions);
+    if (organizationId) {
+      whereCondition = and(whereCondition, eq(children.organizationId, organizationId)) as any;
+    }
+    let query = db.select().from(children).where(whereCondition as any);
+    query = query.orderBy(desc(children.createdAt)) as any;
+    if (limit) query = query.limit(limit) as any;
+    if (offset) query = query.offset(offset) as any;
+    return query;
+  }
+  
+  // For staff/admin: filter by organization only
   let query = db.select().from(children);
-  if (conditions.length > 0) {
-    query = query.where(conditions.length === 1 ? conditions[0] : and(...conditions)) as any;
+  if (organizationId) {
+    query = query.where(eq(children.organizationId, organizationId)) as any;
   }
   query = query.orderBy(desc(children.createdAt)) as any;
   if (limit) query = query.limit(limit) as any;
