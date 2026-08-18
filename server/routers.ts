@@ -1702,6 +1702,7 @@ export const appRouter = router({
       dueDate: z.string(),
       invoiceType: z.enum(['tuition', 'activity', 'trip', 'uniform', 'registration', 'other']).optional(),
       isRecurring: z.boolean().optional(),
+      taxInclusive: z.boolean().optional(),
     })).mutation(async ({ input, ctx }) => {
       // SECURITY FIX: input.childId/input.parentId were previously trusted with
       // no check that either belongs to the caller's organization -- an invoice
@@ -1715,13 +1716,25 @@ export const appRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'ولي الأمر غير مرتبط بهذا الطفل' });
       }
       const subtotal = parseFloat(input.subtotal);
-      const vatAmount = subtotal * 0.15;
-      const total = subtotal + vatAmount;
+      let baseAmount: number;
+      let vatAmount: number;
+      let total: number;
+      if (input.taxInclusive) {
+        // Tax is included in the entered amount - parent pays exactly what was entered
+        total = subtotal;
+        baseAmount = subtotal / 1.15;
+        vatAmount = subtotal - baseAmount;
+      } else {
+        // Tax is added on top - parent pays more than entered amount
+        baseAmount = subtotal;
+        vatAmount = subtotal * 0.15;
+        total = subtotal + vatAmount;
+      }
       const invoice = await db.createInvoice({
         childId: input.childId,
         parentId: input.parentId,
         description: input.description,
-        subtotal: input.subtotal,
+        subtotal: baseAmount.toFixed(2),
         invoiceNumber: `INV-${Date.now()}`,
         vatRate: "15.00",
         vatAmount: vatAmount.toFixed(2),

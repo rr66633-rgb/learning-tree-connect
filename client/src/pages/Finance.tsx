@@ -72,6 +72,7 @@ export default function Finance() {
 
   // Forms
   const [form, setForm] = useState({ childId: 0, parentId: 0, description: "", subtotal: "", dueDate: "", invoiceType: "tuition" as string, isRecurring: false });
+  const [taxInclusive, setTaxInclusive] = useState(false);
   const [markPaidForm, setMarkPaidForm] = useState({ paymentMethod: "cash" as string });
   const [refundForm, setRefundForm] = useState({ amount: "", reason: "", transactionId: 0 });
   const [planForm, setPlanForm] = useState({ childId: 0, parentId: 0, name: "", amount: "", frequency: "monthly" as string, description: "", startDate: "", endDate: "" });
@@ -97,6 +98,7 @@ export default function Finance() {
       dueDate: form.dueDate,
       invoiceType: form.invoiceType as any,
       isRecurring: form.isRecurring,
+      taxInclusive,
     });
   };
 
@@ -210,11 +212,26 @@ export default function Finance() {
                   <Switch checked={form.isRecurring} onCheckedChange={v => setForm(f => ({ ...f, isRecurring: v }))} />
                   <Label>{isAr ? "فاتورة متكررة" : "Recurring Invoice"}</Label>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={taxInclusive} onCheckedChange={v => setTaxInclusive(v)} />
+                  <Label>{isAr ? "الضريبة مشمولة بالسعر" : "Tax included in price"}</Label>
+                </div>
                 {form.subtotal && (
                   <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
-                    <div className="flex justify-between"><span>{isAr ? "المبلغ الأساسي" : "Base Amount"}</span><span>{Number(form.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
-                    <div className="flex justify-between"><span>{isAr ? "ضريبة القيمة المضافة (15%)" : "VAT (15%)"}</span><span>{(Number(form.subtotal) * 0.15).toLocaleString('ar-SA')} ر.س</span></div>
-                    <div className="flex justify-between font-bold border-t pt-1"><span>{isAr ? "الإجمالي" : "Total"}</span><span>{(Number(form.subtotal) * 1.15).toLocaleString('ar-SA')} ر.س</span></div>
+                    {taxInclusive ? (
+                      <>
+                        <div className="flex justify-between"><span>{isAr ? "المبلغ شامل الضريبة" : "Amount (Tax Inclusive)"}</span><span>{Number(form.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>{isAr ? "المبلغ الأساسي" : "Base Amount"}</span><span>{(Number(form.subtotal) / 1.15).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>{isAr ? "ضريبة القيمة المضافة (15%)" : "VAT (15%)"}</span><span>{(Number(form.subtotal) - Number(form.subtotal) / 1.15).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س</span></div>
+                        <div className="flex justify-between font-bold border-t pt-1"><span>{isAr ? "الإجمالي (يدفعه ولي الأمر)" : "Total (Parent pays)"}</span><span>{Number(form.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span>{isAr ? "المبلغ الأساسي" : "Base Amount"}</span><span>{Number(form.subtotal).toLocaleString('ar-SA')} ر.س</span></div>
+                        <div className="flex justify-between"><span>{isAr ? "ضريبة القيمة المضافة (15%)" : "VAT (15%)"}</span><span>{(Number(form.subtotal) * 0.15).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س</span></div>
+                        <div className="flex justify-between font-bold border-t pt-1"><span>{isAr ? "الإجمالي (يدفعه ولي الأمر)" : "Total (Parent pays)"}</span><span>{(Number(form.subtotal) * 1.15).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س</span></div>
+                      </>
+                    )}
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={createInvoice.isPending}>
