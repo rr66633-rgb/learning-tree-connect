@@ -1136,6 +1136,10 @@ export const organizations = mysqlTable("organizations", {
   paymentEnabled: boolean("paymentEnabled").default(false).notNull(),
   moyasarPublishableKey: varchar("moyasarPublishableKey", { length: 255 }),
   moyasarSecretKey: varchar("moyasarSecretKey", { length: 255 }),
+  // Tabby payment settings
+  tabbyPublicKey: varchar("tabbyPublicKey", { length: 255 }),
+  tabbySecretKey: varchar("tabbySecretKey", { length: 255 }),
+  tabbyMerchantCode: varchar("tabbyMerchantCode", { length: 50 }),
 }, (table) => [
   index("idx_organizations_status_name").on(table.status, table.nameAr),
 ]);

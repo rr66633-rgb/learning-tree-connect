@@ -36,6 +36,7 @@ import { evaluationRouter } from "./evaluationRouter";
 import { goalsRouter } from "./goalsRouter";
 import { visitorAssistantRouter } from "./visitorAssistantRouter";
 import { paymentSettingsRouter } from "./paymentSettingsRouter";
+import { tabbyRouter } from "./tabbyRouter";
 import { normalizeEmail } from "./emailIdentity";
 import {
   createDirectMediaUpload,
@@ -5082,5 +5083,7 @@ export const appRouter = router({
   // ============ PERFORMANCE EVALUATION ============
   evaluation: evaluationRouter,
   goals: goalsRouter,
+  // ============ TABBY PAYMENT ============
+  tabby: tabbyRouter,
 });
 export type AppRouter = typeof appRouter;

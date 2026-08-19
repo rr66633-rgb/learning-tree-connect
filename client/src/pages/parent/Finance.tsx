@@ -40,6 +40,19 @@ export default function ParentFinance() {
   const { data: invoices, isLoading } = trpc.finance.invoices.useQuery();
   const { data: paymentHistory, isLoading: historyLoading } = trpc.payments.history.useQuery();
   const { data: gatewayStatus } = trpc.payments.gatewayStatus.useQuery();
+  const { data: tabbyStatus } = trpc.tabby.status.useQuery();
+  const tabbyCreateSession = trpc.tabby.createSession.useMutation({
+    onSuccess: (data) => {
+      if (data.success && 'checkoutUrl' in data) {
+        window.location.href = data.checkoutUrl;
+      } else if ('rejected' in data && data.rejected) {
+        toast.error(isAr ? "نأسف، تابي غير قادرة على الموافقة على هذه العملية. الرجاء استخدام طريقة دفع أخرى." : "Sorry, Tabby is unable to approve this purchase.");
+      } else {
+        toast.error(isAr ? "حدث خطأ أثناء إنشاء جلسة تابي" : "Error creating Tabby session");
+      }
+    },
+    onError: (err) => toast.error(err.message || (isAr ? "حدث خطأ" : "An error occurred")),
+  });
   const utils = trpc.useUtils();
 
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -428,6 +441,35 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
                 </div>
               ) : (
                 <div ref={initMoyasarForm} className="moyasar-form" />
+              )}
+              {/* Tabby Pay Later Option */}
+              {tabbyStatus?.available && (
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm text-muted-foreground mb-2 text-center">{isAr ? "أو" : "or"}</p>
+                  <button
+                    onClick={() => {
+                      if (!selectedInvoice) return;
+                      const amount = Number(selectedInvoice.total) - Number(selectedInvoice.paidAmount || 0);
+                      tabbyCreateSession.mutate({
+                        invoiceId: selectedInvoice.id,
+                        amount,
+                        description: `${isAr ? "فاتورة" : "Invoice"} ${selectedInvoice.invoiceNumber} - ${selectedInvoice.description || ''}`,
+                        buyerEmail: selectedInvoice.parentEmail || "parent@naashah.com",
+                        buyerPhone: selectedInvoice.parentPhone || "+966500000000",
+                        buyerName: selectedInvoice.parentName || "Parent",
+                      });
+                    }}
+                    disabled={tabbyCreateSession.isPending}
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border-2 border-[#3BFFC1] bg-white hover:bg-[#f0fff9] transition-colors disabled:opacity-50"
+                  >
+                    <svg width="60" height="24" viewBox="0 0 120 30" fill="none"><text x="0" y="22" fontFamily="Arial" fontSize="20" fontWeight="bold" fill="#292929">tabby</text></svg>
+                    <span className="text-sm font-medium text-gray-800">
+                      {tabbyCreateSession.isPending
+                        ? (isAr ? "جاري التحميل..." : "Loading...")
+                        : (isAr ? `ادفع لاحقاً - 4 دفعات × ${((Number(selectedInvoice?.total || 0) - Number(selectedInvoice?.paidAmount || 0)) / 4).toFixed(0)} ر.س` : `Pay later - 4 × ${((Number(selectedInvoice?.total || 0) - Number(selectedInvoice?.paidAmount || 0)) / 4).toFixed(0)} SAR`)}
+                    </span>
+                  </button>
+                </div>
               )}
             </div>
           )}

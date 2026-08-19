@@ -118,6 +118,7 @@ const SubscriptionCheckout = lazyWithRetry(() => import("./pages/SubscriptionChe
 const PaymentSettings = lazyWithRetry(() => import("./pages/PaymentSettings"));
 const PaymentCallback = lazyWithRetry(() => import("./pages/PaymentCallback"));
 const StorePaymentCallback = lazyWithRetry(() => import("./pages/StorePaymentCallback"));
+const TabbyCallback = lazyWithRetry(() => import("./pages/TabbyCallback"));
 const OrgSelector = lazyWithRetry(() => import("./pages/OrgSelector"));
 const SubscriptionStatus = lazyWithRetry(() => import("./pages/staff/SubscriptionStatus"));
 
@@ -495,6 +496,13 @@ function RoleRouter() {
     return (
       <Suspense fallback={<PageLoader />}>
         <StorePaymentCallback />
+      </Suspense>
+    );
+  }
+  if (location === "/tabby-callback") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <TabbyCallback />
       </Suspense>
     );
   }
