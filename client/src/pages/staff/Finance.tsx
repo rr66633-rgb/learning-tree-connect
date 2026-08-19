@@ -83,6 +83,7 @@ export default function StaffFinance() {
 
   // Forms
   const [form, setForm] = useState({ childId: 0, parentId: 0, description: "", subtotal: "", dueDate: "", invoiceType: "tuition" as string, isRecurring: false });
+  const [taxInclusive, setTaxInclusive] = useState(false);
   const [markPaidForm, setMarkPaidForm] = useState({ paymentMethod: "cash" as string });
   const [refundForm, setRefundForm] = useState({ amount: "", reason: "", transactionId: 0 });
   const [planForm, setPlanForm] = useState({ childId: 0, parentId: 0, name: "", amount: "", frequency: "monthly" as string, description: "", startDate: "", endDate: "" });
@@ -114,6 +115,7 @@ export default function StaffFinance() {
       dueDate: form.dueDate,
       invoiceType: form.invoiceType as any,
       isRecurring: form.isRecurring,
+      taxInclusive,
     });
   };
 
@@ -225,7 +227,14 @@ export default function StaffFinance() {
                 </div>
                 <div><Label>{t('finance.description')}</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t('finance.invoiceDescription')} required /></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><Label>{t('finance.amount')}</Label><Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required /></div>
+                  <div>
+                    <Label>{t('finance.amount')}</Label>
+                    <Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required />
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                      <input type="checkbox" checked={taxInclusive} onChange={e => setTaxInclusive(e.target.checked)} className="w-4 h-4 accent-emerald-600 rounded" />
+                      <span className="text-sm font-medium">{isEn ? "Tax inclusive" : "شامل الضريبة"}</span>
+                    </label>
+                  </div>
                   <div><Label>{t('finance.dueDate')}</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required /></div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -234,9 +243,20 @@ export default function StaffFinance() {
                 </div>
                 {form.subtotal && (
                   <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
-                    <div className="flex justify-between"><span>{t('finance.subtotal')}</span><span>{Number(form.subtotal).toLocaleString(locale)} {t('finance.sar')}</span></div>
-                    <div className="flex justify-between"><span>{t('finance.vat')}</span><span>{(Number(form.subtotal) * 0.15).toLocaleString(locale)} {t('finance.sar')}</span></div>
-                    <div className="flex justify-between font-bold border-t pt-1"><span>{t('finance.total')}</span><span>{(Number(form.subtotal) * 1.15).toLocaleString(locale)} {t('finance.sar')}</span></div>
+                    {taxInclusive ? (
+                      <>
+                        <div className="flex justify-between"><span>{isEn ? "Amount (Tax Inclusive)" : "المبلغ شامل الضريبة"}</span><span>{Number(form.subtotal).toLocaleString(locale)} {t('finance.sar')}</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>{isEn ? "Base Amount" : "المبلغ الأساسي"}</span><span>{(Number(form.subtotal) / 1.15).toLocaleString(locale, { maximumFractionDigits: 2 })} {t('finance.sar')}</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>{t('finance.vat')}</span><span>{(Number(form.subtotal) - Number(form.subtotal) / 1.15).toLocaleString(locale, { maximumFractionDigits: 2 })} {t('finance.sar')}</span></div>
+                        <div className="flex justify-between font-bold border-t pt-1 text-emerald-700"><span>{isEn ? "Parent pays" : "يدفع ولي الأمر"}</span><span>{Number(form.subtotal).toLocaleString(locale)} {t('finance.sar')}</span></div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span>{t('finance.subtotal')}</span><span>{Number(form.subtotal).toLocaleString(locale)} {t('finance.sar')}</span></div>
+                        <div className="flex justify-between"><span>{t('finance.vat')}</span><span>{(Number(form.subtotal) * 0.15).toLocaleString(locale)} {t('finance.sar')}</span></div>
+                        <div className="flex justify-between font-bold border-t pt-1"><span>{t('finance.total')}</span><span>{(Number(form.subtotal) * 1.15).toLocaleString(locale)} {t('finance.sar')}</span></div>
+                      </>
+                    )}
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={createInvoice.isPending}>
