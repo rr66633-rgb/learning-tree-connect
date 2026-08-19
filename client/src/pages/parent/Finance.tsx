@@ -435,12 +435,12 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
               </div>
 
               {!gatewayStatus?.isConfigured ? (
-                !tabbyStatus?.available ? (
+                !tabbyStatus?.available && (
                   <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm text-amber-700">
                     <AlertTriangle className="h-4 w-4 inline ml-1" />
                     {isAr ? "بوابة الدفع الإلكتروني قيد التفعيل. سيتم تفعيل الدفع الإلكتروني قريباً." : "The electronic payment gateway is being activated. Electronic payment will be activated soon."}
                   </div>
-                ) : null
+                )
               ) : (
                 <div ref={initMoyasarForm} className="moyasar-form" />
               )}
@@ -468,7 +468,7 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
                     <span className="text-sm font-medium text-gray-800">
                       {tabbyCreateSession.isPending
                         ? (isAr ? "جاري التحميل..." : "Loading...")
-                        : (isAr ? `ادفع لاحقاً - 4 دفعات × ${((Number(selectedInvoice?.total || 0) - Number(selectedInvoice?.paidAmount || 0)) / 4).toFixed(0)} ر.س` : `Pay later - 4 × ${((Number(selectedInvoice?.total || 0) - Number(selectedInvoice?.paidAmount || 0)) / 4).toFixed(0)} SAR`)}
+                        : (isAr ? `ادفع لاحقاً - 4 دفعات × ${((Number(selectedInvoice?.total || 0) - Number(selectedInvoice?.paidAmount || 0)) / 4).toFixed(2)} ر.س` : `Pay later - 4 × ${((Number(selectedInvoice?.total || 0) - Number(selectedInvoice?.paidAmount || 0)) / 4).toFixed(2)} SAR`)}
                     </span>
                   </button>
                 </div>
