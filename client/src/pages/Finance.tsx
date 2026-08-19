@@ -205,16 +205,19 @@ export default function Finance() {
                 </div>
                 <div><Label>{isAr ? "الوصف" : "Description"}</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={isAr ? "وصف الفاتورة" : "Invoice Description"} required /></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><Label>{isAr ? "المبلغ (ر.س)" : "Amount (SAR)"}</Label><Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required /></div>
+                  <div>
+                    <Label>{isAr ? "المبلغ (ر.س)" : "Amount (SAR)"}</Label>
+                    <Input type="number" step="0.01" value={form.subtotal} onChange={e => setForm(f => ({ ...f, subtotal: e.target.value }))} required />
+                    <div className="flex items-center gap-2 mt-2">
+                      <Switch checked={taxInclusive} onCheckedChange={v => setTaxInclusive(v)} />
+                      <Label className="text-xs cursor-pointer" onClick={() => setTaxInclusive(!taxInclusive)}>{isAr ? "شامل الضريبة" : "Tax inclusive"}</Label>
+                    </div>
+                  </div>
                   <div><Label>{isAr ? "تاريخ الاستحقاق" : "Due Date"}</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required /></div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={form.isRecurring} onCheckedChange={v => setForm(f => ({ ...f, isRecurring: v }))} />
                   <Label>{isAr ? "فاتورة متكررة" : "Recurring Invoice"}</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={taxInclusive} onCheckedChange={v => setTaxInclusive(v)} />
-                  <Label>{isAr ? "الضريبة مشمولة بالسعر" : "Tax included in price"}</Label>
                 </div>
                 {form.subtotal && (
                   <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
