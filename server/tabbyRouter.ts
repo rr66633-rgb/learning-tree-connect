@@ -11,12 +11,13 @@ const TABBY_API_BASE = "https://api.tabby.sa";
 export const tabbyRouter = router({
   // Check if Tabby is available for the user's organization
   status: protectedProcedure.query(async ({ ctx }) => {
-    if (!ctx.organizationId) return { available: false, publicKey: null, merchantCode: null };
-    const db = getSharedDb();
+    const orgId = ctx.organizationId || ctx.user?.organizationId;
+    if (!orgId) return { available: false, publicKey: null, merchantCode: null };
+    const db = (await getSharedDb())!;
     const [org] = await db.select({
       tabbyPublicKey: organizations.tabbyPublicKey,
       tabbyMerchantCode: organizations.tabbyMerchantCode,
-    }).from(organizations).where(eq(organizations.id, ctx.organizationId)).limit(1);
+    }).from(organizations).where(eq(organizations.id, orgId)).limit(1);
     return {
       available: !!(org?.tabbyPublicKey && org?.tabbyMerchantCode),
       publicKey: org?.tabbyPublicKey || null,
@@ -33,13 +34,14 @@ export const tabbyRouter = router({
     buyerPhone: z.string(),
     buyerName: z.string().optional(),
   })).mutation(async ({ ctx, input }) => {
-    if (!ctx.organizationId) throw new TRPCError({ code: "FORBIDDEN", message: "No organization" });
-    const db = getSharedDb();
+    const orgId = ctx.organizationId || ctx.user?.organizationId;
+    if (!orgId) throw new TRPCError({ code: "FORBIDDEN", message: "No organization" });
+    const db = (await getSharedDb())!;
     
     const [org] = await db.select({
       tabbySecretKey: organizations.tabbySecretKey,
       tabbyMerchantCode: organizations.tabbyMerchantCode,
-    }).from(organizations).where(eq(organizations.id, ctx.organizationId)).limit(1);
+    }).from(organizations).where(eq(organizations.id, orgId)).limit(1);
     
     if (!org?.tabbySecretKey || !org?.tabbyMerchantCode) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "Tabby not configured for this organization" });
