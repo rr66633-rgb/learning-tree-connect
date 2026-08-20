@@ -47,7 +47,7 @@ export default function NurseryRegistrations() {
   };
 
   const filteredRegistrations = (registrations || []).filter((r: any) =>
-    r.nurseryName?.includes(searchQuery) || r.ownerName?.includes(searchQuery) || r.email?.includes(searchQuery)
+    r.nurseryName?.includes(searchQuery) || r.nurseryNameAr?.includes(searchQuery) || r.ownerName?.includes(searchQuery) || r.ownerEmail?.includes(searchQuery) || r.ownerPhone?.includes(searchQuery)
   );
 
   const statusBadge = (status: string) => {
@@ -155,7 +155,7 @@ export default function NurseryRegistrations() {
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1"><User className="w-3 h-3" /> {reg.ownerName}</span>
-                      <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {reg.phone}</span>
+                      <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {reg.ownerPhone || "—"}</span>
                       <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {reg.city}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -222,11 +222,11 @@ export default function NurseryRegistrations() {
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">البريد الإلكتروني</label>
-                  <p className="font-medium">{selectedRegistration.email}</p>
+                  <p className="font-medium">{selectedRegistration.ownerEmail || "—"}</p>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">رقم الجوال</label>
-                  <p className="font-medium">{selectedRegistration.phone}</p>
+                  <p className="font-medium">{selectedRegistration.ownerPhone || "—"}</p>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">الخطة المطلوبة</label>
@@ -234,7 +234,7 @@ export default function NurseryRegistrations() {
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">عدد الأطفال المتوقع</label>
-                  <p className="font-medium">{selectedRegistration.expectedChildren || "غير محدد"}</p>
+                  <p className="font-medium">{selectedRegistration.childrenCount || "غير محدد"}</p>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">الحالة</label>
