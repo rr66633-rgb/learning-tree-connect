@@ -957,6 +957,45 @@ export const superAdminRouter = router({
       return { success: true, message: "تم تحديث بيانات المستخدم بنجاح" };
     }),
 
+  // Resend invitation (works across organizations - no org filter)
+  resendInvitation: superAdminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = (await getDb())!;
+
+      // Get user WITHOUT org filter (super admin can access any user)
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, input.userId));
+
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "المستخدم غير موجود" });
+      if (!user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "المستخدم ليس لديه بريد إلكتروني" });
+
+      try {
+        const defaultPassword = "Aa12341234";
+        const hashedPassword = await hashPassword(defaultPassword);
+
+        await db
+          .update(users)
+          .set({ password: hashedPassword })
+          .where(eq(users.id, input.userId));
+
+        const { sendInvitationEmail } = await import("./services/emailService");
+        await sendInvitationEmail(
+          user.email,
+          user.name || "",
+          user.role || "parent",
+          defaultPassword,
+          ctx.user?.name || undefined
+        );
+
+        return { success: true, message: "تم إرسال الدعوة بنجاح" };
+      } catch (err: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل إرسال الدعوة: " + (err.message || "") });
+      }
+    }),
+
   // ─── Email Settings ─────────────────────────────────────────────────────────
 
   emailStatus: superAdminProcedure.query(async () => {

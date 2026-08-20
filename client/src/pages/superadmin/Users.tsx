@@ -101,7 +101,7 @@ export default function SuperAdminUsers() {
     onError: (err) => toast.error(err.message),
   });
 
-  const resendInvitation = trpc.users.resendInvitation.useMutation({
+  const resendInvitation = trpc.superAdmin.resendInvitation.useMutation({
     onSuccess: () => toast.success(isAr ? "تم إرسال الدعوة بنجاح (كلمة المرور: Aa12341234)" : "Invitation sent (password: Aa12341234)"),
     onError: (err) => toast.error(err.message),
   });
