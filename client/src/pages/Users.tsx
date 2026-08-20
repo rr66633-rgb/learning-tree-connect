@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, UserX, Link2, Unlink, Download, FileSpreadsheet, FileText, KeyRound, AlertTriangle } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, UserPlus, Users, GraduationCap, UserCheck, UserX, Link2, Unlink, Download, FileSpreadsheet, FileText, KeyRound, AlertTriangle, MoreHorizontal } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
@@ -338,42 +338,50 @@ export default function UsersPage() {
                     <TableCell>{new Date(user.createdAt).toLocaleDateString('ar-SA')}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={isAr ? "تعديل" : "Edit"}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        {user.role === 'parent' && (
-                          <Button variant="ghost" size="icon" onClick={() => openLink(user)} title={isAr ? "ربط الأطفال" : "Link Children"}>
-                            <Link2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {user.email && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => resendInvitation.mutate({ userId: user.id })}
-                            disabled={resendInvitation.isPending}
-                            title={isAr ? "إعادة إرسال الدعوة" : "Resend Invitation"}
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {user.role !== 'admin' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleActive.mutate({ id: user.id, isActive: !user.isActive })}
-                            title={user.isActive !== false ? isAr ? "تعطيل" : "Disable" : isAr ? "تفعيل" : "Activate"}
-                            className={user.isActive !== false ? "text-orange-500 hover:text-orange-700" : "text-green-500 hover:text-green-700"}
-                          >
-                            {user.isActive !== false ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                          </Button>
-                        )}
-                        {user.role !== 'admin' && (
-                          <Button variant="ghost" size="icon" onClick={() => openDelete(user)} title={isAr ? "حذف" : "Delete"} className="text-red-500 hover:text-red-700">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                       <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title={isAr ? "تعديل" : "Edit"}>
+                         <Pencil className="h-4 w-4" />
+                       </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {user.email && (
+                              <DropdownMenuItem
+                                onClick={() => resendInvitation.mutate({ userId: user.id })}
+                                disabled={resendInvitation.isPending}
+                                className="gap-2 cursor-pointer text-blue-600"
+                              >
+                                <Mail className="h-4 w-4" />
+                                {isAr ? "إعادة إرسال الدعوة" : "Resend Invitation"}
+                              </DropdownMenuItem>
+                            )}
+                            {user.role === 'parent' && (
+                              <DropdownMenuItem onClick={() => openLink(user)} className="gap-2 cursor-pointer">
+                                <Link2 className="h-4 w-4" />
+                                {isAr ? "ربط الأطفال" : "Link Children"}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {user.role !== 'admin' && (
+                              <DropdownMenuItem
+                                onClick={() => toggleActive.mutate({ id: user.id, isActive: !user.isActive })}
+                                className={`gap-2 cursor-pointer ${user.isActive !== false ? "text-orange-600" : "text-green-600"}`}
+                              >
+                                {user.isActive !== false ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                {user.isActive !== false ? (isAr ? "تعطيل" : "Disable") : (isAr ? "تفعيل" : "Activate")}
+                              </DropdownMenuItem>
+                            )}
+                            {user.role !== 'admin' && (
+                              <DropdownMenuItem onClick={() => openDelete(user)} className="gap-2 cursor-pointer text-red-600">
+                                <Trash2 className="h-4 w-4" />
+                                {isAr ? "حذف" : "Delete"}
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -593,3 +601,4 @@ export default function UsersPage() {
   );
 }
 import { Mail } from "lucide-react";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";

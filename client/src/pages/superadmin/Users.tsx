@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useState, useMemo } from "react";
-import { Users as UsersIcon, Search, Plus, MoreHorizontal, UserMinus, Power, PowerOff } from "lucide-react";
+import { Users as UsersIcon, Search, Plus, MoreHorizontal, UserMinus, Power, PowerOff, Mail, KeyRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -85,6 +86,11 @@ export default function SuperAdminUsers() {
       toast.success(data.message);
       utils.superAdmin.listMembers.invalidate({ organizationId: selectedOrgId! });
     },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const resendInvitation = trpc.users.resendInvitation.useMutation({
+    onSuccess: () => toast.success(isAr ? "تم إرسال الدعوة بنجاح (كلمة المرور: Aa12341234)" : "Invitation sent (password: Aa12341234)"),
     onError: (err) => toast.error(err.message),
   });
 
@@ -264,9 +270,19 @@ export default function SuperAdminUsers() {
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => toggleStatusMutation.mutate({
+                           <DropdownMenuContent align="end">
+                              {member.userEmail && (
+                                <DropdownMenuItem
+                                  onClick={() => resendInvitation.mutate({ userId: member.userId })}
+                                  disabled={resendInvitation.isPending}
+                                >
+                                  <Mail className="w-4 h-4 ml-2 text-blue-600" />
+                                  <span className="text-blue-600">{isAr ? "إعادة إرسال الدعوة" : "Resend Invitation"}</span>
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                             <DropdownMenuItem
+                               onClick={() => toggleStatusMutation.mutate({
                                   membershipId: member.id,
                                   isActive: !member.isActive,
                                 })}
