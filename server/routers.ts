@@ -1900,7 +1900,27 @@ export const appRouter = router({
         type: 'payment',
         metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
       });
-      return { success: true };
+      // Also send email reminder if parent has email
+      if (invoice.parentEmail) {
+        try {
+          const { sendOverdueReminderEmail } = await import('./services/emailService');
+          const dueDate = new Date(invoice.dueDate);
+          const daysOverdue = Math.max(0, Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+          await sendOverdueReminderEmail(
+            invoice.parentEmail,
+            invoice.parentName || 'ولي الأمر',
+            invoice.invoiceNumber || `INV-${invoice.id}`,
+            String(invoice.total || '0'),
+            invoice.childName || 'الطفل',
+            dueDate.toLocaleDateString('ar-SA'),
+            daysOverdue
+          );
+        } catch (emailErr) {
+          // Email failure is non-critical - notification was already sent
+          console.error('[sendReminder] Email failed:', emailErr);
+        }
+      }
+      return { success: true, message: 'تم إرسال التذكير بنجاح (إشعار + إيميل)' };
     }),
     sendInvoiceEmail: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
       // SECURITY FIX: getInvoiceById previously had no organizationId check --
