@@ -1528,6 +1528,131 @@ async function startServer() {
     await subscriptionCheckHandler(req, res);
   });
 
+  // ============ MOYASAR WEBHOOK ============
+  // Receives real-time payment status updates from Moyasar
+  // Must return 2xx quickly to avoid retries
+  app.post('/api/webhooks/moyasar', async (req, res) => {
+    try {
+      // Return 200 immediately to acknowledge receipt
+      const body = req.body;
+      console.log(`[Moyasar Webhook] Received event: ${body?.type}, payment: ${body?.data?.id}`);
+
+      // Validate webhook has required fields
+      if (!body?.type || !body?.data?.id) {
+        console.warn('[Moyasar Webhook] Missing type or data.id');
+        return res.status(200).json({ received: true, processed: false, reason: 'missing fields' });
+      }
+
+      // Only process payment_paid events
+      if (body.type !== 'payment_paid') {
+        console.log(`[Moyasar Webhook] Ignoring event type: ${body.type}`);
+        return res.status(200).json({ received: true, processed: false, reason: `ignored event: ${body.type}` });
+      }
+
+      const moyasarPaymentId = body.data.id;
+      const moyasarStatus = body.data.status;
+      const moyasarAmount = body.data.amount; // in halalas
+
+      // Import required modules
+      const db = await import('../db');
+      const { invoices } = await import('../../drizzle/schema');
+
+      // Find payment record by Moyasar ID
+      let payment = await db.getPaymentByMoyasarId(moyasarPaymentId);
+
+      if (!payment) {
+        // Payment record doesn't exist yet — try to find invoice from metadata
+        const metadata = body.data.metadata || {};
+        const invoiceId = metadata.invoiceId ? Number(metadata.invoiceId) : null;
+        if (invoiceId) {
+          const invoice = await db.getInvoiceById(invoiceId);
+          if (invoice) {
+            // Create payment record
+            const newPayment = await db.createPayment({
+              invoiceId,
+              parentId: invoice.parentId,
+              amount: String(moyasarAmount / 100),
+              currency: 'SAR',
+              method: body.data.source?.type === 'applepay' ? 'apple_pay' : body.data.source?.type === 'stcpay' ? 'stc_pay' : 'card',
+              status: 'paid',
+              moyasarPaymentId,
+              moyasarPaymentUrl: '',
+              callbackUrl: body.data.callback_url || '',
+              metadata: body.data,
+            });
+            payment = await db.getPaymentByMoyasarId(moyasarPaymentId);
+            console.log(`[Moyasar Webhook] Created payment record for invoice ${invoiceId}`);
+          }
+        }
+
+        if (!payment) {
+          console.warn(`[Moyasar Webhook] No payment record found for ${moyasarPaymentId}`);
+          return res.status(200).json({ received: true, processed: false, reason: 'payment not found' });
+        }
+      }
+
+      // Skip if already paid
+      if (payment.status === 'paid') {
+        console.log(`[Moyasar Webhook] Payment ${moyasarPaymentId} already marked as paid`);
+        return res.status(200).json({ received: true, processed: false, reason: 'already paid' });
+      }
+
+      // Update payment status to paid
+      const paymentAmount = Number(payment.amount) > 0 ? Number(payment.amount) : (moyasarAmount / 100);
+      await db.updatePayment(payment.id, { status: 'paid', paidAt: new Date(), amount: String(paymentAmount) });
+
+      // Update invoice status
+      const invoice = await db.getInvoiceById(payment.invoiceId);
+      if (invoice) {
+        const newPaidAmount = Number(invoice.paidAmount || 0) + paymentAmount;
+        const totalAmount = Number(invoice.total);
+        const newStatus = newPaidAmount >= totalAmount ? 'paid' : 'partially_paid';
+        await db.updateInvoice(payment.invoiceId, {
+          status: newStatus,
+          paidAt: newStatus === 'paid' ? new Date() : undefined,
+          paymentMethod: payment.method,
+          paidAmount: newPaidAmount.toFixed(2),
+        });
+
+        // Create transaction record
+        await db.createTransaction({
+          paymentId: payment.id,
+          invoiceId: payment.invoiceId,
+          parentId: payment.parentId,
+          moyasarTransactionId: moyasarPaymentId,
+          type: 'payment',
+          amount: String(paymentAmount),
+          currency: 'SAR',
+          status: 'completed',
+          method: payment.method,
+          cardBrand: body.data.source?.company || null,
+          cardLast4: body.data.source?.number?.slice(-4) || null,
+          description: `دفع فاتورة ${invoice.invoiceNumber} (webhook)`,
+        });
+
+        // Notify parent
+        await db.createNotification({
+          userId: payment.parentId,
+          organizationId: invoice.organizationId,
+          title: 'تم الدفع بنجاح',
+          titleAr: 'تم الدفع بنجاح',
+          body: `تم دفع الفاتورة ${invoice.invoiceNumber} بنجاح. المبلغ: ${paymentAmount.toLocaleString('ar-SA')} ر.س`,
+          bodyAr: `تم دفع الفاتورة ${invoice.invoiceNumber} بنجاح. المبلغ: ${paymentAmount.toLocaleString('ar-SA')} ر.س`,
+          type: 'payment',
+          metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber },
+        });
+
+        console.log(`[Moyasar Webhook] Invoice ${invoice.invoiceNumber} marked as ${newStatus}`);
+      }
+
+      return res.status(200).json({ received: true, processed: true });
+    } catch (err: any) {
+      console.error('[Moyasar Webhook] Error:', err.message);
+      // Still return 200 to prevent Moyasar from retrying
+      return res.status(200).json({ received: true, processed: false, error: err.message });
+    }
+  });
+
   // Email Health Check API
   app.get('/api/email/health', async (req, res) => {
     try {
