@@ -189,29 +189,33 @@ export default function ParentFinance() {
   };
 
   const handleDownloadPDF = async (invoice: any) => {
-    // Generate a simple PDF-like receipt
-    const content = `
-فاتورة رقم: ${invoice.invoiceNumber}
-التاريخ: ${new Date(invoice.createdAt).toLocaleDateString(locale)}
-تاريخ الاستحقاق: ${new Date(invoice.dueDate).toLocaleDateString(locale)}
-الطفل: ${invoice.childName || ''}
-الوصف: ${invoice.description || ''}
-المبلغ الأساسي: ${Number(invoice.subtotal).toLocaleString(locale)} ر.س
-ضريبة القيمة المضافة (${invoice.vatRate}%): ${Number(invoice.vatAmount).toLocaleString(locale)} ر.س
-الإجمالي: ${Number(invoice.total).toLocaleString(locale)} ر.س
-الحالة: ${statusLabels[invoice.status]}
-${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Date(invoice.paidAt).toLocaleDateString(locale)}` : ''}
-    `.trim();
-    
     try {
-      const result = await saveOrShareFile(
-        "\uFEFF" + content,
-        `invoice_${invoice.invoiceNumber}.txt`,
-        "text/plain;charset=utf-8",
-        isAr ? `فاتورة ${invoice.invoiceNumber}` : `Invoice ${invoice.invoiceNumber}`,
+      const result = await generateInvoicePDF(
+        {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          description: invoice.description,
+          subtotal: invoice.subtotal,
+          vatRate: invoice.vatRate,
+          vatAmount: invoice.vatAmount,
+          total: invoice.total,
+          paidAmount: invoice.paidAmount,
+          status: invoice.status,
+          dueDate: invoice.dueDate,
+          paidAt: invoice.paidAt,
+          paymentMethod: invoice.paymentMethod,
+          invoiceType: invoice.invoiceType,
+          createdAt: invoice.createdAt,
+          childName: invoice.childName,
+          parentName: invoice.parentName,
+          parentEmail: invoice.parentEmail,
+          parentPhone: invoice.parentPhone,
+        },
+        undefined, // centerInfo - will use defaults
       );
       if (result !== "cancelled") toast.success(isAr ? "تم تحميل الفاتورة" : "Invoice downloaded");
-    } catch {
+    } catch (err) {
+      console.error("[PDF] Error:", err);
       toast.error(isAr ? "تعذّر تحميل الفاتورة، حاول مرة أخرى" : "Could not download the invoice. Please try again.");
     }
   };
@@ -519,3 +523,4 @@ ${invoice.paidAt ? `${isAr ? "تاريخ الدفع" : "Payment Date"}: ${new Da
     </div>
   );
 }
+import { generateInvoicePDF } from "@/lib/invoicePdf";
