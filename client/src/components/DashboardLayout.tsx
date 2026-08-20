@@ -26,7 +26,7 @@ import {
   MessageCircle, CreditCard, Bell, Settings, UserCog, GraduationCap,
   Clock, ClipboardList, Megaphone, FileArchive, Heart, UserPlus, Calendar,
   Camera, User, UserCheck, MapPin, BookOpen, Shield, Sparkles, CalendarDays,
-  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt, ShoppingBag, BarChart3, Wallet, Award, Target
+  Building2, Palette, Crown, Brain, HandHeart, FileSpreadsheet, TreePine, Library, ClipboardCheck, Receipt, ShoppingBag, BarChart3, Wallet, Award, Target, ShieldCheck
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -130,6 +130,7 @@ const adminMenuItems: MenuItem[] = [
   { icon: Bell, label: "الإشعارات", labelEn: "Notifications", path: "/notifications", color: "#EC4899" },
   { icon: UserCog, label: "إدارة المستخدمين", labelEn: "User Management", path: "/users", color: "#7C3AED" },
   { icon: MapPin, label: "الاستلام", labelEn: "Pickup", path: "/pickup", color: "#7C3AED" },
+  { icon: ShieldCheck, label: "الصلاحيات", labelEn: "Permissions", path: "/permissions", color: "#6366F1" },
   { icon: BookOpen, label: "التقييمات", labelEn: "Assessments", path: "/assessments", color: "#F97316" },
   { icon: ClipboardCheck, label: "الاختبارات المخصصة", labelEn: "Custom Assessments", path: "/custom-assessments", color: "#8B5CF6" },
   { icon: TreePine, label: "مقياس الكشف المبكر", labelEn: "Early Detection", path: "/developmental-assessment", color: "#10B981" },
@@ -178,6 +179,7 @@ const principalMenuItems: MenuItem[] = [
   { icon: FileArchive, label: "المستندات", labelEn: "Documents", path: "/documents" },
   { icon: Bell, label: "الإشعارات", labelEn: "Notifications", path: "/notifications" },
   { icon: UserCog, label: "إدارة المستخدمين", labelEn: "User Management", path: "/users" },
+  { icon: ShieldCheck, label: "الصلاحيات", labelEn: "Permissions", path: "/permissions" },
   { icon: BookOpen, label: "التقييمات", labelEn: "Assessments", path: "/assessments" },
   { icon: TreePine, label: "مقياس الكشف المبكر", labelEn: "Early Detection", path: "/developmental-assessment" },
   { icon: Brain, label: "مركز النمو والتطور", labelEn: "Development Center", path: "/development" },

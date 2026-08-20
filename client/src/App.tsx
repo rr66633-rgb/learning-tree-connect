@@ -166,6 +166,7 @@ const AccountSettings = lazyWithRetry(() => import("./pages/AccountSettings"));
 const StoreProducts = lazyWithRetry(() => import("./pages/staff/StoreProducts"));
 const StoreOrders = lazyWithRetry(() => import("./pages/staff/StoreOrders"));
 const StoreSalesReport = lazyWithRetry(() => import("./pages/staff/StoreSalesReport"));
+const StaffPermissions = lazyWithRetry(() => import("./pages/staff/Permissions"));
 const ParentStore = lazyWithRetry(() => import("./pages/parent/Store"));
 const ParentCart = lazyWithRetry(() => import("./pages/parent/Cart"));
 const ParentStoreOrders = lazyWithRetry(() => import("./pages/parent/StoreOrders"));
@@ -278,6 +279,7 @@ function StaffRouter() {
         <Route path="/staff/performance-goals" component={PerformanceGoals} />
         <Route path="/staff/hr-dashboard" component={HRDashboard} />
         <Route path="/staff/account-settings" component={AccountSettings} />
+        <Route path="/staff/permissions" component={StaffPermissions} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

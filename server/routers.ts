@@ -5085,5 +5085,8 @@ export const appRouter = router({
   goals: goalsRouter,
   // ============ TABBY PAYMENT ============
   tabby: tabbyRouter,
+  // ============ STAFF PERMISSIONS ============
+  permissions: permissionsRouter,
 });
 export type AppRouter = typeof appRouter;
+import { permissionsRouter } from "./permissionsRouter";

@@ -2151,3 +2151,30 @@ export const emailLogs = mysqlTable("email_logs", {
 });
 export type EmailLog = typeof emailLogs.$inferSelect;
 export type InsertEmailLog = typeof emailLogs.$inferInsert;
+
+// ============ STAFF PERMISSIONS ============
+export const staffPermissions = mysqlTable("staff_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  // Attendance
+  attendanceAll: boolean("attendanceAll").default(false).notNull(), // تسجيل حضور/انصراف جميع الأطفال
+  // Reports
+  reportsAll: boolean("reportsAll").default(false).notNull(), // إرسال تقارير يومية لجميع الأطفال
+  weeklyPlans: boolean("weeklyPlans").default(false).notNull(), // إنشاء خطط أسبوعية
+  // Finance
+  viewInvoices: boolean("viewInvoices").default(false).notNull(), // عرض الفواتير
+  createInvoices: boolean("createInvoices").default(false).notNull(), // إنشاء فواتير جديدة
+  // Children
+  manageChildren: boolean("manageChildren").default(false).notNull(), // إضافة/تعديل بيانات الأطفال
+  viewAllChildren: boolean("viewAllChildren").default(false).notNull(), // عرض جميع الأطفال
+  // Communication
+  sendMessages: boolean("sendMessages").default(false).notNull(), // إرسال رسائل لأولياء الأمور
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  uniqueIndex("ux_staff_perms_user_org").on(table.userId, table.organizationId),
+  index("idx_staff_perms_org").on(table.organizationId),
+]);
+export type StaffPermission = typeof staffPermissions.$inferSelect;
+export type InsertStaffPermission = typeof staffPermissions.$inferInsert;
