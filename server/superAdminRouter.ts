@@ -906,6 +906,57 @@ export const superAdminRouter = router({
       return { success: true, message: input.isActive ? "تم تفعيل العضو" : "تم تعطيل العضو" };
     }),
 
+  // Update member details (name, email, phone, role, password)
+  updateMember: superAdminProcedure
+    .input(z.object({
+      userId: z.number(),
+      membershipId: z.number(),
+      name: z.string().min(2).optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      role: z.enum(["admin", "principal", "teacher", "assistant", "accountant", "receptionist", "parent"]).optional(),
+      newPassword: z.string().min(4).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = (await getDb())!;
+
+      // Update user table (name, email, phone, role, password)
+      const userUpdates: any = {};
+      if (input.name) userUpdates.name = input.name;
+      if (input.email) userUpdates.email = normalizeEmail(input.email);
+      if (input.phone !== undefined) userUpdates.phone = input.phone || null;
+      if (input.role) userUpdates.role = input.role;
+      if (input.newPassword) {
+        userUpdates.password = await hashPassword(input.newPassword);
+      }
+
+      if (Object.keys(userUpdates).length > 0) {
+        await db
+          .update(users)
+          .set(userUpdates)
+          .where(eq(users.id, input.userId));
+      }
+
+      // Update membership role if changed
+      if (input.role) {
+        await db
+          .update(organizationMembers)
+          .set({ role: input.role })
+          .where(eq(organizationMembers.id, input.membershipId));
+      }
+
+      // Audit log
+      await db.insert(auditLog).values({
+        userId: ctx.user!.id,
+        action: "update_member",
+        resource: "user",
+        resourceId: input.userId,
+        details: JSON.stringify({ changes: Object.keys(userUpdates), membershipId: input.membershipId }),
+      });
+
+      return { success: true, message: "تم تحديث بيانات المستخدم بنجاح" };
+    }),
+
   // ─── Email Settings ─────────────────────────────────────────────────────────
 
   emailStatus: superAdminProcedure.query(async () => {

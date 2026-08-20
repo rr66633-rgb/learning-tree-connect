@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useState, useMemo } from "react";
 import { Users as UsersIcon, Search, Plus, MoreHorizontal, UserMinus, Power, PowerOff, Mail, KeyRound } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -58,6 +59,17 @@ export default function SuperAdminUsers() {
     password: "",
   });
 
+  const [editDialog, setEditDialog] = useState(false);
+  const [editForm, setEditForm] = useState({
+    userId: 0,
+    membershipId: 0,
+    name: "",
+    email: "",
+    phone: "",
+    role: "teacher" as "admin" | "principal" | "teacher" | "assistant" | "accountant" | "receptionist" | "parent",
+    newPassword: "",
+  });
+
   const { data: members, isLoading: membersLoading } = trpc.superAdmin.listMembers.useQuery(
     { organizationId: selectedOrgId! },
     { enabled: !!selectedOrgId }
@@ -94,6 +106,15 @@ export default function SuperAdminUsers() {
     onError: (err) => toast.error(err.message),
   });
 
+  const updateMemberMutation = trpc.superAdmin.updateMember.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      utils.superAdmin.listMembers.invalidate({ organizationId: selectedOrgId! });
+      setEditDialog(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   // Auto-select first org
   useMemo(() => {
     if (orgs?.organizations?.length && !selectedOrgId) {
@@ -127,6 +148,36 @@ export default function SuperAdminUsers() {
       phone: addForm.phone || undefined,
       role: addForm.role,
       password: addForm.password || undefined,
+    });
+  }
+
+  function openEditDialog(member: any) {
+    setEditForm({
+      userId: member.userId,
+      membershipId: member.id,
+      name: member.userName || "",
+      email: member.userEmail || "",
+      phone: member.userPhone || "",
+      role: member.role,
+      newPassword: "",
+    });
+    setEditDialog(true);
+  }
+
+  function handleEditMember(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editForm.name.trim()) {
+      toast.error(isAr ? "يرجى إدخال الاسم" : "Please enter name");
+      return;
+    }
+    updateMemberMutation.mutate({
+      userId: editForm.userId,
+      membershipId: editForm.membershipId,
+      name: editForm.name,
+      email: editForm.email || undefined,
+      phone: editForm.phone || undefined,
+      role: editForm.role,
+      newPassword: editForm.newPassword || undefined,
     });
   }
 
@@ -271,6 +322,10 @@ export default function SuperAdminUsers() {
                               </Button>
                             </DropdownMenuTrigger>
                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditDialog(member)}>
+                                <Pencil className="w-4 h-4 ml-2 text-indigo-600" />
+                                <span className="text-indigo-600">{isAr ? "تعديل" : "Edit"}</span>
+                              </DropdownMenuItem>
                               {member.userEmail && (
                                 <DropdownMenuItem
                                   onClick={() => resendInvitation.mutate({ userId: member.userId })}
@@ -324,7 +379,7 @@ export default function SuperAdminUsers() {
 
       {/* Add Member Dialog */}
       <Dialog open={addDialog} onOpenChange={setAddDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" dir={isAr ? "rtl" : "ltr"}>
           <DialogHeader>
             <DialogTitle>{isAr ? "إضافة عضو جديد" : "Add New Member"}</DialogTitle>
             <DialogDescription>
@@ -399,6 +454,89 @@ export default function SuperAdminUsers() {
               </Button>
               <Button type="submit" disabled={addMemberMutation.isPending}>
                 {addMemberMutation.isPending ? (isAr ? "جاري الإضافة..." : "Adding...") : (isAr ? "إضافة العضو" : "Add Member")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Member Dialog */}
+      <Dialog open={editDialog} onOpenChange={setEditDialog}>
+        <DialogContent className="sm:max-w-md" dir={isAr ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle>{isAr ? "تعديل بيانات المستخدم" : "Edit User"}</DialogTitle>
+            <DialogDescription>
+              {isAr ? "عدّل بيانات المستخدم. اترك كلمة المرور فارغة إذا لم ترد تغييرها." : "Edit user details. Leave password empty to keep current."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditMember} className="space-y-4">
+            <div>
+              <Label>{isAr ? "الاسم *" : "Name *"}</Label>
+              <Input
+                value={editForm.name}
+                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                className="mt-1.5"
+                placeholder={isAr ? "اسم المستخدم" : "User name"}
+              />
+            </div>
+            <div>
+              <Label>{isAr ? "البريد الإلكتروني" : "Email"}</Label>
+              <Input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                className="mt-1.5"
+                placeholder="user@example.com"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <Label>{isAr ? "رقم الجوال" : "Phone"}</Label>
+              <Input
+                value={editForm.phone}
+                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                className="mt-1.5"
+                placeholder="+966..."
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <Label>{isAr ? "الدور" : "Role"}</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm((p) => ({ ...p, role: v as any }))}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">{isAr ? "مدير" : "Admin"}</SelectItem>
+                  <SelectItem value="principal">{isAr ? "مدير حضانة" : "Principal"}</SelectItem>
+                  <SelectItem value="teacher">{isAr ? "معلمة" : "Teacher"}</SelectItem>
+                  <SelectItem value="assistant">{isAr ? "مساعدة" : "Assistant"}</SelectItem>
+                  <SelectItem value="accountant">{isAr ? "محاسب" : "Accountant"}</SelectItem>
+                  <SelectItem value="receptionist">{isAr ? "استقبال" : "Receptionist"}</SelectItem>
+                  <SelectItem value="parent">{isAr ? "ولي أمر" : "Parent"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{isAr ? "كلمة مرور جديدة (اختياري)" : "New Password (optional)"}</Label>
+              <Input
+                type="text"
+                value={editForm.newPassword}
+                onChange={(e) => setEditForm((p) => ({ ...p, newPassword: e.target.value }))}
+                className="mt-1.5"
+                placeholder={isAr ? "اتركه فارغ لعدم التغيير" : "Leave empty to keep current"}
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {isAr ? "اتركه فارغ إذا لا تريد تغيير كلمة المرور" : "Leave empty if you don't want to change the password"}
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialog(false)}>
+                {isAr ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button type="submit" disabled={updateMemberMutation.isPending}>
+                {updateMemberMutation.isPending ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ التعديلات" : "Save Changes")}
               </Button>
             </DialogFooter>
           </form>
